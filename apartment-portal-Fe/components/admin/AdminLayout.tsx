@@ -31,13 +31,13 @@ const adminMenuItems = [
   { href: '/admin-dashboard/apartments', label: 'admin.apartments.title', icon: <Building2 className="h-5 w-5" /> },
   { href: '/admin-dashboard/announcements', label: 'admin.announcements.title', icon: <Bell className="h-5 w-5" /> },
   { href: '/admin-dashboard/events', label: 'admin.events.title', icon: <Calendar className="h-5 w-5" /> },
-  { href: '/admin-dashboard/facilities', label: 'admin.facilities.title', icon: <Coffee className="h-5 w-5" /> },
   { href: '/admin-dashboard/invoices', label: 'admin.invoices.title', icon: <Receipt className="h-5 w-5" /> },
   { href: '/admin-dashboard/feedbacks', label: 'admin.feedbacks.title', icon: <MessageSquare className="h-5 w-5" /> },
   { href: '/admin-dashboard/support-requests', label: 'admin.support-requests.title', icon: <LifeBuoy className="h-5 w-5" /> },
   { href: '/admin-dashboard/history', label: 'admin.history.title', icon: <History className="h-5 w-5" /> },
   { href: '/admin-dashboard/reports', label: 'admin.reports.title', icon: <BarChart3 className="h-5 w-5" /> },
   { href: '/admin-dashboard/facility-bookings', label: 'admin.facility-bookings.title', icon: <ClipboardList className="h-5 w-5" /> },
+  { href: '/admin-dashboard/facilities', label: 'admin.facilities.title', icon: <Coffee className="h-5 w-5" /> },
 ];
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {
@@ -53,11 +53,11 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-gray-50 overflow-x-hidden w-full">
         {/* Sidebar */}
-        <Sidebar className="bg-white shadow-md border-r">
+        <Sidebar className="bg-white shadow-md border-r w-64 min-w-64 max-w-64 h-screen overflow-y-auto overflow-x-hidden">
           <SidebarHeader>
-            <div className="font-bold text-lg text-blue-700 px-2 py-4">
+            <div className="font-bold text-lg text-blue-700 px-2 py-4 truncate">
               {t('admin.dashboard.title')}
             </div>
           </SidebarHeader>
@@ -70,9 +70,9 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                     isActive={pathname === item.href}
                     tooltip={t(item.label)}
                   >
-                    <a href={item.href} className="flex items-center gap-3">
+                    <a href={item.href} className="flex items-center gap-3 w-full truncate">
                       {item.icon}
-                      <span>{t(item.label)}</span>
+                      <span className="truncate block w-full text-left">{t(item.label)}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -83,7 +83,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
           <SidebarFooter>
             <div className="flex items-center gap-2 px-2 pb-2">
               <User className="h-5 w-5 text-gray-500" />
-              <span className="text-sm text-gray-700">Admin</span>
+              <span className="text-sm text-gray-700 truncate">Admin</span>
             </div>
             <div className="px-2 pb-2">
               <LanguageSwitcher />
@@ -95,7 +95,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
               className="flex items-center gap-2 w-full"
             >
               <LogOut className="h-4 w-4" />
-              <span>{t('admin.action.logout')}</span>
+              <span className="truncate">{t('admin.action.logout')}</span>
             </Button>
           </SidebarFooter>
         </Sidebar>

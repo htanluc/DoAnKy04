@@ -14,5 +14,6 @@ public class UserDto {
     private LocalDateTime updatedAt;
     private Set<String> roles;
     private String lockReason;
+    private String email;
     // TODO: add fields
 }

@@ -164,28 +164,27 @@ export const register = async (userData: RegisterRequest): Promise<AuthResponse>
     console.log('📡 Response status:', response.status);
 
     if (!response.ok) {
-      console.error('❌ HTTP Error:', response.status, response.statusText);
       const errorText = await response.text();
-      console.error('❌ Error response:', errorText);
-      
-      // Handle CORS errors specifically
-      if (response.status === 0 || response.status === 403) {
-        throw new Error('CORS Error: Backend is not configured to allow requests from this origin. Please check CORS configuration.');
-      }
-      
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      let message = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.message) message = errorJson.message;
+      } catch {}
+      return {
+        success: false,
+        message: message || `HTTP ${response.status}: ${response.statusText}`,
+        data: null
+      };
     }
 
     const data = await response.json();
-    console.log('✅ Response data:', data);
     return data;
   } catch (error) {
-    console.error('❌ Register error:', error);
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error('🌐 Network error - Backend might not be running or CORS issue');
-      console.error('💡 Solution: Check if backend is running on http://localhost:8080 and CORS is configured');
-    }
-    throw error;
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      data: null
+    };
   }
 };
 

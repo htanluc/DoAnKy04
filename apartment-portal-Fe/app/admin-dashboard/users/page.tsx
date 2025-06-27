@@ -208,31 +208,25 @@ export default function UsersPage() {
                 <p className="text-gray-500">{t('admin.noData')}</p>
               </div>
             ) : (
-              <Table>
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('admin.users.username')}</TableHead>
-                    <TableHead>{t('admin.users.email')}</TableHead>
-                    <TableHead>{t('admin.users.phone')}</TableHead>
-                    <TableHead>{t('admin.users.role')}</TableHead>
-                    <TableHead>{t('admin.users.status')}</TableHead>
-                    <TableHead>{t('admin.users.createdAt')}</TableHead>
-                    <TableHead>{t('admin.users.lockReason')}</TableHead>
-                    <TableHead>{t('admin.users.actions')}</TableHead>
+                    <TableHead className="w-[110px] truncate">{t('admin.users.username')}</TableHead>
+                    <TableHead className="w-[130px] truncate">{t('admin.users.email')}</TableHead>
+                    <TableHead className="w-[110px] truncate">{t('admin.users.phone')}</TableHead>
+                    <TableHead className="w-[80px] truncate">{t('admin.users.role')}</TableHead>
+                    <TableHead className="w-[90px] truncate">{t('admin.users.status')}</TableHead>
+                    <TableHead className="w-[60px] truncate">{t('admin.users.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.username}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.phoneNumber}</TableCell>
+                      <TableCell className="font-medium truncate max-w-[110px]" title={user.username}>{user.username}</TableCell>
+                      <TableCell className="truncate max-w-[130px] whitespace-normal break-words" title={user.email}>{user.email}</TableCell>
+                      <TableCell className="truncate max-w-[110px]" title={user.phoneNumber}>{user.phoneNumber}</TableCell>
                       <TableCell>{getRoleBadge(user.roles && user.roles.length > 0 ? user.roles[0] : '-')}</TableCell>
                       <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : '-'}</TableCell>
-                      <TableCell className="text-red-600">
-                        {(user.status === 'LOCKED' || user.status === 'INACTIVE') && user.lockReason ? user.lockReason : ''}
-                      </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <Link href={`/admin-dashboard/users/${user.id}`}>
