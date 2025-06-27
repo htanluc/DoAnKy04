@@ -1,0 +1,92 @@
+# API Xác Thực Email - Backend Apartment Portal
+
+## 1. Đăng ký tài khoản (Register)
+- **Endpoint:** POST /api/auth/register
+- **Request body:**
+  {
+    "email": "user@example.com",
+    "phoneNumber": "0123456789",
+    "password": "yourPassword",
+    "confirmPassword": "yourPassword"
+  }
+- **Response:**
+  {
+    "success": true,
+    "message": "Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."
+  }
+
+---
+
+## 2. Xác thực tài khoản qua email
+- Sau khi đăng ký, user sẽ nhận được email có link dạng:
+  https://your-frontend-domain/verify-email?token=xxxxxx
+
+- FE cần tạo trang xác thực tài khoản, lấy token từ URL và gọi:
+  **Endpoint:** GET /api/auth/verify-email?token=xxxxxx
+- **Response:**
+  - Thành công:
+    {
+      "success": true,
+      "message": "Kích hoạt tài khoản thành công!"
+    }
+  - Lỗi (token sai/hết hạn):
+    {
+      "success": false,
+      "message": "Token xác thực không hợp lệ hoặc đã hết hạn"
+    }
+
+---
+
+## 3. Đăng nhập
+- **Endpoint:** POST /api/auth/login
+- **Request body:**
+  {
+    "phoneNumber": "0123456789",
+    "password": "yourPassword"
+  }
+- **Response:**
+  - Nếu tài khoản chưa kích hoạt:
+    {
+      "success": true,
+      "message": "Tài khoản chưa kích hoạt. Vui lòng kiểm tra email để xác thực.",
+      "data": {
+        "status": "INACTIVE",
+        "roles": [...]
+      }
+    }
+  - Nếu tài khoản đã kích hoạt:
+    {
+      "success": true,
+      "message": "Đăng nhập thành công",
+      "data": {
+        "token": "jwt-token",
+        "tokenType": "Bearer",
+        "username": "0123456789",
+        "roles": [...],
+        "status": "ACTIVE"
+      }
+    }
+
+---
+
+## 4. Luồng hoạt động
+1. FE gọi API đăng ký → BE tạo user (chưa active), sinh token, gửi email xác nhận.
+2. FE hiển thị thông báo: "Vui lòng kiểm tra email để xác nhận tài khoản."
+3. User bấm link xác nhận trong email → FE gọi API /api/auth/verify-email?token=...
+4. FE hiển thị kết quả xác nhận: Thành công hoặc thất bại.
+
+---
+
+## 5. Lưu ý cho FE
+- Khi đăng ký thành công, hiển thị thông báo cho user kiểm tra email để kích hoạt tài khoản.
+- Khi user bấm vào link xác thực, FE lấy token từ URL, gọi API /api/auth/verify-email?token=..., hiển thị thông báo thành công/thất bại.
+- Nếu đăng nhập mà tài khoản chưa kích hoạt, nhắc user kiểm tra email.
+
+---
+
+## 6. Lưu ý cho BE
+- BE cần kiểm tra trạng thái xác thực trước khi cho phép đăng nhập.
+- Nếu user chưa xác thực, hiển thị thông báo hướng dẫn kiểm tra email.
+- Link xác thực trong email sẽ có dạng:
+  https://<frontend-domain>/verify-email?token=...
+  FE lấy token từ URL, gọi API xác thực email. 

@@ -1,0 +1,175 @@
+# API QUẢN LÝ CƯ DÂN (RESIDENT MANAGEMENT)
+
+Base URL: /api/admin/residents
+
+----------------------------------------
+1. Lấy danh sách tất cả cư dân
+----------------------------------------
+GET /api/admin/residents
+
+Response:
+[
+  {
+    "id": 1,
+    "fullName": "Nguyễn Văn A",
+    "phoneNumber": "0901234567",
+    "email": "vana@example.com",
+    "dateOfBirth": "1990-01-01",
+    "gender": "MALE",
+    "identityNumber": "123456789",
+    "address": "Căn hộ 101, Tòa A",
+    "status": "ACTIVE"
+  }
+]
+
+----------------------------------------
+2. Lấy thông tin cư dân theo ID
+----------------------------------------
+GET /api/admin/residents/{id}
+
+Response:
+{
+  "id": 1,
+  "fullName": "Nguyễn Văn A",
+  "phoneNumber": "0901234567",
+  "email": "vana@example.com",
+  "dateOfBirth": "1990-01-01",
+  "gender": "MALE",
+  "identityNumber": "123456789",
+  "address": "Căn hộ 101, Tòa A",
+  "status": "ACTIVE"
+}
+
+----------------------------------------
+3. Tạo cư dân mới
+----------------------------------------
+POST /api/admin/residents
+Content-Type: application/json
+
+Request Body:
+{
+  "fullName": "Nguyễn Văn B",
+  "phoneNumber": "0909876543",
+  "email": "vanb@example.com",
+  "dateOfBirth": "1992-05-10",
+  "gender": "FEMALE",
+  "identityNumber": "987654321",
+  "address": "Căn hộ 202, Tòa B"
+}
+
+Response: (giống response lấy theo ID, có thêm id và status)
+
+----------------------------------------
+4. Cập nhật thông tin cư dân
+----------------------------------------
+PUT /api/admin/residents/{id}
+Content-Type: application/json
+
+Request Body:
+{
+  "fullName": "Nguyễn Văn B (cập nhật)",
+  "phoneNumber": "0909876543",
+  "email": "vanb@example.com",
+  "dateOfBirth": "1992-05-10",
+  "gender": "FEMALE",
+  "identityNumber": "987654321",
+  "address": "Căn hộ 202, Tòa B",
+  "status": "ACTIVE"
+}
+
+Response: (giống response lấy theo ID)
+
+----------------------------------------
+5. Xóa cư dân
+----------------------------------------
+DELETE /api/admin/residents/{id}
+
+Response: 204 No Content
+
+----------------------------------------
+6. Mô tả các trường dữ liệu
+----------------------------------------
+| Trường         | Kiểu dữ liệu | Ý nghĩa                      |
+|---------------|-------------|------------------------------|
+| id            | number      | Mã cư dân                    |
+| fullName      | string      | Họ tên cư dân                |
+| phoneNumber   | string      | Số điện thoại                |
+| email         | string      | Email                        |
+| dateOfBirth   | string      | Ngày sinh (yyyy-MM-dd)       |
+| gender        | string      | Giới tính (MALE/FEMALE/OTHER)|
+| identityNumber| string      | Số CMND/CCCD                 |
+| address       | string      | Địa chỉ                      |
+| status        | string      | Trạng thái (ACTIVE/INACTIVE) |
+
+----------------------------------------
+Lưu ý:
+- Tất cả endpoint đều yêu cầu quyền admin (token xác thực).
+- Các trường có thể thay đổi tùy theo DTO thực tế.
+- Nếu cần chi tiết validate, lỗi trả về, hãy liên hệ backend.
+
+# API LẤY CHI TIẾT CƯ DÂN VÀ CĂN HỘ ĐÃ LIÊN KẾT
+
+## 1. Lấy chi tiết cư dân theo ID
+
+Endpoint:
+GET /api/admin/residents/{id}
+
+Mô tả:
+- Trả về thông tin chi tiết của cư dân theo id.
+
+Request:
+- Không cần body, chỉ cần truyền id trên URL.
+
+Response mẫu:
+{
+  "id": 1,
+  "fullName": "Nguyễn Văn A",
+  "phoneNumber": "0901234567",
+  "email": "resident@example.com",
+  "dateOfBirth": "1990-01-01",
+  "gender": "MALE",
+  "identityNumber": "123456789",
+  "address": "123 Đường ABC, Quận 1"
+}
+
+---
+
+## 2. Lấy danh sách căn hộ mà cư dân này đã liên kết
+
+Cách 1: FE gọi API lấy tất cả liên kết cư dân-căn hộ, sau đó lọc theo residentId.
+
+Endpoint:
+GET /api/apartment-residents
+
+Response mẫu:
+[
+  {
+    "apartmentId": 1,
+    "residentId": 1,
+    "relationType": "Chủ sở hữu",
+    "moveInDate": "2024-01-01",
+    "moveOutDate": null
+  },
+  {
+    "apartmentId": 2,
+    "residentId": 1,
+    "relationType": "Người thuê",
+    "moveInDate": "2024-03-01",
+    "moveOutDate": null
+  }
+]
+- FE lọc các phần tử có residentId trùng với id đang xem chi tiết.
+
+---
+
+## 3. Gợi ý giao diện chi tiết cư dân
+- Thông tin cá nhân (từ API 1)
+- Danh sách căn hộ đã liên kết (lọc từ API 2)
+- Loại quan hệ, ngày vào ở, ngày rời đi (nếu có)
+
+---
+
+## 4. Ví dụ luồng FE
+1. Khi vào trang /admin-dashboard/residents/1:
+   - Gọi GET /api/admin/residents/1 để lấy thông tin cá nhân.
+   - Gọi GET /api/apartment-residents rồi lọc các liên kết có residentId = 1 để hiển thị các căn hộ mà cư dân này đang ở/đã từng ở. 

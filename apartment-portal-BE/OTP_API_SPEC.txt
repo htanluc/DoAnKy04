@@ -1,0 +1,54 @@
+# OTP API SPECIFICATION
+
+## 1. Xác thực OTP
+
+- Endpoint: POST /api/auth/verify-otp
+- Request body:
+  {
+    "emailOrPhone": "0936393979", // hoặc email
+    "otp": "123456"
+  }
+- Response:
+  - Thành công:
+    {
+      "success": true,
+      "message": "Xác thực OTP thành công!"
+    }
+  - Thất bại:
+    {
+      "success": false,
+      "message": "Mã OTP không đúng hoặc đã hết hạn"
+    }
+
+---
+
+## 2. Gửi lại OTP
+
+- Endpoint: POST /api/auth/resend-otp
+- Request body:
+  {
+    "emailOrPhone": "0936393979" // hoặc email
+  }
+- Response:
+  - Thành công:
+    {
+      "success": true,
+      "message": "Đã gửi lại mã OTP!"
+    }
+  - Thất bại:
+    {
+      "success": false,
+      "message": "Không thể gửi lại mã OTP, vui lòng thử lại sau"
+    }
+
+---
+
+## 3. Hướng dẫn sử dụng cho FE
+
+- Khi vào trang xác thực OTP (/verify-otp), FE cần lấy emailOrPhone từ localStorage, sessionStorage, hoặc truyền qua URL.
+- Khi người dùng nhập mã OTP và bấm xác nhận, gọi API Xác Thực OTP.
+- Nếu xác thực thành công, chuyển hướng sang dashboard hoặc login.
+- Nếu xác thực thất bại, hiển thị thông báo lỗi.
+- Nếu mã OTP hết hạn, cho phép người dùng bấm "Gửi lại mã OTP" để gọi API Gửi Lại OTP.
+- Nên có đếm ngược thời gian gửi lại OTP (ví dụ: 60 giây).
+- Validate mã OTP: chỉ cho nhập số, đúng 6 ký tự. 

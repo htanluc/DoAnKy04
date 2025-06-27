@@ -1,0 +1,31 @@
+package com.mytech.apartment.portal.mappers;
+
+import com.mytech.apartment.portal.dtos.PaymentMethodDto;
+import com.mytech.apartment.portal.models.PaymentMethod;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PaymentMethodMapper {
+
+    public PaymentMethodDto toDto(PaymentMethod entity) {
+        if (entity == null) {
+            return null;
+        }
+        PaymentMethodDto dto = new PaymentMethodDto();
+        dto.setMethodCode(entity.getMethodCode());
+        dto.setMethodName(entity.getMethodName());
+        dto.setDetails(entity.getDetails());
+        return dto;
+    }
+
+    public PaymentMethod toEntity(PaymentMethodDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        PaymentMethod entity = new PaymentMethod();
+        entity.setMethodCode(dto.getMethodCode());
+        entity.setMethodName(dto.getMethodName());
+        entity.setDetails(dto.getDetails());
+        return entity;
+    }
+} 

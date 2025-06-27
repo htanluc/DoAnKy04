@@ -1,0 +1,60 @@
+package com.mytech.apartment.portal.mappers;
+
+import com.mytech.apartment.portal.dtos.UserCreateRequest;
+import com.mytech.apartment.portal.dtos.UserDto;
+import com.mytech.apartment.portal.dtos.UserUpdateRequest;
+import com.mytech.apartment.portal.models.Role;
+import com.mytech.apartment.portal.models.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
+
+@Component
+public class UserMapper {
+
+    @Autowired
+    private RoleMapper roleMapper;
+
+    public UserDto toDto(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setStatus(user.getStatus());
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setUpdatedAt(user.getUpdatedAt());
+        dto.setLockReason(user.getLockReason());
+        if (user.getRoles() != null) {
+            dto.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()));
+        }
+        return dto;
+    }
+
+    public User toEntity(UserCreateRequest request) {
+        if (request == null) {
+            return null;
+        }
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPasswordHash(request.getPassword());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setStatus("ACTIVE"); // Default status
+        return user;
+    }
+
+    public void updateUserFromRequest(User user, UserUpdateRequest request) {
+        if (request == null || user == null) {
+            return;
+        }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        if (request.getStatus() != null) {
+            user.setStatus(request.getStatus());
+        }
+    }
+} 

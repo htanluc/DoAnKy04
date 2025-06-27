@@ -1,0 +1,213 @@
+# ADMIN API DOC - APARTMENT PORTAL
+
+## 1. Quản lý tài khoản người dùng
+### Lấy danh sách user
+GET /api/admin/users
+
+### Lấy user theo ID
+GET /api/admin/users/{id}
+
+### Tạo user mới
+POST /api/admin/users
+Body: { ... }
+
+### Cập nhật user
+PUT /api/admin/users/{id}
+Body: { ... }
+
+---
+## 2. Quản lý cư dân
+### Lấy danh sách cư dân
+GET /api/admin/residents
+
+### Lấy cư dân theo ID
+GET /api/admin/residents/{id}
+
+### Tạo cư dân mới
+POST /api/admin/residents
+Body: { ... }
+
+### Cập nhật cư dân
+PUT /api/admin/residents/{id}
+Body: { ... }
+
+---
+## 3. Quản lý căn hộ
+### Lấy danh sách căn hộ
+GET /api/apartments
+
+### Lấy căn hộ theo ID
+GET /api/apartments/{id}
+
+### Cập nhật căn hộ
+PUT /api/apartments/{id}
+Body: { ... }
+
+### Liên kết cư dân với căn hộ
+POST /api/apartments/{apartmentId}/residents
+Body: { residentId, relationType, ... }
+
+### Hủy liên kết cư dân với căn hộ
+DELETE /api/apartments/{apartmentId}/residents
+Body: { residentId }
+
+---
+## 4. Quản lý thông báo
+### Lấy danh sách thông báo
+GET /api/admin/announcements
+
+### Lấy thông báo theo ID
+GET /api/admin/announcements/{id}
+
+### Tạo mới thông báo
+POST /api/admin/announcements
+Body: { ... }
+
+### Cập nhật thông báo
+PUT /api/admin/announcements/{id}
+Body: { ... }
+
+### Xóa thông báo
+DELETE /api/admin/announcements/{id}
+
+---
+## 5. Quản lý sự kiện
+### Lấy danh sách sự kiện
+GET /api/admin/events
+
+### Lấy sự kiện theo ID
+GET /api/admin/events/{id}
+
+### Tạo mới sự kiện
+POST /api/admin/events
+Body: { ... }
+
+### Cập nhật sự kiện
+PUT /api/admin/events/{id}
+Body: { ... }
+
+### Xóa sự kiện
+DELETE /api/admin/events/{id}
+
+---
+## 6. Quản lý tiện ích
+### Lấy danh sách tiện ích
+GET /api/admin/facilities
+
+### Lấy tiện ích theo ID
+GET /api/admin/facilities/{id}
+
+### Tạo mới tiện ích
+POST /api/admin/facilities
+Body: { ... }
+
+### Cập nhật tiện ích
+PUT /api/admin/facilities/{id}
+Body: { ... }
+
+### Xóa tiện ích
+DELETE /api/admin/facilities/{id}
+
+---
+## 7. Quản lý hóa đơn
+### Lấy danh sách hóa đơn
+GET /api/admin/invoices
+
+### Lấy hóa đơn theo ID
+GET /api/admin/invoices/{id}
+
+### Tạo mới hóa đơn
+POST /api/admin/invoices
+Body: { ... }
+
+### Cập nhật hóa đơn
+PUT /api/admin/invoices/{id}
+Body: { ... }
+
+### Xóa hóa đơn
+DELETE /api/admin/invoices/{id}
+
+---
+## 8. Quản lý phản hồi
+### Lấy danh sách phản hồi
+GET /api/admin/feedbacks
+
+### Lấy phản hồi theo ID
+GET /api/admin/feedbacks/{id}
+
+### Cập nhật phản hồi
+PUT /api/admin/feedbacks/{id}
+Body: { ... }
+
+### Xóa phản hồi
+DELETE /api/admin/feedbacks/{id}
+
+---
+## 9. Quản lý yêu cầu hỗ trợ
+### Lấy danh sách yêu cầu hỗ trợ
+GET /api/admin/support-requests
+
+### Lấy yêu cầu hỗ trợ theo ID
+GET /api/admin/support-requests/{id}
+
+### Cập nhật yêu cầu hỗ trợ
+PUT /api/admin/support-requests/{id}
+Body: { ... }
+
+### Xóa yêu cầu hỗ trợ
+DELETE /api/admin/support-requests/{id}
+
+### Gán yêu cầu hỗ trợ cho nhân viên
+POST /api/admin/support-requests/{id}/assign
+Body: { ... }
+
+### Lọc theo trạng thái
+GET /api/admin/support-requests/status/{status}
+
+### Lọc theo loại dịch vụ
+GET /api/admin/support-requests/category/{category}
+
+---
+## 10. Quản lý lịch sử AI Q&A
+### Lấy toàn bộ lịch sử hỏi đáp AI
+GET /api/admin/history
+
+### Lấy lịch sử hỏi đáp AI theo ID
+GET /api/admin/history/{qaId}
+
+### Lọc theo feedback
+GET /api/admin/history/feedback/{feedback}
+
+---
+## 11. Quản lý báo cáo
+### Lấy toàn bộ nhật ký hoạt động
+GET /api/admin/reports/activity-logs
+
+### Lấy nhật ký hoạt động theo ID
+GET /api/admin/reports/activity-logs/{logId}
+
+### Lấy nhật ký hoạt động theo user
+GET /api/admin/reports/activity-logs/user/{userId}
+
+### Lấy nhật ký hoạt động theo loại hành động
+GET /api/admin/reports/activity-logs/action/{actionType}
+
+---
+## 12. Quản lý booking tiện ích
+### Lấy danh sách booking
+GET /api/admin/facility-bookings
+
+### Lấy booking theo ID
+GET /api/admin/facility-bookings/{id}
+
+---
+## 13. Đặt lại mật khẩu admin
+POST /api/auth/reset-admin
+
+---
+## 14. Các API khác (tham khảo thêm guide chi tiết)
+- Đăng nhập: POST /api/auth/login
+- Đăng ký: POST /api/auth/register
+- ...
+
+# Xem chi tiết request/response mẫu trong các file hướng dẫn API khác (AUTH_API_GUIDE.md, APARTMENT_API_GUIDE.md, LOGIN_API_SPECIFICATION.md) 

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
+             version="2.2">
+    <persistence-unit name="ApartmentManagementPU" transaction-type="JTA">
+        <description>Apartment Building Management System Persistence Unit</description>
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <jta-data-source>java:app/jdbc/ApartmentManagementDS</jta-data-source>
+        
+        <class>com.apartment.management.entity.User</class>
+        <class>com.apartment.management.entity.Resident</class>
+        <class>com.apartment.management.entity.Apartment</class>
+        <class>com.apartment.management.entity.Bill</class>
+        <class>com.apartment.management.entity.Payment</class>
+        <class>com.apartment.management.entity.Announcement</class>
+        <class>com.apartment.management.entity.Event</class>
+        <class>com.apartment.management.entity.Facility</class>
+        <class>com.apartment.management.entity.FacilityBooking</class>
+        <class>com.apartment.management.entity.Feedback</class>
+        
+        <properties>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.use_sql_comments" value="true"/>
+            <property name="hibernate.connection.charSet" value="UTF-8"/>
+            
+            <!-- Cache configuration -->
+            <property name="hibernate.cache.use_second_level_cache" value="true"/>
+            <property name="hibernate.cache.use_query_cache" value="true"/>
+            <property name="hibernate.cache.region.factory_class" 
+                      value="org.hibernate.cache.jcache.JCacheRegionFactory"/>
+            
+            <!-- Connection pool settings -->
+            <property name="hibernate.c3p0.min_size" value="5"/>
+            <property name="hibernate.c3p0.max_size" value="20"/>
+            <property name="hibernate.c3p0.timeout" value="300"/>
+            <property name="hibernate.c3p0.max_statements" value="50"/>
+            <property name="hibernate.c3p0.idle_test_period" value="3000"/>
+        </properties>
+    </persistence-unit>
+</persistence>

@@ -1,0 +1,67 @@
+# API LIÊN KẾT TÀI KHOẢN USER VỚI CĂN HỘ (UPDATE: dùng userId)
+
+## 1. Lấy danh sách user
+- API: GET /api/admin/users
+- Trả về danh sách user, mỗi user có id, username, phoneNumber, v.v.
+
+## 2. Lấy danh sách căn hộ
+- API: GET /api/apartments
+- Trả về danh sách căn hộ, mỗi căn hộ có id, unitNumber, status, v.v.
+
+## 3. Liên kết tài khoản user với căn hộ
+- API: POST /api/apartments/{apartmentId}/residents
+- Header: Authorization: Bearer {token}
+- Body (JSON):
+  {
+    "userId": <userId>,
+    "relationType": "OWNER" | "TENANT" | "FAMILY",
+    "moveInDate": "yyyy-MM-dd" // (tùy chọn)
+    "moveOutDate": "yyyy-MM-dd" // (tùy chọn)
+  }
+- Ý nghĩa:
+  - userId: ID của tài khoản user cần liên kết
+  - relationType: Loại quan hệ với căn hộ (chủ sở hữu, người thuê, thành viên)
+  - moveInDate, moveOutDate: ngày vào/ra (nếu có)
+- Response: 200 OK nếu thành công, trả về message.
+
+## 4. Hủy liên kết tài khoản user với căn hộ
+- API: DELETE /api/apartments/{apartmentId}/residents
+- Header: Authorization: Bearer {token}
+- Body (JSON):
+  {
+    "userId": <userId>
+  }
+- Ý nghĩa: Hủy liên kết userId khỏi căn hộ.
+- Response: 200 OK nếu thành công, trả về message.
+
+## 5. Lấy danh sách user đã liên kết với căn hộ
+- API: GET /api/apartments/{apartmentId}/residents
+- Trả về mảng các object:
+  [
+    {
+      "apartmentId": 1,
+      "userId": 2,
+      "relationType": "OWNER",
+      "moveInDate": "2024-06-01",
+      "moveOutDate": null
+    },
+    ...
+  ]
+
+---
+**Lưu ý:**
+- FE chỉ cần truyền userId, không cần residentId nữa.
+- Một user có thể liên kết nhiều căn hộ, một căn hộ có thể liên kết nhiều user.
+- Nếu cần lấy chi tiết user, FE gọi lại API /api/admin/users với id tương ứng.
+
+# QUY TRÌNH FE
+
+1. FE cho admin/chủ hộ chọn user (hoặc resident) và căn hộ muốn liên kết.
+2. FE gọi API POST /api/apartments/{apartmentId}/residents với residentId tương ứng.
+3. Nếu muốn hủy liên kết, gọi API DELETE /api/apartments/{apartmentId}/residents với residentId.
+4. FE có thể hiển thị danh sách resident đã liên kết với từng căn hộ bằng API GET /api/apartments/{apartmentId}/residents.
+
+# LƯU Ý
+- 1 user có thể liên kết nhiều căn hộ.
+- 1 căn hộ có thể liên kết nhiều user (resident).
+- FE cần truyền token hợp lệ khi gọi các API này. 

@@ -1,0 +1,743 @@
+Tài liệu Yêu cầu Chi tiết Ứng dụng Quản lý Tòa nhà Chung cư (Phiên bản Tối ưu)
+
+Giới thiệu
+Mục đích: Xây dựng hệ thống quản lý tòa nhà chung cư toàn diện, giúp Ban Quản lý vận hành hiệu quả, minh bạch và hiện đại hóa các nghiệp vụ hàng ngày. Ứng dụng cung cấp nền tảng quản lý cư dân, căn hộ, tài chính, thông báo, tiện ích và hỗ trợ kỹ thuật, với giao diện web dành cho Admin và ứng dụng di động dành cho cư dân và nhân viên.
+
+Đối tượng sử dụng:
+- Admin/Quản trị viên: Quản lý và cấu hình toàn bộ hệ thống.
+- Cư dân: Truy cập thông tin cá nhân, nhận thông báo, thanh toán phí, gửi phản hồi và yêu cầu hỗ trợ.
+- Nhân viên kỹ thuật/Hỗ trợ: Xử lý các yêu cầu hỗ trợ theo phân công (lau dọn, sửa chữa, an ninh).
+- Đối tác dịch vụ (tùy chọn): Quản lý các dịch vụ bên thứ ba (bãi đỗ xe, vệ sinh, v.v.).
+
+Phạm vi dự án
+Dự án bao gồm các phân hệ chức năng chính:
+- Quản lý Tài khoản & Xác thực
+- Quản lý Cư dân
+- Quản lý Căn hộ
+- Quản lý Hóa đơn & Thanh toán
+- Quản lý Thông báo, Tin tức & Truyền thông
+- Quản lý Sự kiện & Cộng đồng
+- Quản lý Tiện ích/Dịch vụ chung
+- Quản lý Phản hồi & Yêu cầu hỗ trợ
+- Báo cáo, Phân tích & Dự báo
+- Tích hợp IoT & Thiết bị thông minh (tùy chọn)
+
+Yêu cầu chức năng
+
+1. Quản lý Tài khoản & Xác thực
+- AUTH-01: Đăng ký tài khoản cư dân...
+- AUTH-02: Đăng nhập/Đăng xuất...
+- AUTH-03: Đổi mật khẩu...
+- AUTH-04: Phân quyền người dùng...
+- AUTH-05: Khôi phục mật khẩu...
+- AUTH-06: Xác thực hai yếu tố (2FA)...
+
+2. Quản lý Cư dân
+- RSM-01: Danh sách cư dân...
+- RSM-02: Kích hoạt/Vô hiệu hóa tài khoản...
+- RSM-03: Tạm khóa tài khoản...
+- RSM-04: Cập nhật hồ sơ cư dân...
+- RSM-05: Quản lý thành viên gia đình...
+- RSM-06: Hệ thống điểm thưởng cư dân...
+- RSM-07: Quản lý khách truy cập...
+
+3. Quản lý Căn hộ
+> **Lưu ý:** Danh sách căn hộ được cấu hình cố định từ ban đầu; hệ thống không hỗ trợ thêm hoặc xóa căn hộ sau khi triển khai.
+- APT-01: Xem thông tin căn hộ: hiển thị mã, diện tích, hướng, trạng thái, tiện ích đi kèm.
+- APT-02: Liên kết cư dân với căn hộ: Admin gán cư dân vào căn hộ đã có sẵn.
+- APT-03: Xem bản đồ tòa nhà: sơ đồ 2D/3D hiển thị trạng thái căn hộ.
+
+4. Quản lý Hóa đơn & Thanh toán
+- BIL-01: Phát hành hóa đơn định kỳ...
+- BIL-02: Cập nhật trạng thái thanh toán...
+- BIL-03: Xem lịch sử giao dịch...
+- BIL-04: Tra cứu hóa đơn...
+- BIL-05: Thanh toán trực tuyến...
+- BIL-06: Thanh toán thủ công...
+- BIL-07: Thanh toán định kỳ tự động...
+
+5. Quản lý Thông báo, Tin tức & Truyền thông
+- ANN-01: Đăng thông báo mới...
+- ANN-02: Chỉnh sửa/Ẩn thông báo...
+- ANN-03: Gửi thông báo khẩn...
+- ANN-04: Nhận thông báo (phía cư dân)...
+- ANN-05: Phân loại thông báo...
+- ANN-06: Cá nhân hóa thông báo...
+
+6. Quản lý Sự kiện & Cộng đồng
+- EVT-01: Tạo sự kiện...
+- EVT-02: Quản lý sự kiện...
+- EVT-03: Danh sách sự kiện...
+- EVT-04: Chi tiết & Đăng ký sự kiện...
+- EVT-05: Đánh giá sự kiện...
+
+7. Quản lý Tiện ích/Dịch vụ chung
+- FAC-01: Danh mục tiện ích...
+- FAC-02: Đăng ký tiện ích...
+- FAC-03: Phê duyệt & quản lý yêu cầu...
+- FAC-04: Theo dõi lịch sử đăng ký...
+- FAC-05: Đặt lịch định kỳ...
+
+8. Quản lý Phản hồi & Yêu cầu hỗ trợ
+- FBK-01: Gửi phản hồi từ cư dân: phản ánh, góp ý, báo cáo sự cố.
+- FBK-02: Phân loại & lưu trữ phản hồi: AI tự động phân loại (An ninh, Bảo trì, Dịch vụ).
+- SR-01: Gửi yêu cầu hỗ trợ:
+    • Actor: Cư dân  
+    • Luồng: chọn loại (Lau dọn, Sửa chữa, An ninh), nhập mô tả, đính kèm hình ảnh, gửi.
+- SR-02: Phân loại & Gán yêu cầu:
+    • Actor: Admin  
+    • Luồng: xem yêu cầu, phân loại theo vai trò (Lao dọn, Kỹ thuật, An ninh), gán nhân viên phù hợp, thông báo.
+- SR-03: Xử lý yêu cầu:
+    • Actor: Nhân viên (Lau dọn, Kỹ thuật, An ninh)  
+    • Luồng: nhận, xử lý (lau, sửa chữa, tuần tra), cập nhật trạng thái (Đang xử lý, Hoàn thành), đính kèm báo cáo, thông báo cư dân.
+- FBK-03: Chatbot hỗ trợ 24/7 trả lời câu hỏi thông thường.
+
+9. Báo cáo, Phân tích & Dự báo
+- RPT-01: Báo cáo quản lý...
+- RPT-02: Phân tích dữ liệu...
+- RPT-03: Dashboard thời gian thực...
+
+Tài liệu Use Case & Workflow Chi tiết
+Ứng dụng Quản lý Tòa nhà Chung cư
+tôi muốn sau này user đăng ký tài khoản và admin sẽ cho 1 mã để gán user đó vào căn hộ nòa 
+1. Đăng ký tài khoản (Register)
+--------------------------------
+**Actor:** Cư dân  
+**Mục tiêu:** Tạo mới tài khoản cư dân để sử dụng hệ thống.  
+**Tiền điều kiện:** Cư dân chưa có tài khoản.  
+**Hậu điều kiện:** Tài khoản cư dân được tạo, trạng thái chưa kích hoạt (chờ xác thực).  
+
+**Luồng chính:**
+1. Cư dân chọn “Đăng ký” trên màn hình chính.  
+2. Hệ thống hiển thị form Đăng ký: Họ tên, CCCD/CCCD, Email, Số điện thoại, Mật khẩu.  
+3. Cư dân nhập đầy đủ thông tin và bấm “Gửi”.  
+4. Hệ thống kiểm tra định dạng dữ liệu:
+   - Nếu hợp lệ, tạo bản ghi tài khoản với trạng thái “Chờ xác thực”.  
+   - Nếu không, hiển thị lỗi tương ứng, quay lại bước 2.  
+5. Hệ thống gửi mã OTP đến Email/SMS.  
+6. Cư dân nhập OTP và bấm “Xác nhận”.  
+7. Hệ thống kiểm tra OTP:
+   - Nếu đúng, kích hoạt tài khoản, chuyển hướng đến màn hình “Đăng nhập”.  
+   - Nếu sai/hết hạn, hiển thị thông báo lỗi, cho phép gửi lại OTP.  
+
+**Luồng thay thế:**
+- **OTP sai hoặc hết hạn:** Cư dân chọn “Gửi lại OTP”, quay về bước 5.  
+- **Email/SDT đã tồn tại:** Hiển thị thông báo “Email/SĐT đã được đăng ký”, dừng quy trình.
+
+---
+
+2. Đăng nhập & Đăng xuất (Login/Logout)
+---------------------------------------
+**Actor:** Cư dân, Admin  
+**Mục tiêu:** Đăng nhập và bảo vệ phiên làm việc.  
+**Tiền điều kiện:** Tài khoản đã được tạo và kích hoạt.  
+
+**Luồng chính:**
+1. Người dùng truy cập màn hình Đăng nhập.  
+2. Nhập Email/SDT và Mật khẩu, có thể chọn “Ghi nhớ đăng nhập”.  
+3. Bấm “Đăng nhập”.  
+4. Hệ thống xác thực thông tin:
+   - Nếu đúng, kiểm tra 2FA (nếu bật):
+     - Yêu cầu nhập mã 2FA.
+     - Nếu thành công, tạo session, chuyển đến Dashboard.
+   - Nếu sai, hiện thông báo “Email/SDT hoặc Mật khẩu không đúng”.  
+
+**Luồng phụ:**
+- **Chưa kích hoạt tài khoản:** Thông báo “Vui lòng xác thực OTP để kích hoạt tài khoản” và cho gửi lại OTP.  
+- **Quên mật khẩu:** Người dùng chọn “Quên mật khẩu”, chuyển sang quy trình “Khôi phục mật khẩu”.
+
+**Đăng xuất:**
+- Khi người dùng bấm “Đăng xuất” hoặc sau 15 phút không hoạt động, hệ thống hủy session và chuyển về màn hình Đăng nhập.
+
+---
+
+3. Khôi phục & Đổi mật khẩu (Password Reset/Change)
+---------------------------------------------------
+**Actor:** Cư dân, Admin  
+**Mục tiêu:** Cho phép người dùng lấy lại hoặc đổi mật khẩu.  
+
+**Luồng chính (Khôi phục):**
+1. Người dùng chọn “Quên mật khẩu” trên màn hình Đăng nhập.  
+2. Nhập Email hoặc SDT, bấm “Gửi yêu cầu”.  
+3. Hệ thống gửi mã OTP hoặc link reset qua Email/SMS (hạn 10 phút).  
+4. Người dùng truy cập link hoặc nhập OTP và mật khẩu mới.  
+5. Hệ thống kiểm tra OTP/link:
+   - Nếu hợp lệ, lưu mật khẩu mới, thông báo thành công.  
+   - Nếu không, hiển thị lỗi, cho phép gửi lại.
+
+**Luồng chính (Đổi mật khẩu):**
+1. Người dùng đã đăng nhập vào hệ thống, chọn “Đổi mật khẩu”.  
+2. Nhập mật khẩu cũ, mật khẩu mới và xác nhận mật khẩu mới.  
+3. Hệ thống kiểm tra:
+   - Mật khẩu cũ đúng và mật khẩu mới đạt yêu cầu bảo mật → cập nhật.
+   - Ngược lại, hiển thị lỗi tương ứng.
+
+---
+
+4. Quản lý Cư dân (Resident Management)
+---------------------------------------
+**Use Case RSM-01: Xem danh sách cư dân**
+- **Actor:** Admin  
+- **Luồng chính:**  
+  1. Admin vào phân hệ “Cư dân”.  
+  2. Hệ thống hiển thị bảng danh sách người dùng, hỗ trợ lọc và tìm kiếm.  
+  3. Admin có thể chọn xem chi tiết hồ sơ, điều chỉnh hoặc khóa/vô hiệu hóa.
+
+**Use Case RSM-02: Kích hoạt/Vô hiệu hóa tài khoản**
+- **Luồng chính:**  
+  1. Admin chọn cư dân trong danh sách.  
+  2. Chọn “Kích hoạt” hoặc “Vô hiệu hóa”, nhập lý do (nếu có).  
+  3. Hệ thống cập nhật trạng thái và ghi log lý do.
+
+**Use Case RSM-03: Quản lý thành viên gia đình**
+- **Luồng chính:**  
+  1. Admin vào trang chi tiết cư dân.  
+  2. Chọn “Thêm thành viên” hoặc “Chỉnh sửa” thông tin người thân.  
+  3. Nhập tên, tuổi, mối quan hệ, lưu lại.  
+  4. Hệ thống lưu và hiển thị danh sách thành viên.
+
+---
+
+5. Quản lý Căn hộ (Apartment Management)
+----------------------------------------
+> **Lưu ý:** Danh sách căn hộ được cấu hình cố định từ ban đầu. Hệ thống không cho phép thêm hoặc xóa căn hộ sau khi triển khai.
+
+**Use Case APT-01: Xem thông tin căn hộ**
+- **Actor:** Admin, Cư dân  
+- **Luồng chính:**  
+  1. Người dùng truy cập phân hệ “Căn hộ”.  
+  2. Hệ thống hiển thị danh sách căn hộ và chi tiết: mã, diện tích, hướng, tình trạng, tiện ích đi kèm.  
+  3. Cư dân xem thông tin căn hộ của mình; Admin có thể tìm kiếm và xem chi tiết mọi căn hộ.
+
+**Use Case APT-02: Liên kết cư dân với căn hộ**
+- **Actor:** Admin  
+- **Luồng chính:**  
+  1. Admin truy cập trang chi tiết cư dân hoặc căn hộ.  
+  2. Chọn “Liên kết căn hộ” và xác định cư dân tương ứng.  
+  3. Hệ thống ghi nhận liên kết và cập nhật lịch sử.
+
+**Use Case APT-03: Xem bản đồ tòa nhà**
+- **Actor:** Admin, Cư dân  
+- **Luồng chính:**  
+  1. Chọn phân hệ “Bản đồ tòa nhà”.  
+  2. Hệ thống hiển thị sơ đồ 2D/3D với trạng thái từng căn hộ.  
+
+---
+
+6. Quản lý Yêu cầu hỗ trợ (Support Requests)
+--------------------------------------------
+**Use Case SR-01: Gửi yêu cầu hỗ trợ**
+- **Actor:** Cư dân  
+- **Luồng chính:**  
+  1. Cư dân vào “Hỗ trợ & Phản hồi”.  
+  2. Chọn “Gửi yêu cầu hỗ trợ”, nhập nội dung và loại yêu cầu (Lau dọn, Sửa chữa, An ninh).  
+  3. Đính kèm hình ảnh hoặc file đính kèm (tuỳ chọn).  
+  4. Bấm “Gửi”, hệ thống lưu và cấp mã yêu cầu.
+
+**Use Case SR-02: Phân loại & Gán yêu cầu**
+- **Actor:** Admin  
+- **Luồng chính:**  
+  1. Admin vào phân hệ “Quản lý hỗ trợ”.  
+  2. Xem danh sách yêu cầu chưa phân công.  
+  3. Chọn yêu cầu, phân loại theo nhóm dịch vụ và gán cho nhân viên phù hợp (Nhân viên lau dọn, Kỹ thuật viên, Bảo vệ).  
+  4. Hệ thống gửi thông báo đến nhân viên được gán.
+
+**Use Case SR-03: Nhận & xử lý yêu cầu**
+- **Actor:** Nhân viên kỹ thuật, Nhân viên lau dọn, Bảo vệ  
+- **Luồng chính:**  
+  1. Nhân viên đăng nhập và vào mục “Yêu cầu hỗ trợ”.  
+  2. Hệ thống lọc và hiển thị các yêu cầu được gán theo vai trò.  
+  3. Nhân viên chọn yêu cầu, xem chi tiết và cập nhật trạng thái (Nhận, Đang xử lý, Hoàn thành).  
+  4. Hệ thống lưu nhật ký và gửi thông báo kết quả cho cư dân.
+
+---
+
+7. Hóa đơn & Thanh toán (Billing & Payment)
+-------------------------------------------
+**Use Case BIL-01: Tự động phát hành hóa đơn**
+- **Actor:** Hệ thống (người dùng không tương tác trực tiếp)  
+- **Luồng định kỳ:**  
+  1. Đến ngày 5 hàng tháng, cron job khởi tạo hóa đơn cho mỗi căn hộ.  
+  2. Gửi thông báo “Hóa đơn mới” đến cư dân qua Email/SMS và thông báo đẩy.  
+
+**Use Case BIL-02: Thanh toán thủ công và trực tuyến**
+- **Luồng chính (Trực tuyến):**  
+  1. Cư dân vào “Hóa đơn & Thanh toán”, chọn hóa đơn.  
+  2. Chọn cổng thanh toán (MoMo, VNPay, Thẻ).  
+  3. Xác thực giao dịch, nhận kết quả.  
+- **Luồng chính (Thủ công):**  
+  1. Admin nhận tiền mặt/chuyển khoản.  
+  2. Tải hình ảnh biên lai lên, nhập thông tin giao dịch.  
+  3. Hệ thống cập nhật trạng thái.
+
+---
+
+8. Thông báo & Sự kiện (Notifications & Events)
+----------------------------------------------
+**Use Case ANN-01: Đăng thông báo**
+- **Actor:** Admin  
+- **Luồng chính:**  
+  1. Chọn “Thông báo” → “Tạo mới”.  
+  2. Nhập tiêu đề, nội dung, đính kèm hình ảnh/tệp.  
+  3. Chọn kiểu ưu tiên và đối tượng nhận.  
+  4. Lưu, hệ thống gửi thông báo và lưu lịch sử.
+
+**Use Case EVT-01: Tạo và đăng ký sự kiện**
+- **Luồng chính:**  
+  1. Admin tạo sự kiện, điền thông tin chi tiết.  
+  2. Cư dân xem danh sách sự kiện, chọn “Đăng ký”.  
+  3. Hệ thống lưu đăng ký
+---
+
+9. Tiện ích & Phản hồi (Utilities & Feedback)
+---------------------------------------------
+**Use Case FAC-01: Đặt lịch tiện ích**
+- **Actor:** Cư dân  
+- **Luồng chính:**  
+  1. Chọn tiện ích (gym, phòng họp, sân thể thao).  
+  2. Chọn khung giờ và số lượng người.  
+  3. Gửi yêu cầu, hệ thống xác thực lịch trùng và phản hồi kết quả.  
+
+**Use Case FBK-01: Gửi phản hồi/Sự cố**
+- **Actor:** Cư dân  
+- **Luồng chính:**  
+  1. Chọn “Phản hồi & Sự cố”.  
+  2. Nhập nội dung, chọn loại vấn đề, đính kèm file (tuỳ chọn).  
+  3. Gửi, hệ thống phân loại và cung cấp mã theo dõi.
+
+---
+
+10. Báo cáo (Reporting)
+----------------------
+**Use Case RPT-01: Xem báo cáo tổng hợp**
+- **Actor:** Admin  
+- **Luồng chính:**  
+  1. Chọn “Báo cáo” → chọn loại báo cáo (doanh thu, sử dụng tiện ích, tỷ lệ phản hồi).  
+  2. Chọn khoảng thời gian, bộ lọc nâng cao (theo tầng, loại tiện ích).  
+  3. Hệ thống xuất kết quả dạng biểu đồ và bảng, cho phép xuất PDF/Excel.
+
+---
+
+**Quy trình mẫu (Workflow) Thanh toán tự động:**
+1. Cư dân vào “Cài đặt tài khoản” → “Thanh toán tự động”.  
+2. Chọn phương thức, thiết lập ngày và hạn mức.  
+3. Xác thực OTP/Xác nhận.  
+4. Hệ thống lưu cấu hình.  
+5. Đến ngày cấu hình, hệ thống lấy lệnh và thực hiện giao dịch, gửi thông báo kết quả.
+
+
+
+11. USE CASE: ĐẶT CÂU HỎI AI
+
+11.1. Use Case: Cư dân đặt câu hỏi
+- Mục tiêu: Cư dân nhận thông tin nhanh chóng mà không cần chờ phản hồi thủ công.
+- Tiền điều kiện: Người dùng đã đăng nhập và có quyền truy cập trang Q&A.
+- Luồng chính:
+  1. Cư dân truy cập trang Hỏi & Đáp AI.
+  2. Nhập câu hỏi vào ô nhập liệu.
+  3. Nhấn nút "Gửi".
+  4. Hệ thống xác định intent: phân tích xem câu hỏi có yêu cầu dữ liệu DB hay chỉ trả lời văn bản chung.
+  5. Nếu cần, thực thi truy vấn SQL tương ứng và thu thập kết quả.
+  6. Tạo prompt kết hợp: "Dữ liệu: [kết quả DB]
+Câu hỏi: [nội dung]".
+  7. Gửi prompt đến OpenAI ChatGPT API.
+  8. Nhận câu trả lời từ ChatGPT.
+  9. Hiển thị câu trả lời cho Cư dân.
+  10. Lưu bản ghi vào bảng AI_QA_History (user_id, câu_hỏi, câu_trả_lời, timestamp).
+- Hậu điều kiện: Câu trả lời hiển thị, lịch sử Q&A được lưu.
+- Luồng phụ (không có kết quả DB): Bỏ qua bước truy vấn SQL, chỉ gửi câu hỏi.
+
+11.2. Use Case: Admin tra cứu và hỏi AI
+- Tương tự Cư dân, nhưng Admin có thể xem toàn bộ lịch sử Q&A và chỉnh sửa prompt trước khi gửi.
+
+. WORKFLOW CHI TIẾT
+
+ Sequence Diagram Mô tả
+User → Frontend: Nhập câu hỏi
+Frontend → Backend: POST /api/ai/qa { question }
+Backend → Middleware: Phân tích intent
+alt cần dữ liệu
+    Middleware → DB: Execute SQL
+    DB → Middleware: Kết quả dữ liệu
+end
+Middleware → OpenAI API: sendPrompt(prompt)
+OpenAI API → Middleware: response
+Middleware → DB: INSERT vào AI_QA_History
+Middleware → Frontend: trả về câu trả lời
+Frontend → User: Hiển thị câu trả lời
+
+ Component Workflow
+- **Frontend:** React/Vue component Q&A với ô nhập và lịch sử hiển thị.
+- **Backend/API:** Endpoint nhận request, xử lý intent, gọi DB, gọi OpenAI, lưu lịch sử.
+- **Database:** Bảng AI_QA_History lưu mọi tương tác.
+- **OpenAI Service:** Đóng gói prompt và gửi/nhận kết quả.
+
+ LƯU Ý KỸ THUẬT
+- Xác thực JWT cho mọi endpoint.
+- Rate limit: Giới hạn số yêu cầu đến OpenAI để tránh lạm dụng.
+- Thời gian phản hồi <3s để đảm bảo UX.
+
+import os
+
+# Content of the summary as a string (abbreviated here for demonstration; will include full details in actual code)
+content = """
+1. Bảng Users (Quản lý tài khoản & xác thực)
+--------------------------------------------------
+user_id             INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã định danh duy nhất cho mỗi tài khoản người dùng.
+username            VARCHAR(255)   NOT NULL UNIQUE
+  - Tên đăng nhập hoặc email dùng để đăng nhập, phải duy nhất.
+email               VARCHAR(255)   NOT NULL UNIQUE
+  - Địa chỉ email của người dùng, dùng cho thông báo hoặc reset mật khẩu.
+password_hash       VARCHAR(512)   NOT NULL
+  - Mật khẩu đã được băm (hash) để bảo mật.
+phone               VARCHAR(20)    UNIQUE
+  - Số điện thoại liên hệ, có thể dùng cho OTP.
+status              VARCHAR(20)    NOT NULL DEFAULT 'INACTIVE'
+  - Trạng thái tài khoản: ACTIVE, INACTIVE, LOCKED…
+created_at          TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm tài khoản được tạo.
+updated_at          TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - Thời điểm cuối cùng tài khoản được cập nhật.
+
+2. Bảng Roles (Vai trò người dùng)
+--------------------------------------------------
+role_id    INT         PRIMARY KEY AUTO_INCREMENT
+  - Mã định danh vai trò.
+role_name  VARCHAR(50) NOT NULL UNIQUE
+  - Tên vai trò (Admin, Resident, Technician…).
+description TEXT
+  - Mô tả chi tiết quyền hạn của vai trò.
+
+3. Bảng User_Roles (Liên kết User - Roles)
+--------------------------------------------------
+user_id    INT         NOT NULL
+  - Tham chiếu tới Users.user_id.
+role_id    INT         NOT NULL
+  - Tham chiếu tới Roles.role_id.
+PRIMARY KEY (user_id, role_id)
+  - Mỗi cặp user-role chỉ tồn tại một lần.
+
+4. Bảng Residents (Hồ sơ cư dân)
+--------------------------------------------------
+resident_id      INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã định danh hồ sơ cư dân.
+user_id          INT            NULL
+  - Nếu cư dân có tài khoản, tham chiếu tới Users.user_id; nếu không thì NULL.
+full_name        VARCHAR(255)   NOT NULL
+  - Họ tên đầy đủ của cư dân.
+date_of_birth    DATE
+  - Ngày sinh của cư dân.
+id_card_number   VARCHAR(20)    NOT NULL UNIQUE
+  - Số CMND/CCCD, duy nhất cho mỗi người.
+phone            VARCHAR(20)
+  - Số điện thoại liên hệ.
+email            VARCHAR(255)
+  - Email liên hệ.
+family_relation  VARCHAR(50)
+  - Mối quan hệ với chủ hộ: Chủ hộ, Vợ/Chồng, Con…
+status           VARCHAR(20)    NOT NULL DEFAULT 'ACTIVE'
+  - Trạng thái cư dân: ACTIVE, INACTIVE…
+created_at       TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+updated_at       TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+5. Bảng Apartment_Residents (Liên kết Cư dân - Căn hộ)
+--------------------------------------------------
+apartment_id   INT          NOT NULL
+  - Tham chiếu tới Apartments.apartment_id.
+resident_id    INT          NOT NULL
+  - Tham chiếu tới Residents.resident_id.
+relation_type  VARCHAR(50)  NOT NULL
+  - Loại quan hệ với căn hộ: Chủ sở hữu, Người thuê, Thành viên.
+move_in_date   DATE
+  - Ngày bắt đầu cư trú.
+move_out_date  DATE
+  - Ngày rời khỏi căn hộ (nếu có).
+PRIMARY KEY (apartment_id, resident_id)
+
+6. Bảng Buildings (Danh sách tòa nhà)
+--------------------------------------------------
+building_id    INT          PRIMARY KEY AUTO_INCREMENT
+  - Mã định danh tòa nhà.
+building_name  VARCHAR(100) NOT NULL
+  - Tên hoặc mã hiệu tòa nhà.
+address        VARCHAR(255)
+  - Địa chỉ tòa nhà.
+floors         INT
+  - Số tầng của tòa nhà.
+description    TEXT
+  - Mô tả thêm về tòa nhà.
+
+7. Bảng Apartments (Danh sách căn hộ)
+--------------------------------------------------
+apartment_id            INT             PRIMARY KEY AUTO_INCREMENT
+  - Mã căn hộ.
+building_id             INT             NOT NULL
+  - Tham chiếu tới Buildings.building_id.
+floor_number            INT
+  - Tầng của căn hộ.
+unit_number             VARCHAR(50)     NOT NULL
+  - Mã số căn hộ (ví dụ: 12A).
+area                    DECIMAL(8,2)
+  - Diện tích căn hộ (m2).
+status                  VARCHAR(20)     NOT NULL DEFAULT 'VACANT'
+  - Trạng thái: VACANT, OCCUPIED…
+
+8. Bảng Invoices (Hóa đơn)
+--------------------------------------------------
+invoice_id      INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã hóa đơn.
+apartment_id    INT            NOT NULL
+  - Tham chiếu tới Apartments.apartment_id.
+billing_period  CHAR(7)        NOT NULL
+  - Kỳ thanh toán, định dạng 'YYYY-MM'.
+issue_date      DATE           NOT NULL
+  - Ngày phát hành hóa đơn.
+due_date        DATE           NOT NULL
+  - Hạn thanh toán.
+total_amount    DECIMAL(12,2)  NOT NULL
+  - Tổng số tiền của hóa đơn.
+status          VARCHAR(20)    NOT NULL
+  - Trạng thái: UNPAID, PAID, OVERDUE.
+remarks         TEXT
+  - Ghi chú tùy chọn cho hóa đơn.
+created_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm hóa đơn được tạo.
+updated_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - Thời điểm hóa đơn được cập nhật.
+
+9. Bảng Invoice_Items (Chi tiết hóa đơn)
+--------------------------------------------------
+item_id        INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã dòng chi tiết.
+invoice_id     INT            NOT NULL
+  - Tham chiếu tới Invoices.invoice_id.
+fee_type       VARCHAR(50)    NOT NULL
+  - Loại phí: Maintenance, Water, Electricity, Car_Parking, Motorbike_Parking…
+description    TEXT
+  - Mô tả chi tiết khoản phí.
+amount         DECIMAL(12,2)  NOT NULL
+  - Số tiền của khoản mục.
+
+10. Bảng Payments (Thanh toán)
+--------------------------------------------------
+payment_id      INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã giao dịch thanh toán.
+invoice_id      INT            NOT NULL
+  - Tham chiếu tới Invoices.invoice_id.
+paid_by_user_id INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người thực hiện thanh toán).
+payment_date    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm giao dịch thanh toán.
+amount          DECIMAL(12,2)  NOT NULL
+  - Số tiền đã thanh toán.
+method          VARCHAR(30)    NOT NULL
+  - Phương thức thanh toán: CASH, BANK, MOMO, VISA…
+status          VARCHAR(20)    NOT NULL
+  - Trạng thái: SUCCESS, PENDING, FAILED.
+reference_code  VARCHAR(100)
+  - Mã tham chiếu giao dịch (biên lai, ID cổng thanh toán).
+
+11. Bảng Payment_Methods (Phương thức thanh toán) – tùy chọn
+--------------------------------------------------
+method_code   VARCHAR(20)    PRIMARY KEY
+  - Mã phương thức: CASH, BANK, MOMO, VISA…
+method_name   VARCHAR(50)    NOT NULL
+  - Tên hiển thị phương thức: “Tiền mặt”, “Chuyển khoản ngân hàng”,…
+details       TEXT
+  - Thông tin chi tiết (STK ngân hàng, số ví, v.v.).
+
+12. Bảng Announcements (Thông báo)
+--------------------------------------------------
+announcement_id INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã thông báo.
+title           VARCHAR(255)   NOT NULL
+  - Tiêu đề thông báo.
+content         TEXT           NOT NULL
+  - Nội dung chi tiết thông báo.
+type            VARCHAR(30)    NOT NULL
+  - Loại thông báo: NEWS, REGULAR, URGENT…
+target_audience VARCHAR(100)
+  - Đối tượng nhận: ALL, BUILDING_A, v.v.
+created_by      INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người tạo).
+created_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm tạo thông báo.
+is_active       BOOLEAN        NOT NULL DEFAULT TRUE
+  - Cờ xác định hiển thị/ẩn thông báo.
+
+13. Bảng Announcement_Types (Loại thông báo) – tùy chọn
+--------------------------------------------------
+type_code   VARCHAR(20)    PRIMARY KEY
+  - Mã loại: NEWS, REGULAR, URGENT…
+type_name   VARCHAR(50)    NOT NULL
+  - Tên hiển thị loại thông báo.
+description TEXT
+  - Mô tả chi tiết.
+
+14. Bảng User_Notifications (Nhật ký thông báo người dùng) – tùy chọn
+--------------------------------------------------
+user_id          INT            NOT NULL
+  - Tham chiếu tới Users.user_id.
+announcement_id  INT            NOT NULL
+  - Tham chiếu tới Announcements.announcement_id.
+read_time        TIMESTAMP
+  - Thời điểm người dùng đọc thông báo.
+delivered        BOOLEAN        NOT NULL DEFAULT FALSE
+  - Cờ đã gửi đến thiết bị người dùng.
+PRIMARY KEY (user_id, announcement_id)
+
+15. Bảng Facilities (Tiện ích chung)
+--------------------------------------------------
+facility_id   INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã tiện ích.
+name          VARCHAR(100)   NOT NULL
+  - Tên tiện ích.
+description   TEXT
+  - Mô tả tiện ích.
+capacity      INT
+  - Sức chứa tối đa (ví dụ số người hoặc số thiết bị).
+other_details TEXT
+  - Thông tin thêm về tiện ích.
+
+16. Bảng Facility_Bookings (Đặt tiện ích)
+--------------------------------------------------
+booking_id    INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã lượt đặt.
+facility_id   INT            NOT NULL
+  - Tham chiếu tới Facilities.facility_id.
+user_id       INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người đặt).
+booking_time  DATETIME       NOT NULL
+  - Thời gian bắt đầu sử dụng tiện ích.
+duration      INT            -- phút
+  - Thời lượng sử dụng (tính theo phút).
+status        VARCHAR(20)    NOT NULL
+  - Trạng thái: PENDING, CONFIRMED, REJECTED, COMPLETED.
+approved_by   INT            -- Tham chiếu Users.user_id (người duyệt).
+approved_at   TIMESTAMP      -- Thời điểm duyệt.
+created_at    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm tạo bản ghi.
+
+17. Bảng Recurring_Bookings (Đặt định kỳ) – tùy chọn
+--------------------------------------------------
+recurring_id  INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã định kỳ.
+facility_id   INT            NOT NULL
+  - Tham chiếu tới Facilities.facility_id.
+user_id       INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người đặt).
+pattern       VARCHAR(100)   -- Ví dụ: 'FREQ=WEEKLY;BYDAY=MO,WE,FR'
+  - Mẫu đặt định kỳ theo iCal (RRULE).
+start_date    DATE
+  - Ngày bắt đầu áp dụng lịch.
+end_date      DATE
+  - Ngày kết thúc (nếu có).
+created_at    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm tạo bản ghi.
+
+18. Bảng Feedback_Categories (Loại phản hồi) – tùy chọn
+--------------------------------------------------
+category_code   VARCHAR(20)    PRIMARY KEY
+  - Mã loại phản hồi: COMPLAINT, SUGGESTION, TECH_SUPPORT…
+category_name   VARCHAR(50)    NOT NULL
+  - Tên hiển thị loại phản hồi: “Khiếu nại”, “Góp ý”,…
+description     TEXT
+  - Mô tả chi tiết.
+
+19. Bảng Feedback (Phản hồi chung)
+--------------------------------------------------
+feedback_id      INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã phản hồi.
+user_id          INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người gửi phản hồi).
+category         VARCHAR(30)    NOT NULL
+  - Loại phản hồi (tham chiếu Feedback_Categories hoặc nhập tự do).
+content          TEXT           NOT NULL
+  - Nội dung chi tiết phản hồi.
+image_attachment VARCHAR(255)
+  - Đường dẫn hình ảnh đính kèm (nếu có).
+submitted_at     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm gửi phản hồi.
+status           VARCHAR(20)    NOT NULL
+  - Trạng thái: NEW, IN_PROGRESS, RESOLVED.
+response         TEXT
+  - Phản hồi của ban quản lý (nếu đã trả lời).
+responded_at     TIMESTAMP
+  - Thời điểm ban quản lý trả lời.
+
+20. Bảng Service_Categories (Loại yêu cầu dịch vụ)
+--------------------------------------------------
+category_code   VARCHAR(20)    PRIMARY KEY
+  - Mã loại: ELECTRICITY, PLUMBING, CLEANING…
+category_name   VARCHAR(50)    NOT NULL
+  - Tên hiển thị loại dịch vụ.
+assigned_role   INT            NOT NULL
+  - Tham chiếu tới Roles.role_id (vai trò phụ trách).
+description     TEXT
+  - Mô tả chi tiết.
+
+21. Bảng Service_Requests (Yêu cầu hỗ trợ dịch vụ)
+--------------------------------------------------
+request_id       INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã yêu cầu.
+user_id          INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người tạo yêu cầu).
+category         VARCHAR(30)    NOT NULL
+  - Loại yêu cầu (tham chiếu Service_Categories).
+description      TEXT           NOT NULL
+  - Nội dung mô tả yêu cầu.
+image_attachment VARCHAR(255)
+  - Đường dẫn ảnh đính kèm (nếu có).
+submitted_at     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm gửi yêu cầu.
+assigned_to      INT            -- Tham chiếu Users.user_id (nhân viên phụ trách).
+assigned_at      TIMESTAMP      -- Thời điểm phân công.
+status           VARCHAR(20)    NOT NULL
+  - Trạng thái: OPEN, IN_PROGRESS, COMPLETED, CANCELLED.
+priority         INT            -- Mức độ ưu tiên (1–5).
+resolution_notes TEXT           -- Ghi chú xử lý.
+completed_at     TIMESTAMP      -- Thời điểm hoàn thành.
+rating           INT            -- Đánh giá sau hoàn thành.
+
+22. Bảng Activity_Log (Nhật ký hoạt động) – tùy chọn
+--------------------------------------------------
+log_id      INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã bản ghi log.
+user_id     INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người thực hiện hành động).
+action_type VARCHAR(50)
+  - Kiểu hành động: LOGIN, UPDATE_PROFILE, PAYMENT, v.v.
+description TEXT
+  - Mô tả chi tiết hành động.
+timestamp   TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm ghi log.
+
+23. Bảng AI_QA_History (Lịch sử hỏi đáp AI)
+--------------------------------------------------
+qa_id         INT            PRIMARY KEY AUTO_INCREMENT
+  - Mã bản ghi hỏi đáp.
+user_id       INT            NOT NULL
+  - Tham chiếu tới Users.user_id (người đặt câu hỏi).
+question      TEXT           NOT NULL
+  - Nội dung câu hỏi gửi cho AI.
+ai_answer     TEXT           NOT NULL
+  - Câu trả lời AI sinh ra.
+asked_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  - Thời điểm gửi câu hỏi.
+response_time INT            -- Thời gian phản hồi (ms).
+feedback      VARCHAR(50)    -- Phản hồi của người dùng về câu trả lời.
+
+---
+
+
+- Bảng **Users**, **Roles**, **User_Roles** để quản lý người dùng và phân quyền.  
+- Bảng **Residents**, **Apartment_Residents**, **Buildings**, **Apartments** để quản lý thông tin cư dân, liên kết đến căn hộ và tòa nhà.  
+- Bảng **Invoices**, **Invoice_Items**, **Payments**, **Payment_Methods** để quản lý quá trình tạo hóa đơn, chi tiết khoản mục và ghi nhận thanh toán.  
+- Bảng **Announcements**, **Announcement_Types**, **User_Notifications** để quản lý thông báo.  
+- Bảng **Facilities**, **Facility_Bookings**, **Recurring_Bookings** để quản lý tiện ích và đặt lịch.  
+- Bảng **Feedback_Categories**, **Feedback** để quản lý phản hồi của cư dân.  
+- Bảng **Service_Categories**, **Service_Requests** để quản lý yêu cầu dịch vụ kỹ thuật.  
+- Bảng **Activity_Log** để lưu nhật ký hành động.  
+- Bảng **AI_QA_History** để lưu lịch sử hỏi đáp AI.
+
