@@ -1,3 +1,0 @@
-INDEX VERSION 1.134+D:\DEVTOOL\GIP\PROJECT4\DoAnKy04\.metadata\.plugins\org.eclipse.jdt.core
-1918677699.index
-1865797976.index
