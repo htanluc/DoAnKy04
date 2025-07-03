@@ -2,6 +2,7 @@ package com.mytech.apartment.portal.mappers;
 
 import com.mytech.apartment.portal.dtos.FeedbackDto;
 import com.mytech.apartment.portal.models.Feedback;
+import com.mytech.apartment.portal.models.enums.FeedbackStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,7 +22,7 @@ public class FeedbackMapper {
             null, // title field doesn't exist in entity
             feedback.getContent(),
             null, // rating field doesn't exist in entity
-            feedback.getStatus(),
+            feedback.getStatus() != null ? feedback.getStatus().name() : null,
             feedback.getResponse(),
             feedback.getSubmittedAt(),
             feedback.getRespondedAt()
@@ -36,7 +37,7 @@ public class FeedbackMapper {
         Feedback feedback = new Feedback();
         feedback.setId(dto.getId());
         feedback.setContent(dto.getContent());
-        feedback.setStatus(dto.getStatus());
+        feedback.setStatus(dto.getStatus() != null ? FeedbackStatus.valueOf(dto.getStatus()) : null);
         feedback.setResponse(dto.getResponse());
         feedback.setSubmittedAt(dto.getCreatedAt());
         feedback.setRespondedAt(dto.getUpdatedAt());

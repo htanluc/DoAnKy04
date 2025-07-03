@@ -8,6 +8,7 @@ import com.mytech.apartment.portal.mappers.InvoiceMapper;
 import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
+import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,7 @@ public class InvoiceService {
         invoice.setBillingPeriod(request.getBillingPeriod());
         invoice.setIssueDate(request.getIssueDate());
         invoice.setDueDate(request.getDueDate());
-        invoice.setStatus("UNPAID"); // Default status
+        invoice.setStatus(InvoiceStatus.UNPAID); // Default status
 
         Set<InvoiceItem> items = request.getItems().stream()
                 .map(itemDto -> {
@@ -73,7 +74,7 @@ public class InvoiceService {
             invoice.setDueDate(request.getDueDate());
         }
         if (request.getStatus() != null) {
-            invoice.setStatus(request.getStatus());
+            invoice.setStatus(InvoiceStatus.valueOf(request.getStatus()));
         }
 
         Invoice updatedInvoice = invoiceRepository.save(invoice);
@@ -88,5 +89,11 @@ public class InvoiceService {
     public Invoice generateInvoice(Invoice invoice) {
         // Logic phát hành hóa đơn có thể mở rộng ở đây
         return invoiceRepository.save(invoice);
+    }
+
+    public List<InvoiceDto> getInvoicesByApartmentIds(List<Long> apartmentIds) {
+        return invoiceRepository.findByApartmentIdIn(apartmentIds).stream()
+            .map(invoiceMapper::toDto)
+            .collect(Collectors.toList());
     }
 } 

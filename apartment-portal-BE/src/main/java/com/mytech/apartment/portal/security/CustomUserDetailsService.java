@@ -19,6 +19,9 @@ public class CustomUserDetailsService implements UserDetailsService {
  public UserDetails loadUserByUsername(String phoneNumber) throws UsernameNotFoundException {
      User user = userRepo.findByPhoneNumber(phoneNumber)
          .orElseThrow(() -> new UsernameNotFoundException("Số điện thoại không tồn tại trong hệ thống"));
+     if (user.getRoles().isEmpty()) {
+         throw new DisabledException("User has no roles");
+     }
      return new UserDetailsImpl(user);
  }
 }

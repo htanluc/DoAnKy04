@@ -1,25 +1,28 @@
 package com.mytech.apartment.portal.services;
 
-import com.mytech.apartment.portal.dtos.ServiceRequestCreateRequest;
-import com.mytech.apartment.portal.dtos.ServiceRequestDto;
-import com.mytech.apartment.portal.dtos.ServiceRequestUpdateRequest;
-import com.mytech.apartment.portal.dtos.ServiceRequestAssignmentRequest;
-import com.mytech.apartment.portal.dtos.ServiceRequestStatusUpdateRequest;
-import com.mytech.apartment.portal.mappers.ServiceRequestMapper;
-import com.mytech.apartment.portal.models.ServiceCategory;
-import com.mytech.apartment.portal.models.ServiceRequest;
-import com.mytech.apartment.portal.models.User;
-import com.mytech.apartment.portal.repositories.ServiceCategoryRepository;
-import com.mytech.apartment.portal.repositories.ServiceRequestRepository;
-import com.mytech.apartment.portal.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.mytech.apartment.portal.dtos.ServiceRequestAssignmentRequest;
+import com.mytech.apartment.portal.dtos.ServiceRequestCreateRequest;
+import com.mytech.apartment.portal.dtos.ServiceRequestDto;
+import com.mytech.apartment.portal.dtos.ServiceRequestStatusUpdateRequest;
+import com.mytech.apartment.portal.dtos.ServiceRequestUpdateRequest;
+import com.mytech.apartment.portal.mappers.ServiceRequestMapper;
+import com.mytech.apartment.portal.models.ServiceCategory;
+import com.mytech.apartment.portal.models.ServiceRequest;
+import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.repositories.ServiceRequestRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.models.enums.ServiceRequestStatus;
+import com.mytech.apartment.portal.models.enums.ServiceRequestPriority;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class ServiceRequestService {
@@ -28,9 +31,6 @@ public class ServiceRequestService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private ServiceCategoryRepository serviceCategoryRepository;
 
     @Autowired
     private ServiceRequestMapper serviceRequestMapper;
@@ -49,15 +49,12 @@ public class ServiceRequestService {
         User user = userRepository.findById(request.getResidentId())
                 .orElseThrow(() -> new RuntimeException("User not found with id " + request.getResidentId()));
 
-        ServiceCategory category = serviceCategoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Service category not found with id " + request.getCategoryId()));
-
         ServiceRequest serviceRequest = new ServiceRequest();
         serviceRequest.setUser(user);
-        serviceRequest.setCategory(category);
         serviceRequest.setDescription(request.getDescription());
-        serviceRequest.setPriority(request.getPriority());
-        serviceRequest.setStatus("OPEN");
+        serviceRequest.setPriority(request.getPriority() != null ? ServiceRequestPriority.valueOf(request.getPriority().toString()) : null);
+        serviceRequest.setPriority(request.getPriority() != null ? ServiceRequestPriority.valueOf(request.getPriority()) : null);
+        serviceRequest.setStatus(ServiceRequestStatus.OPEN);
         serviceRequest.setSubmittedAt(LocalDateTime.now());
 
         ServiceRequest savedServiceRequest = serviceRequestRepository.save(serviceRequest);
@@ -69,7 +66,7 @@ public class ServiceRequestService {
                 .orElseThrow(() -> new RuntimeException("Service request not found with id " + id));
 
         if (request.getStatus() != null) {
-            serviceRequest.setStatus(request.getStatus());
+            serviceRequest.setStatus(ServiceRequestStatus.valueOf(request.getStatus()));
         }
         if (request.getAssignedTo() != null) {
             // For now, we'll assume assignedTo is a user ID
@@ -113,16 +110,16 @@ public class ServiceRequestService {
         // Cập nhật thông tin gán
         serviceRequest.setAssignedTo(assignedUser);
         serviceRequest.setAssignedAt(LocalDateTime.now());
-        serviceRequest.setPriority(request.getPriority().toString());
-        serviceRequest.setStatus("IN_PROGRESS");
+        serviceRequest.setPriority(request.getPriority() != null ? ServiceRequestPriority.valueOf(request.getPriority().toString()) : null);
+        serviceRequest.setStatus(ServiceRequestStatus.IN_PROGRESS);
 
         // Cập nhật loại dịch vụ nếu cần
-        if (request.getServiceCategory() != null) {
-            // Tìm category theo tên
-            ServiceCategory category = serviceCategoryRepository.findByCategoryName(request.getServiceCategory())
-                    .orElseThrow(() -> new RuntimeException("Service category not found: " + request.getServiceCategory()));
-            serviceRequest.setCategory(category);
-        }
+        // if (request.getServiceCategory() != null) {
+        //     // Tìm category theo tên
+        //     // ServiceCategory category = ServiceCategory.fromString(request.getServiceCategory())
+        //     //         .orElseThrow(() -> new RuntimeException("Service category not found: " + request.getServiceCategory()));
+        //     // serviceRequest.setCategory(category);
+        // }
 
         // Lưu ghi chú admin
         if (request.getAdminNotes() != null) {
@@ -150,7 +147,7 @@ public class ServiceRequestService {
                 .orElseThrow(() -> new RuntimeException("Service request not found with id " + requestId));
 
         // Cập nhật trạng thái
-        serviceRequest.setStatus(request.getStatus());
+        serviceRequest.setStatus(ServiceRequestStatus.valueOf(request.getStatus()));
 
         // Cập nhật ghi chú xử lý
         if (request.getResolutionNotes() != null) {
@@ -171,7 +168,7 @@ public class ServiceRequestService {
     }
 
     public List<ServiceRequestDto> getServiceRequestsByStatus(String status) {
-        return serviceRequestRepository.findByStatus(status).stream()
+        return serviceRequestRepository.findByStatus(ServiceRequestStatus.valueOf(status)).stream()
                 .map(serviceRequestMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -180,5 +177,11 @@ public class ServiceRequestService {
         return serviceRequestRepository.findByCategoryCategoryName(category).stream()
                 .map(serviceRequestMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<ServiceRequestDto> getServiceRequestsByUserId(Long userId) {
+        return serviceRequestRepository.findByUserId(userId).stream()
+            .map(serviceRequestMapper::toDto)
+            .collect(Collectors.toList());
     }
 } 

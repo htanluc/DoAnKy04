@@ -71,4 +71,24 @@ public class ResidentService {
         Resident resident = residentRepository.findByUserId(userId);
         return Optional.ofNullable(residentMapper.toDto(resident));
     }
+
+    public ResidentDto getResidentByUsername(String username) {
+        // Tìm user theo username (có thể là phone/email/username)
+        return userRepository.findByUsername(username)
+            .flatMap(user -> getResidentByUserId(user.getId()))
+            .orElse(null);
+    }
+
+    @Transactional
+    public ResidentDto updateResidentByUsername(String username, ResidentUpdateRequest request) {
+        return userRepository.findByUsername(username)
+            .flatMap(user -> {
+                Resident resident = residentRepository.findByUserId(user.getId());
+                if (resident == null) return Optional.<ResidentDto>empty();
+                residentMapper.updateEntityFromRequest(resident, request);
+                Resident updated = residentRepository.save(resident);
+                return Optional.of(residentMapper.toDto(updated));
+            })
+            .orElse(null);
+    }
 } 

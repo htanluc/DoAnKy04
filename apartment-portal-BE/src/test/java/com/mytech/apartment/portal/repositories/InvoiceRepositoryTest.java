@@ -1,6 +1,7 @@
 package com.mytech.apartment.portal.repositories;
 
 import com.mytech.apartment.portal.models.Invoice;
+import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +23,12 @@ public class InvoiceRepositoryTest {
                 .issueDate(LocalDate.now())
                 .dueDate(LocalDate.now().plusDays(10))
                 .totalAmount(1000000.0)
-                .status("UNPAID")
+                .status(InvoiceStatus.UNPAID)
                 .build();
         Invoice saved = invoiceRepository.save(invoice);
         Optional<Invoice> found = invoiceRepository.findById(saved.getId());
         Assertions.assertTrue(found.isPresent());
-        Assertions.assertEquals("UNPAID", found.get().getStatus());
+        Assertions.assertEquals(InvoiceStatus.UNPAID, found.get().getStatus());
     }
 
     @Test
@@ -38,7 +39,7 @@ public class InvoiceRepositoryTest {
                 .issueDate(LocalDate.now())
                 .dueDate(LocalDate.now().plusDays(10))
                 .totalAmount(2000000.0)
-                .status("UNPAID")
+                .status(InvoiceStatus.UNPAID)
                 .build();
         Invoice saved = invoiceRepository.save(invoice);
         invoiceRepository.deleteById(saved.getId());

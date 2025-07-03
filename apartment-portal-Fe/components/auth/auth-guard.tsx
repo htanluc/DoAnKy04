@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { validateToken, getCurrentUser } from "@/lib/auth"
+import { validateToken, getCurrentUser, getRoleNames } from "@/lib/auth"
 import { Loader2 } from "lucide-react"
 
 interface AuthGuardProps {
@@ -37,18 +37,11 @@ export default function AuthGuard({ children, requiredRoles = [] }: AuthGuardPro
             return;
           }
           if (user && requiredRoles.length > 0) {
-            let userRoles: string[] = [];
-            if (Array.isArray(user.roles) && user.roles.length > 0) {
-              if (user.roles.every((r: any) => typeof r === 'string')) {
-                userRoles = user.roles.map((r: any) => String(r));
-              } else if (user.roles.every((r: any) => typeof r === 'object' && r !== null && 'name' in r)) {
-                userRoles = user.roles.map((r: any) => String(r.name));
-              }
-            }
+            const userRoles = getRoleNames(user);
             const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
             setHasPermission(hasRequiredRole);
             if (!hasRequiredRole) {
-              router.push("/");
+              router.replace('/');
             }
           } else {
             setHasPermission(true)

@@ -1,0 +1,44 @@
+// File: Payment.java
+package com.mytech.apartment.portal.models;
+
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "payments")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Payment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id", nullable = false)
+    private Invoice invoice;
+
+    @Column(name = "paid_by_user_id", nullable = false)
+    private Long paidByUserId;
+
+    @CreationTimestamp
+    @Column(name = "payment_date", updatable = false)
+    private LocalDateTime paymentDate;
+
+    @Column(nullable = false)
+    private Double amount;
+
+    @Column(nullable = false)
+    private String method; // CASH, BANK, MOMO, VISA...
+
+    @Column(nullable = false)
+    private String status; // SUCCESS, PENDING, FAILED
+
+    @Column(name = "reference_code")
+    private String referenceCode;
+}

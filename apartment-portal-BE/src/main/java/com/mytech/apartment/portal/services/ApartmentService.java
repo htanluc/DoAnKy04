@@ -7,9 +7,11 @@ import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.models.ApartmentResident;
 import com.mytech.apartment.portal.models.ApartmentResidentId;
 import com.mytech.apartment.portal.models.Resident;
+import com.mytech.apartment.portal.models.enums.ApartmentStatus;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.ResidentRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,9 @@ public class ApartmentService {
 
     @Autowired
     private ResidentRepository residentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private ApartmentMapper apartmentMapper;
@@ -87,8 +92,8 @@ public class ApartmentService {
         apartmentResidentRepository.save(apartmentResident);
 
         // Cập nhật trạng thái căn hộ thành OCCUPIED nếu chưa có
-        if ("VACANT".equals(apartment.getStatus())) {
-            apartment.setStatus("OCCUPIED");
+        if (ApartmentStatus.VACANT.equals(apartment.getStatus())) {
+            apartment.setStatus(ApartmentStatus.OCCUPIED);
             apartmentRepository.save(apartment);
         }
     }
@@ -106,7 +111,7 @@ public class ApartmentService {
         // Kiểm tra nếu không còn user nào thì chuyển trạng thái về VACANT
         List<ApartmentResident> remainingLinks = apartmentResidentRepository.findByIdApartmentId(apartmentId);
         if (remainingLinks.isEmpty()) {
-            apartment.setStatus("VACANT");
+            apartment.setStatus(ApartmentStatus.VACANT);
             apartmentRepository.save(apartment);
         }
     }
@@ -129,8 +134,25 @@ public class ApartmentService {
     }
 
     public List<ApartmentDto> getApartmentsByStatus(String status) {
-        return apartmentRepository.findByStatus(status).stream()
+        return apartmentRepository.findByStatus(ApartmentStatus.valueOf(status)).stream()
                 .map(apartmentMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<ApartmentDto> getApartmentsOfResident(Long userId) {
+        // Lấy tất cả liên kết resident-apartment theo userId
+        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId);
+        return links.stream()
+            .map(link -> apartmentRepository.findById(link.getId().getApartmentId()))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(apartmentMapper::toDto)
+            .collect(Collectors.toList());
+    }
+
+    public Long getUserIdByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .map(user -> user.getId())
+            .orElse(null);
     }
 } 

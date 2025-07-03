@@ -1,0 +1,86 @@
+package com.mytech.apartment.portal.services;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.mytech.apartment.portal.dtos.FeedbackCreateRequest;
+import com.mytech.apartment.portal.dtos.FeedbackDto;
+import com.mytech.apartment.portal.dtos.FeedbackUpdateRequest;
+import com.mytech.apartment.portal.mappers.FeedbackMapper;
+import com.mytech.apartment.portal.models.Feedback;
+import com.mytech.apartment.portal.models.FeedbackCategory;
+import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.repositories.FeedbackCategoryRepository;
+import com.mytech.apartment.portal.repositories.FeedbackRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
+
+@Service
+public class FeedbackService {
+    @Autowired
+    private FeedbackRepository feedbackRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private FeedbackCategoryRepository feedbackCategoryRepository;
+
+    @Autowired
+    private FeedbackMapper feedbackMapper;
+
+    public List<FeedbackDto> getAllFeedbacks() {
+        return feedbackRepository.findAll().stream()
+                .map(feedbackMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<FeedbackDto> getFeedbackById(Long id) {
+        return feedbackRepository.findById(id).map(feedbackMapper::toDto);
+    }
+
+    public FeedbackDto createFeedback(FeedbackCreateRequest request) {
+        User user = userRepository.findById(request.getResidentId())
+                .orElseThrow(() -> new RuntimeException("User not found with id " + request.getResidentId()));
+
+        FeedbackCategory category = feedbackCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Feedback category not found with id " + request.getCategoryId()));
+
+        Feedback feedback = new Feedback();
+        feedback.setUser(user);
+        feedback.setCategory(category);
+        feedback.setContent(request.getContent());
+        feedback.setStatus("PENDING");
+        feedback.setSubmittedAt(LocalDateTime.now());
+
+        Feedback savedFeedback = feedbackRepository.save(feedback);
+        return feedbackMapper.toDto(savedFeedback);
+    }
+
+    public FeedbackDto updateFeedback(Long id, FeedbackUpdateRequest request) {
+        Feedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Feedback not found with id " + id));
+
+        if (request.getStatus() != null) {
+            feedback.setStatus(request.getStatus());
+        }
+        if (request.getResponse() != null) {
+            feedback.setResponse(request.getResponse());
+            feedback.setRespondedAt(LocalDateTime.now());
+        }
+
+        Feedback updatedFeedback = feedbackRepository.save(feedback);
+        return feedbackMapper.toDto(updatedFeedback);
+    }
+
+    public void deleteFeedback(Long id) {
+        if (!feedbackRepository.existsById(id)) {
+            throw new RuntimeException("Feedback not found with id " + id);
+        }
+        feedbackRepository.deleteById(id);
+    }
+}

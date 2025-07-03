@@ -4,6 +4,8 @@ import com.mytech.apartment.portal.dtos.UserCreateRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
 import com.mytech.apartment.portal.dtos.UserUpdateRequest;
 import com.mytech.apartment.portal.services.UserService;
+import com.mytech.apartment.portal.models.enums.UserStatus;
+import com.mytech.apartment.portal.models.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -77,7 +79,7 @@ public class UserController {
     @PutMapping("/{id}/status")
     public ResponseEntity<UserDto> setUserStatus(@PathVariable("id") Long id, @RequestParam("status") String status, @RequestParam(value = "reason", required = false) String reason) {
         try {
-            UserDto userDto = userService.setUserStatus(id, status, reason);
+            UserDto userDto = userService.setUserStatus(id, UserStatus.valueOf(status), reason);
             return ResponseEntity.ok(userDto);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -96,5 +98,20 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/{id}/roles")
+    public List<Role> getRolesOfUser(@PathVariable("id") Long id) {
+        return userService.getRolesOfUser(id);
+    }
+
+    @PostMapping("/{id}/roles/assign")
+    public void assignRoleToUser(@PathVariable("id") Long id, @RequestParam Long roleId) {
+        userService.assignRoleToUser(id, roleId);
+    }
+
+    @PostMapping("/{id}/roles/remove")
+    public void removeRoleFromUser(@PathVariable("id") Long id, @RequestParam Long roleId) {
+        userService.removeRoleFromUser(id, roleId);
     }
 }

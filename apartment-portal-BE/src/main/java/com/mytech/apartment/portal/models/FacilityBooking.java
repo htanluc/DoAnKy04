@@ -3,6 +3,7 @@ package com.mytech.apartment.portal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.mytech.apartment.portal.models.enums.FacilityBookingStatus;
 
 @Entity
 @Table(name = "facility_bookings")
@@ -25,7 +26,7 @@ public class FacilityBooking {
 
     private LocalDateTime bookingTime;
     private Integer duration;
-    private String status;
+    private FacilityBookingStatus status;
 
     @ManyToOne
     @JoinColumn(name = "approved_by")

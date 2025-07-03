@@ -1,12 +1,14 @@
 package com.mytech.apartment.portal.security;
 
 import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.models.Role;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Data
@@ -16,14 +18,17 @@ public class UserDetailsImpl implements UserDetails {
 	private String password;
 	private Collection<? extends GrantedAuthority> authorities;
 	private String status;
+	private Set<Role> roles;
 
 	public UserDetailsImpl(User user) {
 		this.id = user.getId();
-		this.username = user.getPhoneNumber(); // ← gán phoneNumber vào field này
-		this.password = user.getPasswordHash(); // ← sử dụng passwordHash
-		this.authorities = user.getRoles().stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r.getName()))
-				.collect(Collectors.toList());
-		this.status = user.getStatus();
+		this.username = user.getPhoneNumber();
+		this.password = user.getPasswordHash();
+		this.status = user.getStatus() != null ? user.getStatus().name() : null;
+		this.roles = user.getRoles();
+		this.authorities = user.getRoles().stream()
+			.map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+			.collect(Collectors.toList());
 	}
 
 	@Override
@@ -59,5 +64,9 @@ public class UserDetailsImpl implements UserDetails {
 	@Override
 	public boolean isEnabled() {
 		return true;
+	}
+	
+	public Set<Role> getRoles() {
+		return roles;
 	}
 }

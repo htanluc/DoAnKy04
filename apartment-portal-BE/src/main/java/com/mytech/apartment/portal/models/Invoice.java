@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
+import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 
 @Entity
 @Table(name = "invoices")
@@ -34,7 +35,7 @@ public class Invoice {
     private Double totalAmount;
 
     @Column(nullable = false)
-    private String status; // UNPAID, PAID, OVERDUE
+    private InvoiceStatus status;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

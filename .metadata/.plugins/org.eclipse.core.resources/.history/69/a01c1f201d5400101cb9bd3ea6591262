@@ -1,0 +1,14 @@
+package com.mytech.apartment.portal.repositories;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.mytech.apartment.portal.models.Apartment;
+
+@Repository
+public interface ApartmentRepository extends JpaRepository<Apartment, Long> {
+    List<Apartment> findByBuildingId(Long buildingId);
+    List<Apartment> findByStatus(String status);
+}

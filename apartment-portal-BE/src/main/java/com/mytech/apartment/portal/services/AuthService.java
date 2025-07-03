@@ -14,14 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mytech.apartment.portal.dtos.*;
 import com.mytech.apartment.portal.models.User;
-import com.mytech.apartment.portal.models.Role;
 import com.mytech.apartment.portal.models.EmailVerificationToken;
 import com.mytech.apartment.portal.repositories.UserRepository;
-import com.mytech.apartment.portal.repositories.RoleRepository;
 import com.mytech.apartment.portal.repositories.EmailVerificationTokenRepository;
 import com.mytech.apartment.portal.services.EmailService;
 import com.mytech.apartment.portal.models.Resident;
 import com.mytech.apartment.portal.repositories.ResidentRepository;
+import com.mytech.apartment.portal.models.enums.UserStatus;
+import com.mytech.apartment.portal.services.UserService;
+import com.mytech.apartment.portal.dtos.UserCreateRequest;
 
 @Service
 public class AuthService {
@@ -33,9 +34,6 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
     
     @Autowired
-    private RoleRepository roleRepository;
-    
-    @Autowired
     private EmailService emailService;
     
     @Autowired
@@ -43,6 +41,9 @@ public class AuthService {
 
     @Autowired
     private ResidentRepository residentRepository;
+
+    @Autowired
+    private UserService userService;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
@@ -63,25 +64,13 @@ public class AuthService {
             throw new RuntimeException("Số điện thoại đã được đăng ký");
         }
         
-        // Tạo user mới với trạng thái INACTIVE
-        User user = new User();
-        user.setUsername(request.getPhoneNumber()); // Sử dụng phoneNumber làm username
-        user.setEmail(request.getEmail());
-        user.setPhoneNumber(request.getPhoneNumber());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setStatus("INACTIVE");
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        
-        // Gán role RESIDENT mặc định
-        Role residentRole = roleRepository.findByName("RESIDENT")
-            .orElseThrow(() -> new RuntimeException("Role RESIDENT không tồn tại"));
-        java.util.Set<Role> roles = new java.util.HashSet<>();
-        roles.add(residentRole);
-        user.setRoles(roles);
-        
-        userRepository.save(user);
-
+        // Tạo user mới với trạng thái INACTIVE và role RESIDENT mặc định
+        UserCreateRequest userCreateRequest = new UserCreateRequest();
+        userCreateRequest.setUsername(request.getPhoneNumber());
+        userCreateRequest.setPhoneNumber(request.getPhoneNumber());
+        userCreateRequest.setPassword(request.getPassword());
+        // Không set roles để UserService.registerUser tự gán role RESIDENT
+        User user = userService.registerUserReturnEntity(userCreateRequest);
         // Tạo resident tương ứng với user mới
         Resident resident = new Resident();
         resident.setUserId(user.getId());
@@ -91,13 +80,11 @@ public class AuthService {
         resident.setFamilyRelation(null);
         resident.setStatus(0);
         residentRepository.save(resident);
-        
         // Tạo token xác thực email
         String token = UUID.randomUUID().toString();
         LocalDateTime expiry = LocalDateTime.now().plusHours(24);
         EmailVerificationToken verificationToken = new EmailVerificationToken(token, user, expiry);
         emailVerificationTokenRepository.save(verificationToken);
-        
         // Gửi email xác thực
         String verifyLink = frontendUrl + "/verify-email?token=" + token;
         emailService.sendVerificationEmail(user.getEmail(), verifyLink);
@@ -112,7 +99,7 @@ public class AuthService {
             throw new RuntimeException("Token xác thực đã hết hạn");
         }
         User user = verificationToken.getUser();
-        user.setStatus("ACTIVE");
+        user.setStatus(UserStatus.ACTIVE);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
         emailVerificationTokenRepository.deleteByToken(token);
@@ -193,7 +180,7 @@ public class AuthService {
             throw new RuntimeException("Không tìm thấy tài khoản với email/số điện thoại này");
         }
         User user = userOpt.get();
-        if ("ACTIVE".equalsIgnoreCase(user.getStatus())) {
+        if (UserStatus.ACTIVE.equals(user.getStatus())) {
             throw new RuntimeException("Tài khoản đã được xác thực!");
         }
         // Xóa token cũ

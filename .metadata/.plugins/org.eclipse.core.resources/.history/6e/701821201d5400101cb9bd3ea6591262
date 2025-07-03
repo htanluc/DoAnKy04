@@ -1,0 +1,145 @@
+package com.mytech.apartment.portal.config;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import com.mytech.apartment.portal.models.Role;
+import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.repositories.RoleRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
+
+@Component
+public class DataInitializer implements CommandLineRunner {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Override
+    public void run(String... args) throws Exception {
+        System.out.println("🚀 Starting DataInitializer...");
+
+        try {
+            // Tạo các role cần thiết
+            createRoles();
+
+            // Tạo user Admin
+            createAdminUser();
+
+            System.out.println("✅ DataInitializer completed successfully!");
+        } catch (Exception e) {
+            System.err.println("❌ Error in DataInitializer: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void createRoles() {
+        System.out.println("📝 Creating roles...");
+
+        // Tạo role ADMIN nếu chưa tồn tại
+        if (!roleRepository.findByName("ADMIN").isPresent()) {
+            Role adminRole = Role.builder()
+                    .name("ADMIN")
+                    .build();
+            Role savedAdminRole = roleRepository.save(adminRole);
+            System.out.println("✅ Created ADMIN role with ID: " + savedAdminRole.getId());
+        } else {
+            System.out.println("ℹ️ ADMIN role already exists");
+        }
+
+        // Tạo role RESIDENT nếu chưa tồn tại
+        if (!roleRepository.findByName("RESIDENT").isPresent()) {
+            Role residentRole = Role.builder()
+                    .name("RESIDENT")
+                    .build();
+            Role savedResidentRole = roleRepository.save(residentRole);
+            System.out.println("✅ Created RESIDENT role with ID: " + savedResidentRole.getId());
+        } else {
+            System.out.println("ℹ️ RESIDENT role already exists");
+        }
+
+        // Tạo role STAFF nếu chưa tồn tại
+        if (!roleRepository.findByName("STAFF").isPresent()) {
+            Role staffRole = Role.builder()
+                    .name("STAFF")
+                    .build();
+            Role savedStaffRole = roleRepository.save(staffRole);
+            System.out.println("✅ Created STAFF role with ID: " + savedStaffRole.getId());
+        } else {
+            System.out.println("ℹ️ STAFF role already exists");
+        }
+    }
+
+    private void createAdminUser() {
+        System.out.println("👤 Creating admin user...");
+
+        // Kiểm tra xem user Admin đã tồn tại chưa
+        if (!userRepository.findByUsername("admin").isPresent()) {
+            try {
+                // Lấy role ADMIN
+                Role adminRole = roleRepository.findByName("ADMIN")
+                        .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
+
+                // Tạo set roles cho admin
+                Set<Role> adminRoles = new HashSet<>();
+                adminRoles.add(adminRole);
+
+                // Encode password
+                String rawPassword = "admin123";
+                String encodedPassword = passwordEncoder.encode(rawPassword);
+                System.out.println("🔐 Raw password: " + rawPassword);
+                System.out.println("🔐 Encoded password: " + encodedPassword);
+
+                // Tạo user Admin
+                User adminUser = User.builder()
+                        .username("admin")
+                        .email("admin@apartment.com")
+                        .passwordHash(encodedPassword)
+                        .phoneNumber("admin")
+                        .status("ACTIVE")
+                        .roles(adminRoles)
+                        .build();
+
+                User savedAdminUser = userRepository.save(adminUser);
+                System.out.println("✅ Admin user created successfully!");
+                System.out.println("📱 Username: admin");
+                System.out.println("🔑 Password: admin123");
+                System.out.println("📞 Phone: admin");
+                System.out.println("🆔 User ID: " + savedAdminUser.getId());
+
+                // Verify the password can be matched
+                boolean passwordMatches = passwordEncoder.matches(rawPassword, savedAdminUser.getPasswordHash());
+                System.out.println("🔍 Password verification test: " + passwordMatches);
+
+            } catch (Exception e) {
+                System.err.println("❌ Error creating admin user: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("ℹ️ Admin user already exists");
+
+            // Check existing admin user
+            userRepository.findByUsername("admin").ifPresent(existingUser -> {
+                System.out.println("📋 Existing admin user details:");
+                System.out.println("🆔 ID: " + existingUser.getId());
+                System.out.println("📱 Username: " + existingUser.getUsername());
+                System.out.println("📞 Phone: " + existingUser.getPhoneNumber());
+                System.out.println("🔐 Password hash: " + existingUser.getPasswordHash());
+
+                // Test password matching
+                boolean passwordMatches = passwordEncoder.matches("admin123", existingUser.getPasswordHash());
+                System.out.println("🔍 Password verification test: " + passwordMatches);
+            });
+        }
+    }
+}

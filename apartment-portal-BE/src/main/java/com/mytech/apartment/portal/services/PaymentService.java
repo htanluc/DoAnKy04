@@ -7,9 +7,9 @@ import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.Payment;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
 import com.mytech.apartment.portal.repositories.PaymentRepository;
-import com.mytech.apartment.portal.dtos.PaymentMethodDto;
-import com.mytech.apartment.portal.mappers.PaymentMethodMapper;
-import com.mytech.apartment.portal.repositories.PaymentMethodRepository;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
+import com.mytech.apartment.portal.models.enums.PaymentStatus;
+import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,12 +28,6 @@ public class PaymentService {
 
     @Autowired
     private PaymentMapper paymentMapper;
-
-    @Autowired
-    private PaymentMethodRepository paymentMethodRepository;
-
-    @Autowired
-    private PaymentMethodMapper paymentMethodMapper;
 
     public List<PaymentDto> getAllPayments() {
         return paymentRepository.findAll().stream()
@@ -61,26 +55,25 @@ public class PaymentService {
         payment.setInvoice(invoice);
         payment.setPaidByUserId(request.getPaidByUserId());
         payment.setAmount(request.getAmount());
-        payment.setMethod(request.getMethod());
+        payment.setMethod(request.getMethod() != null ? PaymentMethod.valueOf(request.getMethod()) : null);
         payment.setReferenceCode(request.getReferenceCode());
-        payment.setStatus("SUCCESS"); // Manual payments are considered successful
+        payment.setStatus(PaymentStatus.SUCCESS); // Manual payments are considered successful
 
         Payment savedPayment = paymentRepository.save(payment);
 
         // Update invoice status if fully paid
         double totalPaid = invoice.getPayments().stream().mapToDouble(Payment::getAmount).sum() + savedPayment.getAmount();
         if (totalPaid >= invoice.getTotalAmount()) {
-            invoice.setStatus("PAID");
+            invoice.setStatus(InvoiceStatus.PAID);
             invoiceRepository.save(invoice);
         }
 
         return paymentMapper.toDto(savedPayment);
     }
 
-    public List<PaymentMethodDto> getPaymentMethods() {
-        return paymentMethodRepository.findAll().stream()
-            .map(paymentMethodMapper::toDto)
-            .collect(Collectors.toList());
+    public List<PaymentMethod> getPaymentMethods() {
+        // Trả về tất cả các phương thức thanh toán enum
+        return List.of(PaymentMethod.values());
     }
 
     public List<PaymentDto> getPaymentsByInvoice(Long invoiceId) {
@@ -90,7 +83,7 @@ public class PaymentService {
     }
 
     public List<PaymentDto> getPaymentsByStatus(String status) {
-        return paymentRepository.findByStatus(status).stream()
+        return paymentRepository.findByStatus(PaymentStatus.valueOf(status)).stream()
             .map(paymentMapper::toDto)
             .collect(Collectors.toList());
     }

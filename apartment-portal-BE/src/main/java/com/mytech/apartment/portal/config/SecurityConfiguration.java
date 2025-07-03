@@ -104,6 +104,8 @@ public class SecurityConfiguration {
               .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
               // Auth endpoints - cho phép tất cả
               .requestMatchers("/api/auth/**").permitAll()
+              // Chỉ ADMIN mới được truy cập các endpoint quản lý user/role
+              .requestMatchers("/api/admin/users/**", "/api/admin/roles/**").hasAuthority("ADMIN")
               // Các endpoint khác cần authentication
               .anyRequest().authenticated()
           )

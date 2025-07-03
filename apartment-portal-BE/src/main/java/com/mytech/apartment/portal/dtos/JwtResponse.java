@@ -1,8 +1,10 @@
 package com.mytech.apartment.portal.dtos;
 
+import com.mytech.apartment.portal.models.Role;
 import lombok.Data;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class JwtResponse {
@@ -26,5 +28,17 @@ public class JwtResponse {
         this.roles = roles;
         this.status = status;
         this.refreshToken = refreshToken;
+    }
+
+    public JwtResponse() {}
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
+
+    public void setRolesFromUser(List<Role> userRoles) {
+        this.roles = userRoles.stream()
+            .map(Role::getName)
+            .collect(Collectors.toList());
     }
 }

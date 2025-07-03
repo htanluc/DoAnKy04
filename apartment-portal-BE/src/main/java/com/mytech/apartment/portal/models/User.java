@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import com.mytech.apartment.portal.models.enums.UserStatus;
 import java.util.Set;
+import com.mytech.apartment.portal.models.Role;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "users")
@@ -29,8 +32,9 @@ public class User {
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private UserStatus status;
 
     @Column(name = "lock_reason")
     private String lockReason;
@@ -49,8 +53,5 @@ public class User {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private Set<Role> roles;
-
-    public String getLockReason() { return lockReason; }
-    public void setLockReason(String lockReason) { this.lockReason = lockReason; }
+    private Set<Role> roles = new HashSet<>();
 }

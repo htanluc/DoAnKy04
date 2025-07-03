@@ -1,7 +1,7 @@
 "use client"
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getToken } from "@/lib/auth";
+import { getToken, getRoleNames } from "@/lib/auth";
 
 export default function AuthRedirectGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -20,14 +20,7 @@ export default function AuthRedirectGuard({ children }: { children: React.ReactN
         }
       }
       if (user && user.roles) {
-        let roleNames: string[] = [];
-        if (Array.isArray(user.roles) && user.roles.length > 0) {
-          if (user.roles.every((r: any) => typeof r === 'string')) {
-            roleNames = user.roles.map((r: any) => String(r));
-          } else if (user.roles.every((r: any) => typeof r === 'object' && r !== null && 'name' in r)) {
-            roleNames = user.roles.map((r: any) => String(r.name));
-          }
-        }
+        const roleNames = getRoleNames(user);
         if (roleNames.includes('ADMIN')) {
           router.replace('/admin-dashboard');
         } else if (roleNames.includes('STAFF')) {

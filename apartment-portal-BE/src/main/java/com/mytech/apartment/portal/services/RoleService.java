@@ -1,51 +1,60 @@
 package com.mytech.apartment.portal.services;
 
-import com.mytech.apartment.portal.dtos.RoleDto;
-import com.mytech.apartment.portal.mappers.RoleMapper;
 import com.mytech.apartment.portal.models.Role;
+import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.repositories.RoleRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class RoleService {
     @Autowired
     private RoleRepository roleRepository;
-
     @Autowired
-    private RoleMapper roleMapper;
+    private UserRepository userRepository;
 
-    public List<RoleDto> getAllRoles() {
-        return roleRepository.findAll().stream().map(roleMapper::toDto).collect(Collectors.toList());
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
     }
 
-    public Optional<RoleDto> getRoleById(Integer id) {
-        return roleRepository.findById(id).map(roleMapper::toDto);
+    public Optional<Role> getRoleById(Long id) {
+        return roleRepository.findById(id);
     }
 
-    public Optional<RoleDto> getRoleByName(String name) {
-        return roleRepository.findByName(name).map(roleMapper::toDto);
+    public Role createRole(Role role) {
+        return roleRepository.save(role);
     }
 
-    public RoleDto createRole(RoleDto roleDto) {
-        Role role = roleMapper.toEntity(roleDto);
-        return roleMapper.toDto(roleRepository.save(role));
+    public Role updateRole(Long id, Role role) {
+        Role existing = roleRepository.findById(id).orElseThrow();
+        existing.setName(role.getName());
+        existing.setDescription(role.getDescription());
+        return roleRepository.save(existing);
     }
 
-    public RoleDto updateRole(Integer id, RoleDto roleDetails) {
-        return roleRepository.findById(id)
-                .map(role -> {
-                    role.setName(roleDetails.getName());
-                    return roleMapper.toDto(roleRepository.save(role));
-                })
-                .orElseThrow(() -> new RuntimeException("Role not found with id " + id));
-    }
-
-    public void deleteRole(Integer id) {
+    public void deleteRole(Long id) {
         roleRepository.deleteById(id);
+    }
+
+    public void assignRoleToUser(Long userId, Long roleId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Role role = roleRepository.findById(roleId).orElseThrow();
+        user.getRoles().add(role);
+        userRepository.save(user);
+    }
+
+    public void removeRoleFromUser(Long userId, Long roleId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Role role = roleRepository.findById(roleId).orElseThrow();
+        user.getRoles().remove(role);
+        userRepository.save(user);
+    }
+
+    public List<Role> getRolesOfUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        return List.copyOf(user.getRoles());
     }
 } 

@@ -9,6 +9,7 @@ import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.repositories.FacilityBookingRepository;
 import com.mytech.apartment.portal.repositories.FacilityRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.models.enums.FacilityBookingStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -56,7 +57,7 @@ public class FacilityBookingService {
         booking.setUser(user);
         booking.setBookingTime(request.getStartTime());
         booking.setDuration((int) durationMinutes);
-        booking.setStatus("PENDING");
+        booking.setStatus(FacilityBookingStatus.PENDING);
         booking.setCreatedAt(LocalDateTime.now());
 
         FacilityBooking savedBooking = facilityBookingRepository.save(booking);
@@ -90,5 +91,11 @@ public class FacilityBookingService {
         } else {
             return false;
         }
+    }
+
+    public List<FacilityBookingDto> getFacilityBookingsByUserId(Long userId) {
+        return facilityBookingRepository.findByUserId(userId).stream()
+            .map(facilityBookingMapper::toDto)
+            .collect(Collectors.toList());
     }
 } 

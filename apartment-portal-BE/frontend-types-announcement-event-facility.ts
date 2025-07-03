@@ -2,7 +2,11 @@
 
 // ===== ANNOUNCEMENT TYPES =====
 
-export type AnnouncementType = 'NEWS' | 'REGULAR' | 'URGENT';
+export enum AnnouncementType {
+  NEWS = 'NEWS',
+  REGULAR = 'REGULAR',
+  URGENT = 'URGENT',
+}
 
 export type TargetAudience = 'ALL_RESIDENTS' | 'TOWER_A_RESIDENTS' | 'TOWER_B_RESIDENTS' | 'SPECIFIC_APARTMENTS';
 
@@ -63,7 +67,10 @@ export interface EventUpdateRequest {
 
 // ===== EVENT REGISTRATION TYPES =====
 
-export type RegistrationStatus = 'REGISTERED' | 'CANCELLED';
+export enum RegistrationStatus {
+  REGISTERED = 'REGISTERED',
+  CANCELLED = 'CANCELLED',
+}
 
 export interface EventRegistration {
   id: number;
@@ -107,7 +114,12 @@ export interface FacilityUpdateRequest {
 
 // ===== FACILITY BOOKING TYPES =====
 
-export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export enum BookingStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
 
 export interface FacilityBooking {
   id: number;
@@ -297,12 +309,6 @@ export interface FilterParams {
 }
 
 // ===== CONSTANTS =====
-
-export const ANNOUNCEMENT_TYPES = {
-  NEWS: 'NEWS',
-  REGULAR: 'REGULAR',
-  URGENT: 'URGENT'
-} as const;
 
 export const TARGET_AUDIENCES = {
   ALL_RESIDENTS: 'ALL_RESIDENTS',

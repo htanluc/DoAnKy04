@@ -1,0 +1,13 @@
+package com.mytech.apartment.portal.repositories;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.mytech.apartment.portal.models.ServiceCategory;
+
+@Repository
+public interface ServiceCategoryRepository extends JpaRepository<ServiceCategory, String> {
+    Optional<ServiceCategory> findByCategoryName(String categoryName);
+}

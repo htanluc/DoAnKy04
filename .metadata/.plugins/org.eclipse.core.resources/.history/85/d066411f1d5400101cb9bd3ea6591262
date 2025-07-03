@@ -1,0 +1,15 @@
+package com.mytech.apartment.portal.repositories;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.mytech.apartment.portal.models.ApartmentResident;
+import com.mytech.apartment.portal.models.ApartmentResidentId;
+
+@Repository
+public interface ApartmentResidentRepository extends JpaRepository<ApartmentResident, ApartmentResidentId> {
+    List<ApartmentResident> findByIdApartmentId(Long apartmentId);
+    List<ApartmentResident> findByIdUserId(Long userId);
+}

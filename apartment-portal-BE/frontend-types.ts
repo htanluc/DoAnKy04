@@ -19,12 +19,17 @@ export interface Role {
   name: 'ADMIN' | 'RESIDENT' | 'STAFF';
 }
 
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
 export interface User {
   id: number;
   username: string;
   email: string;
   phoneNumber: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: UserStatus;
   roles: Role[];
 }
 
@@ -159,6 +164,34 @@ export const ROLES = {
   RESIDENT: 'RESIDENT',
   STAFF: 'STAFF'
 } as const;
+
+export enum ApartmentStatus {
+  VACANT = 'VACANT',
+  OCCUPIED = 'OCCUPIED',
+}
+
+export interface Apartment {
+  id: number;
+  buildingId: number;
+  floorNumber: number;
+  unitNumber: string;
+  area: number;
+  status: ApartmentStatus;
+}
+
+export enum ServiceRequestStatus {
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED',
+  FAILED = 'FAILED',
+}
 
 // ===== HELPER FUNCTIONS =====
 

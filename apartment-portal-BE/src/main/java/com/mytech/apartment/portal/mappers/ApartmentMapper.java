@@ -4,6 +4,7 @@ import com.mytech.apartment.portal.dtos.ApartmentCreateRequest;
 import com.mytech.apartment.portal.dtos.ApartmentDto;
 import com.mytech.apartment.portal.dtos.ApartmentUpdateRequest;
 import com.mytech.apartment.portal.models.Apartment;
+import com.mytech.apartment.portal.models.enums.ApartmentStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,7 +20,7 @@ public class ApartmentMapper {
         dto.setFloorNumber(entity.getFloorNumber());
         dto.setUnitNumber(entity.getUnitNumber());
         dto.setArea(entity.getArea());
-        dto.setStatus(entity.getStatus());
+        dto.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
         return dto;
     }
 
@@ -32,7 +33,7 @@ public class ApartmentMapper {
         entity.setFloorNumber(request.getFloorNumber());
         entity.setUnitNumber(request.getUnitNumber());
         entity.setArea(request.getArea());
-        entity.setStatus(request.getStatus()); // Or a default status
+        entity.setStatus(request.getStatus() != null ? ApartmentStatus.valueOf(request.getStatus()) : null); // Or a default status
         return entity;
     }
 
@@ -53,7 +54,7 @@ public class ApartmentMapper {
             entity.setArea(request.getArea());
         }
         if (request.getStatus() != null) {
-            entity.setStatus(request.getStatus());
+            entity.setStatus(ApartmentStatus.valueOf(request.getStatus()));
         }
     }
 } 

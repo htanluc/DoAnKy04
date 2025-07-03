@@ -4,10 +4,11 @@ import com.mytech.apartment.portal.dtos.UserCreateRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
 import com.mytech.apartment.portal.dtos.UserUpdateRequest;
 import com.mytech.apartment.portal.mappers.UserMapper;
-import com.mytech.apartment.portal.models.Role;
 import com.mytech.apartment.portal.models.User;
-import com.mytech.apartment.portal.repositories.RoleRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.models.enums.UserStatus;
+import com.mytech.apartment.portal.models.Role;
+import com.mytech.apartment.portal.repositories.RoleRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,13 +27,13 @@ public class UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
     private UserMapper userMapper;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream().map(userMapper::toDto).collect(Collectors.toList());
@@ -46,11 +47,14 @@ public class UserService {
     public UserDto createUser(UserCreateRequest userCreateRequest) {
         User user = userMapper.toEntity(userCreateRequest);
         user.setPasswordHash(passwordEncoder.encode(userCreateRequest.getPassword()));
-
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-        user.setRoles(new HashSet<>(Collections.singletonList(userRole)));
-
+        if (userCreateRequest.getRoles() != null && !userCreateRequest.getRoles().isEmpty()) {
+            HashSet<Role> roles = new HashSet<>();
+            for (String roleName : userCreateRequest.getRoles()) {
+                Role role = roleRepository.findByName(roleName);
+                if (role != null) roles.add(role);
+            }
+            user.setRoles(roles);
+        }
         User savedUser = userRepository.save(user);
         return userMapper.toDto(savedUser);
     }
@@ -70,12 +74,12 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public UserDto setUserStatus(Long id, String status, String reason) {
+    public UserDto setUserStatus(Long id, UserStatus status, String reason) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found with id " + id));
         user.setStatus(status);
-        if ("LOCKED".equalsIgnoreCase(status) || "INACTIVE".equalsIgnoreCase(status)) {
+        if ("LOCKED".equalsIgnoreCase(status.toString()) || "INACTIVE".equalsIgnoreCase(status.toString())) {
             user.setLockReason(reason);
-        } else if ("ACTIVE".equalsIgnoreCase(status)) {
+        } else if ("ACTIVE".equalsIgnoreCase(status.toString())) {
             user.setLockReason(null);
         }
         return userMapper.toDto(userRepository.save(user));
@@ -85,5 +89,58 @@ public class UserService {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found with id " + id));
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         return userMapper.toDto(userRepository.save(user));
+    }
+
+    public Long getUserIdByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .map(User::getId)
+            .orElse(null);
+    }
+
+    public List<Role> getRolesOfUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        return List.copyOf(user.getRoles());
+    }
+
+    public void assignRoleToUser(Long userId, Long roleId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Role role = roleRepository.findById(roleId).orElseThrow();
+        user.getRoles().add(role);
+        userRepository.save(user);
+    }
+
+    public void removeRoleFromUser(Long userId, Long roleId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Role role = roleRepository.findById(roleId).orElseThrow();
+        user.getRoles().remove(role);
+        userRepository.save(user);
+    }
+
+    public UserDto registerUser(UserCreateRequest userCreateRequest) {
+        User user = userMapper.toEntity(userCreateRequest);
+        user.setPasswordHash(passwordEncoder.encode(userCreateRequest.getPassword()));
+        HashSet<Role> roles = new HashSet<>();
+        Role residentRole = roleRepository.findByName("RESIDENT");
+        if (residentRole == null) {
+            residentRole = roleRepository.save(new Role(null, "RESIDENT", "Cư dân"));
+        }
+        roles.add(residentRole);
+        user.setRoles(roles);
+        User savedUser = userRepository.save(user);
+        return userMapper.toDto(savedUser);
+    }
+
+    public User registerUserReturnEntity(UserCreateRequest userCreateRequest) {
+        User user = userMapper.toEntity(userCreateRequest);
+        user.setPasswordHash(passwordEncoder.encode(userCreateRequest.getPassword()));
+        HashSet<Role> roles = new HashSet<>();
+        Role residentRole = roleRepository.findByName("RESIDENT");
+        if (residentRole == null) {
+            residentRole = roleRepository.save(new Role(null, "RESIDENT", "Cư dân"));
+        }
+        roles.add(residentRole);
+        user.setRoles(roles);
+        User savedUser = userRepository.save(user);
+        return savedUser;
     }
 }

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { login, LoginRequest } from "@/lib/auth"
+import { login, LoginRequest, getRoleNames } from "@/lib/auth"
 import { useLanguage } from "../../lib/i18n"
 import LanguageSwitcher from "@/components/language-switcher"
 import { residentsApi } from '@/lib/api'
@@ -50,6 +50,7 @@ export default function LoginForm() {
       const response = await login(formData)
       console.log("Login response:", response);
       if (response.success && response.data) {
+        
         // Luôn lưu user info vào localStorage
         localStorage.setItem("user", JSON.stringify(response.data));
         if (response.data.token) {
@@ -72,14 +73,7 @@ export default function LoginForm() {
           return;
         }
         // Chỉ kiểm tra role khi đã active và không requireResidentInfo
-        let roleNames: string[] = [];
-        if (Array.isArray(roles) && roles.length > 0) {
-          if (roles.every((r: any) => typeof r === 'string')) {
-            roleNames = roles.map(r => String(r));
-          } else if (roles.every((r: any) => typeof r === 'object' && r !== null && 'name' in r)) {
-            roleNames = (roles as any[]).map(r => String(r.name));
-          }
-        }
+        let roleNames: string[] = getRoleNames({ roles });
         if (roleNames.includes('ADMIN')) {
           router.push('/admin-dashboard');
         } else if (roleNames.includes('STAFF')) {

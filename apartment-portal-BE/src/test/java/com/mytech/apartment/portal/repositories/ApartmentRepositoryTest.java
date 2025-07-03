@@ -2,6 +2,7 @@ package com.mytech.apartment.portal.repositories;
 
 import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.models.Building;
+import com.mytech.apartment.portal.models.enums.ApartmentStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ public class ApartmentRepositoryTest {
                     .floorNumber(1 + random.nextInt(10))
                     .unitNumber("A" + i)
                     .area(50.0 + random.nextDouble() * 100.0)
-                    .status("AVAILABLE")
+                    .status(ApartmentStatus.VACANT)
                     .build();
             apartmentRepository.save(apartment);
         }

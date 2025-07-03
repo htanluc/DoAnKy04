@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import com.mytech.apartment.portal.models.enums.EventRegistrationStatus;
 
 @Entity
 @Table(name = "event_registrations")
@@ -28,5 +29,5 @@ public class EventRegistration {
     private LocalDateTime registeredAt;
 
     @Column(nullable = false)
-    private String status; // REGISTERED, CANCELLED...
+    private EventRegistrationStatus status; // REGISTERED, CANCELLED...
 }
