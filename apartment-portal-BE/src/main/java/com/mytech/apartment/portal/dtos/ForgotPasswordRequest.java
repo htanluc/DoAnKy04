@@ -2,7 +2,6 @@ package com.mytech.apartment.portal.dtos;
 
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 
 @Data
 public class ForgotPasswordRequest {

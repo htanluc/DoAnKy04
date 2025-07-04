@@ -17,7 +17,7 @@ import {
   Home,
   Settings
 } from 'lucide-react'
-import { fetchCurrentUser } from '@/lib/api'
+import { fetchCurrentUser, fetchMySupportRequests, createSupportRequest } from '@/lib/api'
 
 interface ServiceRequest {
   id: string
@@ -51,6 +51,8 @@ interface ServiceCategory {
 export default function ServiceRequestsPage() {
   const [requests, setRequests] = useState<ServiceRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterCategory, setFilterCategory] = useState('all')
@@ -66,22 +68,18 @@ export default function ServiceRequestsPage() {
 
   useEffect(() => {
     const fetchRequests = async () => {
-      setLoading(true);
+      setLoading(true)
+      setError(null)
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8080/api/service-requests', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('Lỗi khi lấy yêu cầu dịch vụ');
-        const data = await res.json();
-        setRequests(data);
-      } catch (error) {
-        console.error('Error fetching requests:', error);
+        const data = await fetchMySupportRequests()
+        setRequests(data)
+      } catch (err: any) {
+        setError(err.message || 'Lỗi khi lấy yêu cầu hỗ trợ')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchRequests();
+    }
+    fetchRequests()
 
     // Fetch categories
     fetch('http://localhost:8080/api/service-categories')
@@ -210,33 +208,19 @@ export default function ServiceRequestsPage() {
   }
 
   const handleCreateRequest = async () => {
+    setError(null)
+    setSuccess(null)
     try {
-      const residentId = currentUser?.id || '';
-      const res = await fetch('http://localhost:8080/api/support-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          residentId,
-          categoryId: newRequest.category,
-          title: newRequest.title,
-          description: newRequest.description,
-          priority: newRequest.priority
-        })
-      });
-      if (!res.ok) throw new Error('Lỗi khi tạo yêu cầu');
-      const created = await res.json();
-      setRequests(prev => [created, ...prev]);
-      setNewRequest({
-        title: '',
-        description: '',
-        category: categories.length > 0 ? categories[0].categoryCode : '',
-        priority: 'MEDIUM'
-      });
-      setShowCreateForm(false);
-    } catch (e) {
-      alert('Không thể tạo yêu cầu mới!');
+      await createSupportRequest(newRequest)
+      setSuccess('Gửi yêu cầu hỗ trợ thành công!')
+      setShowCreateForm(false)
+      // Refresh requests
+      const data = await fetchMySupportRequests()
+      setRequests(data)
+    } catch (err: any) {
+      setError(err.message || 'Gửi yêu cầu hỗ trợ thất bại')
     }
-  };
+  }
 
   const handleCancelRequest = async (requestId: string) => {
     try {
@@ -265,13 +249,9 @@ export default function ServiceRequestsPage() {
     return requests.filter(request => request.status === 'COMPLETED').length
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  if (loading) return <div>Đang tải dữ liệu...</div>
+  if (error) return <div className="text-red-500">{error}</div>
+  if (!requests || requests.length === 0) return <div>Chưa có yêu cầu hỗ trợ nào.</div>
 
   return (
     <div className="min-h-screen bg-gray-50">

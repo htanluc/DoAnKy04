@@ -12,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
-import java.util.ArrayList;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 @Service
 public class OpenAiService {
 
@@ -30,23 +30,23 @@ public class OpenAiService {
 
     public AiQaResponse processQuestion(String question, String context) {
         long startTime = System.currentTimeMillis();
-        
+
         try {
             // Tạo prompt với context
             String prompt = buildPrompt(question, context);
-            
+
             // Gọi OpenAI API
             String answer = callOpenAiApi(prompt);
-            
+
             long responseTime = System.currentTimeMillis() - startTime;
-            
+
             return new AiQaResponse(
                 answer,
-                context != null ? "database" : "general",
+                (context != null && !context.trim().isEmpty()) ? "database" : "general",
                 responseTime,
                 "high"
             );
-            
+
         } catch (Exception e) {
             long responseTime = System.currentTimeMillis() - startTime;
             return new AiQaResponse(
@@ -60,24 +60,24 @@ public class OpenAiService {
 
     private String buildPrompt(String question, String context) {
         StringBuilder prompt = new StringBuilder();
-        
+
         // System message
         prompt.append("Bạn là trợ lý AI của hệ thống quản lý tòa nhà chung cư. ");
         prompt.append("Bạn có thể trả lời các câu hỏi về quản lý tòa nhà, dịch vụ, quy định, v.v. ");
         prompt.append("Hãy trả lời ngắn gọn, chính xác và hữu ích.\n\n");
-        
+
         // Context từ database nếu có
         if (context != null && !context.trim().isEmpty()) {
             prompt.append("Thông tin từ hệ thống:\n");
             prompt.append(context);
             prompt.append("\n\n");
         }
-        
+
         // Câu hỏi của user
         prompt.append("Câu hỏi: ");
         prompt.append(question);
         prompt.append("\n\nTrả lời:");
-        
+
         return prompt.toString();
     }
 
@@ -103,22 +103,30 @@ public class OpenAiService {
             requestBody.put("temperature", 0.7);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-            
+
             ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl, request, Map.class);
-            
+
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> body = response.getBody();
-                List<Map<String, Object>> choices = (List<Map<String, Object>>) body.get("choices");
-                
-                if (choices != null && !choices.isEmpty()) {
-                    Map<String, Object> choice = choices.get(0);
-                    Map<String, Object> messageResponse = (Map<String, Object>) choice.get("message");
-                    return (String) messageResponse.get("content");
+                Object choicesObj = body.get("choices");
+                if (choicesObj instanceof List) {
+                    List<?> choices = (List<?>) choicesObj;
+                    if (!choices.isEmpty() && choices.get(0) instanceof Map) {
+                        Map<?, ?> choice = (Map<?, ?>) choices.get(0);
+                        Object messageResponseObj = choice.get("message");
+                        if (messageResponseObj instanceof Map) {
+                            Map<?, ?> messageResponse = (Map<?, ?>) messageResponseObj;
+                            Object contentObj = messageResponse.get("content");
+                            if (contentObj instanceof String) {
+                                return (String) contentObj;
+                            }
+                        }
+                    }
                 }
             }
-            
+
             return "Không thể nhận được phản hồi từ AI. Vui lòng thử lại sau.";
-            
+
         } catch (Exception e) {
             return "Có lỗi xảy ra khi kết nối với AI service: " + e.getMessage();
         }

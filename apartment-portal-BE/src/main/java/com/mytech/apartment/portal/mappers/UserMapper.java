@@ -7,7 +7,7 @@ import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.enums.UserStatus;
 import org.springframework.stereotype.Component;
 
-import java.util.stream.Collectors;
+
 
 @Component
 public class UserMapper {
@@ -36,7 +36,8 @@ public class UserMapper {
         user.setUsername(request.getUsername());
         user.setPasswordHash(request.getPassword());
         user.setPhoneNumber(request.getPhoneNumber());
-        user.setStatus(UserStatus.ACTIVE); // Default status
+        user.setEmail(request.getEmail());
+        user.setStatus(UserStatus.INACTIVE); // Default status INACTIVE khi đăng ký
         return user;
     }
 

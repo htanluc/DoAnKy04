@@ -18,18 +18,19 @@ public class Resident {
     @Column(name = "user_id", unique = true)
     private Long userId;  // liên kết tới User
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "full_name")
     private String fullName;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    @Column(name = "id_card_number", nullable = false, unique = true)
+    @Column(name = "id_card_number", unique = true)
     private String idCardNumber;
 
     @Column(name = "family_relation")
     private String familyRelation;
 
     @Column(name = "status", nullable = false)
+    @Builder.Default
     private Integer status = 0;
 }

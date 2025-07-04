@@ -6,11 +6,9 @@ import com.mytech.apartment.portal.mappers.ApartmentResidentMapper;
 import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.models.ApartmentResident;
 import com.mytech.apartment.portal.models.ApartmentResidentId;
-import com.mytech.apartment.portal.models.Resident;
 import com.mytech.apartment.portal.models.enums.ApartmentStatus;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
-import com.mytech.apartment.portal.repositories.ResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +28,6 @@ public class ApartmentService {
     @Autowired
     private ApartmentResidentRepository apartmentResidentRepository;
 
-    @Autowired
-    private ResidentRepository residentRepository;
 
     @Autowired
     private UserRepository userRepository;

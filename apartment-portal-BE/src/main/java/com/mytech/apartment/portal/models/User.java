@@ -6,8 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 import com.mytech.apartment.portal.models.enums.UserStatus;
 import java.util.Set;
-import com.mytech.apartment.portal.models.Role;
 import java.util.HashSet;
+
 
 @Entity
 @Table(name = "users")
@@ -53,5 +53,6 @@ public class User {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
 }

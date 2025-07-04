@@ -14,7 +14,6 @@ import com.mytech.apartment.portal.dtos.ServiceRequestDto;
 import com.mytech.apartment.portal.dtos.ServiceRequestStatusUpdateRequest;
 import com.mytech.apartment.portal.dtos.ServiceRequestUpdateRequest;
 import com.mytech.apartment.portal.mappers.ServiceRequestMapper;
-import com.mytech.apartment.portal.models.ServiceCategory;
 import com.mytech.apartment.portal.models.ServiceRequest;
 import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.repositories.ServiceRequestRepository;

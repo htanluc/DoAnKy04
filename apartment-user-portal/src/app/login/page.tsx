@@ -65,14 +65,11 @@ export default function LoginPage() {
         }),
       })
       const data = await res.json()
-      if (res.ok && data.success && data.data && data.data.token) {
-        // Lưu token vào localStorage
-        localStorage.setItem('token', data.data.token)
-        // Lưu thêm user info nếu có
-        if (data.data.user) {
-          localStorage.setItem('user', JSON.stringify(data.data.user))
-        }
+      if (res.ok && data.success && data.data && data.data.jwt && data.data.jwt.token) {
+        localStorage.setItem('token', data.data.jwt.token)
+        localStorage.setItem('user', JSON.stringify(data.data.jwt))
         router.push('/dashboard')
+        return
       } else if (data && data.data && data.data.status && data.data.status !== 'ACTIVE') {
         setError(data.message || 'Tài khoản không hoạt động: ' + data.data.status)
       } else {

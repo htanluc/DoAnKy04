@@ -8,8 +8,7 @@ import com.mytech.apartment.portal.models.enums.UserStatus;
 import com.mytech.apartment.portal.models.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.*; 
 import java.util.List;
 
 @RestController
@@ -32,11 +31,16 @@ public class UserController {
      * [EN] Get user by ID
      * [VI] Lấy thông tin tài khoản người dùng theo ID
      */
+    // Lý do .map bị lỗi: Phương thức userService.getUserById(id) trả về UserDto (hoặc null) thay vì Optional<UserDto>,
+    // nên không thể gọi .map trên một đối tượng không phải Optional.
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable("id") Long id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        UserDto userDto = userService.getUserById(id);
+        if (userDto != null) {
+            return ResponseEntity.ok(userDto);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**

@@ -15,5 +15,5 @@ public class UserDto {
     private Set<String> roles;
     private String lockReason;
     private String email;
-    // TODO: add fields
+    
 }

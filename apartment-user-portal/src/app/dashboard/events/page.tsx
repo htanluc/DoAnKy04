@@ -14,6 +14,8 @@ import {
   XCircle,
   AlertTriangle
 } from 'lucide-react'
+import { registerEvent, cancelEventRegistration } from '@/lib/api'
+import type { JSX } from 'react'
 
 interface Event {
   id: string
@@ -34,6 +36,8 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -113,24 +117,28 @@ export default function EventsPage() {
     }
   }
 
-  const handleRegister = (eventId: string) => {
-    setEvents(prev => 
-      prev.map(event => 
-        event.id === eventId 
-          ? { ...event, isRegistered: true, currentParticipants: event.currentParticipants + 1 }
-          : event
-      )
-    )
+  const handleRegister = async (eventId: string) => {
+    setError(null)
+    setSuccess(null)
+    try {
+      await registerEvent({ eventId })
+      setSuccess('Đăng ký sự kiện thành công!')
+      setEvents(prev => prev.map(event => event.id === eventId ? { ...event, isRegistered: true, currentParticipants: event.currentParticipants + 1 } : event))
+    } catch (err: any) {
+      setError(err.message || 'Đăng ký sự kiện thất bại')
+    }
   }
 
-  const handleUnregister = (eventId: string) => {
-    setEvents(prev => 
-      prev.map(event => 
-        event.id === eventId 
-          ? { ...event, isRegistered: false, currentParticipants: event.currentParticipants - 1 }
-          : event
-      )
-    )
+  const handleUnregister = async (registrationId: string) => {
+    setError(null)
+    setSuccess(null)
+    try {
+      await cancelEventRegistration(registrationId)
+      setSuccess('Hủy đăng ký sự kiện thành công!')
+      setEvents(prev => prev.map(event => event.id === registrationId ? { ...event, isRegistered: false, currentParticipants: event.currentParticipants - 1 } : event))
+    } catch (err: any) {
+      setError(err.message || 'Hủy đăng ký sự kiện thất bại')
+    }
   }
 
   const getUpcomingEvents = () => {
@@ -147,6 +155,14 @@ export default function EventsPage() {
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>
+  }
+
+  if (!events || events.length === 0) {
+    return <div>Chưa có sự kiện nào.</div>
   }
 
   return (

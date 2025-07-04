@@ -15,6 +15,7 @@ export default function RegisterPage() {
     fullName: '',
     email: '',
     phone: '',
+    idCardNumber: '',
     apartmentNumber: '',
     password: '',
     confirmPassword: ''
@@ -48,6 +49,7 @@ export default function RegisterPage() {
         fullName: formData.fullName,
         email: formData.email,
         phoneNumber: formData.phone,
+        idCardNumber: formData.idCardNumber,
         password: formData.password,
         confirmPassword: formData.confirmPassword || formData.password,
       })
@@ -57,7 +59,9 @@ export default function RegisterPage() {
       }, 2000)
     } catch (err: any) {
       // Ưu tiên lấy message từ response trả về của backend
-      if (err?.response?.message) {
+      if (err?.response?.data?.message) {
+        setError(err.response.data.message)
+      } else if (err?.response?.message) {
         setError(err.response.message)
       } else if (err?.message) {
         setError(err.message)
@@ -170,6 +174,25 @@ export default function RegisterPage() {
                   type="tel"
                   placeholder="Nhập số điện thoại"
                   value={formData.phone}
+                  onChange={handleInputChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="idCardNumber" className="text-sm font-medium text-gray-700">
+                CCCD/CMND
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="idCardNumber"
+                  name="idCardNumber"
+                  type="text"
+                  placeholder="Nhập số CCCD/CMND"
+                  value={formData.idCardNumber}
                   onChange={handleInputChange}
                   className="pl-10"
                   required

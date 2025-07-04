@@ -2,7 +2,6 @@ package com.mytech.apartment.portal.services;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +16,9 @@ import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.EmailVerificationToken;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.repositories.EmailVerificationTokenRepository;
-import com.mytech.apartment.portal.services.EmailService;
 import com.mytech.apartment.portal.models.Resident;
 import com.mytech.apartment.portal.repositories.ResidentRepository;
 import com.mytech.apartment.portal.models.enums.UserStatus;
-import com.mytech.apartment.portal.services.UserService;
 import com.mytech.apartment.portal.dtos.UserCreateRequest;
 
 @Service
@@ -48,6 +45,7 @@ public class AuthService {
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
+    @Transactional
     public void register(RegisterRequest request) {
         // Kiểm tra mật khẩu xác nhận
         if (!request.getPassword().equals(request.getConfirmPassword())) {
@@ -69,16 +67,15 @@ public class AuthService {
         userCreateRequest.setUsername(request.getPhoneNumber());
         userCreateRequest.setPhoneNumber(request.getPhoneNumber());
         userCreateRequest.setPassword(request.getPassword());
+        userCreateRequest.setEmail(request.getEmail());
         // Không set roles để UserService.registerUser tự gán role RESIDENT
         User user = userService.registerUserReturnEntity(userCreateRequest);
         // Tạo resident tương ứng với user mới
         Resident resident = new Resident();
         resident.setUserId(user.getId());
-        resident.setFullName("Chưa cập nhật");
-        resident.setIdCardNumber("Chưa cập nhật");
-        resident.setDateOfBirth(null);
-        resident.setFamilyRelation(null);
-        resident.setStatus(0);
+        resident.setFullName(request.getFullName());
+        resident.setIdCardNumber(request.getIdCardNumber());
+        resident.setStatus(user.getStatus() == com.mytech.apartment.portal.models.enums.UserStatus.ACTIVE ? 1 : 0);
         residentRepository.save(resident);
         // Tạo token xác thực email
         String token = UUID.randomUUID().toString();
@@ -86,8 +83,15 @@ public class AuthService {
         EmailVerificationToken verificationToken = new EmailVerificationToken(token, user, expiry);
         emailVerificationTokenRepository.save(verificationToken);
         // Gửi email xác thực
-        String verifyLink = frontendUrl + "/verify-email?token=" + token;
-        emailService.sendVerificationEmail(user.getEmail(), verifyLink);
+        try {
+            String verifyLink = frontendUrl + "/verify-email?token=" + token;
+            emailService.sendVerificationEmail(user.getEmail(), verifyLink);
+        } catch (Exception e) {
+            // Nếu gửi email thất bại, xóa user và resident đã tạo
+            residentRepository.delete(resident);
+            userRepository.delete(user);
+            throw new RuntimeException("Đăng ký thất bại do không gửi được email xác thực: " + e.getMessage());
+        }
     }
 
     @Transactional
@@ -183,6 +187,19 @@ public class AuthService {
         if (UserStatus.ACTIVE.equals(user.getStatus())) {
             throw new RuntimeException("Tài khoản đã được xác thực!");
         }
+        
+        // Kiểm tra thời gian chờ 10 phút
+        Optional<EmailVerificationToken> existingTokenOpt = emailVerificationTokenRepository.findByUser(user);
+        if (existingTokenOpt.isPresent()) {
+            EmailVerificationToken existingToken = existingTokenOpt.get();
+            LocalDateTime now = LocalDateTime.now();
+            // Sử dụng thời gian tạo token (expiry - 24h) để tính thời gian chờ
+            LocalDateTime tokenCreated = existingToken.getExpiryDate().minusHours(24);
+            if (now.isBefore(tokenCreated.plusMinutes(10))) {
+                throw new RuntimeException("Vui lòng đợi 10 phút trước khi gửi lại email xác thực.");
+            }
+        }
+        
         // Xóa token cũ
         emailVerificationTokenRepository.deleteByUser(user);
         // Tạo token mới

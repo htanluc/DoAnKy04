@@ -14,6 +14,7 @@ import {
   Info,
   Megaphone
 } from 'lucide-react'
+import type { JSX } from 'react'
 
 interface Announcement {
   id: string
@@ -28,6 +29,7 @@ interface Announcement {
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('all')
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null)
@@ -35,6 +37,7 @@ export default function AnnouncementsPage() {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       setLoading(true)
+      setError(null)
       try {
         const token = localStorage.getItem('token');
         const res = await fetch('http://localhost:8080/api/announcements', {
@@ -42,10 +45,9 @@ export default function AnnouncementsPage() {
         });
         if (!res.ok) throw new Error('Lỗi khi lấy thông báo')
         const data = await res.json()
-        // Nếu backend trả về mảng AnnouncementDto
         setAnnouncements(data)
-      } catch (error) {
-        console.error('Error fetching announcements:', error)
+      } catch (error: any) {
+        setError(error.message || 'Lỗi khi lấy thông báo')
       } finally {
         setLoading(false)
       }
@@ -118,13 +120,9 @@ export default function AnnouncementsPage() {
     )
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  if (loading) return <div>Đang tải dữ liệu...</div>
+  if (error) return <div className="text-red-500">{error}</div>
+  if (!announcements || announcements.length === 0) return <div>Chưa có thông báo nào.</div>
 
   return (
     <div className="min-h-screen bg-gray-50">

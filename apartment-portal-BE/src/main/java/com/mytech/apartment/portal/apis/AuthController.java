@@ -3,7 +3,6 @@ package com.mytech.apartment.portal.apis;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -30,14 +29,13 @@ import com.mytech.apartment.portal.dtos.ResetPasswordRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
 import com.mytech.apartment.portal.models.RefreshToken;
 import com.mytech.apartment.portal.models.User;
-import com.mytech.apartment.portal.models.Role;
+
 import com.mytech.apartment.portal.models.enums.UserStatus;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.security.UserDetailsImpl;
 import com.mytech.apartment.portal.security.jwt.JwtProvider;
 import com.mytech.apartment.portal.services.AuthService;
 import com.mytech.apartment.portal.services.RefreshTokenService;
-import com.mytech.apartment.portal.services.ResidentService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,7 +54,6 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final ResidentService residentService;
 
     @Operation(summary = "Validate token", description = "Validate JWT token and return user info")
     @GetMapping("/validate")
@@ -111,7 +108,23 @@ public class AuthController {
             if (UserStatus.LOCKED.equals(status)) {
                 message = "Tài khoản đã bị khóa." + (user.getLockReason() != null ? " Lý do: " + user.getLockReason() : "");
             } else if (UserStatus.INACTIVE.equals(status)) {
-                message = "Tài khoản chưa kích hoạt. Vui lòng kiểm tra email để xác thực.";
+                // Gửi lại email xác thực nếu user chưa xác thực
+                try {
+                    authService.resendVerificationEmail(user.getEmail());
+                    message = "Tài khoản chưa kích hoạt. Đã gửi lại email xác thực. Vui lòng kiểm tra email.";
+                    data.put("canResend", false);
+                    data.put("resendMessage", "Vui lòng đợi 10 phút trước khi gửi lại email.");
+                } catch (Exception e) {
+                    if (e.getMessage().contains("10 phút")) {
+                        message = "Tài khoản chưa kích hoạt. " + e.getMessage();
+                        data.put("canResend", false);
+                        data.put("resendMessage", e.getMessage());
+                    } else {
+                        message = "Tài khoản chưa kích hoạt. Vui lòng kiểm tra email để xác thực.";
+                        data.put("canResend", true);
+                        data.put("resendMessage", "Có thể gửi lại email xác thực.");
+                    }
+                }
             } else {
                 message = "Tài khoản không hoạt động.";
             }

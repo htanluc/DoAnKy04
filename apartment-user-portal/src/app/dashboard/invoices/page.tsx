@@ -16,7 +16,7 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react'
-import { fetchCurrentUser } from '@/lib/api'
+import { fetchMyInvoices } from '@/lib/api'
 
 interface Invoice {
   id: string
@@ -32,28 +32,25 @@ interface Invoice {
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true)
+      setError(null)
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8080/api/invoices', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('Failed to fetch invoices');
-        const data = await res.json();
-        setInvoices(data);
-      } catch (err) {
-        setError(err.message);
+        const data = await fetchMyInvoices()
+        setInvoices(data)
+      } catch (err: any) {
+        setError(err.message || 'Lỗi khi lấy hóa đơn')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchData();
-  }, []);
+    }
+    fetchData()
+  }, [])
 
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,17 +109,9 @@ export default function InvoicesPage() {
       .reduce((total, invoice) => total + invoice.amount, 0)
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>
-  }
+  if (loading) return <div>Đang tải dữ liệu...</div>
+  if (error) return <div className="text-red-500">{error}</div>
+  if (!invoices || invoices.length === 0) return <div>Chưa có hóa đơn nào.</div>
 
   return (
     <div className="min-h-screen bg-gray-50">

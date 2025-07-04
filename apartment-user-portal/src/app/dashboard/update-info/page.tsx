@@ -16,6 +16,8 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react'
+import { fetchCurrentResident, updateCurrentResident } from '@/lib/api'
+import type { JSX } from 'react'
 
 interface UserInfo {
   id: string
@@ -56,12 +58,8 @@ export default function UpdateInfoPage() {
     const fetchUserInfo = async () => {
       setLoading(true)
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8080/api/users/me', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('Lỗi khi lấy thông tin người dùng')
-        const data = await res.json()
+        const data = await fetchCurrentResident()
+        if (!data) throw new Error('Không thể tải thông tin người dùng')
         setUserInfo(data)
         setFormData({
           fullName: data.fullName || data.username || '',
@@ -69,7 +67,7 @@ export default function UpdateInfoPage() {
           emergencyContact: data.emergencyContact || { name: '', phone: '', relationship: '' }
         })
       } catch (error) {
-        console.error('Error fetching user info:', error)
+        setUserInfo(null)
       } finally {
         setLoading(false)
       }
@@ -80,26 +78,15 @@ export default function UpdateInfoPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8080/api/users/me', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          phoneNumber: formData.phone,
-          emergencyContact: formData.emergencyContact
-        })
-      });
-      if (!res.ok) throw new Error('Lỗi khi cập nhật thông tin');
-      const updated = await res.json();
-      setUserInfo(updated);
+      const updated = await updateCurrentResident({
+        fullName: formData.fullName,
+        phoneNumber: formData.phone,
+        emergencyContact: formData.emergencyContact
+      })
+      setUserInfo(updated)
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 3000)
     } catch (error) {
-      console.error('Error saving user info:', error)
       setShowError(true)
       setTimeout(() => setShowError(false), 3000)
     } finally {
@@ -135,7 +122,7 @@ export default function UpdateInfoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-full bg-gray-50 flex flex-col flex-grow">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

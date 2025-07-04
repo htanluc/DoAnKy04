@@ -14,8 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import com.mytech.apartment.portal.models.enums.PaymentStatus;

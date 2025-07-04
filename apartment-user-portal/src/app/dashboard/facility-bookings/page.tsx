@@ -1,6 +1,8 @@
+/// <reference types="react" />
+
 "use client"
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +18,12 @@ import {
   MapPin,
   DollarSign
 } from 'lucide-react'
+import {
+  fetchMyFacilityBookings,
+  createFacilityBooking,
+  cancelFacilityBooking
+} from '@/lib/api'
+import type { FC, JSX } from 'react'
 
 interface Facility {
   id: string
@@ -47,10 +55,12 @@ interface Booking {
   createdAt: string
 }
 
-export default function FacilityBookingsPage() {
+const FacilityBookingsPage: FC = () => {
   const [facilities, setFacilities] = useState<Facility[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [showBookingForm, setShowBookingForm] = useState(false)
@@ -77,14 +87,10 @@ export default function FacilityBookingsPage() {
         setFacilities(facilitiesData)
 
         // Lấy lịch sử đặt chỗ
-        const resBookings = await fetch('http://localhost:8080/api/facility-bookings', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!resBookings.ok) throw new Error('Lỗi khi lấy lịch sử đặt chỗ')
-        const bookingsData = await resBookings.json()
-        setBookings(bookingsData)
-      } catch (error) {
-        console.error('Error fetching data:', error)
+        const data = await fetchMyFacilityBookings()
+        setBookings(data)
+      } catch (err: any) {
+        setError(err.message || 'Lỗi khi lấy lịch sử đặt tiện ích')
       } finally {
         setLoading(false)
       }
@@ -92,7 +98,7 @@ export default function FacilityBookingsPage() {
     fetchData()
   }, [])
 
-  const filteredBookings = bookings.filter(booking => {
+  const filteredBookings = bookings.filter((booking: Booking) => {
     const matchesSearch = booking.facilityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          booking.purpose.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || booking.status === filterStatus
@@ -183,48 +189,42 @@ export default function FacilityBookingsPage() {
     setShowBookingForm(true)
   }
 
-  const handleCreateBooking = () => {
+  const handleCreateBooking = async () => {
     if (!selectedFacility) return
-
-    const startHour = parseInt(newBooking.startTime.split(':')[0])
-    const endHour = parseInt(newBooking.endTime.split(':')[0])
-    const duration = endHour - startHour
-    const totalCost = selectedFacility.hourlyRate * duration
-
-    const newBookingData: Booking = {
-      id: (bookings.length + 1).toString(),
-      facilityId: selectedFacility.id,
-      facilityName: selectedFacility.name,
-      startTime: newBooking.startTime,
-      endTime: newBooking.endTime,
-      date: newBooking.date,
-      numberOfPeople: newBooking.numberOfPeople,
-      totalCost: totalCost,
-      status: 'PENDING',
-      purpose: newBooking.purpose,
-      createdAt: new Date().toISOString()
+    setError(null)
+    setSuccess(null)
+    try {
+      const bookingData = {
+        facilityId: selectedFacility.id,
+        date: newBooking.date,
+        startTime: newBooking.startTime,
+        endTime: newBooking.endTime,
+        numberOfPeople: newBooking.numberOfPeople,
+        purpose: newBooking.purpose
+      }
+      await createFacilityBooking(bookingData)
+      setSuccess('Đặt tiện ích thành công!')
+      setShowBookingForm(false)
+      // Refresh bookings
+      const data = await fetchMyFacilityBookings()
+      setBookings(data)
+    } catch (err: any) {
+      setError(err.message || 'Đặt tiện ích thất bại')
     }
-
-    setBookings(prev => [newBookingData, ...prev])
-    setNewBooking({
-      date: '',
-      startTime: '',
-      endTime: '',
-      numberOfPeople: 1,
-      purpose: ''
-    })
-    setShowBookingForm(false)
-    setSelectedFacility(null)
   }
 
-  const handleCancelBooking = (bookingId: string) => {
-    setBookings(prev => 
-      prev.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, status: 'CANCELLED' }
-          : booking
-      )
-    )
+  const handleCancelBooking = async (bookingId: string) => {
+    setError(null)
+    setSuccess(null)
+    try {
+      await cancelFacilityBooking(bookingId)
+      setSuccess('Hủy đặt tiện ích thành công!')
+      // Refresh bookings
+      const data = await fetchMyFacilityBookings()
+      setBookings(data)
+    } catch (err: any) {
+      setError(err.message || 'Hủy đặt tiện ích thất bại')
+    }
   }
 
   const getPendingBookings = () => {
@@ -247,6 +247,14 @@ export default function FacilityBookingsPage() {
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>
+  }
+
+  if (!bookings || bookings.length === 0) {
+    return <div>Chưa có lịch sử đặt tiện ích nào.</div>
   }
 
   return (
@@ -585,4 +593,6 @@ export default function FacilityBookingsPage() {
       </div>
     </div>
   )
-} 
+}
+
+export default FacilityBookingsPage 

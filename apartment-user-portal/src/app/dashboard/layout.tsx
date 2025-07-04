@@ -82,8 +82,8 @@ export default function DashboardLayout({
       <div className="lg:ml-64">
         <Header onMenuToggle={handleMenuToggle} isMenuOpen={isMenuOpen} />
         
-        <main className="pt-16 min-h-screen">
-          <div className="p-6">
+        <main className="h-full flex flex-col flex-1">
+          <div className="pt-0 px-6 pb-6">
             {children}
           </div>
         </main>
