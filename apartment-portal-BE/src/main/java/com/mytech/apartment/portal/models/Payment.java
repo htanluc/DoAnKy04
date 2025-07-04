@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import com.mytech.apartment.portal.models.enums.PaymentStatus;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
 
 @Entity
 @Table(name = "payments")
@@ -32,10 +34,10 @@ public class Payment {
     private Double amount;
 
     @Column(nullable = false)
-    private String method; // CASH, BANK, MOMO, VISA...
+    private PaymentMethod method; // CASH, BANK, MOMO, VISA...
 
     @Column(nullable = false)
-    private String status; // SUCCESS, PENDING, FAILED
+    private PaymentStatus status; // SUCCESS, PENDING, FAILED
 
     @Column(name = "reference_code")
     private String referenceCode;

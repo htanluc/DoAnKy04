@@ -7,11 +7,16 @@ import com.mytech.apartment.portal.services.ResidentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/residents")
+@RequestMapping("/api")
+@Tag(name = "Resident Self", description = "API for resident to view/update their own profile")
 public class ResidentController {
     @Autowired
     private ResidentService residentService;
@@ -20,7 +25,7 @@ public class ResidentController {
      * [EN] Get all residents
      * [VI] Lấy danh sách tất cả cư dân
      */
-    @GetMapping
+    @GetMapping("/admin/residents")
     public List<ResidentDto> getAllResidents() {
         return residentService.getAllResidents();
     }
@@ -29,7 +34,7 @@ public class ResidentController {
      * [EN] Get resident by ID
      * [VI] Lấy thông tin cư dân theo ID
      */
-    @GetMapping("/{id}")
+    @GetMapping("/admin/residents/{id}")
     public ResponseEntity<ResidentDto> getResidentById(@PathVariable("id") Long id) {
         return residentService.getResidentById(id)
                 .map(ResponseEntity::ok)
@@ -40,7 +45,7 @@ public class ResidentController {
      * [EN] Create new resident
      * [VI] Tạo cư dân mới
      */
-    @PostMapping
+    @PostMapping("/admin/residents")
     public ResidentDto createResident(@RequestBody ResidentCreateRequest req) {
         return residentService.createResident(req);
     }
@@ -49,7 +54,7 @@ public class ResidentController {
      * [EN] Update resident by ID
      * [VI] Cập nhật thông tin cư dân theo ID
      */
-    @PutMapping("/{id}")
+    @PutMapping("/admin/residents/{id}")
     public ResponseEntity<ResidentDto> updateResident(@PathVariable("id") Long id, @RequestBody ResidentUpdateRequest req) {
         try {
             ResidentDto updatedResident = residentService.updateResident(id, req);
@@ -63,9 +68,37 @@ public class ResidentController {
      * [EN] Delete resident by ID
      * [VI] Xóa cư dân theo ID
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/admin/residents/{id}")
     public ResponseEntity<Void> deleteResident(@PathVariable Long id) {
         residentService.deleteResident(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * [EN] Get current resident's own info
+     * [VI] Lấy thông tin cá nhân của resident hiện tại
+     */
+    @Operation(summary = "Get current resident info", description = "Get info of the currently authenticated resident")
+    @GetMapping("/residents/me")
+    public ResponseEntity<ResidentDto> getCurrentResident() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        ResidentDto dto = residentService.getResidentByUsername(username);
+        if (dto != null) return ResponseEntity.ok(dto);
+        return ResponseEntity.notFound().build();
+    }
+
+    /**
+     * [EN] Update current resident's own info
+     * [VI] Cập nhật thông tin cá nhân resident hiện tại
+     */
+    @Operation(summary = "Update current resident info", description = "Update info of the currently authenticated resident")
+    @PutMapping("/residents/me")
+    public ResponseEntity<ResidentDto> updateCurrentResident(@RequestBody ResidentUpdateRequest req) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        ResidentDto updated = residentService.updateResidentByUsername(username, req);
+        if (updated != null) return ResponseEntity.ok(updated);
+        return ResponseEntity.notFound().build();
     }
 } 

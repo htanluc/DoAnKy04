@@ -3,6 +3,7 @@ package com.mytech.apartment.portal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.mytech.apartment.portal.models.enums.FeedbackStatus;
 
 @Entity
 @Table(name = "feedback")
@@ -26,7 +27,7 @@ public class Feedback {
     private String content;
     private String imageAttachment;
     private LocalDateTime submittedAt;
-    private String status;
+    private FeedbackStatus status;
     private String response;
     private LocalDateTime respondedAt;
 } 

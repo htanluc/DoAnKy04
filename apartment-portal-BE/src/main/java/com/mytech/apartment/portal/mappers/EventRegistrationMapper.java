@@ -18,7 +18,7 @@ public class EventRegistrationMapper {
         }
         dto.setResidentId(entity.getResidentId());
         dto.setRegisteredAt(entity.getRegisteredAt());
-        dto.setStatus(entity.getStatus());
+        dto.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
         return dto;
     }
 } 

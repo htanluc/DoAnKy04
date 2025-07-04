@@ -27,4 +27,7 @@ public class RegisterRequest {
     
     @NotBlank(message = "Xác nhận mật khẩu không được để trống")
     private String confirmPassword;
+    
+    @NotBlank(message = "CCCD/CMND không được để trống")
+    private String idCardNumber;
 } 

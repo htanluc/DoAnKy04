@@ -6,15 +6,23 @@ import com.mytech.apartment.portal.services.FacilityBookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import com.mytech.apartment.portal.services.UserService;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Resident Facility Booking", description = "API for resident to view their own facility bookings")
 public class FacilityBookingController {
     @Autowired
     private FacilityBookingService facilityBookingService;
+    @Autowired
+    private UserService userService;
 
     // Admin endpoint to get all bookings
     @GetMapping("/admin/facility-bookings")
@@ -54,5 +62,25 @@ public class FacilityBookingController {
     public ResponseEntity<Void> deleteFacilityBooking(@PathVariable("id") Long id) {
         boolean deleted = facilityBookingService.deleteFacilityBooking(id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    /**
+     * [EN] Get facility bookings of current resident
+     * [VI] Lấy lịch sử đặt tiện ích của resident hiện tại
+     */
+    @Operation(summary = "Get facility bookings of current resident", description = "Get list of facility bookings for the currently authenticated resident")
+    @GetMapping("/facility-bookings/my")
+    public ResponseEntity<List<FacilityBookingDto>> getMyFacilityBookings() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Long userId = null;
+        try {
+            userId = userService.getUserIdByUsername(username);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+        if (userId == null) return ResponseEntity.status(401).build();
+        List<FacilityBookingDto> bookings = facilityBookingService.getFacilityBookingsByUserId(userId);
+        return ResponseEntity.ok(bookings);
     }
 } 

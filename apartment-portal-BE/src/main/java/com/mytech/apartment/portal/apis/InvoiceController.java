@@ -7,14 +7,23 @@ import com.mytech.apartment.portal.services.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import com.mytech.apartment.portal.services.ApartmentService;
+import java.util.stream.Collectors;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/invoices")
+@Tag(name = "Resident Invoice", description = "API for resident to view their own invoices")
 public class InvoiceController {
     @Autowired
     private InvoiceService invoiceService;
+    @Autowired
+    private ApartmentService apartmentService;
 
     /**
      * Get all invoices
@@ -67,5 +76,28 @@ public class InvoiceController {
     public ResponseEntity<Void> deleteInvoice(@PathVariable("id") Long id) {
         invoiceService.deleteInvoice(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * [EN] Get invoices of current resident
+     * [VI] Lấy danh sách hóa đơn của resident hiện tại
+     */
+    @Operation(summary = "Get invoices of current resident", description = "Get list of invoices for apartments linked to the currently authenticated resident")
+    @GetMapping("/my")
+    public ResponseEntity<List<InvoiceDto>> getMyInvoices() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Long userId = null;
+        try {
+            userId = apartmentService.getUserIdByUsername(username);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+        if (userId == null) return ResponseEntity.status(401).build();
+        // Lấy danh sách apartmentId của resident
+        var apartments = apartmentService.getApartmentsOfResident(userId);
+        var apartmentIds = apartments.stream().map(a -> a.getId()).collect(Collectors.toList());
+        List<InvoiceDto> invoices = invoiceService.getInvoicesByApartmentIds(apartmentIds);
+        return ResponseEntity.ok(invoices);
     }
 } 

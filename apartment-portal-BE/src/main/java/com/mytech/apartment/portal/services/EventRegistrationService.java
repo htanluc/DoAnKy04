@@ -7,6 +7,7 @@ import com.mytech.apartment.portal.models.Event;
 import com.mytech.apartment.portal.models.EventRegistration;
 import com.mytech.apartment.portal.repositories.EventRepository;
 import com.mytech.apartment.portal.repositories.EventRegistrationRepository;
+import com.mytech.apartment.portal.models.enums.EventRegistrationStatus;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,7 +45,7 @@ public class EventRegistrationService {
         EventRegistration registration = new EventRegistration();
         registration.setEvent(event);
         registration.setResidentId(request.getResidentId());
-        registration.setStatus("REGISTERED");
+        registration.setStatus(EventRegistrationStatus.REGISTERED);
 
         EventRegistration savedRegistration = registrationRepository.save(registration);
         return registrationMapper.toDto(savedRegistration);
@@ -55,7 +56,7 @@ public class EventRegistrationService {
         EventRegistration registration = registrationRepository.findById(registrationId)
                 .orElseThrow(() -> new RuntimeException("Registration not found with id " + registrationId));
 
-        registration.setStatus("CANCELLED");
+        registration.setStatus(EventRegistrationStatus.CANCELLED);
         registrationRepository.save(registration);
     }
 } 

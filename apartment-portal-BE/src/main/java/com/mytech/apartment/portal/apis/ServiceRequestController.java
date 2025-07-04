@@ -11,15 +11,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import com.mytech.apartment.portal.services.UserService;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Resident Support Request", description = "API for resident to view their own support requests")
 public class ServiceRequestController {
     @Autowired
     private ServiceRequestService serviceRequestService;
+    @Autowired
+    private UserService userService;
 
     /**
      * Get all support requests
@@ -173,5 +181,25 @@ public class ServiceRequestController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    /**
+     * [EN] Get support requests of current resident
+     * [VI] Lấy lịch sử yêu cầu hỗ trợ của resident hiện tại
+     */
+    @Operation(summary = "Get support requests of current resident", description = "Get list of support requests for the currently authenticated resident")
+    @GetMapping("/support-requests/my")
+    public ResponseEntity<List<ServiceRequestDto>> getMySupportRequests() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Long userId = null;
+        try {
+            userId = userService.getUserIdByUsername(username);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+        if (userId == null) return ResponseEntity.status(401).build();
+        List<ServiceRequestDto> requests = serviceRequestService.getServiceRequestsByUserId(userId);
+        return ResponseEntity.ok(requests);
     }
 } 

@@ -4,29 +4,15 @@ import { getToken, refreshToken, removeTokens } from './auth'
 const API_BASE_URL = 'http://localhost:8080'
 
 // Custom fetch wrapper with authentication
-export const apiRequest = async (
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<Response> => {
-  let token = getToken()
-  
-  const defaultHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
+export async function apiFetch(endpoint: string, options: RequestInit = {}) {
+  const token = getToken();
+  const isProtected = endpoint.startsWith("/api/admin") || (endpoint.startsWith("/api/") && !endpoint.startsWith("/api/auth"));
+  const headers = new Headers(options.headers || {});
+  if (token && isProtected) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
-
-  if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`
-  }
-
-  const config: RequestInit = {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  }
-
-  let response = await fetch(`${API_BASE_URL}${endpoint}`, config)
+  const config = { ...options, headers };
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
   // Handle 401 Unauthorized
   if (response.status === 401) {
@@ -34,12 +20,8 @@ export const apiRequest = async (
     const refreshed = await refreshToken()
     if (refreshed && refreshed.token) {
       // Gửi lại request với token mới
-      token = refreshed.token
-      config.headers = {
-        ...config.headers,
-        'Authorization': `Bearer ${token}`,
-      }
-      response = await fetch(`${API_BASE_URL}${endpoint}`, config)
+      headers.set("Authorization", `Bearer ${refreshed.token}`);
+      response = await fetch(`${API_BASE_URL}${endpoint}`, config);
       if (response.status !== 401) return response
     }
     // Nếu vẫn 401 hoặc refresh token hết hạn
@@ -55,27 +37,27 @@ export const apiRequest = async (
 // API methods
 export const api = {
   // GET request
-  get: (endpoint: string) => apiRequest(endpoint),
+  get: (endpoint: string) => apiFetch(endpoint),
 
   // POST request
-  post: (endpoint: string, data?: any) => apiRequest(endpoint, {
+  post: (endpoint: string, data?: any) => apiFetch(endpoint, {
     method: 'POST',
     body: data ? JSON.stringify(data) : undefined,
   }),
 
   // PUT request
-  put: (endpoint: string, data?: any) => apiRequest(endpoint, {
+  put: (endpoint: string, data?: any) => apiFetch(endpoint, {
     method: 'PUT',
     body: data ? JSON.stringify(data) : undefined,
   }),
 
   // DELETE request
-  delete: (endpoint: string) => apiRequest(endpoint, {
+  delete: (endpoint: string) => apiFetch(endpoint, {
     method: 'DELETE',
   }),
 
   // PATCH request
-  patch: (endpoint: string, data?: any) => apiRequest(endpoint, {
+  patch: (endpoint: string, data?: any) => apiFetch(endpoint, {
     method: 'PATCH',
     body: data ? JSON.stringify(data) : undefined,
   }),

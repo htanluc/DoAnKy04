@@ -2,6 +2,7 @@ package com.mytech.apartment.portal.mappers;
 
 import com.mytech.apartment.portal.dtos.FacilityBookingDto;
 import com.mytech.apartment.portal.models.FacilityBooking;
+import com.mytech.apartment.portal.models.enums.FacilityBookingStatus;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -26,7 +27,7 @@ public class FacilityBookingMapper {
             booking.getUser() != null ? booking.getUser().getUsername() : null,
             startTime,
             endTime,
-            booking.getStatus(),
+            booking.getStatus() != null ? booking.getStatus().name() : null,
             null, // purpose field doesn't exist in entity
             booking.getCreatedAt()
         );
@@ -47,7 +48,7 @@ public class FacilityBookingMapper {
             booking.setDuration((int) durationMinutes);
         }
         
-        booking.setStatus(dto.getStatus());
+        booking.setStatus(dto.getStatus() != null ? FacilityBookingStatus.valueOf(dto.getStatus()) : null);
         booking.setCreatedAt(dto.getCreatedAt());
         
         return booking;

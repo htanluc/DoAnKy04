@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { LogOut, User, Settings } from "lucide-react"
-import { getCurrentUser, logout } from "@/lib/auth"
+import { getCurrentUser, logout, getRoleNames } from "@/lib/auth"
 
 export default function UserMenu() {
   const router = useRouter()
@@ -39,6 +39,8 @@ export default function UserMenu() {
     return null
   }
 
+  let roleNames: string[] = getRoleNames(user);
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -58,17 +60,7 @@ export default function UserMenu() {
               {user.email}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {(() => {
-                let roleNames: string[] = [];
-                if (Array.isArray(user.roles) && user.roles.length > 0) {
-                  if (user.roles.every((r: any) => typeof r === 'string')) {
-                    roleNames = user.roles.map((r: any) => String(r));
-                  } else if (user.roles.every((r: any) => typeof r === 'object' && r !== null && 'name' in r)) {
-                    roleNames = user.roles.map((r: any) => String(r.name));
-                  }
-                }
-                return roleNames.join(", ");
-              })()}
+              {roleNames.join(", ")}
             </p>
           </div>
         </DropdownMenuLabel>

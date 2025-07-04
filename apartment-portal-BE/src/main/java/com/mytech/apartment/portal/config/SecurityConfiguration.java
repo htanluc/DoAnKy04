@@ -3,6 +3,11 @@ package com.mytech.apartment.portal.config;
 import com.mytech.apartment.portal.security.CustomUserDetailsService;
 import com.mytech.apartment.portal.security.jwt.JwtAuthenticationFilter;
 import com.mytech.apartment.portal.security.jwt.JwtProvider;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,20 +21,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.OncePerRequestFilter;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.FilterChain;
-import java.io.IOException;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.HashMap;
-import java.util.Map;
 
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -55,7 +53,7 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of("http://localhost:3000"));
+        cfg.setAllowedOrigins(List.of("http://localhost:3000","http://localhost:3001"));
         cfg.setAllowCredentials(true);
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
@@ -91,9 +89,8 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-          .cors()  // Bật lại CORS
-        .and()
-          .csrf().disable()
+          .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Sử dụng cấu hình CORS đã định nghĩa
+          .csrf(csrf -> csrf.disable())
           .sessionManagement()
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
           .and()
@@ -104,6 +101,8 @@ public class SecurityConfiguration {
               .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
               // Auth endpoints - cho phép tất cả
               .requestMatchers("/api/auth/**").permitAll()
+              // Chỉ ADMIN mới được truy cập các endpoint quản lý user/role
+              .requestMatchers("/api/admin/users/**", "/api/admin/roles/**").hasAuthority("ADMIN")
               // Các endpoint khác cần authentication
               .anyRequest().authenticated()
           )

@@ -1,6 +1,8 @@
 package com.mytech.apartment.portal.apis;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -10,25 +12,40 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.mytech.apartment.portal.dtos.*;
-import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.dtos.ApiResponse;
+import com.mytech.apartment.portal.dtos.ChangePasswordRequest;
+import com.mytech.apartment.portal.dtos.ForgotPasswordRequest;
+import com.mytech.apartment.portal.dtos.JwtResponse;
+import com.mytech.apartment.portal.dtos.LoginRequest;
+import com.mytech.apartment.portal.dtos.RegisterRequest;
+import com.mytech.apartment.portal.dtos.ResetPasswordRequest;
+import com.mytech.apartment.portal.dtos.UserDto;
 import com.mytech.apartment.portal.models.RefreshToken;
+import com.mytech.apartment.portal.models.User;
+
+import com.mytech.apartment.portal.models.enums.UserStatus;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.security.UserDetailsImpl;
 import com.mytech.apartment.portal.security.jwt.JwtProvider;
 import com.mytech.apartment.portal.services.AuthService;
 import com.mytech.apartment.portal.services.RefreshTokenService;
-import com.mytech.apartment.portal.services.ResidentService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Endpoints for user authentication & registration")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthenticationManager authManager;
@@ -37,17 +54,6 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final ResidentService residentService;
-
-    public AuthController(AuthenticationManager am, JwtProvider jp, UserRepository ur, AuthService as, PasswordEncoder pe, RefreshTokenService refreshTokenService, ResidentService residentService) {
-        this.authManager = am;
-        this.jwtProvider = jp;
-        this.userRepo = ur;
-        this.authService = as;
-        this.passwordEncoder = pe;
-        this.refreshTokenService = refreshTokenService;
-        this.residentService = residentService;
-    }
 
     @Operation(summary = "Validate token", description = "Validate JWT token and return user info")
     @GetMapping("/validate")
@@ -59,11 +65,16 @@ public class AuthController {
                 UserDto userDto = new UserDto();
                 userDto.setId(userDetails.getId());
                 userDto.setUsername(userDetails.getUsername());
-                userDto.setPhoneNumber(userDetails.getUsername()); // username contains phoneNumber
-                userDto.setStatus("ACTIVE"); // Default status
-                userDto.setRoles(userDetails.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.toSet()));
+                userDto.setPhoneNumber(userDetails.getUsername());
+                userDto.setStatus("ACTIVE");
+                if (userDetails.getRoles() != null) {
+                    userDto.setRoles(userDetails.getRoles().stream().map(r -> r.getName()).collect(java.util.stream.Collectors.toSet()));
+                } else {
+                    userDto.setRoles(new java.util.HashSet<>());
+                }
+                userDto.setLockReason(null);
+                userDto.setCreatedAt(null);
+                userDto.setUpdatedAt(null);
                 return ResponseEntity.ok(ApiResponse.success("Token hợp lệ", userDto));
             } else {
                 return ResponseEntity.status(401).body(ApiResponse.error("Token không hợp lệ hoặc đã hết hạn"));
@@ -72,65 +83,77 @@ public class AuthController {
             return ResponseEntity.status(401).body(ApiResponse.error("Token không hợp lệ"));
         }
     }
+
     @Operation(summary = "User login", description = "Authenticate by phoneNumber and return a JWT token")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest req) {
         Authentication auth = authManager.authenticate(
-            new UsernamePasswordAuthenticationToken(req.getPhoneNumber(), req.getPassword()));
+                new UsernamePasswordAuthenticationToken(req.getPhoneNumber(), req.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         UserDetailsImpl ud = (UserDetailsImpl) auth.getPrincipal();
         User user = userRepo.findByPhoneNumber(ud.getUsername()).orElse(null);
 
-        if (user != null && !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            // Trả về success true, data gồm status, roles, email, phoneNumber, lockReason
-            java.util.Map<String, Object> data = new java.util.HashMap<>();
-            data.put("status", user.getStatus());
+        // Kiểm tra trạng thái tài khoản
+        if (user != null && user.getStatus() != null && !UserStatus.ACTIVE.equals(user.getStatus())) {
+            Map<String, Object> data = new java.util.HashMap<>();
+            data.put("status", user.getStatus().name());
             data.put("email", user.getEmail());
             data.put("phoneNumber", user.getPhoneNumber());
             data.put("lockReason", user.getLockReason());
-            if (user.getRoles() != null) {
-                data.put("roles", user.getRoles().stream().map(r -> r.getName()).collect(java.util.stream.Collectors.toList()));
-            } else {
-                data.put("roles", new java.util.ArrayList<>());
-            }
+            data.put("roles", new java.util.ArrayList<>());
             // Thông báo phù hợp cho từng trạng thái
             String message;
-            if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
+            UserStatus status = user.getStatus();
+            if (UserStatus.LOCKED.equals(status)) {
                 message = "Tài khoản đã bị khóa." + (user.getLockReason() != null ? " Lý do: " + user.getLockReason() : "");
-            } else if ("INACTIVE".equalsIgnoreCase(user.getStatus())) {
-                message = "Tài khoản chưa kích hoạt. Vui lòng kiểm tra email để xác thực.";
+            } else if (UserStatus.INACTIVE.equals(status)) {
+                // Gửi lại email xác thực nếu user chưa xác thực
+                try {
+                    authService.resendVerificationEmail(user.getEmail());
+                    message = "Tài khoản chưa kích hoạt. Đã gửi lại email xác thực. Vui lòng kiểm tra email.";
+                    data.put("canResend", false);
+                    data.put("resendMessage", "Vui lòng đợi 10 phút trước khi gửi lại email.");
+                } catch (Exception e) {
+                    if (e.getMessage().contains("10 phút")) {
+                        message = "Tài khoản chưa kích hoạt. " + e.getMessage();
+                        data.put("canResend", false);
+                        data.put("resendMessage", e.getMessage());
+                    } else {
+                        message = "Tài khoản chưa kích hoạt. Vui lòng kiểm tra email để xác thực.";
+                        data.put("canResend", true);
+                        data.put("resendMessage", "Có thể gửi lại email xác thực.");
+                    }
+                }
             } else {
                 message = "Tài khoản không hoạt động.";
             }
             return ResponseEntity.ok(ApiResponse.success(message, data));
         }
 
-        // *** ĐÃ BỎ ĐOẠN KIỂM TRA requireResidentInfo ***
-        // Resident login sẽ luôn vào được dashboard, không bị chặn bởi thiếu thông tin
-
+        // Đăng nhập thành công
         String token = jwtProvider.generateToken(auth);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
         List<String> roles = ud.getAuthorities()
-                               .stream()
-                               .map(GrantedAuthority::getAuthority)
-                               .map(r -> r.replace("ROLE_", ""))
-                               .collect(Collectors.toList());
-        return ResponseEntity.ok(
-            ApiResponse.success("Đăng nhập thành công", 
-                new JwtResponse(
-                    token,
-                    "Bearer",
-                    user != null ? user.getId() : null,
-                    user != null ? user.getUsername() : null,
-                    user != null ? user.getEmail() : null,
-                    user != null ? user.getPhoneNumber() : null,
-                    roles,
-                    user != null ? user.getStatus() : null,
-                    refreshToken.getToken()
-                )
-            )
-        );
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(r -> r.replace("ROLE_", ""))
+                .collect(Collectors.toList());
+
+        // Trả về JWT và thông tin user
+        Map<String, Object> respData = new java.util.HashMap<>();
+        JwtResponse jwtResp = new JwtResponse();
+        jwtResp.setToken(token);
+        jwtResp.setType("Bearer");
+        jwtResp.setId(user != null ? user.getId() : null);
+        jwtResp.setUsername(user != null ? user.getUsername() : null);
+        jwtResp.setEmail(user != null ? user.getEmail() : null);
+        jwtResp.setPhoneNumber(user != null ? user.getPhoneNumber() : null);
+        jwtResp.setRoles(roles);
+        jwtResp.setStatus(user != null ? user.getStatus().name() : null);
+        jwtResp.setRefreshToken(refreshToken.getToken());
+        respData.put("jwt", jwtResp);
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", respData));
     }
 
     @Operation(summary = "User registration", description = "Register new user account")
@@ -201,15 +224,15 @@ public class AuthController {
             // Tìm user admin
             User adminUser = userRepo.findByUsername("admin")
                     .orElseThrow(() -> new RuntimeException("Admin user not found"));
-            
+
             // Encode password mới
             String newPassword = "admin123";
             String encodedPassword = passwordEncoder.encode(newPassword);
-            
+
             // Cập nhật password
             adminUser.setPasswordHash(encodedPassword);
             userRepo.save(adminUser);
-            
+
             return ResponseEntity.ok(ApiResponse.success("Admin password reset successfully", "New password: " + newPassword));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to reset admin password: " + e.getMessage()));
@@ -228,9 +251,9 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<?>> refreshToken(@RequestBody java.util.Map<String, String> req) {
+    public ResponseEntity<ApiResponse<?>> refreshToken(@RequestBody Map<String, String> req) {
         String requestRefreshToken = req.get("refreshToken");
-        java.util.Optional<RefreshToken> tokenOpt = refreshTokenService.findByToken(requestRefreshToken);
+        Optional<RefreshToken> tokenOpt = refreshTokenService.findByToken(requestRefreshToken);
 
         if (tokenOpt.isPresent()) {
             RefreshToken token = tokenOpt.get();
@@ -239,10 +262,10 @@ public class AuthController {
                 return ResponseEntity.status(403).body(ApiResponse.error("Refresh token đã hết hạn. Vui lòng đăng nhập lại."));
             }
             String newAccessToken = jwtProvider.generateTokenFromUsername(token.getUser().getPhoneNumber());
-            return ResponseEntity.ok(ApiResponse.success("Cấp mới access token thành công", java.util.Map.of(
-                "token", newAccessToken,
-                "refreshToken", token.getToken()
-            )));
+            Map<String, Object> resp = new java.util.HashMap<>();
+            resp.put("token", newAccessToken);
+            resp.put("refreshToken", token.getToken());
+            return ResponseEntity.ok(ApiResponse.success("Cấp mới access token thành công", resp));
         } else {
             return ResponseEntity.status(403).body(ApiResponse.error("Refresh token không hợp lệ."));
         }

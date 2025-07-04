@@ -105,7 +105,7 @@ export const login = async (credentials: LoginRequest): Promise<AuthResponse> =>
     console.log('✅ Response data:', jwtData);
     
     // Lấy đúng các trường từ jwtData.data
-    const userData = jwtData.data || {};
+    const userData = jwtData.data?.jwt || jwtData.data || {};
     const authResponse: AuthResponse = {
       success: jwtData.success,
       message: jwtData.message,
@@ -116,14 +116,11 @@ export const login = async (credentials: LoginRequest): Promise<AuthResponse> =>
         username: userData.username,
         email: userData.email,
         phoneNumber: userData.phoneNumber,
-        roles: Array.isArray(userData.roles)
-          ? userData.roles
-          : [],
+        roles: Array.isArray(userData.roles) ? userData.roles : [],
         status: userData.status,
         lockReason: userData.lockReason
       } : null
-    };
-    
+    };    
     // Lưu token, refreshToken và thông tin user
     if (userData.token) setToken(userData.token);
     if (userData.refreshToken) setRefreshToken(userData.refreshToken);
@@ -247,29 +244,42 @@ export const logout = (): void => {
   removeTokens();
 };
 
-// Hàm kiểm tra user có role ADMIN không
-export const isAdmin = (): boolean => {
-  const user = getCurrentUser();
-  if (!user?.roles) return false;
-  // Hỗ trợ cả dạng object và string
-  return user.roles.some(
-    (role: any) =>
-      (typeof role === "string" && role === "ADMIN") ||
-      (typeof role === "object" && role.name === "ADMIN")
-  );
-};
+// Hàm lấy danh sách role động từ backend
+export async function fetchRoles(): Promise<{id: number, name: string, description?: string}[]> {
+  const res = await fetch('/api/admin/roles', { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to fetch roles');
+  return res.json();
+}
 
-// Hàm kiểm tra user có role RESIDENT không
-export const isResident = (): boolean => {
-  const user = getCurrentUser();
-  return user?.roles.some(role => role.name === 'RESIDENT') || false;
-};
+// Chuẩn hóa user.roles là mảng object {id, name, ...}
+export function getRoleNames(user: any): string[] {
+  if (!user?.roles) return [];
+  // Nếu là mảng string
+  if (Array.isArray(user.roles) && user.roles.every((r: any) => typeof r === 'string')) {
+    return user.roles.map((r: string) => r.trim());
+  }
+  // Nếu là mảng object có trường name
+  if (Array.isArray(user.roles) && user.roles.every((r: any) => typeof r === 'object' && r !== null && 'name' in r)) {
+    return user.roles.map((r: any) => String(r.name).trim());
+  }
+  return [];
+}
 
-// Hàm kiểm tra user có role STAFF không
-export const isStaff = (): boolean => {
-  const user = getCurrentUser();
-  return user?.roles.some(role => role.name === 'STAFF') || false;
-};
+export function hasRole(user: any, role: string): boolean {
+  return getRoleNames(user).includes(role);
+}
+
+export function isAdmin(user: any): boolean {
+  return hasRole(user, 'ADMIN');
+}
+
+export function isResident(user: any): boolean {
+  return hasRole(user, 'RESIDENT');
+}
+
+export function isStaff(user: any): boolean {
+  return hasRole(user, 'STAFF');
+}
 
 // Hàm refresh token
 export const refreshToken = async (): Promise<{ token: string; refreshToken: string } | null> => {

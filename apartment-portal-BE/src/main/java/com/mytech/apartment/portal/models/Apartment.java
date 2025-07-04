@@ -2,6 +2,7 @@ package com.mytech.apartment.portal.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.mytech.apartment.portal.models.enums.ApartmentStatus;
 
 @Entity
 @Table(name = "apartments")
@@ -27,5 +28,6 @@ public class Apartment {
     private Double area;
 
     @Column(nullable = false)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private ApartmentStatus status;
 }

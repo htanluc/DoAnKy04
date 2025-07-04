@@ -1,15 +1,30 @@
 package com.mytech.apartment.portal.apis;
 
-import com.mytech.apartment.portal.dtos.*;
-import com.mytech.apartment.portal.services.PaymentService;
-import com.mytech.apartment.portal.services.PaymentGatewayService;
-import com.mytech.apartment.portal.services.AutoPaymentService;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.mytech.apartment.portal.dtos.ApiResponse;
+import com.mytech.apartment.portal.dtos.AutoPaymentSetupRequest;
+import com.mytech.apartment.portal.dtos.ManualPaymentRequest;
+import com.mytech.apartment.portal.dtos.PaymentDto;
+import com.mytech.apartment.portal.dtos.PaymentGatewayRequest;
+import com.mytech.apartment.portal.dtos.PaymentGatewayResponse;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
+import com.mytech.apartment.portal.services.AutoPaymentService;
+import com.mytech.apartment.portal.services.PaymentGatewayService;
+import com.mytech.apartment.portal.services.PaymentService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -155,9 +170,9 @@ public class PaymentController {
      * Lấy danh sách phương thức thanh toán
      */
     @GetMapping("/methods")
-    public ResponseEntity<List<PaymentMethodDto>> getPaymentMethods() {
+    public ResponseEntity<List<PaymentMethod>> getPaymentMethods() {
         try {
-            List<PaymentMethodDto> methods = paymentService.getPaymentMethods();
+            List<PaymentMethod> methods = paymentService.getPaymentMethods();
             return ResponseEntity.ok(methods);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

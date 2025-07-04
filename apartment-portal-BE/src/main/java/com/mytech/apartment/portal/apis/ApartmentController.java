@@ -6,11 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/apartments")
+@Tag(name = "Resident Apartment", description = "API for resident to view their own apartments")
 public class ApartmentController {
     @Autowired
     private ApartmentService apartmentService;
@@ -134,5 +139,27 @@ public class ApartmentController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    /**
+     * [EN] Get apartments of current resident
+     * [VI] Lấy danh sách căn hộ của resident hiện tại
+     */
+    @Operation(summary = "Get apartments of current resident", description = "Get list of apartments linked to the currently authenticated resident")
+    @GetMapping("/my")
+    public ResponseEntity<List<ApartmentDto>> getMyApartments() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        // Lấy userId từ username (giả sử username là unique, có thể là phone/email/username)
+        // Tìm userId qua service ResidentService
+        Long userId = null;
+        try {
+            userId = apartmentService.getUserIdByUsername(username);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+        if (userId == null) return ResponseEntity.status(401).build();
+        List<ApartmentDto> apartments = apartmentService.getApartmentsOfResident(userId);
+        return ResponseEntity.ok(apartments);
     }
 }

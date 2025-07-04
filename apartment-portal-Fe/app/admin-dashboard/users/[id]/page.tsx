@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, ArrowLeft, Lock, Unlock } from 'lucide-react';
 import Link from 'next/link';
-import { API_BASE_URL } from '@/lib/auth';
+import { API_BASE_URL, fetchRoles } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
@@ -45,6 +45,9 @@ export default function UserDetailPage() {
   const [linkedApartments, setLinkedApartments] = useState<any[]>([]);
   const [apartmentsLoading, setApartmentsLoading] = useState(false);
   const [pendingUnlink, setPendingUnlink] = useState<string | null>(null);
+  const [allRoles, setAllRoles] = useState<{id: number, name: string}[]>([]);
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -104,6 +107,10 @@ export default function UserDetailPage() {
       .finally(() => setApartmentsLoading(false));
   }, [userId]);
 
+  useEffect(() => {
+    fetchRoles().then(setAllRoles).catch(() => setAllRoles([]));
+  }, []);
+
   const handleToggleStatus = async () => {
     if (!user) return;
     const token = localStorage.getItem('token');
@@ -161,6 +168,55 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleAssignRole = async () => {
+    if (!user || !selectedRole) return;
+    setAssigning(true);
+    const token = localStorage.getItem('token');
+    const roleObj = allRoles.find(r => r.name === selectedRole);
+    if (!roleObj) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${user.id}/roles/assign?roleId=${roleObj.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) throw new Error('Failed to assign role');
+      setUser({ ...user, roles: [...(user.roles || []), selectedRole] });
+      setSelectedRole('');
+      toast({ title: 'Thành công', description: 'Đã gán vai trò cho user.' });
+    } catch {
+      toast({ title: 'Lỗi', description: 'Không thể gán vai trò!', variant: 'destructive' });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleRemoveRole = async (roleName: string) => {
+    if (!user) return;
+    setAssigning(true);
+    const token = localStorage.getItem('token');
+    const roleObj = allRoles.find(r => r.name === roleName);
+    if (!roleObj) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${user.id}/roles/remove?roleId=${roleObj.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) throw new Error('Failed to remove role');
+      setUser({ ...user, roles: (user.roles || []).filter(r => r !== roleName) });
+      toast({ title: 'Thành công', description: 'Đã xóa vai trò khỏi user.' });
+    } catch {
+      toast({ title: 'Lỗi', description: 'Không thể xóa vai trò!', variant: 'destructive' });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout title={t('admin.users.details', 'Chi tiết người dùng')}>
@@ -196,7 +252,30 @@ export default function UserDetailPage() {
             <div className="space-y-2">
               <div><strong>{t('admin.users.email', 'Email')}:</strong> {user.email}</div>
               <div><strong>{t('admin.users.phoneNumber', 'Số điện thoại')}:</strong> {user.phoneNumber}</div>
-              <div><strong>{t('admin.users.role', 'Vai trò')}:</strong> <Badge>{user.roles && user.roles.length > 0 ? t(`admin.users.role.${user.roles[0].toLowerCase()}`, user.roles[0]) : '-'}</Badge></div>
+              <div>
+                <strong>{t('admin.users.role', 'Vai trò')}:</strong>
+                {user.roles && user.roles.length > 0 ? (
+                  user.roles.map((role, idx) => (
+                    <Badge key={role} className="mr-2">
+                      {role}
+                      <Button size="sm" variant="ghost" onClick={() => handleRemoveRole(role)} disabled={assigning || role === 'ADMIN'}>
+                        <Trash2 className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Badge>
+                  ))
+                ) : (
+                  <Badge>-</Badge>
+                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} className="border rounded px-2 py-1">
+                    <option value="">Chọn vai trò...</option>
+                    {allRoles.filter(r => !user.roles?.includes(r.name)).map(r => (
+                      <option key={r.id} value={r.name}>{r.name}</option>
+                    ))}
+                  </select>
+                  <Button size="sm" onClick={handleAssignRole} disabled={!selectedRole || assigning}>Gán vai trò</Button>
+                </div>
+              </div>
               <div><strong>{t('admin.users.status', 'Trạng thái')}:</strong> <Badge>{user.status}</Badge></div>
               <div><strong>{t('admin.users.createdAt', 'Ngày tạo')}:</strong> {new Date(user.createdAt).toLocaleDateString('vi-VN')}</div>
               {(user.status === 'LOCKED' || user.status === 'INACTIVE') && user.lockReason && (

@@ -14,9 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
+
+import com.mytech.apartment.portal.models.enums.PaymentStatus;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
+import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 
 @Service
 public class PaymentGatewayService {
@@ -58,8 +60,8 @@ public class PaymentGatewayService {
             payment.setInvoice(invoice);
             payment.setPaidByUserId(user.getId());
             payment.setAmount(request.getAmount());
-            payment.setMethod(request.getPaymentMethod());
-            payment.setStatus("PENDING");
+            payment.setMethod(PaymentMethod.valueOf(request.getPaymentMethod()));
+            payment.setStatus(PaymentStatus.PENDING);
             payment.setReferenceCode(transactionId);
             payment.setPaymentDate(LocalDateTime.now());
 
@@ -87,13 +89,13 @@ public class PaymentGatewayService {
                     .orElseThrow(() -> new RuntimeException("Payment not found"));
 
             // Cập nhật trạng thái payment
-            payment.setStatus(status);
+            payment.setStatus(PaymentStatus.valueOf(status));
             payment.setPaymentDate(LocalDateTime.now());
 
             // Nếu thanh toán thành công, cập nhật trạng thái hóa đơn
-            if ("SUCCESS".equals(status)) {
+            if (PaymentStatus.SUCCESS.name().equals(status)) {
                 Invoice invoice = payment.getInvoice();
-                invoice.setStatus("PAID");
+                invoice.setStatus(InvoiceStatus.PAID);
                 invoiceRepository.save(invoice);
             }
 
@@ -112,7 +114,7 @@ public class PaymentGatewayService {
             return new PaymentGatewayResponse(
                 transactionId,
                 null,
-                payment.getStatus(),
+                payment.getStatus().name(),
                 "Payment status retrieved",
                 null
             );

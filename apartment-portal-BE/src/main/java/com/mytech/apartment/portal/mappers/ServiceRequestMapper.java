@@ -2,6 +2,8 @@ package com.mytech.apartment.portal.mappers;
 
 import com.mytech.apartment.portal.dtos.ServiceRequestDto;
 import com.mytech.apartment.portal.models.ServiceRequest;
+import com.mytech.apartment.portal.models.enums.ServiceRequestPriority;
+import com.mytech.apartment.portal.models.enums.ServiceRequestStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,8 +22,8 @@ public class ServiceRequestMapper {
             serviceRequest.getCategory() != null ? serviceRequest.getCategory().getCategoryName() : null,
             null, // title field doesn't exist in entity
             serviceRequest.getDescription(),
-            serviceRequest.getPriority(),
-            serviceRequest.getStatus(),
+            serviceRequest.getPriority() != null ? serviceRequest.getPriority().name() : null,
+            serviceRequest.getStatus() != null ? serviceRequest.getStatus().name() : null,
             serviceRequest.getAssignedTo() != null ? serviceRequest.getAssignedTo().getUsername() : null,
             serviceRequest.getResolutionNotes(),
             serviceRequest.getSubmittedAt(),
@@ -38,8 +40,8 @@ public class ServiceRequestMapper {
         ServiceRequest serviceRequest = new ServiceRequest();
         serviceRequest.setId(dto.getId());
         serviceRequest.setDescription(dto.getDescription());
-        serviceRequest.setPriority(dto.getPriority());
-        serviceRequest.setStatus(dto.getStatus());
+        serviceRequest.setPriority(dto.getPriority() != null ? ServiceRequestPriority.valueOf(dto.getPriority()) : null);
+        serviceRequest.setStatus(dto.getStatus() != null ? ServiceRequestStatus.valueOf(dto.getStatus()) : null);
         serviceRequest.setResolutionNotes(dto.getResolution());
         serviceRequest.setSubmittedAt(dto.getCreatedAt());
         serviceRequest.setAssignedAt(dto.getUpdatedAt());

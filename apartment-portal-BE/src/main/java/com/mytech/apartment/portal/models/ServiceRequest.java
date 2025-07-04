@@ -3,6 +3,8 @@ package com.mytech.apartment.portal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.mytech.apartment.portal.models.enums.ServiceRequestStatus;
+import com.mytech.apartment.portal.models.enums.ServiceRequestPriority;
 
 @Entity
 @Table(name = "service_requests")
@@ -32,8 +34,8 @@ public class ServiceRequest {
     private User assignedTo;
 
     private LocalDateTime assignedAt;
-    private String status;
-    private String priority;
+    private ServiceRequestStatus status;
+    private ServiceRequestPriority priority;
     private String resolutionNotes;
     private LocalDateTime completedAt;
     private Integer rating;
