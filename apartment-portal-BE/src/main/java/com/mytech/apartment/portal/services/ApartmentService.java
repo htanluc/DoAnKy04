@@ -151,4 +151,10 @@ public class ApartmentService {
             .map(user -> user.getId())
             .orElse(null);
     }
+
+    public Long getUserIdByPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+            .map(user -> user.getId())
+            .orElse(null);
+    }
 } 

@@ -89,21 +89,18 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-          .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Sử dụng cấu hình CORS đã định nghĩa
+          .cors(cors -> cors.configurationSource(corsConfigurationSource()))
           .csrf(csrf -> csrf.disable())
           .sessionManagement()
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
           .and()
           .authorizeHttpRequests(auth -> auth
-              // Cho phép pre-flight CORS cho tất cả
               .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-              // Swagger UI
               .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
-              // Auth endpoints - cho phép tất cả
               .requestMatchers("/api/auth/**").permitAll()
-              // Chỉ ADMIN mới được truy cập các endpoint quản lý user/role
-              .requestMatchers("/api/admin/users/**", "/api/admin/roles/**").hasAuthority("ADMIN")
-              // Các endpoint khác cần authentication
+              .requestMatchers("/api/admin/**").hasRole("ADMIN")
+              .requestMatchers("/api/invoices/**","/api/facility-bookings/**","/api/residents/**", "/api/announcements/**", "/api/events/**", "/api/facilities/**", "/api/feedback/**", "/api/support-requests/**")
+                  .hasRole("RESIDENT")
               .anyRequest().authenticated()
           )
           .exceptionHandling().authenticationEntryPoint(customAuthenticationEntryPoint())

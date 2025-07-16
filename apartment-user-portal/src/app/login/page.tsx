@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Eye, EyeOff, Phone, Lock, Building2 } from 'lucide-react'
-import { resendVerification } from '@/lib/api'
+import { loginUser, resendVerification } from '@/lib/api'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -53,19 +53,20 @@ export default function LoginPage() {
     setError('')
 
     try {
-      // Gọi API backend
-      const res = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phoneNumber: formData.phone,
-          password: formData.password,
-        }),
+      // Sử dụng hàm loginUser từ api.ts
+      const data = await loginUser({
+        phoneNumber: formData.phone,
+        password: formData.password,
       })
-      const data = await res.json()
-      if (res.ok && data.success && data.data && data.data.jwt && data.data.jwt.token) {
+      
+      if (data.success && data.data && data.data.jwt && data.data.jwt.token) {
+        // Kiểm tra role - chỉ cho phép RESIDENT đăng nhập vào user portal
+        const userRoles = data.data.jwt.roles || [];
+        if (!userRoles.includes('RESIDENT')) {
+          setError('Chỉ cư dân mới được đăng nhập vào portal này. Vui lòng sử dụng admin portal.');
+          return;
+        }
+        
         localStorage.setItem('token', data.data.jwt.token)
         localStorage.setItem('user', JSON.stringify(data.data.jwt))
         router.push('/dashboard')
@@ -75,8 +76,8 @@ export default function LoginPage() {
       } else {
         setError(data.message || 'Số điện thoại hoặc mật khẩu không đúng.')
       }
-    } catch (err) {
-      setError('Không thể kết nối máy chủ. Vui lòng thử lại.')
+    } catch (err: any) {
+      setError(err.message || 'Không thể kết nối máy chủ. Vui lòng thử lại.')
     } finally {
       setLoading(false)
     }

@@ -191,10 +191,10 @@ public class ServiceRequestController {
     @GetMapping("/support-requests/my")
     public ResponseEntity<List<ServiceRequestDto>> getMySupportRequests() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+        String phoneNumber = auth.getName();
         Long userId = null;
         try {
-            userId = userService.getUserIdByUsername(username);
+            userId = userService.getUserIdByPhoneNumber(phoneNumber);
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
         }

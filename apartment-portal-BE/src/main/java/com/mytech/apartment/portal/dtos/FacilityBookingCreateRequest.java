@@ -8,6 +8,9 @@ public class FacilityBookingCreateRequest {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String purpose;
+    private LocalDateTime bookingTime;
+    private Integer duration;
+    private Integer numberOfPeople;
 
     // Constructors
     public FacilityBookingCreateRequest() {}
@@ -35,4 +38,11 @@ public class FacilityBookingCreateRequest {
 
     public String getPurpose() { return purpose; }
     public void setPurpose(String purpose) { this.purpose = purpose; }
+
+    public LocalDateTime getBookingTime() { return bookingTime; }
+    public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
+    public Integer getDuration() { return duration; }
+    public void setDuration(Integer duration) { this.duration = duration; }
+    public Integer getNumberOfPeople() { return numberOfPeople; }
+    public void setNumberOfPeople(Integer numberOfPeople) { this.numberOfPeople = numberOfPeople; }
 } 

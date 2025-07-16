@@ -11,7 +11,10 @@ import lombok.*;
 @Builder
 public class ServiceCategory {
     @Id
-    @Column(name = "category_code")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "category_code", unique = true)
     private String categoryCode;
 
     private String categoryName;

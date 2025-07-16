@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByApartmentIdIn(List<Long> apartmentIds);
+    List<Invoice> findByStatus(com.mytech.apartment.portal.models.enums.InvoiceStatus status);
 }

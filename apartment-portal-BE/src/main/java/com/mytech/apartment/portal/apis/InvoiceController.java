@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/invoices")
+@RequestMapping("/api/invoices")
 @Tag(name = "Resident Invoice", description = "API for resident to view their own invoices")
 public class InvoiceController {
     @Autowired
@@ -89,7 +89,7 @@ public class InvoiceController {
         String username = auth.getName();
         Long userId = null;
         try {
-            userId = apartmentService.getUserIdByUsername(username);
+            userId = apartmentService.getUserIdByPhoneNumber(username);
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
         }

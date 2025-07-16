@@ -16,8 +16,7 @@ public class AutoPaymentService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private PaymentGatewayService paymentGatewayService;
+
 
     // Trong thực tế, bạn sẽ lưu cài đặt vào database
     // Ở đây tôi sử dụng Map để demo

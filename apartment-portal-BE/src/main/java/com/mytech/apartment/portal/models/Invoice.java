@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Table(name = "invoices")
@@ -14,9 +15,11 @@ import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(name = "apartment_id", nullable = false)
@@ -45,7 +48,7 @@ public class Invoice {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<InvoiceItem> items;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

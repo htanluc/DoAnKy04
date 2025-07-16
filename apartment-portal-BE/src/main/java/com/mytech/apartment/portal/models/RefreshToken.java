@@ -1,10 +1,15 @@
 package com.mytech.apartment.portal.models;
 
 import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "refresh_tokens")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,14 +24,4 @@ public class RefreshToken {
 
     @Column(nullable = false)
     private LocalDateTime expiryDate;
-
-    // Getters & Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
-    public LocalDateTime getExpiryDate() { return expiryDate; }
-    public void setExpiryDate(LocalDateTime expiryDate) { this.expiryDate = expiryDate; }
 } 

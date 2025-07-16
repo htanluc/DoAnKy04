@@ -13,6 +13,8 @@ public class FacilityBookingDto {
     private String status;
     private String purpose;
     private LocalDateTime createdAt;
+    private Double totalCost;
+    private Integer numberOfPeople;
 
     // Constructors
     public FacilityBookingDto() {}
@@ -61,4 +63,9 @@ public class FacilityBookingDto {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Double getTotalCost() { return totalCost; }
+    public void setTotalCost(Double totalCost) { this.totalCost = totalCost; }
+    public Integer getNumberOfPeople() { return numberOfPeople; }
+    public void setNumberOfPeople(Integer numberOfPeople) { this.numberOfPeople = numberOfPeople; }
 } 

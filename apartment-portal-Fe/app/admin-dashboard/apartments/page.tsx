@@ -27,15 +27,7 @@ import Link from 'next/link';
 import { API_BASE_URL, getToken } from '@/lib/auth';
 import ApartmentResidentManager from '@/components/admin/ApartmentResidentManager';
 import ApartmentUserLinkModal from '@/components/admin/ApartmentUserLinkModal';
-
-interface Apartment {
-  id: number;
-  buildingId: number;
-  floorNumber: number;
-  unitNumber: string;
-  area: number;
-  status: string;
-}
+import { Apartment } from '@/lib/api';
 
 export default function ApartmentsPage() {
   const { t } = useLanguage();

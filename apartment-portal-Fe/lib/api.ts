@@ -111,6 +111,82 @@ export interface AnnouncementUpdateRequest {
   isActive?: boolean;
 }
 
+// Resident
+export interface Resident {
+  id: number;
+  userId: number;
+  fullName: string;
+  dateOfBirth: string; // ISO date
+  idCardNumber: string;
+  familyRelation: string;
+  status: number;
+}
+
+// User
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  phoneNumber: string;
+  status: string;
+  lockReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  roles: Role[];
+}
+
+export interface Role {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+// Apartment
+export interface Apartment {
+  id: number;
+  buildingId: number;
+  floorNumber: number;
+  unitNumber: string;
+  area: number;
+  status: string;
+}
+
+// Facility
+export interface Facility {
+  id: number;
+  name: string;
+  description: string;
+  capacity: number;
+  otherDetails: string;
+  usageFee: number; // number thay vì string|null
+  openingHours?: string;
+}
+
+// FacilityBooking
+export interface FacilityBooking {
+  id: number;
+  facility: Facility; // object mapping
+  user: User; // object mapping
+  bookingTime: string;
+  duration: number;
+  status: string;
+  numberOfPeople: number;
+  purpose: string;
+  approvedBy?: User;
+  approvedAt?: string;
+  createdAt: string;
+}
+
+export interface FacilityBookingCreateRequest {
+  facilityId: number;
+  userId: number;
+  bookingTime: string;
+  duration: number;
+  numberOfPeople: number;
+  purpose: string;
+}
+
+// Event
 export interface Event {
   id: number;
   title: string;
@@ -121,28 +197,13 @@ export interface Event {
   createdAt: string;
 }
 
-export interface EventCreateRequest {
-  title: string;
-  description: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-}
-
-export interface EventUpdateRequest {
-  title?: string;
-  description?: string;
-  startTime?: string;
-  endTime?: string;
-  location?: string;
-}
-
+// EventRegistration
 export interface EventRegistration {
   id: number;
-  eventId: number;
+  event: Event;
   residentId: number;
   registeredAt: string;
-  status: RegistrationStatus;
+  status: string;
 }
 
 export interface EventRegistrationRequest {
@@ -150,50 +211,62 @@ export interface EventRegistrationRequest {
   residentId: number;
 }
 
-export interface Facility {
+// ServiceRequest
+export interface ServiceRequest {
   id: number;
-  name: string;
+  user: User;
+  category: ServiceCategory;
   description: string;
-  capacity: number;
-  otherDetails: string;
-  usageFee?: string | null;
+  imageAttachment?: string;
+  submittedAt: string;
+  assignedTo?: User;
+  assignedAt?: string;
+  status: string;
+  priority: string;
+  resolutionNotes?: string;
+  completedAt?: string;
+  rating?: number;
 }
 
-export interface FacilityCreateRequest {
-  name: string;
-  description: string;
-  capacity: number;
-  otherDetails: string;
-  usageFee?: string | null;
-}
-
-export interface FacilityUpdateRequest {
-  name?: string;
+export interface ServiceCategory {
+  categoryCode: string;
+  categoryName: string;
+  assignedRole?: string;
   description?: string;
-  capacity?: number;
-  otherDetails?: string;
-  usageFee?: string | null;
 }
 
-export interface FacilityBooking {
+// Payment
+export interface Payment {
   id: number;
-  facilityId: number;
-  facilityName: string;
-  residentId: number;
-  residentName: string;
-  startTime: string;
-  endTime: string;
-  status: BookingStatus;
-  purpose: string;
-  createdAt: string;
+  invoice: Invoice;
+  paidByUserId: number;
+  paymentDate: string;
+  amount: number;
+  method: string;
+  status: string;
+  referenceCode?: string;
 }
 
-export interface FacilityBookingCreateRequest {
-  facilityId: number;
-  residentId: number;
-  startTime: string;
-  endTime: string;
-  purpose: string;
+// Invoice
+export interface Invoice {
+  id: number;
+  apartmentId: number;
+  billingPeriod: string;
+  issueDate: string;
+  dueDate: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  items?: InvoiceItem[];
+  payments?: Payment[];
+}
+
+export interface InvoiceItem {
+  id: number;
+  invoiceId: number;
+  description: string;
+  amount: number;
 }
 
 // Announcements API
@@ -441,3 +514,39 @@ export const residentsApi = {
     if (!response.ok) throw new Error('Failed to delete resident');
   },
 }; 
+
+// EventCreateRequest & EventUpdateRequest
+export interface EventCreateRequest {
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+}
+
+export interface EventUpdateRequest {
+  title?: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+}
+
+// FacilityCreateRequest & FacilityUpdateRequest
+export interface FacilityCreateRequest {
+  name: string;
+  description: string;
+  capacity: number;
+  otherDetails: string;
+  usageFee: number;
+  openingHours?: string;
+}
+
+export interface FacilityUpdateRequest {
+  name?: string;
+  description?: string;
+  capacity?: number;
+  otherDetails?: string;
+  usageFee?: number;
+  openingHours?: string;
+} 

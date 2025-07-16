@@ -3,6 +3,7 @@ package com.mytech.apartment.portal.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Table(name = "invoice_items")
@@ -10,9 +11,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class InvoiceItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

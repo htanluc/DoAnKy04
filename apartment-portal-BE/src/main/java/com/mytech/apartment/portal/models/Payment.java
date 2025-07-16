@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 import com.mytech.apartment.portal.models.enums.PaymentStatus;
 import com.mytech.apartment.portal.models.enums.PaymentMethod;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Table(name = "payments")
@@ -14,9 +15,11 @@ import com.mytech.apartment.portal.models.enums.PaymentMethod;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

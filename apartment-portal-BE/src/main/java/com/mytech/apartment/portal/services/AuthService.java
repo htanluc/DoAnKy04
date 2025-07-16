@@ -46,7 +46,7 @@ public class AuthService {
     private String frontendUrl;
 
     @Transactional
-    public void register(RegisterRequest request) {
+    public void register(RegisterRequest request, String origin) {
         // Kiểm tra mật khẩu xác nhận
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("Mật khẩu xác nhận không khớp");
@@ -80,11 +80,19 @@ public class AuthService {
         // Tạo token xác thực email
         String token = UUID.randomUUID().toString();
         LocalDateTime expiry = LocalDateTime.now().plusHours(24);
-        EmailVerificationToken verificationToken = new EmailVerificationToken(token, user, expiry);
+        EmailVerificationToken verificationToken = new EmailVerificationToken();
+        verificationToken.setToken(token);
+        verificationToken.setUser(user);
+        verificationToken.setExpiryDate(expiry);
         emailVerificationTokenRepository.save(verificationToken);
         // Gửi email xác thực
         try {
-            String verifyLink = frontendUrl + "/verify-email?token=" + token;
+            String verifyLink;
+            if (origin != null && origin.contains(":3001")) {
+                verifyLink = origin + "/verify-email?token=" + token;
+            } else {
+                verifyLink = frontendUrl + "/verify-email?token=" + token;
+            }
             emailService.sendVerificationEmail(user.getEmail(), verifyLink);
         } catch (Exception e) {
             // Nếu gửi email thất bại, xóa user và resident đã tạo
@@ -205,7 +213,10 @@ public class AuthService {
         // Tạo token mới
         String token = UUID.randomUUID().toString();
         LocalDateTime expiry = LocalDateTime.now().plusHours(24);
-        EmailVerificationToken verificationToken = new EmailVerificationToken(token, user, expiry);
+        EmailVerificationToken verificationToken = new EmailVerificationToken();
+        verificationToken.setToken(token);
+        verificationToken.setUser(user);
+        verificationToken.setExpiryDate(expiry);
         emailVerificationTokenRepository.save(verificationToken);
         // Gửi lại email xác thực
         String verifyLink = frontendUrl + "/verify-email?token=" + token;

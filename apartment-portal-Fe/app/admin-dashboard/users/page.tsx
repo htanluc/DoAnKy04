@@ -27,17 +27,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/auth';
-
-interface User {
-  id: string;
-  username: string;
-  email?: string;
-  phoneNumber: string;
-  roles?: string[];
-  status: string;
-  createdAt: string;
-  lockReason?: string;
-}
+import { User } from '@/lib/api';
 
 export default function UsersPage() {
   const { t } = useLanguage();

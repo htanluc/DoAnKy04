@@ -27,6 +27,8 @@ public class FacilityBooking {
     private LocalDateTime bookingTime;
     private Integer duration;
     private FacilityBookingStatus status;
+    private Integer numberOfPeople;
+    private String purpose;
 
     @ManyToOne
     @JoinColumn(name = "approved_by")

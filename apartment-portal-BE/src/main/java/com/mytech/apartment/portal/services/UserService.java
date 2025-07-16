@@ -141,4 +141,10 @@ public class UserService {
         User savedUser = userRepository.save(user);
         return savedUser;
     }
+
+    public Long getUserIdByPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+            .map(User::getId)
+            .orElse(null);
+    }
 }

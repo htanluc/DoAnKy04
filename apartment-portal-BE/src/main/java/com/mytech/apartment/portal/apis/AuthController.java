@@ -27,6 +27,9 @@ import com.mytech.apartment.portal.dtos.LoginRequest;
 import com.mytech.apartment.portal.dtos.RegisterRequest;
 import com.mytech.apartment.portal.dtos.ResetPasswordRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
+import com.mytech.apartment.portal.dtos.ResidentDto;
+import com.mytech.apartment.portal.dtos.ApartmentResidentDto;
+import com.mytech.apartment.portal.dtos.ApartmentDto;
 import com.mytech.apartment.portal.models.RefreshToken;
 import com.mytech.apartment.portal.models.User;
 
@@ -36,9 +39,13 @@ import com.mytech.apartment.portal.security.UserDetailsImpl;
 import com.mytech.apartment.portal.security.jwt.JwtProvider;
 import com.mytech.apartment.portal.services.AuthService;
 import com.mytech.apartment.portal.services.RefreshTokenService;
+import com.mytech.apartment.portal.services.ResidentService;
+import com.mytech.apartment.portal.services.ApartmentResidentService;
+import com.mytech.apartment.portal.services.ApartmentService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -54,6 +61,9 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final ResidentService residentService;
+    private final ApartmentResidentService apartmentResidentService;
+    private final ApartmentService apartmentService;
 
     @Operation(summary = "Validate token", description = "Validate JWT token and return user info")
     @GetMapping("/validate")
@@ -86,7 +96,7 @@ public class AuthController {
 
     @Operation(summary = "User login", description = "Authenticate by phoneNumber and return a JWT token")
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest req) {
+    public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest req, HttpServletRequest request) {
         Authentication auth = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getPhoneNumber(), req.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(auth);
@@ -131,15 +141,23 @@ public class AuthController {
             return ResponseEntity.ok(ApiResponse.success(message, data));
         }
 
-        // Đăng nhập thành công
-        String token = jwtProvider.generateToken(auth);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        // Kiểm tra role khi đăng nhập FE user (port 3001)
+        String referer = request.getHeader("referer");
+        String host = request.getHeader("host");
         List<String> roles = ud.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .map(r -> r.replace("ROLE_", ""))
                 .collect(Collectors.toList());
+        boolean isResident = roles.contains("RESIDENT");
+        boolean isUserPortal = (host != null && host.contains(":3001")) || (referer != null && referer.contains(":3001"));
+        if (isUserPortal && !isResident) {
+            return ResponseEntity.status(403).body(ApiResponse.error("Chỉ cư dân (RESIDENT) được phép đăng nhập tại portal này."));
+        }
 
+        // Đăng nhập thành công
+        String token = jwtProvider.generateToken(auth);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
         // Trả về JWT và thông tin user
         Map<String, Object> respData = new java.util.HashMap<>();
         JwtResponse jwtResp = new JwtResponse();
@@ -158,9 +176,10 @@ public class AuthController {
 
     @Operation(summary = "User registration", description = "Register new user account")
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody RegisterRequest req) {
+    public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody RegisterRequest req, HttpServletRequest request) {
         try {
-            authService.register(req);
+            String origin = request.getHeader("Origin");
+            authService.register(req, origin);
             return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -269,5 +288,56 @@ public class AuthController {
         } else {
             return ResponseEntity.status(403).body(ApiResponse.error("Refresh token không hợp lệ."));
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getProfile(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Chưa đăng nhập hoặc token không hợp lệ"));
+        }
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        UserDto userDto = new UserDto();
+        userDto.setId(userDetails.getId());
+        userDto.setUsername(userDetails.getUsername());
+        userDto.setPhoneNumber(userDetails.getUsername());
+        userDto.setStatus("ACTIVE");
+        // Lỗi: UserDetailsImpl chưa có phương thức getEmail(). 
+        // Sửa: Lấy email từ userRepo bằng userId.
+        String email = userRepo.findById(userDetails.getId()).map(u -> u.getEmail()).orElse(null);
+        userDto.setEmail(email);
+        if (userDetails.getRoles() != null) {
+            userDto.setRoles(userDetails.getRoles().stream().map(r -> r.getName()).collect(java.util.stream.Collectors.toSet()));
+        } else {
+            userDto.setRoles(new java.util.HashSet<>());
+        }
+        // Lấy resident
+        ResidentDto residentDto = residentService.getResidentByUserId(userDetails.getId()).orElse(null);
+        // Lấy apartmentResident (nếu có)
+        ApartmentResidentDto apartmentResidentDto = null;
+        ApartmentDto apartmentDto = null;
+        if (residentDto != null) {
+            // Tìm tất cả liên kết căn hộ của resident, lấy liên kết đầu tiên (nếu có)
+            java.util.List<ApartmentResidentDto> links = apartmentResidentService.getAllApartmentResidents().stream()
+                .filter(link -> link.getUserId() != null && link.getUserId().equals(userDetails.getId()))
+                .toList();
+            if (!links.isEmpty()) {
+                apartmentResidentDto = links.get(0);
+                // Lấy thông tin căn hộ
+                apartmentDto = apartmentService.getApartmentById(apartmentResidentDto.getApartmentId()).orElse(null);
+            }
+        }
+        // Lấy token từ SecurityContextHolder
+        String token = null;
+        if (authentication.getCredentials() != null) {
+            token = authentication.getCredentials().toString();
+        }
+        java.util.Map<String, Object> resp = new java.util.HashMap<>();
+        resp.put("user", userDto);
+        resp.put("roles", userDto.getRoles());
+        resp.put("resident", residentDto);
+        resp.put("apartmentResident", apartmentResidentDto);
+        resp.put("apartment", apartmentDto);
+        resp.put("token", token);
+        return ResponseEntity.ok(ApiResponse.success("Thông tin user", resp));
     }
 }

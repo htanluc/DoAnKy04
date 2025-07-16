@@ -34,7 +34,11 @@ public class ServiceRequest {
     private User assignedTo;
 
     private LocalDateTime assignedAt;
+
+    @Enumerated(EnumType.ORDINAL)
     private ServiceRequestStatus status;
+
+    @Enumerated(EnumType.ORDINAL)
     private ServiceRequestPriority priority;
     private String resolutionNotes;
     private LocalDateTime completedAt;
