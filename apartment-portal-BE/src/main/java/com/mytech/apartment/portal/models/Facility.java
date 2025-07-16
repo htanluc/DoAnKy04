@@ -26,4 +26,5 @@ public class Facility {
     private Integer capacity;
     private String otherDetails;
     private Double usageFee;
+    private String openingHours;
 } 

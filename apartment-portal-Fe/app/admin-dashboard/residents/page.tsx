@@ -24,20 +24,7 @@ import {
   Filter
 } from 'lucide-react';
 import Link from 'next/link';
-import { residentsApi } from '@/lib/api';
-
-interface Resident {
-  id: string;
-  fullName: string;
-  idCard: string;
-  dateOfBirth: string;
-  gender: string;
-  phoneNumber: string;
-  email: string;
-  apartmentNumber: string;
-  relationType: string;
-  status: string;
-}
+import { residentsApi, Resident } from '@/lib/api';
 
 export default function ResidentsPage() {
   const { t } = useLanguage();

@@ -1,50 +1,84 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { 
-  Receipt, 
-  Search, 
-  Download, 
-  Eye, 
-  CreditCard,
-  Calendar,
-  DollarSign,
-  AlertTriangle,
-  CheckCircle,
-  Clock
-} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2, CreditCard, Wallet, Smartphone, Globe } from 'lucide-react'
 import { fetchMyInvoices } from '@/lib/api'
+import { createVNPayPayment, createMoMoPayment, createZaloPayPayment, createVisaPayment } from '@/lib/api';
 
 interface Invoice {
-  id: string
-  invoiceNumber: string
-  type: string
-  amount: number
+  id: number
+  apartmentId: number
+  billingPeriod: string
+  issueDate: string
   dueDate: string
-  status: 'PAID' | 'PENDING' | 'OVERDUE'
-  description: string
-  createdAt: string
+  totalAmount: number
+  status: 'UNPAID' | 'PAID' | 'OVERDUE'
+  remarks?: string
+  items: InvoiceItem[]
 }
+
+interface InvoiceItem {
+  id: number
+  feeType: string
+  description: string
+  amount: number
+}
+
+interface PaymentMethod {
+  id: string
+  name: string
+  icon: React.ReactNode
+  description: string
+}
+
+const paymentMethods: PaymentMethod[] = [
+  {
+    id: 'momo',
+    name: 'MoMo',
+    icon: <Wallet className="w-5 h-5" />,
+    description: 'Thanh toán qua ví MoMo'
+  },
+  {
+    id: 'vnpay',
+    name: 'VNPay',
+    icon: <CreditCard className="w-5 h-5" />,
+    description: 'Thanh toán qua VNPay'
+  },
+  {
+    id: 'zalopay',
+    name: 'ZaloPay',
+    icon: <Smartphone className="w-5 h-5" />,
+    description: 'Thanh toán qua ZaloPay'
+  },
+  {
+    id: 'visa',
+    name: 'Visa/Mastercard',
+    icon: <Globe className="w-5 h-5" />,
+    description: 'Thanh toán thẻ quốc tế'
+  }
+]
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('')
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState<string>('')
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      setError(null)
       try {
         const data = await fetchMyInvoices()
         setInvoices(data)
       } catch (err: any) {
-        setError(err.message || 'Lỗi khi lấy hóa đơn')
+        console.error('Error fetching invoices:', err.message)
       } finally {
         setLoading(false)
       }
@@ -52,13 +86,59 @@ export default function InvoicesPage() {
     fetchData()
   }, [])
 
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filterStatus === 'all' || invoice.status === filterStatus
-    return matchesSearch && matchesStatus
-  })
+  const handlePayment = async () => {
+    if (!selectedInvoice || !selectedPaymentMethod) return
+
+    setPaymentLoading(true)
+    setPaymentError('')
+
+    try {
+      let data, payUrl;
+      if (selectedPaymentMethod === 'vnpay') {
+        data = await createVNPayPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
+        payUrl = data.data?.payUrl || data.data?.payurl;
+      } else if (selectedPaymentMethod === 'momo') {
+        data = await createMoMoPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
+        payUrl = data.data?.payUrl || data.data?.payurl;
+      } else if (selectedPaymentMethod === 'zalopay') {
+        data = await createZaloPayPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
+        payUrl = data.data?.payUrl || data.data?.payurl;
+      } else if (selectedPaymentMethod === 'visa') {
+        data = await createVisaPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
+        payUrl = data.data?.payUrl || data.data?.payurl;
+      } else {
+        setPaymentError('Phương thức thanh toán không hợp lệ');
+        setPaymentLoading(false);
+        return;
+      }
+      if (payUrl) {
+        if (selectedPaymentMethod === 'vnpay') {
+          window.location.href = payUrl;
+        } else {
+          window.open(payUrl, '_blank');
+        }
+      } else {
+        setPaymentError('Không nhận được đường dẫn thanh toán');
+      }
+    } catch (error: any) {
+      setPaymentError(error.message || 'Không thể kết nối đến server');
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return <Badge className="bg-green-100 text-green-800">Đã thanh toán</Badge>
+      case 'UNPAID':
+        return <Badge className="bg-yellow-100 text-yellow-800">Chưa thanh toán</Badge>
+      case 'OVERDUE':
+        return <Badge className="bg-red-100 text-red-800">Quá hạn</Badge>
+      default:
+        return <Badge>{status}</Badge>
+    }
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -71,208 +151,146 @@ export default function InvoicesPage() {
     return new Date(dateString).toLocaleDateString('vi-VN')
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Đã thanh toán
-          </span>
-        )
-      case 'PENDING':
-        return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <Clock className="h-3 w-3 mr-1" />
-            Chờ thanh toán
-          </span>
-        )
-      case 'OVERDUE':
-        return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            Quá hạn
-          </span>
-        )
-      default:
-        return null
-    }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    )
   }
-
-  const getTotalAmount = () => {
-    return filteredInvoices.reduce((total, invoice) => total + invoice.amount, 0)
-  }
-
-  const getPendingAmount = () => {
-    return filteredInvoices
-      .filter(invoice => invoice.status === 'PENDING' || invoice.status === 'OVERDUE')
-      .reduce((total, invoice) => total + invoice.amount, 0)
-  }
-
-  if (loading) return <div>Đang tải dữ liệu...</div>
-  if (error) return <div className="text-red-500">{error}</div>
-  if (!invoices || invoices.length === 0) return <div>Chưa có hóa đơn nào.</div>
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Hóa đơn & Thanh toán</h1>
-              <p className="text-gray-600">Quản lý và thanh toán các hóa đơn dịch vụ</p>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Hóa đơn</h1>
+        <p className="text-gray-600">Quản lý và thanh toán hóa đơn</p>
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tổng hóa đơn</CardTitle>
-              <Receipt className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{filteredInvoices.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Tổng số hóa đơn
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tổng tiền</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(getTotalAmount())}</div>
-              <p className="text-xs text-muted-foreground">
-                Tổng số tiền hóa đơn
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Chờ thanh toán</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(getPendingAmount())}</div>
-              <p className="text-xs text-muted-foreground">
-                Số tiền chưa thanh toán
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Tìm kiếm hóa đơn..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={filterStatus === 'all' ? 'default' : 'outline'}
-                  onClick={() => setFilterStatus('all')}
-                >
-                  Tất cả
-                </Button>
-                <Button
-                  variant={filterStatus === 'PENDING' ? 'default' : 'outline'}
-                  onClick={() => setFilterStatus('PENDING')}
-                >
-                  Chờ thanh toán
-                </Button>
-                <Button
-                  variant={filterStatus === 'PAID' ? 'default' : 'outline'}
-                  onClick={() => setFilterStatus('PAID')}
-                >
-                  Đã thanh toán
-                </Button>
-                <Button
-                  variant={filterStatus === 'OVERDUE' ? 'default' : 'outline'}
-                  onClick={() => setFilterStatus('OVERDUE')}
-                >
-                  Quá hạn
-                </Button>
-              </div>
-            </div>
+      {invoices.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-gray-500">Chưa có hóa đơn nào</p>
           </CardContent>
         </Card>
-
-        {/* Invoices List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Danh sách hóa đơn ({filteredInvoices.length})</CardTitle>
-            <CardDescription>
-              Danh sách tất cả hóa đơn của bạn
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredInvoices.length === 0 ? (
-              <div className="text-center py-8">
-                <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Không có hóa đơn nào</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredInvoices.map((invoice) => (
-                  <div key={invoice.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-semibold text-lg">{invoice.invoiceNumber}</h3>
-                          {getStatusBadge(invoice.status)}
-                        </div>
-                        <p className="text-gray-600 mb-1">{invoice.description}</p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Hạn thanh toán: {formatDate(invoice.dueDate)}
-                          </span>
-                          <span className="flex items-center">
-                            <DollarSign className="h-4 w-4 mr-1" />
-                            {formatCurrency(invoice.amount)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Xem chi tiết
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-1" />
-                          Tải PDF
-                        </Button>
-                        {(invoice.status === 'PENDING' || invoice.status === 'OVERDUE') && (
-                          <Button size="sm">
-                            <CreditCard className="h-4 w-4 mr-1" />
+      ) : (
+        <div className="grid gap-4">
+          {invoices.map((invoice) => (
+            <Card key={invoice.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">
+                      Hóa đơn {invoice.billingPeriod}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">
+                      Ngày phát hành: {formatDate(invoice.issueDate)} | 
+                      Hạn thanh toán: {formatDate(invoice.dueDate)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-lg font-semibold">
+                        {formatCurrency(invoice.totalAmount)}
+                      </p>
+                      {getStatusBadge(invoice.status)}
+                    </div>
+                    {invoice.status === 'UNPAID' && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            onClick={() => setSelectedInvoice(invoice)}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
                             Thanh toán
                           </Button>
-                        )}
-                      </div>
+                        </DialogTrigger>
+                        <Dialog>
+                          <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Chọn phương thức thanh toán</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="grid gap-3">
+                                {paymentMethods.map((method) => (
+                                  <div
+                                    key={method.id}
+                                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                                      selectedPaymentMethod === method.id
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                    onClick={() => setSelectedPaymentMethod(method.id)}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      {method.icon}
+                                      <div>
+                                        <p className="font-medium">{method.name}</p>
+                                        <p className="text-sm text-gray-600">{method.description}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {paymentError && (
+                                <Alert variant="destructive">
+                                  <AlertDescription>{paymentError}</AlertDescription>
+                                </Alert>
+                              )}
+
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedPaymentMethod('')
+                                    setPaymentError('')
+                                  }}
+                                >
+                                  Hủy
+                                </Button>
+                                <Button
+                                  onClick={handlePayment}
+                                  disabled={!selectedPaymentMethod || paymentLoading}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  {paymentLoading ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Đang xử lý...
+                                    </>
+                                  ) : (
+                                    'Tiếp tục'
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </Dialog>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {invoice.items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span>{item.description}</span>
+                      <span className="font-medium">{formatCurrency(item.amount)}</span>
+                    </div>
+                  ))}
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span>Tổng cộng</span>
+                      <span>{formatCurrency(invoice.totalAmount)}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 } 

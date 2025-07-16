@@ -20,6 +20,8 @@ import com.mytech.apartment.portal.repositories.ServiceRequestRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.models.enums.ServiceRequestStatus;
 import com.mytech.apartment.portal.models.enums.ServiceRequestPriority;
+import com.mytech.apartment.portal.models.ServiceCategory;
+import com.mytech.apartment.portal.repositories.ServiceCategoryRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -33,6 +35,9 @@ public class ServiceRequestService {
 
     @Autowired
     private ServiceRequestMapper serviceRequestMapper;
+
+    @Autowired
+    private ServiceCategoryRepository serviceCategoryRepository;
 
     public List<ServiceRequestDto> getAllServiceRequests() {
         return serviceRequestRepository.findAll().stream()
@@ -48,10 +53,14 @@ public class ServiceRequestService {
         User user = userRepository.findById(request.getResidentId())
                 .orElseThrow(() -> new RuntimeException("User not found with id " + request.getResidentId()));
 
+        // Lấy category từ categoryId
+        ServiceCategory category = serviceCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found: " + request.getCategoryId()));
+
         ServiceRequest serviceRequest = new ServiceRequest();
         serviceRequest.setUser(user);
+        serviceRequest.setCategory(category);
         serviceRequest.setDescription(request.getDescription());
-        serviceRequest.setPriority(request.getPriority() != null ? ServiceRequestPriority.valueOf(request.getPriority().toString()) : null);
         serviceRequest.setPriority(request.getPriority() != null ? ServiceRequestPriority.valueOf(request.getPriority()) : null);
         serviceRequest.setStatus(ServiceRequestStatus.OPEN);
         serviceRequest.setSubmittedAt(LocalDateTime.now());

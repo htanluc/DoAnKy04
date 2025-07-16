@@ -1,5 +1,9 @@
 "use client"
 
+// Hướng dẫn lấy số điện thoại trực tiếp từ table user - phone_number:
+// 1. Đảm bảo API backend trả về trường "phoneNumber" (hoặc "phone_number") từ bảng user khi gọi fetchCurrentResident.
+// 2. Ở FE, chỉ lấy giá trị từ data.phoneNumber (không lấy từ resident, không lấy từ các bảng khác).
+
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,34 +23,55 @@ import {
 import { fetchCurrentResident, updateCurrentResident } from '@/lib/api'
 import type { JSX } from 'react'
 
-interface UserInfo {
-  id: string
-  fullName: string
-  email: string
-  phone: string
-  apartmentNumber: string
-  floor: string
-  building: string
-  avatar?: string
-  dateOfBirth?: string
-  emergencyContact?: {
-    name: string
-    phone: string
-    relationship: string
-  }
-  moveInDate: string
-  status: 'ACTIVE' | 'INACTIVE'
+// 1. Cập nhật interface/type:
+interface User {
+  id: number;
+  username: string;
+  phoneNumber: string;
+  status: string;
+  email: string;
+  roles: string[];
+  lockReason?: string | null;
+  avatar?: string; // Added avatar to User interface
+}
+interface Resident {
+  id: number;
+  userId: number;
+  fullName: string;
+  dateOfBirth: string;
+  idCardNumber: string;
+  familyRelation: string;
+  status: number | null;
+}
+interface Apartment {
+  id: number;
+  buildingId: number;
+  floorNumber: number;
+  unitNumber: string;
+  area: number;
+  status: string;
+}
+interface ApartmentResident {
+  apartmentId: number;
+  userId: number;
+  relationType: string;
+  moveInDate: string;
+  moveOutDate?: string;
 }
 
 export default function UpdateInfoPage() {
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  // Thay vì chỉ dùng userInfo, tách thành các state riêng:
+  const [user, setUser] = useState<User | null>(null);
+  const [resident, setResident] = useState<Resident | null>(null);
+  const [apartment, setApartment] = useState<Apartment | null>(null);
+  const [apartmentResident, setApartmentResident] = useState<ApartmentResident | null>(null);
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
-    phone: '',
+    phoneNumber: '', // Sửa lại: dùng phoneNumber
     emergencyContact: {
       name: '',
       phone: '',
@@ -60,14 +85,18 @@ export default function UpdateInfoPage() {
       try {
         const data = await fetchCurrentResident()
         if (!data) throw new Error('Không thể tải thông tin người dùng')
-        setUserInfo(data)
+        // Khi fetch dữ liệu:
+        setUser(data.user);
+        setResident(data.resident);
+        setApartment(data.apartment);
+        setApartmentResident(data.apartmentResident);
         setFormData({
-          fullName: data.fullName || data.username || '',
-          phone: data.phone || data.phoneNumber || '',
-          emergencyContact: data.emergencyContact || { name: '', phone: '', relationship: '' }
-        })
+          fullName: data.resident?.fullName || data.user?.username || '',
+          phoneNumber: data.user?.phoneNumber || '',
+          emergencyContact: { name: '', phone: '', relationship: '' }
+        });
       } catch (error) {
-        setUserInfo(null)
+        setUser(null)
       } finally {
         setLoading(false)
       }
@@ -80,10 +109,10 @@ export default function UpdateInfoPage() {
     try {
       const updated = await updateCurrentResident({
         fullName: formData.fullName,
-        phoneNumber: formData.phone,
+        phoneNumber: formData.phoneNumber, // Gửi phoneNumber trực tiếp
         emergencyContact: formData.emergencyContact
       })
-      setUserInfo(updated)
+      setUser(updated)
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 3000)
     } catch (error) {
@@ -110,7 +139,7 @@ export default function UpdateInfoPage() {
     )
   }
 
-  if (!userInfo) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -164,9 +193,9 @@ export default function UpdateInfoPage() {
                 <div className="flex flex-col items-center">
                   <div className="relative">
                     <Avatar className="h-24 w-24">
-                      <AvatarImage src={userInfo.avatar} alt={userInfo.fullName} />
+                      <AvatarImage src={user?.avatar || undefined} alt={resident?.fullName || user?.username || ''} />
                       <AvatarFallback>
-                        {userInfo.fullName.split(' ').map(n => n[0]).join('')}
+                        {(resident?.fullName || user?.username || '').split(' ').map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     <Button
@@ -186,7 +215,7 @@ export default function UpdateInfoPage() {
                     <Label className="text-sm font-medium text-gray-700">Email</Label>
                     <div className="flex items-center mt-1">
                       <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-gray-900">{userInfo.email}</span>
+                      <span className="text-gray-900">{user?.email}</span>
                     </div>
                   </div>
 
@@ -195,7 +224,7 @@ export default function UpdateInfoPage() {
                     <div className="flex items-center mt-1">
                       <MapPin className="h-4 w-4 text-gray-400 mr-2" />
                       <span className="text-gray-900">
-                        {userInfo.building} - Tầng {userInfo.floor} - {userInfo.apartmentNumber}
+                        {apartment ? `Tòa ${apartment.buildingId} - Tầng ${apartment.floorNumber} - ${apartment.unitNumber}` : 'Chưa liên kết căn hộ'}
                       </span>
                     </div>
                   </div>
@@ -203,27 +232,23 @@ export default function UpdateInfoPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Ngày vào ở</Label>
                     <span className="text-gray-900 block mt-1">
-                      {formatDate(userInfo.moveInDate)}
+                      {apartmentResident?.moveInDate ? formatDate(apartmentResident.moveInDate) : '---'}
                     </span>
                   </div>
 
-                  {userInfo.dateOfBirth && (
+                  {resident?.dateOfBirth && (
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Ngày sinh</Label>
                       <span className="text-gray-900 block mt-1">
-                        {formatDate(userInfo.dateOfBirth)}
+                        {formatDate(resident.dateOfBirth)}
                       </span>
                     </div>
                   )}
 
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Trạng thái</Label>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                      userInfo.status === 'ACTIVE' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {userInfo.status === 'ACTIVE' ? 'Đang hoạt động' : 'Không hoạt động'}
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${user?.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {user?.status === 'ACTIVE' ? 'Đang hoạt động' : 'Không hoạt động'}
                     </span>
                   </div>
                 </div>
@@ -261,14 +286,14 @@ export default function UpdateInfoPage() {
                       </div>
 
                       <div>
-                        <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                        <Label htmlFor="phoneNumber" className="text-sm font-medium text-gray-700">
                           Số điện thoại
                         </Label>
                         <div className="mt-1">
                           <Input
-                            id="phone"
-                            value={formData.phone}
-                            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                            id="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
                             placeholder="Nhập số điện thoại"
                           />
                         </div>

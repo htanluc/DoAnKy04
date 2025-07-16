@@ -21,7 +21,11 @@ import {
 import {
   fetchMyFacilityBookings,
   createFacilityBooking,
-  cancelFacilityBooking
+  cancelFacilityBooking,
+  createVNPayPayment,
+  createMoMoPayment,
+  createZaloPayPayment,
+  createVisaPayment
 } from '@/lib/api'
 import type { FC, JSX } from 'react'
 
@@ -31,13 +35,10 @@ interface Facility {
   description: string
   location: string
   capacity: number
-  hourlyRate: number
+  usageFee: number
   image?: string
   amenities: string[]
-  openingHours: {
-    open: string
-    close: string
-  }
+  openingHours?: string
   status: 'AVAILABLE' | 'MAINTENANCE' | 'CLOSED'
 }
 
@@ -72,6 +73,19 @@ const FacilityBookingsPage: FC = () => {
     numberOfPeople: 1,
     purpose: ''
   })
+  const paymentMethods = [
+    { id: 'momo', name: 'MoMo', description: 'Thanh toán qua ví MoMo' },
+    { id: 'vnpay', name: 'VNPay', description: 'Thanh toán qua VNPay' },
+    { id: 'zalopay', name: 'ZaloPay', description: 'Thanh toán qua ZaloPay' },
+    { id: 'visa', name: 'Visa/Mastercard', description: 'Thanh toán thẻ quốc tế' },
+  ];
+  const [payBefore, setPayBefore] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string>('');
+  // State cho lỗi realtime
+  const [numberError, setNumberError] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -189,29 +203,129 @@ const FacilityBookingsPage: FC = () => {
     setShowBookingForm(true)
   }
 
+  const isFacilityTimeOverlap = (facilityId: string, newStart: string, newEnd: string) => {
+    return bookings.some(b => {
+      if (b.facilityId !== facilityId) return false;
+      if (!['PENDING', 'CONFIRMED', 'COMPLETED'].includes(b.status)) return false;
+      const bookedStart = new Date(b.startTime).getTime();
+      const bookedEnd = new Date(b.endTime).getTime();
+      const newStartTime = new Date(newStart).getTime();
+      const newEndTime = new Date(newEnd).getTime();
+      return (newStartTime < bookedEnd && newEndTime > bookedStart);
+    });
+  };
+
   const handleCreateBooking = async () => {
-    if (!selectedFacility) return
-    setError(null)
-    setSuccess(null)
+    if (!selectedFacility) return;
+    setError(null);
+    setSuccess(null);
+    setPaymentError('');
+    // Kiểm tra số lượng người đặt
+    if (newBooking.numberOfPeople > 10) {
+      setNumberError('Số lượng người đặt tối đa là 10!');
+      return;
+    }
+    // Kiểm tra overlap thời gian
+    const bookingTime = `${newBooking.date}T${newBooking.startTime}:00`;
+    const endTime = `${newBooking.date}T${newBooking.endTime}:00`;
+    if (isFacilityTimeOverlap(selectedFacility.id, bookingTime, endTime)) {
+      setTimeError('Bạn đã có lịch đặt trùng thời gian với tiện ích này!');
+      return;
+    }
+    if (payBefore && selectedPaymentMethod) {
+      // Gọi API tạo booking trước, lấy bookingId, rồi gọi API thanh toán
+      let bookingRes = null;
+      try {
+        // Ghép ngày + giờ bắt đầu thành LocalDateTime ISO
+        const bookingTime = `${newBooking.date}T${newBooking.startTime}:00`;
+        const [startHour, startMinute] = newBooking.startTime.split(":").map(Number);
+        const [endHour, endMinute] = newBooking.endTime.split(":").map(Number);
+        let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+        if (duration <= 0) duration += 24 * 60;
+        const bookingData = {
+          facilityId: selectedFacility.id,
+          bookingTime,
+          duration,
+          numberOfPeople: newBooking.numberOfPeople,
+          purpose: newBooking.purpose
+        };
+        // Tạo booking trước
+        bookingRes = await createFacilityBooking(bookingData);
+        // Giả sử backend trả về bookingId và totalCost
+        const bookingId = bookingRes.id || bookingRes.bookingId;
+        const amount = bookingRes.totalCost || selectedFacility.usageFee;
+        setPaymentLoading(true);
+        let data, payUrl;
+        if (selectedPaymentMethod === 'vnpay') {
+          data = await createVNPayPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
+          payUrl = data.data?.payUrl || data.data?.payurl;
+        } else if (selectedPaymentMethod === 'momo') {
+          data = await createMoMoPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
+          payUrl = data.data?.payUrl || data.data?.payurl;
+        } else if (selectedPaymentMethod === 'zalopay') {
+          data = await createZaloPayPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
+          payUrl = data.data?.payUrl || data.data?.payurl;
+        } else if (selectedPaymentMethod === 'visa') {
+          data = await createVisaPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
+          payUrl = data.data?.payUrl || data.data?.payurl;
+        } else {
+          setPaymentError('Phương thức thanh toán không hợp lệ');
+          setPaymentLoading(false);
+          // Xóa booking nếu tạo booking thành công nhưng không chọn được phương thức thanh toán
+          if (bookingRes && bookingRes.id) {
+            await cancelFacilityBooking(bookingRes.id);
+          }
+          return;
+        }
+        if (payUrl) {
+          if (selectedPaymentMethod === 'vnpay') {
+            window.location.href = payUrl;
+          } else {
+            window.open(payUrl, '_blank');
+          }
+        } else {
+          setPaymentError('Không nhận được đường dẫn thanh toán');
+          // Xóa booking nếu không lấy được payUrl
+          if (bookingRes && bookingRes.id) {
+            await cancelFacilityBooking(bookingRes.id);
+          }
+        }
+      } catch (err: any) {
+        setPaymentError(err.message || 'Thanh toán thất bại');
+        // Xóa booking nếu thanh toán lỗi
+        if (bookingRes && bookingRes.id) {
+          await cancelFacilityBooking(bookingRes.id);
+        }
+      } finally {
+        setPaymentLoading(false);
+      }
+      // Sau khi xử lý xong, reload lại danh sách booking
+      const data = await fetchMyFacilityBookings();
+      setBookings(data);
+      return;
+    }
+    // Nếu không thanh toán trước, chỉ tạo booking như cũ
     try {
+      const bookingTime = `${newBooking.date}T${newBooking.startTime}:00`;
+      const [startHour, startMinute] = newBooking.startTime.split(":").map(Number);
+      const [endHour, endMinute] = newBooking.endTime.split(":").map(Number);
+      let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+      if (duration <= 0) duration += 24 * 60;
       const bookingData = {
         facilityId: selectedFacility.id,
-        date: newBooking.date,
-        startTime: newBooking.startTime,
-        endTime: newBooking.endTime,
+        bookingTime,
+        duration,
         numberOfPeople: newBooking.numberOfPeople,
         purpose: newBooking.purpose
-      }
-      await createFacilityBooking(bookingData)
-      setSuccess('Đặt tiện ích thành công!')
-      setShowBookingForm(false)
-      // Refresh bookings
-      const data = await fetchMyFacilityBookings()
-      setBookings(data)
+      };
+      await createFacilityBooking(bookingData);
+      setSuccess('Đặt tiện ích thành công!');
+      const data = await fetchMyFacilityBookings();
+      setBookings(data);
     } catch (err: any) {
-      setError(err.message || 'Đặt tiện ích thất bại')
+      setError(err.message || 'Đặt tiện ích thất bại');
     }
-  }
+  };
 
   const handleCancelBooking = async (bookingId: string) => {
     setError(null)
@@ -241,6 +355,58 @@ const FacilityBookingsPage: FC = () => {
       .reduce((total, booking) => total + booking.totalCost, 0)
   }
 
+  // Định dạng ngày giờ dd/MM/yyyy HH:mm:ss
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return '---';
+    const d = new Date(dateString);
+    return d.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
+
+  const isFacilityBooked = (facilityId: string) => {
+    return bookings.some(
+      (b) => b.facilityId === facilityId && ['PENDING', 'CONFIRMED', 'COMPLETED'].includes(b.status)
+    );
+  };
+
+  // Hàm kiểm tra realtime số lượng
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    setNewBooking(prev => ({ ...prev, numberOfPeople: value }));
+    if (value > 10) {
+      setNumberError('Số lượng người đặt tối đa là 10!');
+    } else {
+      setNumberError(null);
+    }
+  };
+
+  // Hàm kiểm tra realtime thời gian
+  const handleTimeChange = (field: 'startTime' | 'endTime', value: string) => {
+    setNewBooking(prev => ({ ...prev, [field]: value }));
+    // Kiểm tra overlap nếu đã có đủ thông tin
+    const date = newBooking.date;
+    const start = field === 'startTime' ? value : newBooking.startTime;
+    const end = field === 'endTime' ? value : newBooking.endTime;
+    if (date && start && end) {
+      const bookingTime = `${date}T${start}:00`;
+      const endTime = `${date}T${end}:00`;
+      if (isFacilityTimeOverlap(selectedFacility?.id || '', bookingTime, endTime)) {
+        setTimeError('Bạn đã có lịch đặt trùng thời gian với tiện ích này!');
+      } else {
+        setTimeError(null);
+      }
+    } else {
+      setTimeError(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -251,10 +417,6 @@ const FacilityBookingsPage: FC = () => {
 
   if (error) {
     return <div className="text-red-500">{error}</div>
-  }
-
-  if (!bookings || bookings.length === 0) {
-    return <div>Chưa có lịch sử đặt tiện ích nào.</div>
   }
 
   return (
@@ -358,20 +520,20 @@ const FacilityBookingsPage: FC = () => {
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <DollarSign className="h-4 w-4 mr-2" />
-                        {formatCurrency(facility.hourlyRate)}/giờ
+                        {formatCurrency(facility.usageFee)}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Clock className="h-4 w-4 mr-2" />
-                        {facility.openingHours.open} - {facility.openingHours.close}
+                        {facility.openingHours ?? '---'}
                       </div>
                       
                       <div className="pt-3">
                         <Button 
                           className="w-full"
                           onClick={() => handleBookFacility(facility)}
-                          disabled={facility.status !== 'AVAILABLE'}
+                          disabled={facility.status !== 'AVAILABLE' || isFacilityBooked(facility.id)}
                         >
-                          {facility.status === 'AVAILABLE' ? 'Đặt ngay' : 'Không khả dụng'}
+                          {facility.status !== 'AVAILABLE' ? 'Không khả dụng' : isFacilityBooked(facility.id) ? 'Đã đặt' : 'Đặt ngay'}
                         </Button>
                       </div>
                     </div>
@@ -415,8 +577,9 @@ const FacilityBookingsPage: FC = () => {
                       min="1"
                       max={selectedFacility.capacity}
                       value={newBooking.numberOfPeople}
-                      onChange={(e) => setNewBooking(prev => ({ ...prev, numberOfPeople: parseInt(e.target.value) }))}
+                      onChange={handleNumberChange}
                     />
+                    {numberError && <div className="text-red-500 text-xs mt-1">{numberError}</div>}
                   </div>
                 </div>
                 
@@ -427,11 +590,12 @@ const FacilityBookingsPage: FC = () => {
                     </label>
                     <Input
                       type="time"
-                      min={selectedFacility.openingHours.open}
-                      max={selectedFacility.openingHours.close}
+                      min={selectedFacility.openingHours ?? ''}
+                      max={selectedFacility.openingHours ?? ''}
                       value={newBooking.startTime}
-                      onChange={(e) => setNewBooking(prev => ({ ...prev, startTime: e.target.value }))}
+                      onChange={e => handleTimeChange('startTime', e.target.value)}
                     />
+                    {timeError && <div className="text-red-500 text-xs mt-1">{timeError}</div>}
                   </div>
                   
                   <div>
@@ -440,11 +604,12 @@ const FacilityBookingsPage: FC = () => {
                     </label>
                     <Input
                       type="time"
-                      min={selectedFacility.openingHours.open}
-                      max={selectedFacility.openingHours.close}
+                      min={selectedFacility.openingHours ?? ''}
+                      max={selectedFacility.openingHours ?? ''}
                       value={newBooking.endTime}
-                      onChange={(e) => setNewBooking(prev => ({ ...prev, endTime: e.target.value }))}
+                      onChange={e => handleTimeChange('endTime', e.target.value)}
                     />
+                    {timeError && <div className="text-red-500 text-xs mt-1">{timeError}</div>}
                   </div>
                 </div>
                 
@@ -459,12 +624,33 @@ const FacilityBookingsPage: FC = () => {
                   />
                 </div>
                 
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="payBefore" checked={payBefore} onChange={e => setPayBefore(e.target.checked)} />
+                  <label htmlFor="payBefore">Thanh toán trước khi đặt chỗ</label>
+                </div>
+                {payBefore && (
+                  <div className="space-y-2">
+                    <div>Chọn cổng thanh toán:</div>
+                    <div className="flex gap-2">
+                      {paymentMethods.map(method => (
+                        <Button
+                          key={method.id}
+                          variant={selectedPaymentMethod === method.id ? 'default' : 'outline'}
+                          onClick={() => setSelectedPaymentMethod(method.id)}
+                        >
+                          {method.name}
+                        </Button>
+                      ))}
+                    </div>
+                    {paymentError && <div className="text-red-500 text-sm">{paymentError}</div>}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Button 
                     onClick={handleCreateBooking}
-                    disabled={!newBooking.date || !newBooking.startTime || !newBooking.endTime || !newBooking.purpose}
+                    disabled={!newBooking.date || !newBooking.startTime || !newBooking.endTime || !newBooking.purpose || (payBefore && !selectedPaymentMethod) || paymentLoading || !!numberError || !!timeError}
                   >
-                    Đặt chỗ
+                    {paymentLoading ? 'Đang xử lý...' : 'Đặt chỗ'}
                   </Button>
                   <Button variant="outline" onClick={() => setShowBookingForm(false)}>
                     Hủy
@@ -550,13 +736,13 @@ const FacilityBookingsPage: FC = () => {
                           
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500 mb-3">
                             <div>
-                              <span className="font-medium">Ngày:</span> {formatDate(booking.date)}
+                              <span className="font-medium">Bắt đầu:</span> {formatDateTime(booking.startTime)}
                             </div>
                             <div>
-                              <span className="font-medium">Thời gian:</span> {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                              <span className="font-medium">Kết thúc:</span> {formatDateTime(booking.endTime)}
                             </div>
                             <div>
-                              <span className="font-medium">Số người:</span> {booking.numberOfPeople}
+                              <span className="font-medium">Thời gian sử dụng:</span> {booking.startTime && booking.endTime ? `${Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000)} phút` : '---'}
                             </div>
                           </div>
                           
@@ -571,16 +757,7 @@ const FacilityBookingsPage: FC = () => {
                         </div>
                         
                         <div className="flex gap-2 ml-4">
-                          {(booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCancelBooking(booking.id)}
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Hủy
-                            </Button>
-                          )}
+                          
                         </div>
                       </div>
                     </CardContent>

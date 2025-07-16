@@ -43,22 +43,34 @@ public class FacilityBookingService {
     }
 
     public FacilityBookingDto createFacilityBooking(FacilityBookingCreateRequest request) {
+        // Validate dữ liệu đầu vào
+        if (request.getFacilityId() == null || request.getBookingTime() == null || request.getDuration() == null || request.getResidentId() == null) {
+            throw new RuntimeException("Thiếu thông tin đặt chỗ");
+        }
         Facility facility = facilityRepository.findById(request.getFacilityId())
                 .orElseThrow(() -> new RuntimeException("Facility not found with id " + request.getFacilityId()));
 
         User user = userRepository.findById(request.getResidentId())
                 .orElseThrow(() -> new RuntimeException("User not found with id " + request.getResidentId()));
 
-        // Calculate duration from start and end time
-        long durationMinutes = java.time.Duration.between(request.getStartTime(), request.getEndTime()).toMinutes();
+        // Validate số người không vượt quá sức chứa
+        if (request.getNumberOfPeople() != null && request.getNumberOfPeople() > facility.getCapacity()) {
+            throw new RuntimeException("Số người vượt quá sức chứa của tiện ích");
+        }
+        // Validate thời lượng hợp lệ
+        if (request.getDuration() <= 0) {
+            throw new RuntimeException("Thời lượng đặt chỗ không hợp lệ");
+        }
 
         FacilityBooking booking = new FacilityBooking();
         booking.setFacility(facility);
         booking.setUser(user);
-        booking.setBookingTime(request.getStartTime());
-        booking.setDuration((int) durationMinutes);
+        booking.setBookingTime(request.getBookingTime());
+        booking.setDuration(request.getDuration());
         booking.setStatus(FacilityBookingStatus.PENDING);
         booking.setCreatedAt(LocalDateTime.now());
+        booking.setNumberOfPeople(request.getNumberOfPeople());
+        booking.setPurpose(request.getPurpose());
 
         FacilityBooking savedBooking = facilityBookingRepository.save(booking);
         return facilityBookingMapper.toDto(savedBooking);

@@ -1,6 +1,7 @@
 package com.mytech.apartment.portal.apis;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +25,13 @@ import com.mytech.apartment.portal.services.AutoPaymentService;
 import com.mytech.apartment.portal.services.PaymentGatewayService;
 import com.mytech.apartment.portal.services.PaymentService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/payments")
+@Tag(name = "Payment", description = "Payment management endpoints")
 public class PaymentController {
     @Autowired
     private PaymentService paymentService;
@@ -90,6 +94,112 @@ public class PaymentController {
     }
 
     /**
+     * Create MoMo payment
+     * Tạo thanh toán MoMo
+     */
+    @PostMapping("/momo")
+    @Operation(summary = "Create MoMo payment", description = "Create payment via MoMo wallet")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createMoMoPayment(
+            @RequestParam Long invoiceId,
+            @RequestParam Long amount,
+            @RequestParam String orderInfo) {
+        try {
+            String orderId = paymentGatewayService.generateOrderId();
+            Map<String, Object> response = paymentGatewayService.createMoMoPayment(orderId, amount, orderInfo);
+            // Đảm bảo trả về đúng trường payUrl
+            Map<String, Object> data = new java.util.HashMap<>();
+            data.put("payUrl", response.get("payUrl"));
+            return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán MoMo thành công", data));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Create VNPay payment
+     * Tạo thanh toán VNPay
+     */
+    @PostMapping("/vnpay")
+    @Operation(summary = "Create VNPay payment", description = "Create payment via VNPay")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createVNPayPayment(
+            @RequestParam Long amount,
+            @RequestParam String orderInfo,
+            @RequestParam(required = false) String bankCode,
+            @RequestParam(required = false) String language) {
+        try {
+            Map<String, Object> response = paymentGatewayService.createVNPayPaymentFull(amount, orderInfo, bankCode, language);
+            Map<String, Object> data = new java.util.HashMap<>();
+            data.put("payUrl", response.get("payUrl"));
+            return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán VNPay thành công", data));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Create ZaloPay payment
+     * Tạo thanh toán ZaloPay
+     */
+    @PostMapping("/zalopay")
+    @Operation(summary = "Create ZaloPay payment", description = "Create payment via ZaloPay")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createZaloPayPayment(
+            @RequestParam Long invoiceId,
+            @RequestParam Long amount,
+            @RequestParam String orderInfo) {
+        try {
+            String orderId = paymentGatewayService.generateOrderId();
+            Map<String, Object> response = paymentGatewayService.createZaloPayPayment(orderId, amount, orderInfo);
+            Map<String, Object> data = new java.util.HashMap<>();
+            data.put("payUrl", response.get("payUrl"));
+            return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán ZaloPay thành công", data));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Create Visa/Mastercard payment
+     * Tạo thanh toán thẻ quốc tế
+     */
+    @PostMapping("/visa")
+    @Operation(summary = "Create Visa payment", description = "Create payment via Visa/Mastercard")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createVisaPayment(
+            @RequestParam Long invoiceId,
+            @RequestParam Long amount,
+            @RequestParam String orderInfo) {
+        try {
+            String orderId = paymentGatewayService.generateOrderId();
+            Map<String, Object> response = paymentGatewayService.createVisaPayment(orderId, amount, orderInfo);
+            Map<String, Object> data = new java.util.HashMap<>();
+            data.put("payUrl", response.get("payUrl"));
+            return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán thẻ quốc tế thành công", data));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Create PayPal payment
+     * Tạo thanh toán PayPal
+     */
+    @PostMapping("/paypal")
+    @Operation(summary = "Create PayPal payment", description = "Create payment via PayPal")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createPayPalPayment(
+            @RequestParam Long invoiceId,
+            @RequestParam Long amount,
+            @RequestParam String orderInfo) {
+        try {
+            String orderId = paymentGatewayService.generateOrderId();
+            Map<String, Object> response = paymentGatewayService.createPayPalPayment(orderId, amount, orderInfo);
+            Map<String, Object> data = new java.util.HashMap<>();
+            data.put("payUrl", response.get("payUrl"));
+            return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán PayPal thành công", data));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
      * Payment gateway callback
      * Callback từ cổng thanh toán
      */
@@ -101,6 +211,105 @@ public class PaymentController {
         try {
             paymentGatewayService.processCallback(transactionId, status, message);
             return ResponseEntity.ok(ApiResponse.success("Xử lý callback thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * MoMo callback
+     * Callback từ MoMo
+     */
+    @PostMapping("/momo/callback")
+    @Operation(summary = "MoMo callback", description = "Handle callback from MoMo payment gateway")
+    public ResponseEntity<ApiResponse<String>> momoCallback(@RequestBody Map<String, String> params) {
+        try {
+            boolean isValid = paymentGatewayService.verifyPaymentCallback("momo", params);
+            if (isValid) {
+                // Xử lý thanh toán thành công
+                String orderId = params.get("orderId");
+                String resultCode = params.get("resultCode");
+                if ("0".equals(resultCode)) {
+                    // Thanh toán thành công
+                    return ResponseEntity.ok(ApiResponse.success("Thanh toán MoMo thành công"));
+                } else {
+                    return ResponseEntity.ok(ApiResponse.error("Thanh toán MoMo thất bại"));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * VNPay callback
+     * Callback từ VNPay
+     */
+    @PostMapping("/vnpay/callback")
+    @Operation(summary = "VNPay callback", description = "Handle callback from VNPay payment gateway")
+    public ResponseEntity<ApiResponse<String>> vnpayCallback(@RequestParam Map<String, String> params) {
+        try {
+            boolean isValid = paymentGatewayService.verifyPaymentCallback("vnpay", params);
+            if (isValid) {
+                String vnp_ResponseCode = params.get("vnp_ResponseCode");
+                if ("00".equals(vnp_ResponseCode)) {
+                    return ResponseEntity.ok(ApiResponse.success("Thanh toán VNPay thành công"));
+                } else {
+                    return ResponseEntity.ok(ApiResponse.error("Thanh toán VNPay thất bại"));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * ZaloPay callback
+     * Callback từ ZaloPay
+     */
+    @PostMapping("/zalopay/callback")
+    @Operation(summary = "ZaloPay callback", description = "Handle callback from ZaloPay payment gateway")
+    public ResponseEntity<ApiResponse<String>> zalopayCallback(@RequestBody Map<String, String> params) {
+        try {
+            boolean isValid = paymentGatewayService.verifyPaymentCallback("zalopay", params);
+            if (isValid) {
+                String return_code = params.get("return_code");
+                if ("1".equals(return_code)) {
+                    return ResponseEntity.ok(ApiResponse.success("Thanh toán ZaloPay thành công"));
+                } else {
+                    return ResponseEntity.ok(ApiResponse.error("Thanh toán ZaloPay thất bại"));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * PayPal callback
+     * Callback từ PayPal
+     */
+    @PostMapping("/paypal/callback")
+    @Operation(summary = "PayPal callback", description = "Handle callback from PayPal payment gateway")
+    public ResponseEntity<ApiResponse<String>> paypalCallback(@RequestBody Map<String, String> params) {
+        try {
+            boolean isValid = paymentGatewayService.verifyPaymentCallback("paypal", params);
+            if (isValid) {
+                String paymentStatus = params.get("payment_status");
+                if ("Completed".equals(paymentStatus)) {
+                    return ResponseEntity.ok(ApiResponse.success("Thanh toán PayPal thành công"));
+                } else {
+                    return ResponseEntity.ok(ApiResponse.error("Thanh toán PayPal thất bại"));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+            }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
@@ -207,16 +416,17 @@ public class PaymentController {
         }
     }
 
-    // Deleting payments can have financial implications and should be handled with care.
-    // It might be better to have a "void" or "cancel" status instead of outright deletion.
-    // For this example, we'll keep the delete endpoint but add this caution.
+    /**
+     * Delete payment
+     * Xóa thanh toán
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
         try {
             paymentService.deletePayment(id);
             return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
     }
 } 

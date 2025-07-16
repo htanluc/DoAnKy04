@@ -91,4 +91,23 @@ public class ResidentService {
             })
             .orElse(null);
     }
+
+    public ResidentDto getResidentByPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+            .flatMap(user -> getResidentByUserId(user.getId()))
+            .orElse(null);
+    }
+
+    @Transactional
+    public ResidentDto updateResidentByPhoneNumber(String phoneNumber, ResidentUpdateRequest request) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+            .flatMap(user -> {
+                Resident resident = residentRepository.findByUserId(user.getId());
+                if (resident == null) return Optional.<ResidentDto>empty();
+                residentMapper.updateEntityFromRequest(resident, request);
+                Resident updated = residentRepository.save(resident);
+                return Optional.of(residentMapper.toDto(updated));
+            })
+            .orElse(null);
+    }
 } 

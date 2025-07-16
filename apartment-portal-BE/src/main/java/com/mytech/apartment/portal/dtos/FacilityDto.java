@@ -10,4 +10,6 @@ public class FacilityDto {
     private Integer capacity;
     private String otherDetails;
     private Double usageFee;
+    private String openingHours;
+    private String status;
 } 

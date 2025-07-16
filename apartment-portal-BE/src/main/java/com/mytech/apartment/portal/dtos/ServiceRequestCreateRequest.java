@@ -2,7 +2,7 @@ package com.mytech.apartment.portal.dtos;
 
 public class ServiceRequestCreateRequest {
     private Long residentId;
-    private String categoryId;
+    private Long categoryId;
     private String title;
     private String description;
     private String priority;
@@ -10,7 +10,7 @@ public class ServiceRequestCreateRequest {
     // Constructors
     public ServiceRequestCreateRequest() {}
 
-    public ServiceRequestCreateRequest(Long residentId, String categoryId, String title, String description, String priority) {
+    public ServiceRequestCreateRequest(Long residentId, Long categoryId, String title, String description, String priority) {
         this.residentId = residentId;
         this.categoryId = categoryId;
         this.title = title;
@@ -22,8 +22,8 @@ public class ServiceRequestCreateRequest {
     public Long getResidentId() { return residentId; }
     public void setResidentId(Long residentId) { this.residentId = residentId; }
 
-    public String getCategoryId() { return categoryId; }
-    public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

@@ -29,4 +29,8 @@ public class ApartmentResident {
 
     @Column(name = "move_out_date")
     private LocalDate moveOutDate;
+
+    public Long getApartmentId() {
+        return id != null ? id.getApartmentId() : null;
+    }
 }

@@ -162,4 +162,29 @@ public class ApartmentController {
         List<ApartmentDto> apartments = apartmentService.getApartmentsOfResident(userId);
         return ResponseEntity.ok(apartments);
     }
+
+    /**
+     * [EN] Get detailed info of current resident's apartment
+     * [VI] Lấy thông tin chi tiết căn hộ của resident hiện tại
+     */
+    @Operation(summary = "Get my apartment info", description = "Get detailed info of the apartment linked to the currently authenticated resident")
+    @GetMapping("/my/info")
+    public ResponseEntity<?> getMyApartmentInfo() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Long userId = null;
+        try {
+            userId = apartmentService.getUserIdByUsername(username);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Không xác định được user hiện tại");
+        }
+        if (userId == null) return ResponseEntity.status(401).body("Không xác định được user hiện tại");
+        List<ApartmentDto> apartments = apartmentService.getApartmentsOfResident(userId);
+        if (apartments == null || apartments.isEmpty()) {
+            return ResponseEntity.badRequest().body("Bạn chưa được liên kết với căn hộ nào. Vui lòng liên hệ admin để được gán căn hộ.");
+        }
+        // Lấy căn hộ đầu tiên (nếu có nhiều)
+        ApartmentDto apt = apartments.get(0);
+        return ResponseEntity.ok(apt);
+    }
 }

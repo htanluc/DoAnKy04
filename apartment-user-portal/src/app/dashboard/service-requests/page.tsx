@@ -17,7 +17,7 @@ import {
   Home,
   Settings
 } from 'lucide-react'
-import { fetchCurrentUser, fetchMySupportRequests, createSupportRequest } from '@/lib/api'
+import { fetchCurrentResident, fetchMySupportRequests, createSupportRequest } from '@/lib/api'
 
 interface ServiceRequest {
   id: string
@@ -43,6 +43,7 @@ interface Comment {
 }
 
 interface ServiceCategory {
+  id: number; // thêm id
   categoryCode: string;
   categoryName: string;
   description?: string;
@@ -60,7 +61,7 @@ export default function ServiceRequestsPage() {
   const [newRequest, setNewRequest] = useState({
     title: '',
     description: '',
-    category: '',
+    category: '', // sẽ lưu id (số dưới dạng string)
     priority: 'MEDIUM'
   })
   const [categories, setCategories] = useState<ServiceCategory[]>([])
@@ -82,21 +83,25 @@ export default function ServiceRequestsPage() {
     fetchRequests()
 
     // Fetch categories
-    fetch('http://localhost:8080/api/service-categories')
+    const token = localStorage.getItem('token');
+    fetch('http://localhost:8080/api/service-categories', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    })
       .then(res => res.json())
       .then(data => Array.isArray(data) ? setCategories(data) : setCategories([]))
       .catch(() => setCategories([]));
 
     // Fetch current user
-    fetchCurrentUser().then(setCurrentUser);
+    fetchCurrentResident().then(setCurrentUser);
   }, []);
 
   const filteredRequests = requests.filter(request => {
-    const matchesSearch = request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filterStatus === 'all' || request.status === filterStatus
-    const matchesCategory = filterCategory === 'all' || request.category === filterCategory
-    return matchesSearch && matchesStatus && matchesCategory
+    const matchesSearch =
+      (request.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (request.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || request.status === filterStatus;
+    const matchesCategory = filterCategory === 'all' || request.category === filterCategory;
+    return matchesSearch && matchesStatus && matchesCategory;
   })
 
   const formatDate = (dateString: string) => {
@@ -210,15 +215,29 @@ export default function ServiceRequestsPage() {
   const handleCreateRequest = async () => {
     setError(null)
     setSuccess(null)
+    if (!currentUser || !currentUser.resident || !currentUser.resident.id) {
+      setError('Không xác định được cư dân. Vui lòng đăng nhập lại.');
+      return;
+    }
+    if (!newRequest.category) {
+      setError('Vui lòng chọn danh mục dịch vụ!');
+      return;
+    }
     try {
-      await createSupportRequest(newRequest)
-      setSuccess('Gửi yêu cầu hỗ trợ thành công!')
-      setShowCreateForm(false)
+      await createSupportRequest({
+        residentId: currentUser.resident.id,
+        categoryId: Number(newRequest.category), // gửi id dạng số
+        title: newRequest.title,
+        description: newRequest.description,
+        priority: newRequest.priority
+      });
+      setSuccess('Gửi yêu cầu hỗ trợ thành công!');
+      setShowCreateForm(false);
       // Refresh requests
-      const data = await fetchMySupportRequests()
-      setRequests(data)
+      const data = await fetchMySupportRequests();
+      setRequests(data);
     } catch (err: any) {
-      setError(err.message || 'Gửi yêu cầu hỗ trợ thất bại')
+      setError(err?.message || 'Gửi yêu cầu thất bại!');
     }
   }
 
@@ -251,7 +270,80 @@ export default function ServiceRequestsPage() {
 
   if (loading) return <div>Đang tải dữ liệu...</div>
   if (error) return <div className="text-red-500">{error}</div>
-  if (!requests || requests.length === 0) return <div>Chưa có yêu cầu hỗ trợ nào.</div>
+  if (!requests || requests.length === 0) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+      <p className="text-gray-500 font-semibold text-lg mb-2">Bạn chưa có yêu cầu hỗ trợ nào.</p>
+      <p className="text-gray-400 mb-4">Nhấn "Tạo yêu cầu mới" để gửi yêu cầu hỗ trợ tới ban quản lý.</p>
+      <Button onClick={() => setShowCreateForm(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        Tạo yêu cầu mới
+      </Button>
+      {showCreateForm && (
+        <Card className="mt-8 w-full max-w-xl">
+          <CardHeader>
+            <CardTitle>Tạo yêu cầu dịch vụ mới</CardTitle>
+            <CardDescription>Điền thông tin chi tiết về yêu cầu của bạn</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề</label>
+                <Input
+                  placeholder="Nhập tiêu đề yêu cầu..."
+                  value={newRequest.title}
+                  onChange={(e) => setNewRequest(prev => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả chi tiết</label>
+                <Textarea
+                  placeholder="Mô tả chi tiết vấn đề hoặc yêu cầu..."
+                  value={newRequest.description}
+                  onChange={(e) => setNewRequest(prev => ({ ...prev, description: e.target.value }))}
+                  rows={4}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newRequest.category}
+                  onChange={(e) => setNewRequest(prev => ({ ...prev, category: e.target.value }))}
+                >
+                  <option value="">Chọn danh mục dịch vụ</option>
+                  {Array.isArray(categories) && categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.categoryName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mức độ ưu tiên</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newRequest.priority}
+                  onChange={(e) => setNewRequest(prev => ({ ...prev, priority: e.target.value as any }))}
+                >
+                  <option value="LOW">Thấp</option>
+                  <option value="MEDIUM">Trung bình</option>
+                  <option value="HIGH">Cao</option>
+                  <option value="URGENT">Khẩn cấp</option>
+                </select>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button onClick={handleCreateRequest} disabled={!newRequest.title || !newRequest.description || !newRequest.category}>
+                  Tạo yêu cầu
+                </Button>
+                <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                  Hủy
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -369,8 +461,9 @@ export default function ServiceRequestsPage() {
                       value={newRequest.category}
                       onChange={(e) => setNewRequest(prev => ({ ...prev, category: e.target.value }))}
                     >
+                      <option value="">Chọn danh mục dịch vụ</option>
                       {Array.isArray(categories) && categories.map(cat => (
-                        <option key={cat.categoryCode} value={cat.categoryCode}>{cat.categoryName}</option>
+                        <option key={cat.id} value={cat.id}>{cat.categoryName}</option>
                       ))}
                     </select>
                   </div>
@@ -393,7 +486,7 @@ export default function ServiceRequestsPage() {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button onClick={handleCreateRequest} disabled={!newRequest.title || !newRequest.description}>
+                  <Button onClick={handleCreateRequest} disabled={!newRequest.title || !newRequest.description || !newRequest.category}>
                     Tạo yêu cầu
                   </Button>
                   <Button variant="outline" onClick={() => setShowCreateForm(false)}>
@@ -461,7 +554,12 @@ export default function ServiceRequestsPage() {
             {filteredRequests.length === 0 ? (
               <div className="text-center py-8">
                 <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Không có yêu cầu nào</p>
+                <p className="text-gray-500 font-semibold text-lg mb-2">Bạn chưa có yêu cầu hỗ trợ nào.</p>
+                <p className="text-gray-400 mb-4">Nhấn "Tạo yêu cầu mới" để gửi yêu cầu hỗ trợ tới ban quản lý.</p>
+                <Button onClick={() => setShowCreateForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tạo yêu cầu mới
+                </Button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -492,7 +590,7 @@ export default function ServiceRequestsPage() {
                             )}
                           </div>
                           
-                          {request.comments.length > 0 && (
+                          {Array.isArray(request.comments) && request.comments.length > 0 && (
                             <div className="bg-gray-50 p-3 rounded-md">
                               <div className="flex items-center gap-2 mb-2">
                                 <MessageSquare className="h-4 w-4" />

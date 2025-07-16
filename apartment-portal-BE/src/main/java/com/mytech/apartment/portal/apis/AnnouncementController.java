@@ -11,25 +11,40 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/announcements")
 public class AnnouncementController {
     @Autowired
     private AnnouncementService announcementService;
 
     /**
-     * Get all announcements
-     * Lấy danh sách tất cả thông báo
+     * Get all announcements (Resident FE)
      */
-    @GetMapping
+    @GetMapping("/api/announcements")
+    public List<AnnouncementDto> getAllAnnouncementsForResident() {
+        return announcementService.getAllAnnouncements();
+    }
+
+    /**
+     * Get announcement by ID (Resident FE)
+     */
+    @GetMapping("/api/announcements/{id}")
+    public ResponseEntity<AnnouncementDto> getAnnouncementByIdForResident(@PathVariable("id") Long id) {
+        return announcementService.getAnnouncementById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Get all announcements (Admin FE)
+     */
+    @GetMapping("/api/admin/announcements")
     public List<AnnouncementDto> getAllAnnouncements() {
         return announcementService.getAllAnnouncements();
     }
 
     /**
-     * Get announcement by ID
-     * Lấy thông báo theo ID
+     * Get announcement by ID (Admin FE)
      */
-    @GetMapping("/{id}")
+    @GetMapping("/api/admin/announcements/{id}")
     public ResponseEntity<AnnouncementDto> getAnnouncementById(@PathVariable("id") Long id) {
         return announcementService.getAnnouncementById(id)
                 .map(ResponseEntity::ok)
@@ -37,10 +52,9 @@ public class AnnouncementController {
     }
 
     /**
-     * Create new announcement
-     * Tạo mới thông báo
+     * Create new announcement (Admin only)
      */
-    @PostMapping
+    @PostMapping("/api/admin/announcements")
     public AnnouncementDto createAnnouncement(@RequestBody AnnouncementCreateRequest request) {
         // In a real app, get this from the security context
         Long createdBy = 1L;
@@ -48,10 +62,9 @@ public class AnnouncementController {
     }
 
     /**
-     * Update announcement by ID
-     * Cập nhật thông báo theo ID
+     * Update announcement by ID (Admin only)
      */
-    @PutMapping("/{id}")
+    @PutMapping("/api/admin/announcements/{id}")
     public ResponseEntity<AnnouncementDto> updateAnnouncement(@PathVariable("id") Long id, @RequestBody AnnouncementUpdateRequest request) {
         try {
             AnnouncementDto updatedAnnouncement = announcementService.updateAnnouncement(id, request);
@@ -62,10 +75,9 @@ public class AnnouncementController {
     }
 
     /**
-     * Delete announcement by ID
-     * Xóa thông báo theo ID
+     * Delete announcement by ID (Admin only)
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/api/admin/announcements/{id}")
     public ResponseEntity<Void> deleteAnnouncement(@PathVariable("id") Long id) {
         announcementService.deleteAnnouncement(id);
         return ResponseEntity.noContent().build();

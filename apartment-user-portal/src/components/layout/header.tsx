@@ -9,9 +9,13 @@ import { Button } from '@/components/ui/button'
 interface HeaderProps {
   onMenuToggle: () => void
   isMenuOpen: boolean
+  user: any
+  resident?: any
+  apartment?: any
+  roles?: any
 }
 
-export default function Header({ onMenuToggle, isMenuOpen }: HeaderProps) {
+export default function Header({ onMenuToggle, isMenuOpen, user, resident, apartment, roles }: HeaderProps) {
   const [notifications] = useState(3) // Mock notification count
   const router = useRouter()
 
@@ -22,17 +26,6 @@ export default function Header({ onMenuToggle, isMenuOpen }: HeaderProps) {
     // Redirect về trang login
     router.push('/login')
   }
-
-  const getCurrentUser = () => {
-    try {
-      const userStr = localStorage.getItem('user')
-      return userStr ? JSON.parse(userStr) : null
-    } catch {
-      return null
-    }
-  }
-
-  const currentUser = getCurrentUser()
 
   return (
     <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-6 fixed top-0 right-0 left-64 z-40">
@@ -69,16 +62,16 @@ export default function Header({ onMenuToggle, isMenuOpen }: HeaderProps) {
         <div className="flex items-center space-x-3">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-gray-900">
-              {currentUser?.fullName || currentUser?.username || 'Người dùng'}
+              {resident?.fullName || user?.fullName || user?.username || 'Người dùng'}
             </p>
             <p className="text-xs text-gray-500">
-              {currentUser?.apartmentNumber || currentUser?.phoneNumber || 'Chưa có thông tin'}
+              {apartment?.unitNumber || user?.phoneNumber || 'Chưa có thông tin'}
             </p>
           </div>
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholder-user.jpg" alt="User" />
             <AvatarFallback>
-              {currentUser?.username ? currentUser.username.substring(0, 2).toUpperCase() : 'U'}
+              {user?.username ? user.username.substring(0, 2).toUpperCase() : 'U'}
             </AvatarFallback>
           </Avatar>
           <Button

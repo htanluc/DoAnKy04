@@ -24,17 +24,14 @@ const navigation = [
   { name: "Cập nhật thông tin", href: "/dashboard/update-info", icon: User },
 ]
 
-const getCurrentUser = () => {
-  try {
-    const userStr = localStorage.getItem('user')
-    return userStr ? JSON.parse(userStr) : null
-  } catch {
-    return null
-  }
+interface SidebarProps {
+  user: any
+  resident?: any
+  apartment?: any
+  roles?: any
 }
-const user = getCurrentUser()
 
-export default function Sidebar() {
+export default function Sidebar({ user, resident, apartment, roles }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -75,8 +72,8 @@ export default function Sidebar() {
             <User className="h-4 w-4 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold">{user?.fullName || user?.username || 'Người dùng'}</p>
-            <p className="text-xs text-gray-500">{user?.apartmentNumber || ''}</p>
+            <p className="font-semibold">{resident?.fullName || user?.fullName || user?.username || 'Người dùng'}</p>
+            <p className="text-xs text-gray-500">{apartment?.unitNumber || ''}</p>
           </div>
         </div>
       </div>

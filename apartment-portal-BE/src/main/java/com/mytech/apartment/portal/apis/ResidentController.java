@@ -11,6 +11,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.dao.DataIntegrityViolationException;
+import com.mytech.apartment.portal.dtos.ApiResponse;
+import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.repositories.ResidentRepository;
+import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
+import com.mytech.apartment.portal.repositories.ApartmentRepository;
 
 import java.util.List;
 
@@ -18,8 +24,11 @@ import java.util.List;
 @RequestMapping("/api")
 @Tag(name = "Resident Self", description = "API for resident to view/update their own profile")
 public class ResidentController {
-    @Autowired
-    private ResidentService residentService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private ResidentRepository residentRepository;
+    @Autowired private ApartmentResidentRepository apartmentResidentRepository;
+    @Autowired private ApartmentRepository apartmentRepository;
+    @Autowired private ResidentService residentService;
 
     /**
      * [EN] Get all residents
@@ -46,8 +55,13 @@ public class ResidentController {
      * [VI] Tạo cư dân mới
      */
     @PostMapping("/admin/residents")
-    public ResidentDto createResident(@RequestBody ResidentCreateRequest req) {
-        return residentService.createResident(req);
+    public ResponseEntity<?> createResident(@RequestBody ResidentCreateRequest req) {
+        try {
+            ResidentDto dto = residentService.createResident(req);
+            return ResponseEntity.ok(dto);
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("SỐ CCCD ĐÃ ĐƯỢC ĐĂNG KÝ."));
+        }
     }
 
     /**
@@ -80,12 +94,29 @@ public class ResidentController {
      */
     @Operation(summary = "Get current resident info", description = "Get info of the currently authenticated resident")
     @GetMapping("/residents/me")
-    public ResponseEntity<ResidentDto> getCurrentResident() {
+    public ResponseEntity<?> getCurrentResident() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        ResidentDto dto = residentService.getResidentByUsername(username);
-        if (dto != null) return ResponseEntity.ok(dto);
-        return ResponseEntity.notFound().build();
+        String phoneNumber = auth.getName();
+        // Lấy user
+        var userOpt = userRepository.findByPhoneNumber(phoneNumber);
+        if (userOpt.isEmpty()) return ResponseEntity.status(401).body("User not found");
+        var user = userOpt.get();
+        // Lấy resident
+        var residentOpt = residentRepository.findByUserId(user.getId());
+        if (residentOpt == null) return ResponseEntity.status(401).body("Resident not found");
+        var resident = residentOpt;
+        // Lấy apartmentResident (liên kết user với apartment)
+        var apartmentResidentOpt = apartmentResidentRepository.findByIdUserId(user.getId());
+        var apartmentResident = apartmentResidentOpt.isEmpty() ? null : apartmentResidentOpt.get(0);
+        // Lấy apartment
+        var apartment = (apartmentResident != null) ? apartmentRepository.findById(apartmentResident.getId().getApartmentId()).orElse(null) : null;
+        // Trả về object đủ cho FE
+        return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
+            put("user", user);
+            put("resident", resident);
+            put("apartment", apartment);
+            put("apartmentResident", apartmentResident);
+        }});
     }
 
     /**
@@ -96,9 +127,9 @@ public class ResidentController {
     @PutMapping("/residents/me")
     public ResponseEntity<ResidentDto> updateCurrentResident(@RequestBody ResidentUpdateRequest req) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        ResidentDto updated = residentService.updateResidentByUsername(username, req);
+        String phoneNumber = auth.getName();
+        ResidentDto updated = residentService.updateResidentByPhoneNumber(phoneNumber, req);
         if (updated != null) return ResponseEntity.ok(updated);
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(new ResidentDto());
     }
 } 

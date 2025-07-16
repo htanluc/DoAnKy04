@@ -11,25 +11,40 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/events")
 public class EventController {
     @Autowired
     private EventService eventService;
 
     /**
-     * Get all events
-     * Lấy danh sách tất cả sự kiện
+     * Get all events (Resident FE)
      */
-    @GetMapping
+    @GetMapping("/api/events")
+    public List<EventDto> getAllEventsForResident() {
+        return eventService.getAllEvents();
+    }
+
+    /**
+     * Get event by ID (Resident FE)
+     */
+    @GetMapping("/api/events/{id}")
+    public ResponseEntity<EventDto> getEventByIdForResident(@PathVariable("id") Long id) {
+        return eventService.getEventById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Get all events (Admin FE)
+     */
+    @GetMapping("/api/admin/events")
     public List<EventDto> getAllEvents() {
         return eventService.getAllEvents();
     }
 
     /**
-     * Get event by ID
-     * Lấy sự kiện theo ID
+     * Get event by ID (Admin FE)
      */
-    @GetMapping("/{id}")
+    @GetMapping("/api/admin/events/{id}")
     public ResponseEntity<EventDto> getEventById(@PathVariable("id") Long id) {
         return eventService.getEventById(id)
                 .map(ResponseEntity::ok)
@@ -37,19 +52,17 @@ public class EventController {
     }
 
     /**
-     * Create new event
-     * Tạo mới sự kiện
+     * Create new event (Admin only)
      */
-    @PostMapping
+    @PostMapping("/api/admin/events")
     public EventDto createEvent(@RequestBody EventCreateRequest request) {
         return eventService.createEvent(request);
     }
 
     /**
-     * Update event by ID
-     * Cập nhật sự kiện theo ID
+     * Update event by ID (Admin only)
      */
-    @PutMapping("/{id}")
+    @PutMapping("/api/admin/events/{id}")
     public ResponseEntity<EventDto> updateEvent(@PathVariable("id") Long id, @RequestBody EventUpdateRequest request) {
         try {
             EventDto updatedEvent = eventService.updateEvent(id, request);
@@ -60,10 +73,9 @@ public class EventController {
     }
 
     /**
-     * Delete event by ID
-     * Xóa sự kiện theo ID
+     * Delete event by ID (Admin only)
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/api/admin/events/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable("id") Long id) {
         eventService.deleteEvent(id);
         return ResponseEntity.noContent().build();

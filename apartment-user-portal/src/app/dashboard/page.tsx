@@ -18,7 +18,7 @@ import {
   User
 } from 'lucide-react'
 import Link from 'next/link'
-import { fetchCurrentUser } from '@/lib/api'
+import { fetchDashboardStats, fetchRecentActivities, fetchMyApartment } from '@/lib/api'
 
 interface DashboardStats {
   totalInvoices: number
@@ -40,6 +40,14 @@ interface RecentActivity {
   status?: string
 }
 
+interface ApartmentInfo {
+  apartmentNumber?: string
+  buildingName?: string
+  area?: number
+  bedrooms?: number
+  floor?: number
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
@@ -52,74 +60,30 @@ export default function DashboardPage() {
     supportRequests: 0
   })
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
+  const [apartmentInfo, setApartmentInfo] = useState<ApartmentInfo>({})
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    fetchCurrentUser().then(u => {
-      setUser(u)
-      setLoading(false)
-    })
-  }, [])
-
-  useEffect(() => {
-    // Simulate API call
-    const fetchDashboardData = async () => {
+    const fetchData = async () => {
       try {
-        // Mock data - replace with actual API calls
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        setStats({
-          totalInvoices: 12,
-          pendingInvoices: 3,
-          overdueInvoices: 1,
-          totalAmount: 8500000,
-          unreadAnnouncements: 5,
-          upcomingEvents: 2,
-          activeBookings: 1,
-          supportRequests: 2
-        })
-
-        setRecentActivities([
-          {
-            id: '1',
-            type: 'invoice',
-            title: 'Hóa đơn tháng 12/2024',
-            description: 'Hóa đơn phí dịch vụ đã được tạo',
-            timestamp: '2024-12-01T10:00:00Z',
-            status: 'pending'
-          },
-          {
-            id: '2',
-            type: 'announcement',
-            title: 'Thông báo bảo trì thang máy',
-            description: 'Thang máy sẽ được bảo trì vào ngày 15/12',
-            timestamp: '2024-12-01T09:30:00Z'
-          },
-          {
-            id: '3',
-            type: 'event',
-            title: 'Tiệc Giáng sinh chung cư',
-            description: 'Sự kiện sẽ diễn ra vào 24/12 tại sảnh chính',
-            timestamp: '2024-12-01T08:00:00Z'
-          },
-          {
-            id: '4',
-            type: 'payment',
-            title: 'Thanh toán hóa đơn tháng 11',
-            description: 'Đã thanh toán thành công 2,500,000 VNĐ',
-            timestamp: '2024-11-30T15:00:00Z',
-            status: 'completed'
-          }
-        ])
+        setLoading(true)
+        // Fetch user info lại ở đây nếu cần
+        // const userData = await fetchCurrentUser()
+        // setUser(userData)
+        const statsData = await fetchDashboardStats()
+        setStats(statsData)
+        const activitiesData = await fetchRecentActivities()
+        setRecentActivities(activitiesData)
+        const apartmentData = await fetchMyApartment()
+        setApartmentInfo(apartmentData)
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {
         setLoading(false)
       }
     }
-
-    fetchDashboardData()
+    fetchData()
   }, [])
 
   const formatCurrency = (amount: number) => {
@@ -300,13 +264,13 @@ export default function DashboardPage() {
                   Đọc thông báo
                 </Button>
               </Link>
-              <Link href="/dashboard/facilities">
+              <Link href="/dashboard/facility-bookings">
                 <Button variant="outline" className="w-full justify-start">
                   <Coffee className="mr-2 h-4 w-4" />
                   Đặt tiện ích
                 </Button>
               </Link>
-              <Link href="/dashboard/support">
+              <Link href="/dashboard/service-requests">
                 <Button variant="outline" className="w-full justify-start">
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Yêu cầu hỗ trợ
@@ -323,27 +287,33 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg border">
-                    <div className="flex-shrink-0 mt-1">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {activity.title}
-                        </p>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(activity.timestamp)}
-                        </span>
+                {recentActivities.length > 0 ? (
+                  recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg border">
+                      <div className="flex-shrink-0 mt-1">
+                        {getActivityIcon(activity.type)}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {activity.description}
-                      </p>
-                      {getStatusBadge(activity.status)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {activity.title}
+                          </p>
+                          <span className="text-xs text-gray-500">
+                            {formatDate(activity.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {activity.description}
+                        </p>
+                        {getStatusBadge(activity.status)}
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    Chưa có hoạt động nào
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -359,19 +329,19 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Số căn hộ:</span>
-                  <span className="text-sm font-medium">A101</span>
+                  <span className="text-sm font-medium">{apartmentInfo.apartmentNumber || 'Chưa có thông tin'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Tòa:</span>
-                  <span className="text-sm font-medium">Tòa A</span>
+                  <span className="text-sm font-medium">{apartmentInfo.buildingName || 'Chưa có thông tin'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Diện tích:</span>
-                  <span className="text-sm font-medium">85m²</span>
+                  <span className="text-sm font-medium">{apartmentInfo.area ? `${apartmentInfo.area}m²` : 'Chưa có thông tin'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Số phòng ngủ:</span>
-                  <span className="text-sm font-medium">2</span>
+                  <span className="text-sm font-medium">{apartmentInfo.bedrooms || 'Chưa có thông tin'}</span>
                 </div>
               </div>
             </CardContent>

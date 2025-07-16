@@ -24,18 +24,7 @@ import {
   Filter
 } from 'lucide-react';
 import Link from 'next/link';
-
-interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  apartmentNumber: string;
-  residentName: string;
-  amount: number;
-  dueDate: string;
-  status: string;
-  type: string;
-  createdAt: string;
-}
+import { Invoice } from '@/lib/api';
 
 export default function InvoicesPage() {
   const { t } = useLanguage();
@@ -48,37 +37,43 @@ export default function InvoicesPage() {
   useEffect(() => {
     const mockInvoices: Invoice[] = [
       {
-        id: '1',
-        invoiceNumber: 'INV-2024-001',
-        apartmentNumber: 'A101',
-        residentName: 'Nguyễn Văn A',
-        amount: 2500000,
+        id: 1,
+        apartmentId: 101,
+        billingPeriod: '2024-01',
+        issueDate: '2024-01-01',
         dueDate: '2024-02-15',
+        totalAmount: 2500000,
         status: 'PAID',
-        type: 'MAINTENANCE_FEE',
-        createdAt: '2024-01-15'
+        createdAt: '2024-01-15',
+        updatedAt: '2024-01-20',
+        items: [],
+        payments: [],
       },
       {
-        id: '2',
-        invoiceNumber: 'INV-2024-002',
-        apartmentNumber: 'B205',
-        residentName: 'Trần Thị B',
-        amount: 1800000,
+        id: 2,
+        apartmentId: 205,
+        billingPeriod: '2024-01',
+        issueDate: '2024-01-01',
         dueDate: '2024-02-20',
+        totalAmount: 1800000,
         status: 'PENDING',
-        type: 'MAINTENANCE_FEE',
-        createdAt: '2024-01-20'
+        createdAt: '2024-01-20',
+        updatedAt: '2024-01-25',
+        items: [],
+        payments: [],
       },
       {
-        id: '3',
-        invoiceNumber: 'INV-2024-003',
-        apartmentNumber: 'C301',
-        residentName: 'Lê Văn C',
-        amount: 3200000,
+        id: 3,
+        apartmentId: 301,
+        billingPeriod: '2024-01',
+        issueDate: '2024-01-01',
         dueDate: '2024-02-25',
+        totalAmount: 3200000,
         status: 'OVERDUE',
-        type: 'ELECTRICITY',
-        createdAt: '2024-01-25'
+        createdAt: '2024-01-25',
+        updatedAt: '2024-01-30',
+        items: [],
+        payments: [],
       }
     ];
 
@@ -89,9 +84,8 @@ export default function InvoicesPage() {
   }, []);
 
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.apartmentNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.residentName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = invoice.id.toString().includes(searchTerm.toLowerCase()) ||
+                         invoice.apartmentId.toString().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || invoice.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -108,21 +102,6 @@ export default function InvoicesPage() {
         return <Badge className="bg-gray-100 text-gray-800">Đã hủy</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-    }
-  };
-
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case 'MAINTENANCE_FEE':
-        return <Badge className="bg-blue-100 text-blue-800">Phí bảo trì</Badge>;
-      case 'ELECTRICITY':
-        return <Badge className="bg-yellow-100 text-yellow-800">Điện</Badge>;
-      case 'WATER':
-        return <Badge className="bg-cyan-100 text-cyan-800">Nước</Badge>;
-      case 'PARKING':
-        return <Badge className="bg-purple-100 text-purple-800">Gửi xe</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>;
     }
   };
 
@@ -217,10 +196,8 @@ export default function InvoicesPage() {
                     <TableRow>
                       <TableHead>{t('admin.invoices.invoiceNumber')}</TableHead>
                       <TableHead>{t('admin.invoices.apartment')}</TableHead>
-                      <TableHead>{t('admin.invoices.resident')}</TableHead>
                       <TableHead>{t('admin.invoices.amount')}</TableHead>
                       <TableHead>{t('admin.invoices.dueDate')}</TableHead>
-                      <TableHead>{t('admin.invoices.type')}</TableHead>
                       <TableHead>{t('admin.invoices.status')}</TableHead>
                       <TableHead>{t('admin.users.actions')}</TableHead>
                     </TableRow>
@@ -229,17 +206,13 @@ export default function InvoicesPage() {
                     {filteredInvoices.map((invoice) => (
                       <TableRow key={invoice.id}>
                         <TableCell className="font-medium">
-                          {invoice.invoiceNumber}
+                          {invoice.id}
                         </TableCell>
-                        <TableCell>{invoice.apartmentNumber}</TableCell>
-                        <TableCell>{invoice.residentName}</TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(invoice.amount)}
-                        </TableCell>
+                        <TableCell>{invoice.apartmentId}</TableCell>
+                        <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
                         <TableCell>
                           {new Date(invoice.dueDate).toLocaleDateString('vi-VN')}
                         </TableCell>
-                        <TableCell>{getTypeBadge(invoice.type)}</TableCell>
                         <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">

@@ -32,12 +32,21 @@ public class FacilityBookingController {
 
     // User endpoint to book a facility
     @PostMapping("/facility-bookings")
-    public ResponseEntity<FacilityBookingDto> createFacilityBooking(@RequestBody FacilityBookingCreateRequest request) {
+    public ResponseEntity<?> createFacilityBooking(@RequestBody FacilityBookingCreateRequest request) {
         try {
+            // Lấy userId từ context (resident đặt chỗ cho chính mình)
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String phoneNumber = auth.getName();
+            Long userId = userService.getUserIdByPhoneNumber(phoneNumber);
+            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
+            request.setResidentId(userId);
             FacilityBookingDto booking = facilityBookingService.createFacilityBooking(request);
+            if (booking == null) {
+                return ResponseEntity.badRequest().body("Không thể đặt chỗ: dữ liệu không hợp lệ hoặc đã có lỗi.");
+            }
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -72,10 +81,10 @@ public class FacilityBookingController {
     @GetMapping("/facility-bookings/my")
     public ResponseEntity<List<FacilityBookingDto>> getMyFacilityBookings() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+        String phoneNumber = auth.getName();
         Long userId = null;
         try {
-            userId = userService.getUserIdByUsername(username);
+            userId = userService.getUserIdByPhoneNumber(phoneNumber);
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
         }
