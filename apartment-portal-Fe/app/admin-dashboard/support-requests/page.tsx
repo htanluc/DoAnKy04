@@ -25,6 +25,7 @@ import {
   Plus
 } from 'lucide-react';
 import Link from 'next/link';
+import { supportRequestsApi } from '@/lib/api';
 
 interface SupportRequest {
   id: string;
@@ -47,46 +48,33 @@ export default function SupportRequestsPage() {
 
   // Mock data - replace with actual API call
   useEffect(() => {
-    const mockSupportRequests: SupportRequest[] = [
-      {
-        id: '1',
-        residentName: 'Nguyễn Văn A',
-        title: 'Sửa chữa điện nước',
-        description: 'Nước trong nhà bị rò rỉ, cần sửa gấp...',
-        category: 'PLUMBING',
-        priority: 'HIGH',
-        status: 'ASSIGNED',
-        assignedTo: 'Nhân viên bảo trì',
-        createdAt: '2024-01-15T08:30:00'
-      },
-      {
-        id: '2',
-        residentName: 'Trần Thị B',
-        title: 'Vấn đề về thang máy',
-        description: 'Thang máy bị kẹt, không hoạt động...',
-        category: 'ELEVATOR',
-        priority: 'URGENT',
-        status: 'IN_PROGRESS',
-        assignedTo: 'Kỹ thuật viên',
-        createdAt: '2024-01-20T10:15:00'
-      },
-      {
-        id: '3',
-        residentName: 'Lê Văn C',
-        title: 'Yêu cầu thay đổi thông tin',
-        description: 'Cần cập nhật thông tin liên hệ...',
-        category: 'ADMINISTRATIVE',
-        priority: 'LOW',
-        status: 'PENDING',
-        assignedTo: '',
-        createdAt: '2024-01-25T14:45:00'
-      }
-    ];
-
-    setTimeout(() => {
-      setSupportRequests(mockSupportRequests);
-      setLoading(false);
-    }, 1000);
+    let isMounted = true;
+    setLoading(true);
+    supportRequestsApi.getAll()
+      .then((data) => {
+        if (!isMounted) return;
+        // Sửa lại mapping cho đúng với dữ liệu API thực tế
+        const mapped = data.map((item: any) => ({
+          id: item.id,
+          residentName: item.residentName || '',
+          title: item.title || item.description || '',
+          description: item.description || '',
+          category: item.categoryName || '',
+          priority: item.priority || '',
+          status: item.status || '',
+          assignedTo: item.assignedTo || '',
+          createdAt: item.createdAt || '',
+        }));
+        setSupportRequests(mapped);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setSupportRequests([]);
+        setLoading(false);
+        alert('Lỗi tải danh sách yêu cầu hỗ trợ: ' + (err?.message || err));
+      });
+    return () => { isMounted = false; };
   }, []);
 
   const filteredSupportRequests = supportRequests.filter(request => {

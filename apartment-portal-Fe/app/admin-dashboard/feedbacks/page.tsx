@@ -24,16 +24,7 @@ import {
   Star
 } from 'lucide-react';
 import Link from 'next/link';
-
-interface Feedback {
-  id: string;
-  residentName: string;
-  subject: string;
-  content: string;
-  rating: number;
-  createdAt: string;
-  status: string;
-}
+import { feedbacksApi, Feedback } from '@/lib/api';
 
 export default function FeedbacksPage() {
   const { t } = useLanguage();
@@ -41,75 +32,53 @@ export default function FeedbacksPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRating, setFilterRating] = useState('all');
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - replace with actual API call
   useEffect(() => {
-    const mockFeedbacks: Feedback[] = [
-      {
-        id: '1',
-        residentName: 'Nguyễn Văn A',
-        subject: 'Phản hồi về dịch vụ bảo trì',
-        content: 'Dịch vụ bảo trì rất tốt, nhân viên thân thiện...',
-        rating: 5,
-        createdAt: '2024-01-15T10:30:00',
-        status: 'READ'
-      },
-      {
-        id: '2',
-        residentName: 'Trần Thị B',
-        subject: 'Góp ý về tiện ích',
-        content: 'Cần cải thiện thêm một số tiện ích...',
-        rating: 3,
-        createdAt: '2024-01-20T14:15:00',
-        status: 'UNREAD'
-      },
-      {
-        id: '3',
-        residentName: 'Lê Văn C',
-        subject: 'Đánh giá chung về chung cư',
-        content: 'Chung cư rất sạch sẽ và an toàn...',
-        rating: 4,
-        createdAt: '2024-01-25T09:45:00',
-        status: 'READ'
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await feedbacksApi.getAll();
+        setFeedbacks(data);
+      } catch (err: any) {
+        setError(err.message || 'Lỗi khi tải phản hồi');
+      } finally {
+        setLoading(false);
       }
-    ];
-
-    setTimeout(() => {
-      setFeedbacks(mockFeedbacks);
-      setLoading(false);
-    }, 1000);
+    };
+    fetchData();
   }, []);
 
   const filteredFeedbacks = feedbacks.filter(feedback => {
-    const matchesSearch = feedback.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         feedback.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         feedback.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (feedback.residentName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (feedback.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (feedback.content || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRating = filterRating === 'all' || feedback.rating === parseInt(filterRating);
     return matchesSearch && matchesRating;
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'READ':
-        return <Badge className="bg-green-100 text-green-800">Đã đọc</Badge>;
-      case 'UNREAD':
-        return <Badge className="bg-red-100 text-red-800">Chưa đọc</Badge>;
-      case 'REPLIED':
-        return <Badge className="bg-blue-100 text-blue-800">Đã trả lời</Badge>;
+      case 'PENDING':
+        return <Badge className="bg-yellow-100 text-yellow-800">Chờ xử lý</Badge>;
+      case 'RESPONDED':
+        return <Badge className="bg-green-100 text-green-800">Đã phản hồi</Badge>;
+      case 'REJECTED':
+        return <Badge className="bg-red-100 text-red-800">Từ chối</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating?: number) => {
+    if (!rating) return null;
     return (
       <div className="flex items-center space-x-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-4 w-4 ${
-              star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-            }`}
+            className={`h-4 w-4 ${star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
           />
         ))}
         <span className="ml-1 text-sm text-gray-600">({rating})</span>
@@ -185,7 +154,9 @@ export default function FeedbacksPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {filteredFeedbacks.length === 0 ? (
+            {error ? (
+              <div className="text-center text-red-500 py-8">{error}</div>
+            ) : filteredFeedbacks.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">{t('admin.noData')}</p>
               </div>
@@ -196,44 +167,26 @@ export default function FeedbacksPage() {
                     <TableRow>
                       <TableHead>{t('admin.feedbacks.resident')}</TableHead>
                       <TableHead>{t('admin.feedbacks.subject')}</TableHead>
-                      <TableHead>{t('admin.feedbacks.rating')}</TableHead>
                       <TableHead>{t('admin.feedbacks.createdAt')}</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>{t('admin.users.actions')}</TableHead>
+                      <TableHead>Loại</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredFeedbacks.map((feedback) => (
-                      <TableRow key={feedback.id}>
-                        <TableCell className="font-medium">
-                          {feedback.residentName}
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {feedback.subject}
-                        </TableCell>
+                    {filteredFeedbacks.map((fb) => (
+                      <TableRow key={fb.id}>
+                        <TableCell>{fb.residentName}</TableCell>
+                        <TableCell>{fb.content || <span className="italic text-gray-400">(Không có)</span>}</TableCell>
+                        <TableCell>{new Date(fb.createdAt).toLocaleString('vi-VN')}</TableCell>
                         <TableCell>
-                          {renderStars(feedback.rating)}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(feedback.createdAt).toLocaleDateString('vi-VN')}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(feedback.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Link href={`/admin-dashboard/feedbacks/${feedback.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Link href={`/admin-dashboard/feedbacks/edit/${feedback.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          {fb.categoryCode === 'SUGGESTION' ? (
+                            <Badge style={{ background: '#dbeafe', color: '#1e40af' }}>{fb.categoryName}</Badge>
+                          ) : fb.categoryCode === 'COMPLIMENT' ? (
+                            <Badge style={{ background: '#dcfce7', color: '#166534' }}>{fb.categoryName}</Badge>
+                          ) : fb.categoryCode === 'COMPLAINT' ? (
+                            <Badge style={{ background: '#fee2e2', color: '#b91c1c' }}>{fb.categoryName}</Badge>
+                          ) : (
+                            <Badge style={{ background: '#f3f4f6', color: '#374151' }}>{fb.categoryName}</Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

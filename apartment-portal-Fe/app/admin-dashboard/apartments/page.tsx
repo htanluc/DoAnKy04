@@ -181,17 +181,13 @@ export default function ApartmentsPage() {
                         <TableCell>{apartment.status}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Link href={`/admin-dashboard/apartments/${apartment.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
+                            {/* Mở modal gán user khi nhấn icon con mắt */}
+                            <ApartmentUserLinkModal apartmentId={apartment.id} />
                             <Link href={`/admin-dashboard/apartments/edit/${apartment.id}`}>
                               <Button variant="outline" size="sm">
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </Link>
-                            <ApartmentUserLinkModal apartmentId={apartment.id} />
                           </div>
                         </TableCell>
                       </TableRow>

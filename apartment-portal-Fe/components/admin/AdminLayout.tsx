@@ -34,9 +34,8 @@ const adminMenuItems = [
   { href: '/admin-dashboard/invoices', label: 'admin.invoices.title', icon: <Receipt className="h-5 w-5" /> },
   { href: '/admin-dashboard/feedbacks', label: 'admin.feedbacks.title', icon: <MessageSquare className="h-5 w-5" /> },
   { href: '/admin-dashboard/support-requests', label: 'admin.support-requests.title', icon: <LifeBuoy className="h-5 w-5" /> },
-  { href: '/admin-dashboard/history', label: 'admin.history.title', icon: <History className="h-5 w-5" /> },
+  { href: '/admin-dashboard/water-meter', label: 'Quản lý chỉ số nước', icon: <BarChart3 className="h-5 w-5" /> },
   { href: '/admin-dashboard/reports', label: 'admin.reports.title', icon: <BarChart3 className="h-5 w-5" /> },
-  { href: '/admin-dashboard/facility-bookings', label: 'admin.facility-bookings.title', icon: <ClipboardList className="h-5 w-5" /> },
   { href: '/admin-dashboard/facilities', label: 'admin.facilities.title', icon: <Coffee className="h-5 w-5" /> },
 ];
 

@@ -27,6 +27,7 @@ import {
 import Link from 'next/link';
 import { facilitiesApi, Facility } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { facilityBookingsApi, FacilityBooking } from '@/lib/api';
 
 export default function FacilitiesPage() {
   const { t } = useLanguage();
@@ -35,6 +36,8 @@ export default function FacilitiesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCapacity, setFilterCapacity] = useState('all');
+  const [bookings, setBookings] = useState<FacilityBooking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
 
   const fetchFacilities = async () => {
     try {
@@ -54,6 +57,10 @@ export default function FacilitiesPage() {
 
   useEffect(() => {
     fetchFacilities();
+    facilityBookingsApi.getAll().then(data => {
+      setBookings(data);
+      setLoadingBookings(false);
+    }).catch(() => setLoadingBookings(false));
   }, []);
 
   const handleDelete = async (id: number) => {
@@ -224,6 +231,48 @@ export default function FacilitiesPage() {
                             </Button>
                           </div>
                         </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Facility Bookings Table (10 booking gần nhất) */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>10 tiện ích cư dân đã đặt gần nhất</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingBookings ? (
+              <div className="text-center py-8">Đang tải...</div>
+            ) : bookings.length === 0 ? (
+              <div className="text-center py-8">Không có dữ liệu</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cư dân</TableHead>
+                      <TableHead>Tiện ích</TableHead>
+                      <TableHead>Thời gian đặt</TableHead>
+                      <TableHead>Số người</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bookings.slice(0, 10).map((booking: any) => (
+                      <TableRow key={booking.id}>
+                        <TableCell>{booking.residentName || booking.user?.username || booking.user?.email || booking.user?.phoneNumber || 'Ẩn danh'}</TableCell>
+                        <TableCell>{booking.facilityName || booking.facility?.name}</TableCell>
+                        <TableCell>
+                          {(booking.startTime ? new Date(booking.startTime).toLocaleString('vi-VN') : (booking.bookingTime ? new Date(booking.bookingTime).toLocaleString('vi-VN') : '-')) +
+                          (booking.endTime ? ' - ' + new Date(booking.endTime).toLocaleString('vi-VN') : '')}
+                        </TableCell>
+                        <TableCell>{booking.numberOfPeople}</TableCell>
+                        <TableCell>{booking.status}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

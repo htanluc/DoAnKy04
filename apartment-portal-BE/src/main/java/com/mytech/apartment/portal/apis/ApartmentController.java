@@ -82,7 +82,11 @@ public class ApartmentController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
-
+    @GetMapping("/admin/apartment-residents/user/{userId}")
+    public ResponseEntity<List<ApartmentResidentDto>> getApartmentLinksOfUser(@PathVariable Long userId) {
+        List<ApartmentResidentDto> links = apartmentService.getApartmentLinksOfUser(userId);
+        return ResponseEntity.ok(links);
+    }
     /**
      * Unlink user from apartment
      * Hủy liên kết tài khoản user với căn hộ

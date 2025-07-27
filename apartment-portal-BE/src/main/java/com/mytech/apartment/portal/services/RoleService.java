@@ -1,5 +1,7 @@
 package com.mytech.apartment.portal.services;
 
+import com.mytech.apartment.portal.dtos.RoleDto;
+import com.mytech.apartment.portal.mappers.RoleMapper;
 import com.mytech.apartment.portal.models.Role;
 import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.repositories.RoleRepository;
@@ -15,6 +17,8 @@ public class RoleService {
     private RoleRepository roleRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private RoleMapper roleMapper;
 
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
@@ -56,5 +60,9 @@ public class RoleService {
     public List<Role> getRolesOfUser(Long userId) {
         User user = userRepository.findById(userId).orElseThrow();
         return List.copyOf(user.getRoles());
+    }
+
+    public List<RoleDto> getAllRoleDtos() {
+        return roleRepository.findAll().stream().map(roleMapper::toDto).toList();
     }
 } 

@@ -11,6 +11,10 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
   if (token && isProtected) {
     headers.set("Authorization", `Bearer ${token}`);
   }
+  // Thêm Content-Type: application/json nếu có body và chưa có header này
+  if (options.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   const config = { ...options, headers };
   let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
@@ -549,4 +553,162 @@ export interface FacilityUpdateRequest {
   otherDetails?: string;
   usageFee?: number;
   openingHours?: string;
+} 
+
+// FEEDBACK TYPES
+export type FeedbackStatus = 'PENDING' | 'RESPONDED' | 'REJECTED';
+
+export interface Feedback {
+  id: number;
+  userId: number;
+  username: string;
+  residentName: string; // Thêm dòng này để khớp với dữ liệu API
+  categoryCode: string;
+  categoryName: string;
+  title?: string;
+  content: string;
+  rating?: number;
+  status: FeedbackStatus;
+  response?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface FeedbackCreateRequest {
+  residentId: number;
+  categoryId: string;
+  title?: string;
+  content: string;
+  rating?: number;
+}
+
+// FEEDBACK API
+export const feedbacksApi = {
+  // Resident gửi phản hồi
+  create: async (data: FeedbackCreateRequest): Promise<Feedback> => {
+    const response = await api.post('/api/feedbacks', data);
+    if (!response.ok) throw new Error('Gửi phản hồi thất bại');
+    return response.json();
+  },
+  // Resident xem danh sách phản hồi của mình
+  getMy: async (): Promise<Feedback[]> => {
+    const response = await api.get('/api/feedbacks/my');
+    if (!response.ok) throw new Error('Lấy danh sách phản hồi thất bại');
+    return response.json();
+  },
+  // Admin xem tất cả phản hồi (có filter)
+  getAll: async (params?: { status?: string; category?: string; userId?: number }): Promise<Feedback[]> => {
+    let url = '/api/admin/feedbacks';
+    const query = [];
+    if (params?.status) query.push(`status=${params.status}`);
+    if (params?.category) query.push(`category=${params.category}`);
+    if (params?.userId) query.push(`userId=${params.userId}`);
+    if (query.length) url += '?' + query.join('&');
+    const response = await api.get(url);
+    if (!response.ok) throw new Error('Lấy danh sách phản hồi thất bại');
+    return response.json();
+  },
+  // Admin xem chi tiết phản hồi
+  getById: async (id: number): Promise<Feedback> => {
+    const response = await api.get(`/api/admin/feedbacks/${id}`);
+    if (!response.ok) throw new Error('Lấy chi tiết phản hồi thất bại');
+    return response.json();
+  },
+  // Admin cập nhật trạng thái phản hồi
+  updateStatus: async (id: number, status: FeedbackStatus): Promise<Feedback> => {
+    const response = await api.put(`/api/admin/feedbacks/${id}/status?status=${status}`);
+    if (!response.ok) throw new Error('Cập nhật trạng thái thất bại');
+    return response.json();
+  },
+  // Admin trả lời phản hồi
+  response: async (id: number, responseText: string): Promise<Feedback> => {
+    const response = await api.put(`/api/admin/feedbacks/${id}/response?response=${encodeURIComponent(responseText)}`);
+    if (!response.ok) throw new Error('Trả lời phản hồi thất bại');
+    return response.json();
+  },
+}; 
+
+// SUPPORT REQUESTS API
+export const supportRequestsApi = {
+  // Lấy tất cả yêu cầu hỗ trợ (admin)
+  getAll: async (): Promise<ServiceRequest[]> => {
+    const response = await api.get('/api/admin/support-requests');
+    if (!response.ok) throw new Error('Lấy danh sách yêu cầu hỗ trợ thất bại');
+    return response.json();
+  },
+  // Lấy yêu cầu hỗ trợ theo ID (admin)
+  getById: async (id: number): Promise<ServiceRequest> => {
+    const response = await api.get(`/api/admin/support-requests/${id}`);
+    if (!response.ok) throw new Error('Lấy chi tiết yêu cầu hỗ trợ thất bại');
+    return response.json();
+  },
+  // Cập nhật yêu cầu hỗ trợ (admin)
+  update: async (id: number, data: any): Promise<ServiceRequest> => {
+    const response = await api.put(`/api/admin/support-requests/${id}`, data);
+    if (!response.ok) throw new Error('Cập nhật yêu cầu hỗ trợ thất bại');
+    return response.json();
+  },
+  // Xóa yêu cầu hỗ trợ (admin)
+  delete: async (id: number): Promise<void> => {
+    const response = await api.delete(`/api/admin/support-requests/${id}`);
+    if (!response.ok) throw new Error('Xóa yêu cầu hỗ trợ thất bại');
+  },
+  // Gán yêu cầu hỗ trợ cho nhân viên (admin)
+  assign: async (id: number, data: any): Promise<ServiceRequest> => {
+    // Map FE code sang enum backend
+    const categoryMap: Record<string, string> = {
+      DIEN: "ELECTRICITY",
+      NUOC: "PLUMBING",
+      VE_SINH: "CLEANING",
+      BAO_VE: "SECURITY",
+      KHAC: "OTHER"
+    };
+    if (data.serviceCategory && categoryMap[data.serviceCategory]) {
+      data.serviceCategory = categoryMap[data.serviceCategory];
+    }
+    const response = await api.post(`/api/admin/support-requests/${id}/assign`, data);
+    if (!response.ok) throw new Error('Gán nhân viên thất bại');
+    return response.json();
+  },
+  // Lọc theo trạng thái (admin)
+  getByStatus: async (status: string): Promise<ServiceRequest[]> => {
+    const response = await api.get(`/api/admin/support-requests/status/${status}`);
+    if (!response.ok) throw new Error('Lọc yêu cầu hỗ trợ theo trạng thái thất bại');
+    return response.json();
+  },
+    // cập nhạt trạng thái (admin)
+  updateStatus: async (id: number, data: { status: string; resolutionNotes?: string }) => {
+  const response = await api.put(`/api/staff/support-requests/${id}/status`, data);
+  if (!response.ok) throw new Error('Cập nhật trạng thái thất bại');
+  return response.json();
+},
+  // Lọc theo loại dịch vụ (admin)
+  getByCategory: async (category: string): Promise<ServiceRequest[]> => {
+    const response = await api.get(`/api/admin/support-requests/category/${category}`);
+    if (!response.ok) throw new Error('Lọc yêu cầu hỗ trợ theo loại dịch vụ thất bại');
+    return response.json();
+  },
+}; 
+
+export interface ServiceFeeConfig {
+  id: number;
+  month: number;
+  year: number;
+  parkingFee: number;
+  serviceFeePerM2: number;
+  waterFeePerM3: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchServiceFeeConfig(month: number, year: number): Promise<ServiceFeeConfig | null> {
+  const res = await api.get(`/api/admin/service-fee-config/${month}/${year}`);
+  if (res.status === 404) {
+    return null; // Không có dữ liệu, KHÔNG redirect
+  }
+  if (res.ok) {
+    return res.json();
+  }
+  // Có thể xử lý các lỗi khác nếu muốn
+  return null;
 } 

@@ -7,9 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
-@RequestMapping("/api/apartment-residents")
+@RequestMapping("/api/admin/apartment-residents")
 public class ApartmentResidentController {
     @Autowired
     private ApartmentResidentService apartmentResidentService;
@@ -55,5 +56,16 @@ public class ApartmentResidentController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    /**
+     * [EN] Get apartments linked to a user
+     * [VI] Lấy danh sách căn hộ đã liên kết với user
+     */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('APARTMENT_RESIDENT_VIEW')")
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<ApartmentResidentDto>> getApartmentsByUser(@PathVariable("userId") Long userId) {
+        List<ApartmentResidentDto> result = apartmentResidentService.getApartmentResidentsByUserId(userId);
+        return ResponseEntity.ok(result);
     }
 } 
