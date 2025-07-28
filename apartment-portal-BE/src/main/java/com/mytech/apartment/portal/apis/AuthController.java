@@ -104,7 +104,7 @@ public class AuthController {
         UserDetailsImpl ud = (UserDetailsImpl) auth.getPrincipal();
         User user = userRepo.findByPhoneNumber(ud.getUsername()).orElse(null);
 
-        // Kiểm tra trạng thái tài khoản
+        // Kiểm tra trạng thái tài khoản abc
         if (user != null && user.getStatus() != null && !UserStatus.ACTIVE.equals(user.getStatus())) {
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("status", user.getStatus().name());
