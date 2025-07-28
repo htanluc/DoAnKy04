@@ -2,6 +2,7 @@ package com.mytech.apartment.portal.apis;
 
 import com.mytech.apartment.portal.models.Role;
 import com.mytech.apartment.portal.services.RoleService;
+import com.mytech.apartment.portal.dtos.RoleDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,8 +15,13 @@ public class RoleController {
     private RoleService roleService;
 
     @GetMapping
-    public List<Role> getAllRoles() {
-        return roleService.getAllRoles();
+    public ResponseEntity<List<RoleDto>> getAllRoles() {
+        List<RoleDto> roles = roleService.getAllRoleDtos();
+        // Loại bỏ vai trò 'RESIDENT' và 'ADMIN'
+        roles = roles.stream()
+                .filter(r -> !"RESIDENT".equalsIgnoreCase(r.getName()) && !"ADMIN".equalsIgnoreCase(r.getName()))
+                .toList();
+        return ResponseEntity.ok(roles);
     }
 
     @GetMapping("/{id}")

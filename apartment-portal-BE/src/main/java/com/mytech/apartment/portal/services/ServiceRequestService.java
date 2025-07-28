@@ -118,7 +118,7 @@ public class ServiceRequestService {
         // Cập nhật thông tin gán
         serviceRequest.setAssignedTo(assignedUser);
         serviceRequest.setAssignedAt(LocalDateTime.now());
-        serviceRequest.setPriority(request.getPriority() != null ? ServiceRequestPriority.valueOf(request.getPriority().toString()) : null);
+       
         serviceRequest.setStatus(ServiceRequestStatus.IN_PROGRESS);
 
         // Cập nhật loại dịch vụ nếu cần
@@ -130,9 +130,7 @@ public class ServiceRequestService {
         // }
 
         // Lưu ghi chú admin
-        if (request.getAdminNotes() != null) {
-            serviceRequest.setResolutionNotes(request.getAdminNotes());
-        }
+
 
         serviceRequestRepository.save(serviceRequest);
     }
@@ -152,23 +150,24 @@ public class ServiceRequestService {
     @Transactional
     public void updateServiceRequestStatus(Long requestId, ServiceRequestStatusUpdateRequest request) {
         ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Service request not found with id " + requestId));
+            .orElseThrow(() -> new RuntimeException("Service request not found with id " + requestId));
 
-        // Cập nhật trạng thái
+        // Cập nhật status
         serviceRequest.setStatus(ServiceRequestStatus.valueOf(request.getStatus()));
 
-        // Cập nhật ghi chú xử lý
+        // Ghi chú xử lý
         if (request.getResolutionNotes() != null) {
             serviceRequest.setResolutionNotes(request.getResolutionNotes());
         }
 
-        // Cập nhật đánh giá nếu có
+        // Đánh giá
         if (request.getRating() != null) {
             serviceRequest.setRating(request.getRating());
         }
 
-        // Cập nhật thời gian hoàn thành nếu hoàn thành
-        if (request.getIsCompleted() && "COMPLETED".equals(request.getStatus())) {
+        // Nếu completed flag = true và status = COMPLETED thì ghi completedAt
+        if (request.isCompleted()
+            && ServiceRequestStatus.COMPLETED.equals(ServiceRequestStatus.valueOf(request.getStatus()))) {
             serviceRequest.setCompletedAt(LocalDateTime.now());
         }
 

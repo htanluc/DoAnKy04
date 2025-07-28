@@ -20,6 +20,7 @@ public class ApartmentResidentMapper {
         dto.setRelationType(entity.getRelationType());
         dto.setMoveInDate(entity.getMoveInDate());
         dto.setMoveOutDate(entity.getMoveOutDate());
+        // unitNumber và buildingName sẽ được set ở service, không cần map ở đây
         return dto;
     }
 

@@ -28,7 +28,6 @@ public class ApartmentService {
     @Autowired
     private ApartmentResidentRepository apartmentResidentRepository;
 
-
     @Autowired
     private UserRepository userRepository;
 
@@ -45,7 +44,8 @@ public class ApartmentService {
     }
 
     public Optional<ApartmentDto> getApartmentById(Long id) {
-        return apartmentRepository.findById(id).map(apartmentMapper::toDto);
+        return apartmentRepository.findById(id)
+                .map(apartmentMapper::toDto);
     }
 
     @Transactional
@@ -60,24 +60,18 @@ public class ApartmentService {
 
     @Transactional
     public void linkResidentToApartment(Long apartmentId, ApartmentResidentLinkRequest request) {
-        // Kiểm tra căn hộ tồn tại
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Căn hộ không tồn tại"));
 
-        // Kiểm tra user tồn tại (không cần Resident nữa)
-        // Nếu cần validate user tồn tại, có thể dùng UserRepository
-        // (Ở đây chỉ kiểm tra null userId)
         if (request.getUserId() == null) {
             throw new RuntimeException("UserId không được để trống");
         }
 
-        // Kiểm tra liên kết đã tồn tại
         ApartmentResidentId id = new ApartmentResidentId(apartmentId, request.getUserId());
         if (apartmentResidentRepository.findById(id).isPresent()) {
             throw new RuntimeException("User đã được liên kết với căn hộ này");
         }
 
-        // Tạo liên kết mới
         ApartmentResident apartmentResident = ApartmentResident.builder()
                 .id(id)
                 .relationType(request.getRelationType())
@@ -87,24 +81,27 @@ public class ApartmentService {
 
         apartmentResidentRepository.save(apartmentResident);
 
-        // Cập nhật trạng thái căn hộ thành OCCUPIED nếu chưa có
         if (ApartmentStatus.VACANT.equals(apartment.getStatus())) {
             apartment.setStatus(ApartmentStatus.OCCUPIED);
             apartmentRepository.save(apartment);
         }
     }
 
+    public List<ApartmentResidentDto> getApartmentLinksOfUser(Long userId) {
+        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId);
+        return links.stream()
+            .map(apartmentResidentMapper::toDto)
+            .collect(Collectors.toList());
+    }
+
     @Transactional
     public void unlinkResidentFromApartment(Long apartmentId, Long userId) {
-        // Kiểm tra căn hộ tồn tại
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Căn hộ không tồn tại"));
 
-        // Xóa liên kết
         ApartmentResidentId id = new ApartmentResidentId(apartmentId, userId);
         apartmentResidentRepository.deleteById(id);
 
-        // Kiểm tra nếu không còn user nào thì chuyển trạng thái về VACANT
         List<ApartmentResident> remainingLinks = apartmentResidentRepository.findByIdApartmentId(apartmentId);
         if (remainingLinks.isEmpty()) {
             apartment.setStatus(ApartmentStatus.VACANT);
@@ -113,7 +110,6 @@ public class ApartmentService {
     }
 
     public List<ApartmentResidentDto> getApartmentResidents(Long apartmentId) {
-        // Kiểm tra căn hộ tồn tại
         if (!apartmentRepository.existsById(apartmentId)) {
             throw new RuntimeException("Căn hộ không tồn tại");
         }
@@ -136,7 +132,6 @@ public class ApartmentService {
     }
 
     public List<ApartmentDto> getApartmentsOfResident(Long userId) {
-        // Lấy tất cả liên kết resident-apartment theo userId
         List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId);
         return links.stream()
             .map(link -> apartmentRepository.findById(link.getId().getApartmentId()))
@@ -157,4 +152,13 @@ public class ApartmentService {
             .map(user -> user.getId())
             .orElse(null);
     }
-} 
+
+    /**
+     * Lấy tên căn hộ theo ID, sử dụng cho WaterMeterService
+     */
+    public String getApartmentName(Integer apartmentId) {
+        return apartmentRepository.findById(apartmentId.longValue())
+                .map(Apartment::getUnitNumber)
+                .orElse("Unknown apartment");
+    }
+}

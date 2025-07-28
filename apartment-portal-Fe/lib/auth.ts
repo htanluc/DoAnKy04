@@ -244,9 +244,15 @@ export const logout = (): void => {
   removeTokens();
 };
 
-// Hàm lấy danh sách role động từ backend
 export async function fetchRoles(): Promise<{id: number, name: string, description?: string}[]> {
-  const res = await fetch('/api/admin/roles', { credentials: 'include' });
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/api/admin/roles`, {
+    headers: {
+      'Authorization': token ? `Bearer ${token}` : '',
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include', // hoặc 'omit' nếu không cần cookie
+  });
   if (!res.ok) throw new Error('Failed to fetch roles');
   return res.json();
 }

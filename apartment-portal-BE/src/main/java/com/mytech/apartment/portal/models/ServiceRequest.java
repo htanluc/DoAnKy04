@@ -20,7 +20,7 @@ public class ServiceRequest {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
-
+    private String title; // <-- Thêm dòng này
     @ManyToOne
     @JoinColumn(name = "category")
     private ServiceCategory category;

@@ -15,6 +15,11 @@ import com.mytech.apartment.portal.models.enums.*;
 import com.mytech.apartment.portal.repositories.*;
 import com.mytech.apartment.portal.repositories.FeedbackCategoryRepository;
 import com.mytech.apartment.portal.models.enums.PaymentMethod;
+import com.mytech.apartment.portal.dtos.WaterMeterReadingDto;
+import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
+import java.math.BigDecimal;
+import java.time.YearMonth;
+import com.mytech.apartment.portal.models.WaterMeterReading;
 
 @Component
 @Profile("!test")
@@ -40,6 +45,7 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private AiQaHistoryRepository aiQaHistoryRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private FeedbackCategoryRepository feedbackCategoryRepository;
+    @Autowired private WaterMeterReadingRepository waterMeterReadingRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -86,6 +92,22 @@ public class DataInitializer implements CommandLineRunner {
         }
         for (int i = 1; i <= 10; i++) {
             apartments.add(apartmentRepository.save(Apartment.builder().buildingId(buildingC.getId()).floorNumber((i + 1) / 2).unitNumber("C" + ((i + 1) / 2) + "-" + String.format("%02d", i)).area(90.0 + (i * 5.0)).status(i % 3 == 0 ? ApartmentStatus.VACANT : ApartmentStatus.OCCUPIED).build()));
+        }
+
+        // SAU KHI TẠO APARTMENT, KHỞI TẠO CHỈ SỐ NƯỚC = 0 CHO THÁNG HIỆN TẠI (mapping thủ công)
+        String currentMonth = YearMonth.now().toString(); // "yyyy-MM"
+        for (Apartment apartment : apartments) {
+            boolean exists = waterMeterReadingRepository.findByApartmentIdAndReadingMonth(apartment.getId().intValue(), currentMonth).isPresent();
+            if (!exists) {
+                WaterMeterReading entity = new WaterMeterReading();
+                entity.setApartmentId(apartment.getId().intValue());
+                entity.setReadingMonth(currentMonth);
+                entity.setPreviousReading(BigDecimal.ZERO);
+                entity.setCurrentReading(BigDecimal.ZERO);
+                entity.setCreatedAt(LocalDateTime.now());
+                // consumption sẽ tự tính qua @PrePersist
+                waterMeterReadingRepository.save(entity);
+            }
         }
 
         // 5. Residents

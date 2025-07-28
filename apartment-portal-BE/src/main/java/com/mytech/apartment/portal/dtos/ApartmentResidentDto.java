@@ -10,4 +10,6 @@ public class ApartmentResidentDto {
     private String relationType;
     private LocalDate moveInDate;
     private LocalDate moveOutDate;
+    private String unitNumber; // Mã căn hộ
+    private String buildingName; // Tên tòa nhà
 } 

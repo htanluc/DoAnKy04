@@ -24,6 +24,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
+import { Eye } from 'lucide-react';
 
 const RELATION_TYPES = [
   { value: "OWNER", label: "Chủ hộ" },
@@ -175,9 +176,9 @@ export default function ApartmentUserLinkModal({ apartmentId }: ApartmentUserLin
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {isAdmin() && (
-          <Button variant="outline" size="sm">Liên kết với tài khoản</Button>
-        )}
+        <Button variant="outline" size="sm">
+          <Eye className="h-4 w-4" />
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -188,6 +189,59 @@ export default function ApartmentUserLinkModal({ apartmentId }: ApartmentUserLin
         </DialogHeader>
         {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
         {success && <div className="text-green-600 text-sm mb-2">{success}</div>}
+        {/* Form liên kết mới - Đặt lên đầu modal */}
+        <div className="mb-6 border-b pb-4">
+          <div className="font-semibold mb-2">Liên kết tài khoản mới:</div>
+          <div className="flex flex-col gap-2">
+            <Input
+              placeholder="Nhập số điện thoại"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              disabled={loading}
+            />
+            <Button onClick={handleFindUser} disabled={loading || !phone}>
+              Tìm tài khoản
+            </Button>
+            {user && (
+              <div className="border rounded p-2 mb-2 bg-gray-50">
+                <div><b>Tài khoản:</b> {user.username} ({user.phoneNumber})</div>
+                <div><b>Email:</b> {user.email}</div>
+              </div>
+            )}
+            {user && (
+              <>
+                <select
+                  className="border rounded px-2 py-1"
+                  value={relationType}
+                  onChange={e => setRelationType(e.target.value)}
+                >
+                  {RELATION_TYPES.map(rt => (
+                    <option key={rt.value} value={rt.value}>{rt.label}</option>
+                  ))}
+                </select>
+                <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button onClick={() => setConfirmOpen(true)} disabled={loading}>
+                      Liên kết tài khoản
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Xác nhận liên kết</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Bạn có chắc chắn muốn liên kết tài khoản <b>{user.username}</b> ({user.phoneNumber}) với căn hộ này không?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => { setConfirmOpen(false); handleLink(); }}>Đồng ý</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </div>
+        </div>
         {/* Danh sách user đã liên kết */}
         <div className="mb-4">
           <div className="font-semibold mb-2">Danh sách tài khoản đã liên kết:</div>
@@ -240,61 +294,6 @@ export default function ApartmentUserLinkModal({ apartmentId }: ApartmentUserLin
             </table>
           </div>
         </div>
-        {/* Form liên kết mới */}
-        {isAdmin() && (
-          <div className="border-t pt-4 mt-4">
-            <div className="font-semibold mb-2">Liên kết tài khoản mới:</div>
-            <div className="flex flex-col gap-2">
-              <Input
-                placeholder="Nhập số điện thoại"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                disabled={loading}
-              />
-              <Button onClick={handleFindUser} disabled={loading || !phone}>
-                Tìm tài khoản
-              </Button>
-              {user && (
-                <div className="border rounded p-2 mb-2">
-                  <div><b>Tài khoản:</b> {user.username} ({user.phoneNumber})</div>
-                  <div><b>Email:</b> {user.email}</div>
-                </div>
-              )}
-              {user && (
-                <>
-                  <select
-                    className="border rounded px-2 py-1"
-                    value={relationType}
-                    onChange={e => setRelationType(e.target.value)}
-                  >
-                    {RELATION_TYPES.map(rt => (
-                      <option key={rt.value} value={rt.value}>{rt.label}</option>
-                    ))}
-                  </select>
-                  <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                    <AlertDialogTrigger asChild>
-                      <Button onClick={() => setConfirmOpen(true)} disabled={loading}>
-                        Liên kết tài khoản
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Xác nhận liên kết</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Bạn có chắc chắn muốn liên kết tài khoản <b>{user.username}</b> ({user.phoneNumber}) với căn hộ này không?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Hủy</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => { setConfirmOpen(false); handleLink(); }}>Đồng ý</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
-              )}
-            </div>
-          </div>
-        )}
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Đóng</Button>

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Invoice } from '@/lib/api';
+import { fetchServiceFeeConfig, ServiceFeeConfig, api } from '@/lib/api';
 
 export default function InvoicesPage() {
   const { t } = useLanguage();
@@ -32,6 +33,50 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [serviceFeeConfig, setServiceFeeConfig] = useState<ServiceFeeConfig | null>(null);
+  const [feeLoading, setFeeLoading] = useState(true);
+  const [form, setForm] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    parkingFee: '',
+    serviceFeePerM2: '',
+    waterFeePerM3: '',
+  });
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleCreateFeeConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError('');
+    setFormSuccess('');
+    try {
+      const payload = {
+        month: Number(form.month),
+        year: Number(form.year),
+        parkingFee: Number(form.parkingFee),
+        serviceFeePerM2: Number(form.serviceFeePerM2),
+        waterFeePerM3: Number(form.waterFeePerM3),
+      };
+      const res = await api.post('/api/admin/service-fee-config', payload);
+      if (res.ok) {
+        setFormSuccess('Lưu đơn giá thành công!');
+        // Reload lại đơn giá
+        fetchServiceFeeConfig(payload.month, payload.year).then(cfg => setServiceFeeConfig(cfg));
+      } else {
+        setFormError('Lưu đơn giá thất bại!');
+      }
+    } catch (err) {
+      setFormError('Có lỗi xảy ra!');
+    } finally {
+      setFormLoading(false);
+    }
+  };
 
   // Mock data - replace with actual API call
   useEffect(() => {
@@ -81,6 +126,13 @@ export default function InvoicesPage() {
       setInvoices(mockInvoices);
       setLoading(false);
     }, 1000);
+
+    // Lấy đơn giá phí dịch vụ tháng/năm hiện tại
+    const now = new Date();
+    fetchServiceFeeConfig(now.getMonth() + 1, now.getFullYear()).then(cfg => {
+      setServiceFeeConfig(cfg);
+      setFeeLoading(false);
+    });
   }, []);
 
   const filteredInvoices = invoices.filter(invoice => {
@@ -127,6 +179,38 @@ export default function InvoicesPage() {
 
   return (
     <AdminLayout title={t('admin.invoices.title')}>
+      <div className="mb-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Đơn giá phí dịch vụ tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {feeLoading ? (
+              <span>Đang tải...</span>
+            ) : serviceFeeConfig ? (
+              <div className="space-y-2 mb-4">
+                <div>Phí gửi xe: <b>{serviceFeeConfig.parkingFee.toLocaleString('vi-VN')} đ/xe/tháng</b></div>
+                <div>Phí dịch vụ: <b>{serviceFeeConfig.serviceFeePerM2.toLocaleString('vi-VN')} đ/m²</b></div>
+                <div>Phí nước: <b>{serviceFeeConfig.waterFeePerM3.toLocaleString('vi-VN')} đ/m³</b></div>
+              </div>
+            ) : (
+              <span className="text-red-600 mb-4 block">Chưa cấu hình đơn giá tháng này</span>
+            )}
+            <form className="space-y-2" onSubmit={handleCreateFeeConfig}>
+              <div className="flex gap-2">
+                <Input type="number" name="month" min={1} max={12} value={form.month} onChange={handleFormChange} placeholder="Tháng" className="w-24" required />
+                <Input type="number" name="year" min={2020} value={form.year} onChange={handleFormChange} placeholder="Năm" className="w-32" required />
+                <Input type="number" name="parkingFee" value={form.parkingFee} onChange={handleFormChange} placeholder="Phí gửi xe" className="w-40" required />
+                <Input type="number" name="serviceFeePerM2" value={form.serviceFeePerM2} onChange={handleFormChange} placeholder="Phí dịch vụ/m²" className="w-40" required />
+                <Input type="number" name="waterFeePerM3" value={form.waterFeePerM3} onChange={handleFormChange} placeholder="Phí nước/m³" className="w-40" required />
+                <Button type="submit" disabled={formLoading}>{formLoading ? 'Đang lưu...' : 'Lưu đơn giá'}</Button>
+              </div>
+              {formError && <div className="text-red-600">{formError}</div>}
+              {formSuccess && <div className="text-green-600">{formSuccess}</div>}
+            </form>
+          </CardContent>
+        </Card>
+      </div>
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

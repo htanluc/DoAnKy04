@@ -71,6 +71,10 @@ export default function AdminDashboard() {
       try {
         // TODO: Thay thế URL dưới đây bằng endpoint thật nếu đã có
         const res = await fetch('/api/admin/activity-logs?limit=10');
+        if (res.status === 404) {
+          setActivities([]); // Không có log, không phải lỗi nghiêm trọng
+          return;
+        }
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setActivities(data.slice(0, 10));

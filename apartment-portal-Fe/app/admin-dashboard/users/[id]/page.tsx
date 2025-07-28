@@ -76,33 +76,20 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     if (!userId) return;
-    const token = localStorage.getItem('token');
     setApartmentsLoading(true);
-    fetch(`${API_BASE_URL}/api/apartments`, {
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE_URL}/api/admin/apartment-residents/user/${userId}`, {
       headers: { 'Authorization': token ? `Bearer ${token}` : '' },
     })
       .then(res => res.json())
-      .then(async (apartments) => {
-        const results = await Promise.all(
-          apartments.map(async (ap: any) => {
-            const res = await fetch(`${API_BASE_URL}/api/apartments/${ap.id}/residents`, {
-              headers: { 'Authorization': token ? `Bearer ${token}` : '' },
-            });
-            if (!res.ok) return null;
-            const residents = await res.json();
-            const found = residents.find((r: any) => r.userId == userId);
-            if (found) {
-              return {
-                apartmentId: ap.id,
-                unitNumber: ap.unitNumber,
-                buildingId: ap.buildingId,
-                relationType: found.relationType,
-              };
-            }
-            return null;
-          })
-        );
-        setLinkedApartments(results.filter(Boolean));
+      .then((apartments) => {
+        if (Array.isArray(apartments)) {
+          setLinkedApartments(apartments);
+        } else if (apartments && Array.isArray(apartments.data)) {
+          setLinkedApartments(apartments.data);
+        } else {
+          setLinkedApartments([]);
+        }
       })
       .finally(() => setApartmentsLoading(false));
   }, [userId]);
@@ -256,25 +243,13 @@ export default function UserDetailPage() {
                 <strong>{t('admin.users.role', 'Vai trò')}:</strong>
                 {user.roles && user.roles.length > 0 ? (
                   user.roles.map((role, idx) => (
-                    <Badge key={role} className="mr-2">
-                      {role}
-                      <Button size="sm" variant="ghost" onClick={() => handleRemoveRole(role)} disabled={assigning || role === 'ADMIN'}>
-                        <Trash2 className="h-3 w-3 ml-1" />
-                      </Button>
+                    <Badge key={idx} className="mr-2">
+                      {typeof role === 'string' ? role : role.name}
                     </Badge>
                   ))
                 ) : (
                   <Badge>-</Badge>
                 )}
-                <div className="mt-2 flex items-center gap-2">
-                  <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} className="border rounded px-2 py-1">
-                    <option value="">Chọn vai trò...</option>
-                    {allRoles.filter(r => !user.roles?.includes(r.name)).map(r => (
-                      <option key={r.id} value={r.name}>{r.name}</option>
-                    ))}
-                  </select>
-                  <Button size="sm" onClick={handleAssignRole} disabled={!selectedRole || assigning}>Gán vai trò</Button>
-                </div>
               </div>
               <div><strong>{t('admin.users.status', 'Trạng thái')}:</strong> <Badge>{user.status}</Badge></div>
               <div><strong>{t('admin.users.createdAt', 'Ngày tạo')}:</strong> {new Date(user.createdAt).toLocaleDateString('vi-VN')}</div>
@@ -286,8 +261,6 @@ export default function UserDetailPage() {
               <div className="font-semibold mb-2">Căn hộ đã liên kết:</div>
               {apartmentsLoading ? (
                 <div>Đang tải...</div>
-              ) : linkedApartments.length === 0 ? (
-                <div className="text-gray-500">Chưa liên kết căn hộ nào</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-[400px] w-full text-sm rounded-lg shadow border border-gray-200">
@@ -300,42 +273,48 @@ export default function UserDetailPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {linkedApartments.map((ap) => (
-                        <tr key={ap.apartmentId} className="hover:bg-gray-50 text-center">
-                          <td className="py-2 px-3 font-medium">{ap.unitNumber}</td>
-                          <td className="py-2 px-3">{ap.buildingId}</td>
-                          <td className="py-2 px-3">
-                            <span className={
-                              ap.relationType === 'OWNER' ? 'bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold' :
-                              ap.relationType === 'TENANT' ? 'bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold' :
-                              'bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold'
-                            }>
-                              {ap.relationType === 'OWNER' ? 'Chủ hộ' : ap.relationType === 'TENANT' ? 'Người thuê' : 'Thành viên'}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3">
-                            <AlertDialog open={pendingUnlink === ap.apartmentId} onOpenChange={open => !open && setPendingUnlink(null)}>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm" onClick={() => handleUnlinkApartment(ap.apartmentId)}>
-                                  {t('admin.users.unlink', 'Hủy liên kết')}
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Xác nhận hủy liên kết</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Bạn có chắc chắn muốn hủy liên kết căn hộ <b>{ap.unitNumber}</b> với tài khoản này không?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                  <AlertDialogAction onClick={confirmUnlinkApartment}>Đồng ý</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </td>
+                      {Array.isArray(linkedApartments) && linkedApartments.length > 0 ? (
+                        linkedApartments.map((ap) => (
+                          <tr key={ap.apartmentId} className="hover:bg-gray-50 text-center">
+                            <td className="py-2 px-3 font-medium">{ap.unitNumber}</td>
+                            <td className="py-2 px-3">{ap.buildingName}</td>
+                            <td className="py-2 px-3">
+                              <span className={
+                                ap.relationType === 'OWNER' ? 'bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold' :
+                                ap.relationType === 'TENANT' ? 'bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold' :
+                                'bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold'
+                              }>
+                                {ap.relationType === 'OWNER' ? 'Chủ hộ' : ap.relationType === 'TENANT' ? 'Người thuê' : 'Thành viên'}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3">
+                              <AlertDialog open={pendingUnlink === ap.apartmentId} onOpenChange={open => !open && setPendingUnlink(null)}>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="sm" onClick={() => handleUnlinkApartment(ap.apartmentId)}>
+                                    {t('admin.users.unlink', 'Hủy liên kết')}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Xác nhận hủy liên kết</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Bạn có chắc chắn muốn hủy liên kết căn hộ <b>{ap.unitNumber}</b> với tài khoản này không?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                    <AlertDialogAction onClick={confirmUnlinkApartment}>Đồng ý</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="text-center py-2 text-gray-500">Chưa liên kết căn hộ nào</td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>

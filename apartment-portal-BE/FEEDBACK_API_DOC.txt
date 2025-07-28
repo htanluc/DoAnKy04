@@ -1,0 +1,142 @@
+# FEEDBACK API DOC
+
+## 1. Gửi phản hồi/góp ý/sự cố (Cư dân)
+- **URL:** `/api/feedbacks`
+- **Method:** POST
+- **Request body:**
+```json
+{
+  "residentId": 1,
+  "categoryId": "COMPLAINT",
+  "title": "Tiêu đề phản hồi (nếu có)",
+  "content": "Nội dung phản hồi/góp ý/sự cố",
+  "rating": 5
+}
+```
+- **Response:**
+```json
+{
+  "id": 10,
+  "userId": 1,
+  "username": "cuDanA",
+  "categoryCode": "COMPLAINT",
+  "categoryName": "Khiếu nại",
+  "title": "Tiêu đề phản hồi (nếu có)",
+  "content": "Nội dung phản hồi/góp ý/sự cố",
+  "rating": 5,
+  "status": "PENDING",
+  "response": null,
+  "createdAt": "2024-06-01T10:00:00",
+  "updatedAt": null
+}
+```
+- **Phân quyền:** Cư dân đã đăng nhập
+
+---
+
+## 2. Xem danh sách phản hồi của mình (Cư dân)
+- **URL:** `/api/feedbacks/my`
+- **Method:** GET
+- **Response:**
+```json
+[
+  {
+    "id": 10,
+    "categoryCode": "COMPLAINT",
+    "categoryName": "Khiếu nại",
+    "content": "Nội dung...",
+    "status": "PENDING",
+    ...
+  },
+  ...
+]
+```
+- **Phân quyền:** Cư dân đã đăng nhập
+
+---
+
+## 3. Xem tất cả phản hồi (Admin)
+- **URL:** `/api/admin/feedbacks`
+- **Method:** GET
+- **Query params:**
+  - `status` (tùy chọn): PENDING, RESPONDED, REJECTED
+  - `category` (tùy chọn): mã loại phản hồi
+  - `userId` (tùy chọn): id cư dân
+- **Response:**
+```json
+[
+  {
+    "id": 10,
+    "userId": 1,
+    "username": "cuDanA",
+    "categoryCode": "COMPLAINT",
+    "categoryName": "Khiếu nại",
+    "content": "Nội dung...",
+    "status": "PENDING",
+    ...
+  },
+  ...
+]
+```
+- **Phân quyền:** Admin
+
+---
+
+## 4. Xem chi tiết phản hồi (Admin)
+- **URL:** `/api/admin/feedbacks/{id}`
+- **Method:** GET
+- **Response:**
+```json
+{
+  "id": 10,
+  "userId": 1,
+  "username": "cuDanA",
+  "categoryCode": "COMPLAINT",
+  "categoryName": "Khiếu nại",
+  "content": "Nội dung...",
+  "status": "PENDING",
+  ...
+}
+```
+- **Phân quyền:** Admin
+
+---
+
+## 5. Cập nhật trạng thái phản hồi (Admin)
+- **URL:** `/api/admin/feedbacks/{id}/status`
+- **Method:** PUT
+- **Query param:** `status` (PENDING, RESPONDED, REJECTED)
+- **Response:**
+```json
+{
+  "id": 10,
+  "status": "RESPONDED",
+  ...
+}
+```
+- **Phân quyền:** Admin
+
+---
+
+## 6. Trả lời phản hồi (Admin)
+- **URL:** `/api/admin/feedbacks/{id}/response`
+- **Method:** PUT
+- **Query param:** `response` (nội dung trả lời)
+- **Response:**
+```json
+{
+  "id": 10,
+  "response": "Cảm ơn bạn đã góp ý, chúng tôi sẽ xử lý sớm!",
+  "status": "RESPONDED",
+  ...
+}
+```
+- **Phân quyền:** Admin
+
+---
+
+## 7. Ghi chú
+- Các trường hợp lỗi sẽ trả về HTTP status code phù hợp và message.
+- Các trường bắt buộc: `categoryId`, `content` khi gửi phản hồi.
+- Cư dân chỉ xem/sửa/xem được phản hồi của chính mình.
+- Admin có thể lọc, tìm kiếm, trả lời, cập nhật trạng thái tất cả phản hồi. 

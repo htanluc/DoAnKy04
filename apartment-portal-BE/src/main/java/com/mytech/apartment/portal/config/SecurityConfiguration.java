@@ -55,7 +55,7 @@ public class SecurityConfiguration {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of("http://localhost:3000","http://localhost:3001"));
         cfg.setAllowCredentials(true);
-        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         cfg.setAllowedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

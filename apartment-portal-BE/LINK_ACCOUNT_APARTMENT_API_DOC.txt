@@ -65,3 +65,70 @@
 - 1 user có thể liên kết nhiều căn hộ.
 - 1 căn hộ có thể liên kết nhiều user (resident).
 - FE cần truyền token hợp lệ khi gọi các API này. 
+
+# API: Gán căn hộ cho user (Liên kết user với căn hộ)
+
+## Mục đích
+Liên kết một user (cư dân) với một căn hộ cụ thể trong hệ thống.
+
+---
+
+## Endpoint
+```
+POST /api/admin/apartment-residents/link
+```
+
+## Headers
+- Authorization: Bearer <token> (bắt buộc, phải là tài khoản ADMIN)
+- Content-Type: application/json
+
+## Request Body
+```json
+{
+  "apartmentId": <ID của căn hộ>,
+  "userId": <ID của user>
+}
+```
+**Ví dụ:**
+```json
+{
+  "apartmentId": 5,
+  "userId": 12
+}
+```
+
+## Response thành công
+```json
+{
+  "success": true,
+  "message": "Liên kết căn hộ với user thành công",
+  "data": {
+    // Thông tin liên kết hoặc user/căn hộ vừa được gán
+  }
+}
+```
+
+## Response lỗi (ví dụ)
+```json
+{
+  "success": false,
+  "message": "Căn hộ hoặc user không tồn tại",
+  "data": null
+}
+```
+
+---
+
+## Lưu ý cho FE
+- Chỉ tài khoản có quyền ADMIN mới gọi được API này.
+- Đảm bảo gửi đúng header Authorization và Content-Type.
+- Nếu cần hủy liên kết, sử dụng endpoint `/api/admin/apartment-residents/unlink` với body tương tự.
+
+---
+
+**Tóm tắt:**
+- API: `/api/admin/apartment-residents/link`
+- Method: `POST`
+- Body: `{ "apartmentId": ..., "userId": ... }`
+- Header: `Authorization`, `Content-Type: application/json`
+- Chức năng: Gán user vào căn hộ 

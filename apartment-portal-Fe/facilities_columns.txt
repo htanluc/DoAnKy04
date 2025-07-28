@@ -1,0 +1,22 @@
+Các cột của bảng facilities và ý nghĩa:
+
+1. id (bigint, PK, auto_increment)
+   - Mã định danh duy nhất của tiện ích (khóa chính, tự động tăng).
+
+2. name (varchar(255))
+   - Tên của tiện ích (ví dụ: Phòng Gym, Hồ bơi, Sân tennis, ...).
+
+3. description (varchar(255))
+   - Mô tả chi tiết về tiện ích.
+
+4. capacity (int)
+   - Sức chứa tối đa của tiện ích (số người có thể sử dụng cùng lúc).
+
+5. usage_fee (double)
+   - Phí sử dụng tiện ích (có thể là 0 nếu miễn phí).
+
+6. opening_hours (varchar(255))
+   - Giờ mở cửa của tiện ích (ví dụ: 06:00-22:00).
+
+7. other_details (varchar(255))
+   - Thông tin bổ sung khác về tiện ích (nếu có, ví dụ: quy định, lưu ý, ...). 

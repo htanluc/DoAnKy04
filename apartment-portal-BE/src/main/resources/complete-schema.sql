@@ -292,6 +292,19 @@ CREATE TABLE IF NOT EXISTS payment_methods (
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+-- NEW: SERVICE_FEE_CONFIG (Cấu hình phí dịch vụ, nước, gửi xe)
+CREATE TABLE IF NOT EXISTS service_fee_config (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    month INT NOT NULL,
+    year INT NOT NULL,
+    parking_fee DOUBLE NOT NULL,
+    service_fee_per_m2 DOUBLE NOT NULL,
+    water_fee_per_m3 DOUBLE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_service_fee_month_year (month, year)
+);
+
 -- =====================================================
 -- INDEXES ĐỂ TỐI ƯU HIỆU SUẤT
 -- =====================================================

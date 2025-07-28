@@ -25,6 +25,10 @@ public class UserMapper {
         dto.setUpdatedAt(user.getUpdatedAt());
         dto.setLockReason(user.getLockReason());
         dto.setEmail(user.getEmail());
+        // Map roles sang DTO
+        if (user.getRoles() != null) {
+            dto.setRoles(user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()));
+        }
         return dto;
     }
 
