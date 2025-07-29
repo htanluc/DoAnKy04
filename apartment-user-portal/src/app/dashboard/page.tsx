@@ -15,10 +15,32 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  User
+  User,
+  Building,
+  Activity,
+  Phone,
+  Shield,
+  Wrench,
+  Building2,
+  Flame,
+  MapPin,
+  Square,
+  Bed,
+  Layers,
+  Sparkles,
+  TrendingUp,
+  Star,
+  Zap,
+  Target,
+  Heart,
+  Users,
+  Award,
+  Car,
+  X
 } from 'lucide-react'
 import Link from 'next/link'
 import { fetchDashboardStats, fetchRecentActivities, fetchMyApartment } from '@/lib/api'
+import { getAvatarUrl } from '@/lib/utils'
 
 interface DashboardStats {
   totalInvoices: number
@@ -33,7 +55,7 @@ interface DashboardStats {
 
 interface RecentActivity {
   id: string
-  type: 'invoice' | 'announcement' | 'event' | 'booking' | 'payment'
+  type: 'invoice' | 'announcement' | 'event' | 'booking' | 'payment' | 'login' | 'facility_booking'
   title: string
   description: string
   timestamp: string
@@ -61,28 +83,30 @@ export default function DashboardPage() {
   })
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
   const [apartmentInfo, setApartmentInfo] = useState<ApartmentInfo>({})
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
-        // Fetch user info lại ở đây nếu cần
-        // const userData = await fetchCurrentUser()
-        // setUser(userData)
-        const statsData = await fetchDashboardStats()
+        setIsLoading(true)
+        const [statsData, activitiesData, apartmentData] = await Promise.all([
+          fetchDashboardStats(),
+          fetchRecentActivities(),
+          fetchMyApartment()
+        ])
+        
         setStats(statsData)
-        const activitiesData = await fetchRecentActivities()
         setRecentActivities(activitiesData)
-        const apartmentData = await fetchMyApartment()
         setApartmentInfo(apartmentData)
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
+      } catch (err) {
+        setError('Không thể tải dữ liệu dashboard')
+        console.error('Dashboard fetch error:', err)
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
+
     fetchData()
   }, [])
 
@@ -95,9 +119,9 @@ export default function DashboardPage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
       year: 'numeric',
+      month: 'short',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     })
@@ -105,275 +129,222 @@ export default function DashboardPage() {
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'invoice':
-        return <Receipt className="h-4 w-4" />
-      case 'announcement':
-        return <Bell className="h-4 w-4" />
-      case 'event':
-        return <Calendar className="h-4 w-4" />
-      case 'booking':
-        return <Coffee className="h-4 w-4" />
-      case 'payment':
-        return <DollarSign className="h-4 w-4" />
-      default:
-        return <MessageSquare className="h-4 w-4" />
+      case 'invoice': return <Receipt className="h-4 w-4" />
+      case 'announcement': return <Bell className="h-4 w-4" />
+      case 'event': return <Calendar className="h-4 w-4" />
+      case 'booking': return <Coffee className="h-4 w-4" />
+      case 'payment': return <DollarSign className="h-4 w-4" />
+      case 'login': return <User className="h-4 w-4" />
+      case 'facility_booking': return <Building className="h-4 w-4" />
+      default: return <Activity className="h-4 w-4" />
     }
   }
 
   const getStatusBadge = (status?: string) => {
     if (!status) return null
     
-    switch (status) {
-      case 'pending':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <Clock className="h-3 w-3 mr-1" />
-          Chờ xử lý
-        </span>
-      case 'completed':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Hoàn thành
-        </span>
-      case 'overdue':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          Quá hạn
-        </span>
-      default:
-        return null
+    const statusConfig = {
+      'paid': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
+      'pending': { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-3 w-3" /> },
+      'overdue': { color: 'bg-red-100 text-red-800', icon: <AlertTriangle className="h-3 w-3" /> },
+      'confirmed': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
+      'cancelled': { color: 'bg-gray-100 text-gray-800', icon: <X className="h-3 w-3" /> }
     }
+
+    const config = statusConfig[status as keyof typeof statusConfig]
+    if (!config) return null
+
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        {config.icon}
+        <span className="ml-1 capitalize">{status}</span>
+      </span>
+    )
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi tải dữ liệu</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>
+          Thử lại
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="h-full bg-gray-50 flex flex-col flex-1">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">Chào mừng trở lại! Đây là tổng quan về tài khoản của bạn.</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src="/placeholder-user.jpg" />
-                <AvatarFallback>
-                  <User className="h-5 w-5" />
-                </AvatarFallback>
-              </Avatar>
-            </div>
+    <div className="space-y-6 animate-fade-in">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Chào mừng trở lại!</h1>
+            <p className="text-blue-100">
+              Căn hộ {apartmentInfo.apartmentNumber} - {apartmentInfo.buildingName}
+            </p>
           </div>
-        </div>
-
-        {/* User Info */}
-        {user && (
-          <div className="mb-6 p-4 bg-white rounded-lg shadow flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Xin chào, {user?.fullName || user?.username || 'Cư dân'}!</h2>
-              <div className="text-gray-600 text-sm">Số điện thoại: <b>{user?.phoneNumber}</b></div>
-              <div className="text-gray-600 text-sm">Trạng thái: <b>{user?.status}</b></div>
-            </div>
-            <div className="mt-4 md:mt-0">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {user?.roles?.join(', ') || 'Cư dân'}
-              </span>
-            </div>
+          <div className="hidden md:block">
+            <Building className="h-16 w-16 text-blue-200" />
           </div>
-        )}
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tổng hóa đơn</CardTitle>
-              <Receipt className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalInvoices}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.pendingInvoices} chờ thanh toán, {stats.overdueInvoices} quá hạn
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tổng tiền</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalAmount)}</div>
-              <p className="text-xs text-muted-foreground">
-                Tổng số tiền hóa đơn
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Thông báo mới</CardTitle>
-              <Bell className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.unreadAnnouncements}</div>
-              <p className="text-xs text-muted-foreground">
-                Thông báo chưa đọc
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sự kiện sắp tới</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.upcomingEvents}</div>
-              <p className="text-xs text-muted-foreground">
-                Sự kiện trong tháng này
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Hành động nhanh</CardTitle>
-              <CardDescription>Thực hiện các thao tác thường dùng</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/dashboard/invoices">
-                <Button variant="outline" className="w-full justify-start">
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Xem hóa đơn
-                </Button>
-              </Link>
-              <Link href="/dashboard/announcements">
-                <Button variant="outline" className="w-full justify-start">
-                  <Bell className="mr-2 h-4 w-4" />
-                  Đọc thông báo
-                </Button>
-              </Link>
-              <Link href="/dashboard/facility-bookings">
-                <Button variant="outline" className="w-full justify-start">
-                  <Coffee className="mr-2 h-4 w-4" />
-                  Đặt tiện ích
-                </Button>
-              </Link>
-              <Link href="/dashboard/service-requests">
-                <Button variant="outline" className="w-full justify-start">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Yêu cầu hỗ trợ
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activities */}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Hoạt động gần đây</CardTitle>
-              <CardDescription>Những hoạt động mới nhất trong tài khoản của bạn</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentActivities.length > 0 ? (
-                  recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg border">
-                      <div className="flex-shrink-0 mt-1">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {activity.title}
-                          </p>
-                          <span className="text-xs text-gray-500">
-                            {formatDate(activity.timestamp)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {activity.description}
-                        </p>
-                        {getStatusBadge(activity.status)}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    Chưa có hoạt động nào
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Additional Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Thông tin căn hộ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Số căn hộ:</span>
-                  <span className="text-sm font-medium">{apartmentInfo.apartmentNumber || 'Chưa có thông tin'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Tòa:</span>
-                  <span className="text-sm font-medium">{apartmentInfo.buildingName || 'Chưa có thông tin'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Diện tích:</span>
-                  <span className="text-sm font-medium">{apartmentInfo.area ? `${apartmentInfo.area}m²` : 'Chưa có thông tin'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Số phòng ngủ:</span>
-                  <span className="text-sm font-medium">{apartmentInfo.bedrooms || 'Chưa có thông tin'}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Liên hệ khẩn cấp</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Bảo vệ:</span>
-                  <span className="text-sm font-medium">0123 456 789</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Kỹ thuật:</span>
-                  <span className="text-sm font-medium">0123 456 790</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Quản lý:</span>
-                  <span className="text-sm font-medium">0123 456 791</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Cứu hỏa:</span>
-                  <span className="text-sm font-medium">114</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-stagger">
+        <Card className="hover-lift transition-smooth">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tổng hóa đơn</CardTitle>
+            <Receipt className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalInvoices}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.pendingInvoices} chờ thanh toán
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-lift transition-smooth">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Thông báo mới</CardTitle>
+            <Bell className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.unreadAnnouncements}</div>
+            <p className="text-xs text-muted-foreground">
+              Cần đọc ngay
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-lift transition-smooth">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sự kiện sắp tới</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.upcomingEvents}</div>
+            <p className="text-xs text-muted-foreground">
+              Trong tháng này
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-lift transition-smooth">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Đặt tiện ích</CardTitle>
+            <Coffee className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeBookings}</div>
+            <p className="text-xs text-muted-foreground">
+              Đang hoạt động
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Zap className="h-5 w-5 mr-2" />
+            Thao tác nhanh
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link href="/dashboard/invoices">
+              <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center space-y-2">
+                <Receipt className="h-6 w-6" />
+                <span className="text-sm">Xem hóa đơn</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/announcements">
+              <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center space-y-2">
+                <Bell className="h-6 w-6" />
+                <span className="text-sm">Thông báo</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/facility-bookings">
+              <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center space-y-2">
+                <Coffee className="h-6 w-6" />
+                <span className="text-sm">Đặt tiện ích</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/service-requests">
+              <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center space-y-2">
+                <MessageSquare className="h-6 w-6" />
+                <span className="text-sm">Yêu cầu dịch vụ</span>
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activities */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Activity className="h-5 w-5 mr-2" />
+            Hoạt động gần đây
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => (
+                <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {activity.title}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {activity.description}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center space-x-2">
+                    {getStatusBadge(activity.status)}
+                    <span className="text-xs text-gray-400">
+                      {formatDate(activity.timestamp)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>Chưa có hoạt động nào</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 } 

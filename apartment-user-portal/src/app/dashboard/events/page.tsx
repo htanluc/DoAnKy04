@@ -12,23 +12,129 @@ import {
   Users,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles,
+  TrendingUp,
+  Star
 } from 'lucide-react'
 import { registerEvent, cancelEventRegistration } from '@/lib/api'
 import type { JSX } from 'react'
 
+// Custom CSS for animations
+const customStyles = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideInFromLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: calc(200px + 100%) 0;
+    }
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+  
+  .animate-slide-in-left {
+    animation: slideInFromLeft 0.5s ease-out;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 2s infinite;
+  }
+  
+  .event-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+  }
+  
+  .event-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .event-card.registered {
+    border: 2px solid #10b981;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  }
+  
+  .event-card.ongoing {
+    border: 2px solid #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+    animation: pulse 2s infinite;
+  }
+  
+  .event-card.upcoming {
+    border: 2px solid #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  }
+  
+  .status-badge {
+    transition: all 0.2s ease;
+  }
+  
+  .status-badge:hover {
+    transform: scale(1.1);
+  }
+  
+  .summary-card {
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  }
+  
+  .summary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+  }
+`
+
 interface Event {
-  id: string
-  title: string
-  description: string
-  startTime: string
-  endTime: string
-  location: string
-  maxParticipants: number
-  currentParticipants: number
-  status: 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED'
-  isRegistered: boolean
-  createdAt: string
+  id: string;
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  createdAt: string;
+  participantCount: number;
+  registered: boolean; // Changed from isRegistered to match backend
 }
 
 export default function EventsPage() {
@@ -59,27 +165,86 @@ export default function EventsPage() {
     fetchEvents()
   }, [])
 
+  const getEventStatus = (event: Event) => {
+    const now = new Date();
+    
+    // Kiểm tra xem startTime và endTime có tồn tại và có định dạng đúng không
+    if (!event.startTime || !event.endTime) {
+      return 'UPCOMING'; // Fallback nếu không có thời gian
+    }
+    
+    try {
+      const [startDatePart, startTimePart] = event.startTime.split(' ');
+      if (!startDatePart || !startTimePart) {
+        return 'UPCOMING';
+      }
+      
+      const [startYear, startMonth, startDay] = startDatePart.split('-');
+      const [startHour, startMinute] = startTimePart.split(':');
+      const startTime = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), parseInt(startHour), parseInt(startMinute));
+      
+      const [endDatePart, endTimePart] = event.endTime.split(' ');
+      if (!endDatePart || !endTimePart) {
+        return 'UPCOMING';
+      }
+      
+      const [endYear, endMonth, endDay] = endDatePart.split('-');
+      const [endHour, endMinute] = endTimePart.split(':');
+      const endTime = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), parseInt(endHour), parseInt(endMinute));
+      
+      if (now > endTime) {
+        return 'COMPLETED';
+      } else if (now >= startTime && now <= endTime) {
+        return 'ONGOING';
+      } else {
+        return 'UPCOMING';
+      }
+    } catch (error) {
+      console.error('Error parsing event time:', error);
+      return 'UPCOMING'; // Fallback nếu có lỗi parse
+    }
+  }
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.location.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filterStatus === 'all' || event.status === filterStatus
+    const eventStatus = getEventStatus(event)
+    const matchesStatus = filterStatus === 'all' || eventStatus === filterStatus
+    
     return matchesSearch && matchesStatus
   })
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
+    // Parse format "yyyy-MM-dd HH:mm:ss"
+    if (!dateString) return 'N/A';
+    
+    try {
+      const [datePart] = dateString.split(' ');
+      if (!datePart) return 'N/A';
+      
+      const [year, month, day] = datePart.split('-');
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'N/A';
+    }
   }
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    // Parse format "yyyy-MM-dd HH:mm:ss"
+    if (!dateString) return 'N/A';
+    
+    try {
+      const [datePart, timePart] = dateString.split(' ');
+      if (!timePart) return 'N/A';
+      
+      const [hours, minutes] = timePart.split(':');
+      return `${hours}:${minutes}`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'N/A';
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -105,13 +270,6 @@ export default function EventsPage() {
             Đã kết thúc
           </span>
         )
-      case 'CANCELLED':
-        return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <XCircle className="h-3 w-3 mr-1" />
-            Đã hủy
-          </span>
-        )
       default:
         return null
     }
@@ -121,11 +279,18 @@ export default function EventsPage() {
     setError(null)
     setSuccess(null)
     try {
-      await registerEvent({ eventId })
+      await registerEvent({ eventId: parseInt(eventId) })
       setSuccess('Đăng ký sự kiện thành công!')
-      setEvents(prev => prev.map(event => event.id === eventId ? { ...event, isRegistered: true, currentParticipants: event.currentParticipants + 1 } : event))
+      // Update local state
+      setEvents(prev => prev.map(event => event.id === eventId ? { ...event, registered: true, participantCount: event.participantCount + 1 } : event))
     } catch (err: any) {
-      setError(err.message || 'Đăng ký sự kiện thất bại')
+      if (err.message.includes('đã đăng ký')) {
+        setSuccess('Bạn đã đăng ký sự kiện này rồi!')
+        // Update local state to reflect already registered
+        setEvents(prev => prev.map(event => event.id === eventId ? { ...event, registered: true } : event))
+      } else {
+        setError(err.message || 'Đăng ký sự kiện thất bại')
+      }
     }
   }
 
@@ -135,24 +300,54 @@ export default function EventsPage() {
     try {
       await cancelEventRegistration(registrationId)
       setSuccess('Hủy đăng ký sự kiện thành công!')
-      setEvents(prev => prev.map(event => event.id === registrationId ? { ...event, isRegistered: false, currentParticipants: event.currentParticipants - 1 } : event))
+      setEvents(prev => prev.map(event => event.id === registrationId ? { ...event, registered: false, participantCount: event.participantCount - 1 } : event))
     } catch (err: any) {
       setError(err.message || 'Hủy đăng ký sự kiện thất bại')
     }
   }
 
   const getUpcomingEvents = () => {
-    return events.filter(event => event.status === 'UPCOMING').length
+    return events.filter(event => getEventStatus(event) === 'UPCOMING').length
   }
 
   const getRegisteredEvents = () => {
-    return events.filter(event => event.isRegistered).length
+    return events.filter(event => event.registered).length
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50">
+        <style>{customStyles}</style>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-fade-in-up">
+            <div className="mb-8">
+              <div className="loading-shimmer h-8 w-64 rounded mb-2"></div>
+              <div className="loading-shimmer h-4 w-96 rounded"></div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="summary-card p-6 rounded-lg border">
+                  <div className="loading-shimmer h-4 w-24 rounded mb-2"></div>
+                  <div className="loading-shimmer h-8 w-16 rounded mb-1"></div>
+                  <div className="loading-shimmer h-3 w-32 rounded"></div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="event-card p-6 rounded-lg border">
+                  <div className="loading-shimmer h-4 w-20 rounded mb-2"></div>
+                  <div className="loading-shimmer h-6 w-48 rounded mb-3"></div>
+                  <div className="loading-shimmer h-3 w-full rounded mb-2"></div>
+                  <div className="loading-shimmer h-3 w-3/4 rounded mb-2"></div>
+                  <div className="loading-shimmer h-3 w-1/2 rounded"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -167,62 +362,79 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <style>{customStyles}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in-up">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Sự kiện & Cộng đồng</h1>
-              <p className="text-gray-600">Tham gia các sự kiện và hoạt động cộng đồng của chung cư</p>
+              <div className="flex items-center space-x-3 mb-2">
+                <Sparkles className="h-8 w-8 text-blue-600" />
+                <h1 className="text-3xl font-bold text-gray-900">Sự kiện & Cộng đồng</h1>
+              </div>
+              <p className="text-gray-600 text-lg">Tham gia các sự kiện và hoạt động cộng đồng của chung cư</p>
+            </div>
+            <div className="hidden md:flex items-center space-x-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              <span className="text-sm text-gray-500">Cộng đồng năng động</span>
             </div>
           </div>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tổng sự kiện</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{filteredEvents.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Tổng số sự kiện
-              </p>
-            </CardContent>
-          </Card>
+          <div className="summary-card animate-slide-in-left" style={{animationDelay: '0.1s'}}>
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">Tổng sự kiện</CardTitle>
+                <Calendar className="h-5 w-5 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900 mb-1">{filteredEvents.length}</div>
+                <p className="text-xs text-gray-500 flex items-center">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Tổng số sự kiện
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sắp diễn ra</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getUpcomingEvents()}</div>
-              <p className="text-xs text-muted-foreground">
-                Sự kiện sắp diễn ra
-              </p>
-            </CardContent>
-          </Card>
+          <div className="summary-card animate-slide-in-left" style={{animationDelay: '0.2s'}}>
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">Sắp diễn ra</CardTitle>
+                <Clock className="h-5 w-5 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900 mb-1">{getUpcomingEvents()}</div>
+                <p className="text-xs text-gray-500 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Sự kiện sắp diễn ra
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Đã đăng ký</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getRegisteredEvents()}</div>
-              <p className="text-xs text-muted-foreground">
-                Sự kiện đã đăng ký
-              </p>
-            </CardContent>
-          </Card>
+          <div className="summary-card animate-slide-in-left" style={{animationDelay: '0.3s'}}>
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">Đã đăng ký</CardTitle>
+                <Users className="h-5 w-5 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900 mb-1">{getRegisteredEvents()}</div>
+                <p className="text-xs text-gray-500 flex items-center">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Sự kiện đã đăng ký
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
+        <Card className="mb-6 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
+          <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -231,32 +443,36 @@ export default function EventsPage() {
                     placeholder="Tìm kiếm sự kiện..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={filterStatus === 'all' ? 'default' : 'outline'}
                   onClick={() => setFilterStatus('all')}
+                  className="transition-all duration-200 hover:scale-105"
                 >
                   Tất cả
                 </Button>
                 <Button
                   variant={filterStatus === 'UPCOMING' ? 'default' : 'outline'}
                   onClick={() => setFilterStatus('UPCOMING')}
+                  className="transition-all duration-200 hover:scale-105"
                 >
                   Sắp diễn ra
                 </Button>
                 <Button
                   variant={filterStatus === 'ONGOING' ? 'default' : 'outline'}
                   onClick={() => setFilterStatus('ONGOING')}
+                  className="transition-all duration-200 hover:scale-105"
                 >
                   Đang diễn ra
                 </Button>
                 <Button
                   variant={filterStatus === 'COMPLETED' ? 'default' : 'outline'}
                   onClick={() => setFilterStatus('COMPLETED')}
+                  className="transition-all duration-200 hover:scale-105"
                 >
                   Đã kết thúc
                 </Button>
@@ -266,74 +482,84 @@ export default function EventsPage() {
         </Card>
 
         {/* Events List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Danh sách sự kiện ({filteredEvents.length})</CardTitle>
-            <CardDescription>
-              Các sự kiện và hoạt động cộng đồng của chung cư
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredEvents.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Không có sự kiện nào</p>
+        <div className="animate-fade-in-up" style={{animationDelay: '0.5s'}}>
+          {filteredEvents.length === 0 ? (
+            <Card className="text-center py-16">
+              <div className="animate-pulse-slow">
+                <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg mb-2">Không có sự kiện nào</p>
+                <p className="text-gray-400 text-sm">Hãy thử thay đổi bộ lọc hoặc tìm kiếm</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEvents.map((event) => (
-                  <Card key={event.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between mb-2">
-                        {getStatusBadge(event.status)}
-                        {event.isRegistered && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEvents.map((event, index) => {
+                const eventStatus = getEventStatus(event)
+                const cardClass = `event-card ${
+                  event.registered ? 'registered' : 
+                  eventStatus === 'ONGOING' ? 'ongoing' : 
+                  eventStatus === 'UPCOMING' ? 'upcoming' : ''
+                }`
+                
+                return (
+                  <Card 
+                    key={event.id} 
+                    className={cardClass}
+                    style={{animationDelay: `${0.6 + index * 0.1}s`}}
+                  >
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="status-badge">
+                          {getStatusBadge(eventStatus)}
+                        </div>
+                        {event.registered && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse-slow">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Đã đăng ký
                           </span>
                         )}
                       </div>
-                      <CardTitle className="text-lg">{event.title}</CardTitle>
-                      <CardDescription className="line-clamp-2">
+                      <CardTitle className="text-lg font-bold text-gray-900 mb-2">{event.title}</CardTitle>
+                      <CardDescription className="line-clamp-3 text-gray-600">
                         {event.description}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
                         <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {formatDate(event.startTime)}
+                          <Calendar className="h-4 w-4 mr-3 text-blue-500" />
+                          <span className="font-medium">{formatDate(event.startTime)}</span>
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
-                          <Clock className="h-4 w-4 mr-2" />
-                          {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                          <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                          <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2" />
-                          {event.location}
+                          <MapPin className="h-4 w-4 mr-3 text-red-500" />
+                          <span className="line-clamp-1">{event.location}</span>
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
-                          <Users className="h-4 w-4 mr-2" />
-                          {event.currentParticipants}/{event.maxParticipants} người tham gia
+                          <Users className="h-4 w-4 mr-3 text-green-500" />
+                          <span>{event.participantCount} người tham gia</span>
                         </div>
-                        
-                        {event.status === 'UPCOMING' && (
-                          <div className="pt-3">
-                            {event.isRegistered ? (
+                        {eventStatus === 'UPCOMING' && (
+                          <div className="pt-4">
+                            {event.registered ? (
                               <Button 
                                 variant="outline" 
-                                className="w-full"
+                                className="w-full transition-all duration-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
                                 onClick={() => handleUnregister(event.id)}
                               >
+                                <XCircle className="h-4 w-4 mr-2" />
                                 Hủy đăng ký
                               </Button>
                             ) : (
                               <Button 
-                                className="w-full"
+                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105"
                                 onClick={() => handleRegister(event.id)}
-                                disabled={event.currentParticipants >= event.maxParticipants}
                               >
-                                {event.currentParticipants >= event.maxParticipants ? 'Đã đầy' : 'Đăng ký tham gia'}
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Đăng ký tham gia
                               </Button>
                             )}
                           </div>
@@ -341,11 +567,11 @@ export default function EventsPage() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
