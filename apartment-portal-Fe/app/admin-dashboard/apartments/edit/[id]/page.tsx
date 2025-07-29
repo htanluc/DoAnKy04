@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/auth";
 import { ArrowLeft, Save } from "lucide-react";
-// import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/lib/i18n";
 
 const STATUS_OPTIONS = [
   { value: "AVAILABLE", label: "Còn trống" },
@@ -30,7 +30,7 @@ export default function EditApartmentPage() {
     area: "",
     status: "AVAILABLE",
   });
-  // const { t } = useTranslation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!id) return;
@@ -87,30 +87,30 @@ export default function EditApartmentPage() {
 
   return (
     <div className="max-w-lg mx-auto mt-8 bg-white p-6 rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Chỉnh sửa căn hộ</h1>
+      <h1 className="text-2xl font-bold mb-4">{t('admin.apartment.edit.title')}</h1>
       {loading ? (
-        <div>Đang tải dữ liệu...</div>
+        <div>{t('admin.apartment.edit.loading')}</div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block font-medium mb-1">Mã căn hộ</label>
+            <label className="block font-medium mb-1">{t('admin.apartment.edit.unitNumber')}</label>
             <Input name="unitNumber" value={form.unitNumber} onChange={handleChange} required />
           </div>
           <div>
-            <label className="block font-medium mb-1">Tòa</label>
+            <label className="block font-medium mb-1">{t('admin.apartment.edit.buildingId')}</label>
             <Input name="buildingId" value={form.buildingId} onChange={handleChange} required />
           </div>
           <div>
-            <label className="block font-medium mb-1">Tầng</label>
+            <label className="block font-medium mb-1">{t('admin.apartment.edit.floorNumber')}</label>
             <Input name="floorNumber" value={form.floorNumber} onChange={handleChange} required />
           </div>
           <div>
-            <label className="block font-medium mb-1">Diện tích (m²)</label>
+            <label className="block font-medium mb-1">{t('admin.apartment.edit.area')}</label>
             <Input name="area" value={form.area} onChange={handleChange} required />
           </div>
           <div>
-            <label className="block font-medium mb-1">Trạng thái</label>
-            <select name="status" value={form.status} onChange={handleChange} className="border rounded px-2 py-1 w-full" aria-label="Trạng thái căn hộ">
+            <label className="block font-medium mb-1">{t('admin.apartment.edit.status')}</label>
+            <select name="status" value={form.status} onChange={handleChange} className="border rounded px-2 py-1 w-full" aria-label={t('admin.apartment.edit.status')}>
               {STATUS_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
@@ -121,11 +121,11 @@ export default function EditApartmentPage() {
           <div className="flex gap-2 mt-4">
             <Button type="submit" disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Đang lưu...' : 'Lưu'}
+              {saving ? t('admin.action.saving') : t('admin.action.save')}
             </Button>
             <Button variant="outline" size="sm" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Quay lại
+              {t('admin.action.back')}
             </Button>
           </div>
         </form>

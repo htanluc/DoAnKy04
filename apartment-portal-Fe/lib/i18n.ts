@@ -879,6 +879,36 @@ export const translations: Translations = {
   'admin.noData': {
     vi: 'Không có dữ liệu',
     en: 'No data available'
+  },
+
+  // Apartment Edit
+  'admin.apartment.edit.title': {
+    vi: 'Chỉnh sửa căn hộ',
+    en: 'Edit Apartment'
+  },
+  'admin.apartment.edit.loading': {
+    vi: 'Đang tải dữ liệu...',
+    en: 'Loading data...'
+  },
+  'admin.apartment.edit.unitNumber': {
+    vi: 'Mã căn hộ',
+    en: 'Unit Number'
+  },
+  'admin.apartment.edit.buildingId': {
+    vi: 'Tòa',
+    en: 'Building'
+  },
+  'admin.apartment.edit.floorNumber': {
+    vi: 'Tầng',
+    en: 'Floor'
+  },
+  'admin.apartment.edit.area': {
+    vi: 'Diện tích (m²)',
+    en: 'Area (m²)'
+  },
+  'admin.apartment.edit.status': {
+    vi: 'Trạng thái',
+    en: 'Status'
   }
 }
 
