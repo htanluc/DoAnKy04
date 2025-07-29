@@ -33,8 +33,8 @@ public class ResidentService {
                 .collect(Collectors.toList());
     }
 
-    public Optional<ResidentDto> getResidentById(Long id) {
-        return residentRepository.findById(id).map(residentMapper::toDto);
+    public Optional<ResidentDto> getResidentById(Long userId) {
+        return residentRepository.findByUserId(userId) == null ? Optional.empty() : Optional.ofNullable(residentMapper.toDto(residentRepository.findByUserId(userId)));
     }
 
     @Transactional
@@ -47,10 +47,9 @@ public class ResidentService {
     }
 
     @Transactional
-    public ResidentDto updateResident(Long id, ResidentUpdateRequest request) {
-        Resident resident = residentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Resident not found with id " + id));
-
+    public ResidentDto updateResident(Long userId, ResidentUpdateRequest request) {
+        Resident resident = residentRepository.findByUserId(userId);
+        if (resident == null) throw new RuntimeException("Resident not found with userId " + userId);
         residentMapper.updateEntityFromRequest(resident, request);
         resident.setStatus(1);
         if (resident.getUserId() != null && resident.getFullName() != null) {
@@ -63,8 +62,9 @@ public class ResidentService {
         return residentMapper.toDto(updatedResident);
     }
 
-    public void deleteResident(Long id) {
-        residentRepository.deleteById(id);
+    public void deleteResident(Long userId) {
+        Resident resident = residentRepository.findByUserId(userId);
+        if (resident != null) residentRepository.delete(resident);
     }
 
     public Optional<ResidentDto> getResidentByUserId(Long userId) {

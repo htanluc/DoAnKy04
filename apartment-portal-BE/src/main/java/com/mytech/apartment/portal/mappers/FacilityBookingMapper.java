@@ -28,7 +28,7 @@ public class FacilityBookingMapper {
             startTime,
             endTime,
             booking.getStatus() != null ? booking.getStatus().name() : null,
-            null, // purpose field doesn't exist in entity
+            booking.getPurpose(),
             booking.getCreatedAt()
         );
         // Tính giá tiền: usageFee * số giờ * số lượng người
@@ -38,6 +38,13 @@ public class FacilityBookingMapper {
         double hours = durationMinutes / 60.0;
         dto.setTotalCost(usageFee * hours * numberOfPeople);
         dto.setNumberOfPeople(numberOfPeople);
+        
+        // Set QR code fields
+        dto.setQrCode(booking.getQrCode());
+        dto.setQrExpiresAt(booking.getQrExpiresAt());
+        dto.setCheckedInCount(booking.getCheckedInCount());
+        dto.setMaxCheckins(booking.getMaxCheckins());
+        
         return dto;
     }
 
@@ -59,6 +66,27 @@ public class FacilityBookingMapper {
         booking.setStatus(dto.getStatus() != null ? FacilityBookingStatus.valueOf(dto.getStatus()) : null);
         booking.setCreatedAt(dto.getCreatedAt());
         
+        return booking;
+    }
+
+    public FacilityBooking toEntity(com.mytech.apartment.portal.dtos.FacilityBookingCreateRequest req) {
+        if (req == null) return null;
+        FacilityBooking booking = new FacilityBooking();
+        
+        // Parse bookingTime from String to LocalDateTime
+        if (req.getBookingTime() != null) {
+            try {
+                LocalDateTime bookingTime = LocalDateTime.parse(req.getBookingTime());
+                booking.setBookingTime(bookingTime);
+            } catch (Exception e) {
+                throw new RuntimeException("Invalid booking time format. Expected: yyyy-MM-ddTHH:mm:ss");
+            }
+        }
+        
+        booking.setDuration(req.getDuration());
+        booking.setNumberOfPeople(req.getNumberOfPeople());
+        booking.setPurpose(req.getPurpose());
+        // Các trường khác như facility, user sẽ được set ở service/controller nếu cần
         return booking;
     }
 } 

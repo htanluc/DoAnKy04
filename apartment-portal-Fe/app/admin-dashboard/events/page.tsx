@@ -175,6 +175,7 @@ export default function EventsPage() {
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  aria-label="Lọc theo trạng thái sự kiện"
                 >
                   <option value="all">Tất cả trạng thái</option>
                   <option value="UPCOMING">Sắp diễn ra</option>

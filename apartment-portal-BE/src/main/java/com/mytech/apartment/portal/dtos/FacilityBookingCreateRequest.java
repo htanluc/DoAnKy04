@@ -1,15 +1,31 @@
 package com.mytech.apartment.portal.dtos;
 
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 
 public class FacilityBookingCreateRequest {
+    @NotNull(message = "facilityId không được để trống")
     private Long facilityId;
+    
     private Long residentId;
+    
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    
+    @NotBlank(message = "purpose không được để trống")
     private String purpose;
-    private LocalDateTime bookingTime;
+    
+    @NotBlank(message = "bookingTime không được để trống")
+    private String bookingTime; // Thay đổi từ LocalDateTime sang String
+    
+    @NotNull(message = "duration không được để trống")
+    @Min(value = 30, message = "Thời lượng tối thiểu là 30 phút")
     private Integer duration;
+    
+    @NotNull(message = "numberOfPeople không được để trống")
+    @Min(value = 1, message = "Số người phải lớn hơn 0")
     private Integer numberOfPeople;
 
     // Constructors
@@ -39,10 +55,12 @@ public class FacilityBookingCreateRequest {
     public String getPurpose() { return purpose; }
     public void setPurpose(String purpose) { this.purpose = purpose; }
 
-    public LocalDateTime getBookingTime() { return bookingTime; }
-    public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
+    public String getBookingTime() { return bookingTime; }
+    public void setBookingTime(String bookingTime) { this.bookingTime = bookingTime; }
+    
     public Integer getDuration() { return duration; }
     public void setDuration(Integer duration) { this.duration = duration; }
+    
     public Integer getNumberOfPeople() { return numberOfPeople; }
     public void setNumberOfPeople(Integer numberOfPeople) { this.numberOfPeople = numberOfPeople; }
 } 

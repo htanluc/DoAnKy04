@@ -11,7 +11,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.mytech.apartment.portal.services.UserService;
+import com.mytech.apartment.portal.services.LoggingService;
+import com.mytech.apartment.portal.security.UserDetailsImpl;
+import com.mytech.apartment.portal.models.FacilityBooking;
+import com.mytech.apartment.portal.mappers.FacilityBookingMapper;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +28,8 @@ public class FacilityBookingController {
     private FacilityBookingService facilityBookingService;
     @Autowired
     private UserService userService;
+    @Autowired private LoggingService loggingService;
+    @Autowired private FacilityBookingMapper facilityBookingMapper;
 
     // Admin endpoint to get all bookings
     @GetMapping("/admin/facility-bookings")
@@ -32,19 +39,20 @@ public class FacilityBookingController {
 
     // User endpoint to book a facility
     @PostMapping("/facility-bookings")
-    public ResponseEntity<?> createFacilityBooking(@RequestBody FacilityBookingCreateRequest request) {
+    public ResponseEntity<?> createFacilityBooking(@Valid @RequestBody FacilityBookingCreateRequest req, Authentication authentication) {
         try {
-            // Lấy userId từ context (resident đặt chỗ cho chính mình)
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String phoneNumber = auth.getName();
-            Long userId = userService.getUserIdByPhoneNumber(phoneNumber);
-            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
-            request.setResidentId(userId);
-            FacilityBookingDto booking = facilityBookingService.createFacilityBooking(request);
-            if (booking == null) {
-                return ResponseEntity.badRequest().body("Không thể đặt chỗ: dữ liệu không hợp lệ hoặc đã có lỗi.");
+            Long userId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+                userId = userDetails.getId();
             }
-            return ResponseEntity.ok(booking);
+            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
+            req.setResidentId(userId);
+            FacilityBookingDto saved = facilityBookingService.createFacilityBooking(req);
+            // Ghi log
+            String facilityName = saved.getFacilityName() != null ? saved.getFacilityName() : "";
+            String bookingTime = saved.getStartTime() != null ? saved.getStartTime().toString() : "";
+            loggingService.logFacilityBooking(userId, facilityName, bookingTime);
+            return ResponseEntity.ok(saved);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -91,5 +99,33 @@ public class FacilityBookingController {
         if (userId == null) return ResponseEntity.status(401).build();
         List<FacilityBookingDto> bookings = facilityBookingService.getFacilityBookingsByUserId(userId);
         return ResponseEntity.ok(bookings);
+    }
+
+    // API lấy lịch booking theo tiện ích và ngày
+    @GetMapping("/facilities/{facilityId}/bookings")
+    public ResponseEntity<List<FacilityBookingDto>> getBookingsByFacilityAndDate(
+            @PathVariable("facilityId") Long facilityId,
+            @RequestParam("date") String dateStr) {
+        try {
+            java.time.LocalDate date = java.time.LocalDate.parse(dateStr);
+            List<FacilityBookingDto> bookings = facilityBookingService.getBookingsByFacilityAndDate(facilityId, date);
+            return ResponseEntity.ok(bookings);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // API lấy thông tin sức chứa theo giờ
+    @GetMapping("/facilities/{facilityId}/availability")
+    public ResponseEntity<java.util.Map<String, Object>> getFacilityAvailability(
+            @PathVariable("facilityId") Long facilityId,
+            @RequestParam("date") String dateStr) {
+        try {
+            java.time.LocalDate date = java.time.LocalDate.parse(dateStr);
+            java.util.Map<String, Object> availability = facilityBookingService.getFacilityAvailabilityByHour(facilityId, date);
+            return ResponseEntity.ok(availability);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 } 

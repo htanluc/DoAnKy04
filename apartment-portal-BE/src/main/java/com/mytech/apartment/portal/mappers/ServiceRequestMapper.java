@@ -6,6 +6,12 @@ import com.mytech.apartment.portal.models.enums.ServiceRequestPriority;
 import com.mytech.apartment.portal.models.enums.ServiceRequestStatus;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.ArrayList;
+
 @Component
 public class ServiceRequestMapper {
 
@@ -14,18 +20,24 @@ public class ServiceRequestMapper {
             return null;
         }
 
+        // Parse attachments
+        List<String> attachmentUrls = parseJsonToList(serviceRequest.getAttachmentUrls());
+        List<String> imageUrls = parseJsonToList(serviceRequest.getImageAttachment());
+
         return new ServiceRequestDto(
             serviceRequest.getId(),
             serviceRequest.getUser() != null ? serviceRequest.getUser().getId() : null,
             serviceRequest.getUser() != null ? serviceRequest.getUser().getUsername() : null,
             serviceRequest.getCategory() != null ? serviceRequest.getCategory().getCategoryCode() : null,
             serviceRequest.getCategory() != null ? serviceRequest.getCategory().getCategoryName() : null,
-            null, // title field doesn't exist in entity
+            serviceRequest.getTitle(),
             serviceRequest.getDescription(),
-            serviceRequest.getPriority() != null ? serviceRequest.getPriority().name() : null,
+            serviceRequest.getPriority() != null ? serviceRequest.getPriority().getValue() : null,
             serviceRequest.getStatus() != null ? serviceRequest.getStatus().name() : null,
             serviceRequest.getAssignedTo() != null ? serviceRequest.getAssignedTo().getUsername() : null,
             serviceRequest.getResolutionNotes(),
+            attachmentUrls,
+            imageUrls,
             serviceRequest.getSubmittedAt(),
             serviceRequest.getAssignedAt(),
             serviceRequest.getCompletedAt()
@@ -48,5 +60,36 @@ public class ServiceRequestMapper {
         serviceRequest.setCompletedAt(dto.getResolvedAt());
         
         return serviceRequest;
+    }
+
+    // Helper method to parse JSON string to List
+    private List<String> parseJsonToList(String jsonString) {
+        if (jsonString == null || jsonString.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(jsonString, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            // Fallback: try to parse as comma-separated string
+            if (jsonString.contains(",")) {
+                String[] parts = jsonString.split(",");
+                List<String> result = new ArrayList<>();
+                for (String part : parts) {
+                    String trimmed = part.trim();
+                    if (!trimmed.isEmpty()) {
+                        result.add(trimmed);
+                    }
+                }
+                return result;
+            } else if (!jsonString.trim().isEmpty()) {
+                // Single item
+                List<String> result = new ArrayList<>();
+                result.add(jsonString.trim());
+                return result;
+            }
+            return new ArrayList<>();
+        }
     }
 } 

@@ -57,30 +57,35 @@ public class JwtProvider {
 
     public String getUsernameFromJwt(String token) {
         try {
-            return Jwts.parserBuilder()
+            System.out.println("JwtProvider: Getting username from token: " + token.substring(0, Math.min(50, token.length())) + "...");
+            String username = Jwts.parserBuilder()
                     .setSigningKey(jwtSecretKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
+            System.out.println("JwtProvider: Extracted username: " + username);
+            return username;
         } catch (JwtException e) {
-            // Xử lý lỗi khi giải mã token
+            System.err.println("JwtProvider: JWT Exception when getting username: " + e.getMessage());
             throw new RuntimeException("Token JWT không hợp lệ hoặc đã hết hạn: " + e.getMessage(), e);
         } catch (Exception e) {
+            System.err.println("JwtProvider: General Exception when getting username: " + e.getMessage());
             throw new RuntimeException("Lỗi khi lấy username từ JWT: " + e.getMessage(), e);
         }
     }
 
     public boolean validateToken(String token) {
         try {
+            System.out.println("JwtProvider: Validating token: " + token.substring(0, Math.min(50, token.length())) + "...");
             Jwts.parserBuilder().setSigningKey(jwtSecretKey).build().parseClaimsJws(token);
+            System.out.println("JwtProvider: Token is valid");
             return true;
         } catch (JwtException e) {
-            // log e.getMessage() nếu cần
-            // Xử lý lỗi token không hợp lệ
+            System.err.println("JwtProvider: JWT Exception when validating token: " + e.getMessage());
             return false;
         } catch (Exception e) {
-            // Xử lý lỗi khác
+            System.err.println("JwtProvider: General Exception when validating token: " + e.getMessage());
             return false;
         }
     }

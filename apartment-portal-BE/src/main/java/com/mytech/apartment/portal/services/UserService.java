@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -70,6 +71,25 @@ public class UserService {
 
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
+    }
+
+    /**
+     * [EN] Update avatar URL for user
+     * [VI] Cập nhật URL avatar cho user
+     */
+    public boolean updateAvatar(String username, String avatarUrl) {
+        try {
+            Optional<User> userOpt = userRepository.findByPhoneNumber(username);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setAvatarUrl(avatarUrl);
+                userRepository.save(user);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public UserDto setUserStatus(Long id, UserStatus status, String reason) {

@@ -128,47 +128,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-4 py-8">
-        <style jsx>{`
-          .animate-fade-in {
-            animation: fadeIn 0.8s ease-in-out;
-          }
-          .animate-stagger > * {
-            animation: slideUp 0.6s ease-out;
-            animation-fill-mode: both;
-          }
-          .animate-stagger > *:nth-child(1) { animation-delay: 0.1s; }
-          .animate-stagger > *:nth-child(2) { animation-delay: 0.2s; }
-          .animate-stagger > *:nth-child(3) { animation-delay: 0.3s; }
-          .animate-stagger > *:nth-child(4) { animation-delay: 0.4s; }
-          .animate-stagger > *:nth-child(5) { animation-delay: 0.5s; }
-          .animate-stagger > *:nth-child(6) { animation-delay: 0.6s; }
-          
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          
-          .gradient-text {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-          }
-          
-          .transition-smooth {
-            transition: all 0.3s ease;
-          }
-          
-          .hover-lift:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-          }
-        `}</style>
       {/* Hero Section */}
       <div className="text-center mb-12 animate-fade-in">
         <div className="mb-6">

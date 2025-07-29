@@ -11,5 +11,9 @@ public class ServiceRequestAssignmentRequest {
 
     @NotNull(message = "ID nhân viên được gán không được để trống")
     private Long assignedToUserId;
+    
+    private String priority;
+    
+    private String adminNotes;
 
 }

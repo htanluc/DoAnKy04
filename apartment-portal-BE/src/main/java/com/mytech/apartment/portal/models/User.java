@@ -39,6 +39,9 @@ public class User {
     @Column(name = "lock_reason")
     private String lockReason;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

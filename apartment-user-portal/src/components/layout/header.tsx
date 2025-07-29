@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Menu, X, LogOut, Building2, Sparkles, Clock, Wifi } from 'lucide-react'
+import { Bell, Menu, X, LogOut, Building2, Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
 import { fetchAnnouncements } from "@/lib/api"
 import { getAvatarUrl } from '@/lib/utils'
 
 interface HeaderProps {
-  onMenuToggle: () => void
+  onMenuToggle?: () => void
   isMenuOpen: boolean
   user: any
   resident?: any
@@ -20,8 +19,13 @@ interface HeaderProps {
 export default function Header({ onMenuToggle, isMenuOpen, user, resident, apartment, roles }: HeaderProps) {
   const [unreadCount, setUnreadCount] = useState(5)
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [isHovered, setIsHovered] = useState(false)
   const router = useRouter()
+
+  const handleMenuToggle = () => {
+    if (onMenuToggle) {
+      onMenuToggle()
+    }
+  }
 
   const getAnnouncements = async () => {
     try {
@@ -35,13 +39,10 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
 
   useEffect(() => {
     getAnnouncements()
-    
-    // Update time every minute
     const timeInterval = setInterval(() => {
       setCurrentTime(new Date())
     }, 60000)
 
-    // Listen for storage changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'announcements-updated') {
         getAnnouncements()
@@ -69,25 +70,23 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
   }
 
   const getUserDisplayName = () => {
-    // Ưu tiên: resident.fullName > user.username > fallback
     if (resident?.fullName) {
       return resident.fullName
     }
     if (user?.username) {
       return user.username
     }
-    return 'Nguyễn Văn A'
+    return ""
   }
 
   const getUserInfo = () => {
-    // Ưu tiên: apartment.unitNumber > user.phoneNumber > fallback
     if (apartment?.unitNumber) {
       return apartment.unitNumber
     }
-    if (user?.phoneNumber) {
+    if (user?.phoneNumber) {  
       return user.phoneNumber
     }
-    return 'A1-01'
+    return ""
   }
 
   const formatTime = (date: Date) => {
@@ -97,27 +96,19 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
     })
   }
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
-  }
-
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         {/* Left side - Menu button and title */}
         <div className="flex items-center space-x-4">
           <button
-            onClick={onMenuToggle}
+            onClick={handleMenuToggle}
             className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             title="Menu"
+            aria-label="Toggle menu"
           >
             <Menu className="h-5 w-5" />
           </button>
-          
           <div className="flex items-center space-x-2">
             <Building2 className="h-6 w-6 text-blue-600" />
             <h1 className="text-xl font-semibold text-gray-900">Cư dân Portal</h1>

@@ -1,100 +1,129 @@
 package com.mytech.apartment.portal.services;
 
-import com.mytech.apartment.portal.models.ActivityLog;
 import com.mytech.apartment.portal.dtos.ActivityLogDto;
-import com.mytech.apartment.portal.dtos.ActivityLogSummaryDto;
 import com.mytech.apartment.portal.mappers.ActivityLogMapper;
+import com.mytech.apartment.portal.models.ActivityLog;
+import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.repositories.ActivityLogRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
 
 @Service
 public class ActivityLogService {
-    private final ActivityLogRepository activityLogRepository;
-    private final ActivityLogMapper activityLogMapper;
 
-    public ActivityLogService(ActivityLogRepository activityLogRepository, ActivityLogMapper activityLogMapper) {
-        this.activityLogRepository = activityLogRepository;
-        this.activityLogMapper = activityLogMapper;
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    @Autowired
+    private ActivityLogMapper activityLogMapper;
+    
+    @Autowired
+    private UserRepository userRepository;
+
+    public List<ActivityLogDto> getAllActivityLogs() {
+        return activityLogRepository.findAll().stream()
+                .map(activityLogMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-    public List<ActivityLogDto> getAllLogs() {
-        List<ActivityLog> logs = activityLogRepository.findAll();
-        return logs.stream()
+    public List<ActivityLogDto> getActivityLogsByUserId(Long userId) {
+        return activityLogRepository.findByUserId(userId).stream()
                 .map(activityLogMapper::toDto)
                 .collect(Collectors.toList());
     }
-    
-    public ActivityLogDto getLogById(Long logId) {
-        ActivityLog log = activityLogRepository.findById(logId)
-                .orElseThrow(() -> new RuntimeException("Activity log not found with id: " + logId));
-        return activityLogMapper.toDto(log);
+
+    public List<ActivityLogDto> getActivityLogsByUsername(String username) {
+        Optional<User> userOpt = userRepository.findByPhoneNumber(username);
+        if (userOpt.isEmpty()) {
+            return List.of(); // Return empty list if user not found
+        }
+        
+        Long userId = userOpt.get().getId();
+        return getActivityLogsByUserId(userId);
     }
-    
-    public List<ActivityLogDto> getLogsByUserId(Long userId) {
-        List<ActivityLog> logs = activityLogRepository.findByUserId(userId);
-        return logs.stream()
-                .map(activityLogMapper::toDto)
-                .collect(Collectors.toList());
+
+    /**
+     * Get activity logs for current authenticated user
+     */
+    public List<ActivityLogDto> getMyActivityLogs(String username) {
+        System.out.println("ActivityLogService: Getting activity logs for username: " + username);
+        
+        Optional<User> userOpt = userRepository.findByPhoneNumber(username);
+        if (userOpt.isEmpty()) {
+            System.out.println("ActivityLogService: User not found for username: " + username);
+            return List.of(); // Return empty list if user not found
+        }
+        
+        Long userId = userOpt.get().getId();
+        System.out.println("ActivityLogService: Found user ID: " + userId + " for username: " + username);
+        
+        List<ActivityLogDto> logs = getActivityLogsByUserId(userId);
+        System.out.println("ActivityLogService: Found " + logs.size() + " activity logs for user ID: " + userId);
+        
+        return logs;
     }
-    
-    public List<ActivityLogDto> getLogsByActionType(String actionType) {
-        List<ActivityLog> logs = activityLogRepository.findByActionType(actionType);
-        return logs.stream()
-                .map(activityLogMapper::toDto)
-                .collect(Collectors.toList());
+
+    public void logActivity(Long userId, String actionType, String description) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return; // Skip logging if user not found
+        }
+        
+        ActivityLog activityLog = ActivityLog.builder()
+                .user(userOpt.get())
+                .actionType(actionType)
+                .description(description)
+                .timestamp(java.time.LocalDateTime.now())
+                .build();
+        
+        activityLogRepository.save(activityLog);
     }
-    
-    public ActivityLogSummaryDto getActivityLogSummary() {
-        List<ActivityLog> allLogs = activityLogRepository.findAll();
-        LocalDateTime now = LocalDateTime.now();
+
+    /**
+     * Log activity for current authenticated user
+     */
+    public void logActivityForCurrentUser(ActivityActionType actionType, String description) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return; // Skip logging for unauthenticated users
+        }
         
-        ActivityLogSummaryDto summary = new ActivityLogSummaryDto();
-        summary.setTotalLogs((long) allLogs.size());
+        Optional<User> userOpt = userRepository.findByPhoneNumber(auth.getName());
+        if (userOpt.isEmpty()) {
+            return; // Skip logging if user not found
+        }
         
-        // Count unique users
-        long uniqueUsers = allLogs.stream()
-                .map(log -> log.getUser().getId())
-                .distinct()
-                .count();
-        summary.setUniqueUsers(uniqueUsers);
-        
-        // Find most common action
-        String mostCommonAction = allLogs.stream()
-                .collect(Collectors.groupingBy(ActivityLog::getActionType, Collectors.counting()))
-                .entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse("N/A");
-        summary.setMostCommonAction(mostCommonAction);
-        
-        // Find last activity
-        LocalDateTime lastActivity = allLogs.stream()
-                .map(ActivityLog::getTimestamp)
-                .max(LocalDateTime::compareTo)
-                .orElse(null);
-        summary.setLastActivity(lastActivity);
-        
-        // Count logs by time period
-        long logsToday = allLogs.stream()
-                .filter(log -> log.getTimestamp().toLocalDate().equals(now.toLocalDate()))
-                .count();
-        summary.setLogsToday(logsToday);
-        
-        long logsThisWeek = allLogs.stream()
-                .filter(log -> log.getTimestamp().isAfter(now.minus(7, ChronoUnit.DAYS)))
-                .count();
-        summary.setLogsThisWeek(logsThisWeek);
-        
-        long logsThisMonth = allLogs.stream()
-                .filter(log -> log.getTimestamp().isAfter(now.minus(30, ChronoUnit.DAYS)))
-                .count();
-        summary.setLogsThisMonth(logsThisMonth);
-        
-        return summary;
+        logActivity(userOpt.get().getId(), actionType.getCode(), description);
+    }
+
+    /**
+     * Log activity for current authenticated user with enum
+     */
+    public void logActivityForCurrentUser(ActivityActionType actionType, String description, Object... args) {
+        String formattedDescription = String.format(description, args);
+        logActivityForCurrentUser(actionType, formattedDescription);
+    }
+
+    /**
+     * Log activity for specific user with enum
+     */
+    public void logActivity(Long userId, ActivityActionType actionType, String description) {
+        logActivity(userId, actionType.getCode(), description);
+    }
+
+    /**
+     * Log activity for specific user with enum and formatting
+     */
+    public void logActivity(Long userId, ActivityActionType actionType, String description, Object... args) {
+        String formattedDescription = String.format(description, args);
+        logActivity(userId, actionType, formattedDescription);
     }
 } 

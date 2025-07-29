@@ -23,18 +23,8 @@ public class ReportController {
      */
     @GetMapping("/activity-logs")
     public ResponseEntity<List<ActivityLogDto>> getAllActivityLogs() {
-        List<ActivityLogDto> logs = activityLogService.getAllLogs();
+        List<ActivityLogDto> logs = activityLogService.getAllActivityLogs();
         return ResponseEntity.ok(logs);
-    }
-    
-    /**
-     * [EN] Get activity log by ID
-     * [VI] Lấy nhật ký hoạt động theo ID
-     */
-    @GetMapping("/activity-logs/{logId}")
-    public ResponseEntity<ActivityLogDto> getActivityLogById(@PathVariable("logId") Long logId) {
-        ActivityLogDto log = activityLogService.getLogById(logId);
-        return ResponseEntity.ok(log);
     }
     
     /**
@@ -43,17 +33,17 @@ public class ReportController {
      */
     @GetMapping("/activity-logs/user/{userId}")
     public ResponseEntity<List<ActivityLogDto>> getActivityLogsByUserId(@PathVariable("userId") Long userId) {
-        List<ActivityLogDto> logs = activityLogService.getLogsByUserId(userId);
+        List<ActivityLogDto> logs = activityLogService.getActivityLogsByUserId(userId);
         return ResponseEntity.ok(logs);
     }
     
     /**
-     * [EN] Get activity logs by action type
-     * [VI] Lấy nhật ký hoạt động theo loại hành động
+     * [EN] Get activity logs by username
+     * [VI] Lấy nhật ký hoạt động theo username
      */
-    @GetMapping("/activity-logs/action/{actionType}")
-    public ResponseEntity<List<ActivityLogDto>> getActivityLogsByActionType(@PathVariable("actionType") String actionType) {
-        List<ActivityLogDto> logs = activityLogService.getLogsByActionType(actionType);
+    @GetMapping("/activity-logs/username/{username}")
+    public ResponseEntity<List<ActivityLogDto>> getActivityLogsByUsername(@PathVariable("username") String username) {
+        List<ActivityLogDto> logs = activityLogService.getActivityLogsByUsername(username);
         return ResponseEntity.ok(logs);
     }
 } 

@@ -27,6 +27,7 @@ public class ServiceRequest {
 
     private String description;
     private String imageAttachment;
+    private String attachmentUrls; // JSON string for multiple attachment URLs
     private LocalDateTime submittedAt;
 
     @ManyToOne

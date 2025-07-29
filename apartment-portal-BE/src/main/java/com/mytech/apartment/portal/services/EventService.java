@@ -6,10 +6,14 @@ import com.mytech.apartment.portal.dtos.EventUpdateRequest;
 import com.mytech.apartment.portal.mappers.EventMapper;
 import com.mytech.apartment.portal.models.Event;
 import com.mytech.apartment.portal.repositories.EventRepository;
+import com.mytech.apartment.portal.repositories.EventRegistrationRepository;
+import com.mytech.apartment.portal.models.enums.EventRegistrationStatus;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,10 +27,25 @@ public class EventService {
     @Autowired
     private EventMapper eventMapper;
 
+    @Autowired
+    private EventRegistrationRepository eventRegistrationRepository;
+
     public List<EventDto> getAllEvents() {
         return eventRepository.findAll().stream()
                 .map(eventMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<EventDto> getAllEvents(Long userId) {
+        List<Event> all = eventRepository.findAll();
+        return all.stream().map(event -> {
+            int participantCount = eventRegistrationRepository.countByEventIdAndStatus(event.getId(), EventRegistrationStatus.REGISTERED);
+            boolean isRegistered = false;
+            if (userId != null) {
+                isRegistered = eventRegistrationRepository.existsByEventIdAndResidentIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
+            }
+            return eventMapper.toDto(event, participantCount, isRegistered, false); // isEnded không cần thiết nữa
+        }).collect(java.util.stream.Collectors.toList());
     }
 
     public Optional<EventDto> getEventById(Long id) {
@@ -53,5 +72,23 @@ public class EventService {
     public void deleteEvent(Long id) {
         // Consider deleting registrations as well or handle constraints
         eventRepository.deleteById(id);
+    }
+
+    /**
+     * Get all events for a specific user with registration status
+     */
+    public List<EventDto> getAllEventsForUser(String username) {
+        // For now, return all events without user-specific registration status
+        // This can be enhanced later to include user registration status
+        return getAllEvents();
+    }
+
+    /**
+     * Get event by ID for a specific user with registration status
+     */
+    public Optional<EventDto> getEventByIdForUser(Long id, String username) {
+        // For now, return the event without user-specific registration status
+        // This can be enhanced later to include user registration status
+        return getEventById(id);
     }
 } 
