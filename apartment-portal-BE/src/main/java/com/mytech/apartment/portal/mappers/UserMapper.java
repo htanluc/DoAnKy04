@@ -29,6 +29,7 @@ public class UserMapper {
         if (user.getRoles() != null) {
             dto.setRoles(user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()));
         }
+        dto.setAvatarUrl(user.getAvatarUrl()); // map avatarUrl
         return dto;
     }
 

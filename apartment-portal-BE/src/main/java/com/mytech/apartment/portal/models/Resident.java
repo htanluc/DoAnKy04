@@ -12,11 +12,8 @@ import java.time.LocalDate;
 @Builder
 public class Resident {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "user_id", unique = true)
-    private Long userId;  // liên kết tới User
+    @Column(name = "user_id")
+    private Long userId;  // liên kết tới User, là khóa chính
 
     @Column(name = "full_name")
     private String fullName;
@@ -29,6 +26,9 @@ public class Resident {
 
     @Column(name = "family_relation")
     private String familyRelation;
+
+    @OneToMany(mappedBy = "resident", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private java.util.List<EmergencyContact> emergencyContacts = new java.util.ArrayList<>();
 
     @Column(name = "status", nullable = false)
     @Builder.Default

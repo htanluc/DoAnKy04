@@ -1,11 +1,28 @@
 package com.mytech.apartment.portal.dtos;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.util.List;
+
 public class ServiceRequestCreateRequest {
+    // residentId sẽ được set tự động từ authentication, không cần validation
     private Long residentId;
+    
+    @NotNull(message = "Category ID is required")
     private Long categoryId;
+    
+    @NotBlank(message = "Title is required")
+    @Size(min = 3, max = 255, message = "Title must be between 3 and 255 characters")
     private String title;
+    
+    @NotBlank(message = "Description is required")
+    @Size(min = 5, max = 1000, message = "Description must be between 5 and 1000 characters")
     private String description;
+    
     private String priority;
+    
+    private List<String> attachmentUrls; // URLs của các file đã upload
 
     // Constructors
     public ServiceRequestCreateRequest() {}
@@ -16,6 +33,15 @@ public class ServiceRequestCreateRequest {
         this.title = title;
         this.description = description;
         this.priority = priority;
+    }
+
+    public ServiceRequestCreateRequest(Long residentId, Long categoryId, String title, String description, String priority, List<String> attachmentUrls) {
+        this.residentId = residentId;
+        this.categoryId = categoryId;
+        this.title = title;
+        this.description = description;
+        this.priority = priority;
+        this.attachmentUrls = attachmentUrls;
     }
 
     // Getters and Setters
@@ -33,4 +59,7 @@ public class ServiceRequestCreateRequest {
 
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
+
+    public List<String> getAttachmentUrls() { return attachmentUrls; }
+    public void setAttachmentUrls(List<String> attachmentUrls) { this.attachmentUrls = attachmentUrls; }
 } 

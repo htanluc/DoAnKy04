@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone_number VARCHAR(20) NOT NULL UNIQUE,
     status VARCHAR(20) NOT NULL,
     lock_reason VARCHAR(255),
+    avatar_url VARCHAR(500),
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
@@ -275,22 +276,7 @@ CREATE TABLE IF NOT EXISTS apartment_invitations (
     FOREIGN KEY (apartment_id) REFERENCES apartments(id)
 );
 
--- 24. RECURRING_BOOKINGS (Đặt tiện ích định kỳ)
-CREATE TABLE IF NOT EXISTS recurring_bookings (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    facility_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
-    day_of_week INT NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    purpose VARCHAR(255),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (facility_id) REFERENCES facilities(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- 25. FEEDBACK_CATEGORIES (Danh mục phản hồi)
+-- 24. FEEDBACK_CATEGORIES (Danh mục phản hồi)
 CREATE TABLE IF NOT EXISTS feedback_categories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     category_code VARCHAR(50) NOT NULL,
@@ -298,15 +284,7 @@ CREATE TABLE IF NOT EXISTS feedback_categories (
     description TEXT
 );
 
--- 26. PAYMENT_METHODS (Phương thức thanh toán)
-CREATE TABLE IF NOT EXISTS payment_methods (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    description TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
-
--- NEW: SERVICE_FEE_CONFIG (Cấu hình phí dịch vụ, nước, gửi xe)
+-- 25. SERVICE_FEE_CONFIG (Cấu hình phí dịch vụ, nước, gửi xe)
 CREATE TABLE IF NOT EXISTS service_fee_config (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     month INT NOT NULL,
@@ -319,7 +297,7 @@ CREATE TABLE IF NOT EXISTS service_fee_config (
     UNIQUE KEY uq_service_fee_month_year (month, year)
 );
 
--- NEW: WATER_METER_READINGS (Chỉ số nước)
+-- 26. WATER_METER_READINGS (Chỉ số nước)
 CREATE TABLE IF NOT EXISTS water_meter_readings (
     reading_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     apartment_id INT NOT NULL,
@@ -331,6 +309,28 @@ CREATE TABLE IF NOT EXISTS water_meter_readings (
     UNIQUE KEY uq_apartment_month (apartment_id, reading_month),
     FOREIGN KEY (apartment_id) REFERENCES apartments(id)
 );
+
+-- 27. ANNOUNCEMENT_READS table
+CREATE TABLE announcement_reads (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    announcement_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_announcement_user (announcement_id, user_id)
+) COMMENT '27. ANNOUNCEMENT_READS - Track which users have read which announcements';
+
+-- 28. EMERGENCY_CONTACTS table
+CREATE TABLE emergency_contacts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    resident_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    relationship VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (resident_id) REFERENCES residents(id) ON DELETE CASCADE
+) COMMENT '28. EMERGENCY_CONTACTS - Emergency contact information for residents';
 
 -- =====================================================
 -- INDEXES ĐỂ TỐI ƯU HIỆU SUẤT

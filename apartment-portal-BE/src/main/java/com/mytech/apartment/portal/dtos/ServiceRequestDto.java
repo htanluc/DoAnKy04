@@ -1,6 +1,7 @@
 package com.mytech.apartment.portal.dtos;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ServiceRequestDto {
     private Long id;
@@ -14,6 +15,8 @@ public class ServiceRequestDto {
     private String status;
     private String assignedTo;
     private String resolution;
+    private List<String> attachmentUrls; // URLs của các file đính kèm
+    private List<String> imageUrls; // URLs của các hình ảnh
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime resolvedAt;
@@ -35,6 +38,28 @@ public class ServiceRequestDto {
         this.status = status;
         this.assignedTo = assignedTo;
         this.resolution = resolution;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.resolvedAt = resolvedAt;
+    }
+
+    public ServiceRequestDto(Long id, Long residentId, String residentName, String categoryId, String categoryName,
+                           String title, String description, String priority, String status, String assignedTo,
+                           String resolution, List<String> attachmentUrls, List<String> imageUrls,
+                           LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {
+        this.id = id;
+        this.residentId = residentId;
+        this.residentName = residentName;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.title = title;
+        this.description = description;
+        this.priority = priority;
+        this.status = status;
+        this.assignedTo = assignedTo;
+        this.resolution = resolution;
+        this.attachmentUrls = attachmentUrls;
+        this.imageUrls = imageUrls;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.resolvedAt = resolvedAt;
@@ -82,4 +107,10 @@ public class ServiceRequestDto {
 
     public LocalDateTime getResolvedAt() { return resolvedAt; }
     public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
+
+    public List<String> getAttachmentUrls() { return attachmentUrls; }
+    public void setAttachmentUrls(List<String> attachmentUrls) { this.attachmentUrls = attachmentUrls; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
 } 

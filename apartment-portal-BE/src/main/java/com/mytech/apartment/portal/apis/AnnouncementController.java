@@ -6,6 +6,8 @@ import com.mytech.apartment.portal.dtos.AnnouncementUpdateRequest;
 import com.mytech.apartment.portal.services.AnnouncementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,21 +18,77 @@ public class AnnouncementController {
     private AnnouncementService announcementService;
 
     /**
-     * Get all announcements (Resident FE)
+     * Get all announcements (Resident FE) - with read status
      */
     @GetMapping("/api/announcements")
     public List<AnnouncementDto> getAllAnnouncementsForResident() {
-        return announcementService.getAllAnnouncements();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return announcementService.getAllAnnouncements();
+        }
+        
+        String username = auth.getName();
+        return announcementService.getAllAnnouncementsForUser(username);
     }
 
     /**
-     * Get announcement by ID (Resident FE)
+     * Get announcement by ID (Resident FE) - with read status
      */
     @GetMapping("/api/announcements/{id}")
     public ResponseEntity<AnnouncementDto> getAnnouncementByIdForResident(@PathVariable("id") Long id) {
-        return announcementService.getAnnouncementById(id)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return announcementService.getAnnouncementById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        }
+        
+        String username = auth.getName();
+        return announcementService.getAnnouncementByIdForUser(id, username)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Mark announcement as read (Resident FE)
+     */
+    @PutMapping("/api/announcements/{id}/read")
+    public ResponseEntity<?> markAnnouncementAsRead(@PathVariable("id") Long id) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            String username = auth.getName();
+            boolean success = announcementService.markAsRead(id, username);
+            if (success) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    /**
+     * Get unread announcement count (Resident FE)
+     */
+    @GetMapping("/api/announcements/unread-count")
+    public ResponseEntity<Long> getUnreadCount() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.ok(0L);
+            }
+            
+            String username = auth.getName();
+            Long count = announcementService.getUnreadCount(username);
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            return ResponseEntity.ok(0L);
+        }
     }
 
     /**

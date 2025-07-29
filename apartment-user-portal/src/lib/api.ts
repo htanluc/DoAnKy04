@@ -1,21 +1,59 @@
-export async function fetchCurrentUser() {
+// --- Helper: fetch and cache current user info (from /api/auth/me) ---
+let cachedCurrentUser: any = null;
+let cachedCurrentUserPromise: Promise<any> | null = null;
+
+export async function fetchCurrentUser(forceRefresh = false) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) return null;
-  try {
-    const res = await fetch('http://localhost:8080/api/auth/validate', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    const data = await res.json();
-    if (res.ok && data.success && data.data) {
-      return data.data;
+  if (cachedCurrentUser && !forceRefresh) return cachedCurrentUser;
+  if (cachedCurrentUserPromise && !forceRefresh) return cachedCurrentUserPromise;
+  cachedCurrentUserPromise = (async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/me', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        cachedCurrentUser = null;
+        return null;
+      }
+      const data = await res.json();
+      cachedCurrentUser = data.success && data.data ? data.data : null;
+      return cachedCurrentUser;
+    } catch {
+      cachedCurrentUser = null;
+      return null;
+    } finally {
+      cachedCurrentUserPromise = null;
     }
-    return null;
-  } catch (err) {
-    return null;
-  }
+  })();
+  return cachedCurrentUserPromise;
+}
+
+// Lấy thông tin cá nhân resident hiện tại (đầy đủ user, resident, apartment, apartmentResident)
+export async function fetchCurrentResident(forceRefresh = false) {
+  // Alias for fetchCurrentUser
+  return fetchCurrentUser(forceRefresh);
+}
+
+// Lấy thông tin căn hộ của resident hiện tại
+export async function fetchMyApartment(forceRefresh = false) {
+  const user = await fetchCurrentUser(forceRefresh);
+  if (!user) return {};
+  const apartment = user.apartment;
+  return {
+    apartmentNumber: apartment?.unitNumber || '',
+    buildingName: apartment?.buildingId ? `Tòa ${apartment.buildingId}` : '',
+    area: apartment?.area,
+    bedrooms: apartment?.bedrooms,
+    floor: apartment?.floorNumber
+  };
+}
+
+export async function fetchUserProfile(forceRefresh = false) {
+  const user = await fetchCurrentUser(forceRefresh);
+  if (!user) throw new Error('Không thể lấy thông tin user');
+  return user;
 }
 
 export async function fetchInvoices() {
@@ -38,6 +76,9 @@ export async function loginUser(credentials: { phoneNumber: string; password: st
     body: JSON.stringify(credentials),
   });
   if (!res.ok) throw new Error('Sai tài khoản hoặc mật khẩu');
+  // Xóa cache user khi login
+  cachedCurrentUser = null;
+  cachedCurrentUserPromise = null;
   return res.json();
 }
 
@@ -67,24 +108,6 @@ export async function resendVerification(emailOrPhone: string) {
   return data;
 }
 
-// Lấy thông tin cá nhân resident hiện tại (đầy đủ user, resident, apartment, apartmentResident)
-export async function fetchCurrentResident() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) return null;
-  try {
-    const res = await fetch('http://localhost:8080/api/auth/me', {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    // Trả về data.data vì /api/auth/me có format {success: true, message: "...", data: {...}}
-    return data.success && data.data ? data.data : null;
-  } catch {
-    return null;
-  }
-}
-
 // Cập nhật thông tin cá nhân resident hiện tại
 export async function updateCurrentResident(update: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -98,6 +121,9 @@ export async function updateCurrentResident(update: any) {
     body: JSON.stringify(update),
   });
   if (!res.ok) throw new Error('Cập nhật thất bại');
+  // Cập nhật lại cache user sau khi update
+  cachedCurrentUser = null;
+  cachedCurrentUserPromise = null;
   return res.json();
 }
 
@@ -565,44 +591,6 @@ export async function fetchRecentActivities() {
     return [];
   }
 }
-
-// Lấy thông tin căn hộ của resident hiện tại
-export async function fetchMyApartment() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  try {
-    const res = await fetch('http://localhost:8080/api/auth/me', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) throw new Error('Không lấy được thông tin căn hộ');
-    const data = await res.json();
-    const apartment = data?.data?.apartment;
-    return {
-      apartmentNumber: apartment?.unitNumber || '',
-      buildingName: apartment?.buildingId ? `Tòa ${apartment.buildingId}` : '',
-      area: apartment?.area,
-      bedrooms: apartment?.bedrooms, // Có thể undefined nếu backend không trả về
-      floor: apartment?.floorNumber
-    };
-  } catch (error) {
-    console.error('Error fetching apartment info:', error);
-    // Trả về object rỗng nếu API lỗi
-    return {};
-  }
-}
-
-export async function fetchUserProfile() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/auth/me', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  const data = await res.json();
-  if (!res.ok || !data.success) throw new Error(data.message || 'Không thể lấy thông tin user');
-  return data.data;
-} 
 
 export async function markAnnouncementAsRead(id: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;

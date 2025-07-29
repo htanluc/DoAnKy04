@@ -50,12 +50,22 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // 1. Roles
-        Role adminRole = roleRepository.save(Role.builder().name("ADMIN").description("Quản trị viên hệ thống - Toàn quyền truy cập").build());
-        Role staffRole = roleRepository.save(Role.builder().name("STAFF").description("Nhân viên quản lý - Quản lý căn hộ và dịch vụ").build());
-        Role residentRole = roleRepository.save(Role.builder().name("RESIDENT").description("Cư dân - Sử dụng dịch vụ và thanh toán").build());
-        Role technicianRole = roleRepository.save(Role.builder().name("TECHNICIAN").description("Kỹ thuật viên - Xử lý sự cố kỹ thuật").build());
-        Role cleanerRole = roleRepository.save(Role.builder().name("CLEANER").description("Nhân viên vệ sinh - Dọn dẹp và bảo trì").build());
-        Role securityRole = roleRepository.save(Role.builder().name("SECURITY").description("Bảo vệ - An ninh và tuần tra").build());
+        Role adminRole, staffRole, residentRole, technicianRole, cleanerRole, securityRole;
+        if (roleRepository.count() == 0) {
+            adminRole = roleRepository.save(Role.builder().name("ADMIN").description("Quản trị viên hệ thống - Toàn quyền truy cập").build());
+            staffRole = roleRepository.save(Role.builder().name("STAFF").description("Nhân viên quản lý - Quản lý căn hộ và dịch vụ").build());
+            residentRole = roleRepository.save(Role.builder().name("RESIDENT").description("Cư dân - Sử dụng dịch vụ và thanh toán").build());
+            technicianRole = roleRepository.save(Role.builder().name("TECHNICIAN").description("Kỹ thuật viên - Xử lý sự cố kỹ thuật").build());
+            cleanerRole = roleRepository.save(Role.builder().name("CLEANER").description("Nhân viên vệ sinh - Dọn dẹp và bảo trì").build());
+            securityRole = roleRepository.save(Role.builder().name("SECURITY").description("Bảo vệ - An ninh và tuần tra").build());
+        } else {
+            adminRole = roleRepository.findByName("ADMIN");
+            staffRole = roleRepository.findByName("STAFF");
+            residentRole = roleRepository.findByName("RESIDENT");
+            technicianRole = roleRepository.findByName("TECHNICIAN");
+            cleanerRole = roleRepository.findByName("CLEANER");
+            securityRole = roleRepository.findByName("SECURITY");
+        }
 
         // 2. Users - Kiểm tra tồn tại trước khi tạo
         List<User> users = new ArrayList<>();
@@ -173,20 +183,28 @@ public class DataInitializer implements CommandLineRunner {
 
         // 8. Service Categories
         List<ServiceCategory> serviceCategories = new ArrayList<>();
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("ELECTRICITY").categoryName("Điện").assignedRole("TECHNICIAN").description("Sửa chữa điện, thay bóng đèn, ổ cắm").build()));
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("PLUMBING").categoryName("Nước").assignedRole("TECHNICIAN").description("Sửa ống nước, vòi nước, bồn cầu").build()));
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("CLEANING").categoryName("Vệ sinh").assignedRole("CLEANER").description("Dọn dẹp, lau chùi, vệ sinh chung").build()));
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("SECURITY").categoryName("An ninh").assignedRole("SECURITY").description("Tuần tra, kiểm tra an ninh, xử lý sự cố").build()));
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("HVAC").categoryName("Điều hòa").assignedRole("TECHNICIAN").description("Bảo trì, sửa chữa điều hòa").build()));
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("ELEVATOR").categoryName("Thang máy").assignedRole("TECHNICIAN").description("Bảo trì, sửa chữa thang máy").build()));
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("GARDENING").categoryName("Cây xanh").assignedRole("CLEANER").description("Chăm sóc cây xanh, cắt tỉa").build()));
-        serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("GENERAL").categoryName("Khác").assignedRole("STAFF").description("Các yêu cầu khác").build()));
+        if (serviceCategoryRepository.count() == 0) {
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("ELECTRICITY").categoryName("Điện").assignedRole("TECHNICIAN").description("Sửa chữa điện, thay bóng đèn, ổ cắm").build()));
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("PLUMBING").categoryName("Nước").assignedRole("TECHNICIAN").description("Sửa ống nước, vòi nước, bồn cầu").build()));
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("CLEANING").categoryName("Vệ sinh").assignedRole("CLEANER").description("Dọn dẹp, lau chùi, vệ sinh chung").build()));
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("SECURITY").categoryName("An ninh").assignedRole("SECURITY").description("Tuần tra, kiểm tra an ninh, xử lý sự cố").build()));
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("HVAC").categoryName("Điều hòa").assignedRole("TECHNICIAN").description("Bảo trì, sửa chữa điều hòa").build()));
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("ELEVATOR").categoryName("Thang máy").assignedRole("TECHNICIAN").description("Bảo trì, sửa chữa thang máy").build()));
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("GARDENING").categoryName("Cây xanh").assignedRole("CLEANER").description("Chăm sóc cây xanh, cắt tỉa").build()));
+            serviceCategories.add(serviceCategoryRepository.save(ServiceCategory.builder().categoryCode("GENERAL").categoryName("Khác").assignedRole("STAFF").description("Các yêu cầu khác").build()));
+        } else {
+            serviceCategories = serviceCategoryRepository.findAll();
+        }
 
         // 9. Feedback Categories
         List<FeedbackCategory> feedbackCategories = new ArrayList<>();
-        feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder().categoryCode("SUGGESTION").categoryName("Đề xuất").description("Đề xuất cải tiến").build()));
-        feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder().categoryCode("COMPLAINT").categoryName("Khiếu nại").description("Khiếu nại về dịch vụ").build()));
-        feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder().categoryCode("COMPLIMENT").categoryName("Khen ngợi").description("Khen ngợi dịch vụ").build()));
+        if (feedbackCategoryRepository.count() == 0) {
+            feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder().categoryCode("SUGGESTION").categoryName("Đề xuất").description("Đề xuất cải tiến").build()));
+            feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder().categoryCode("COMPLAINT").categoryName("Khiếu nại").description("Khiếu nại về dịch vụ").build()));
+            feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder().categoryCode("COMPLIMENT").categoryName("Khen ngợi").description("Khen ngợi dịch vụ").build()));
+        } else {
+            feedbackCategories = feedbackCategoryRepository.findAll();
+        }
 
         // 10. Announcements
         User admin = users.get(0);
@@ -256,15 +274,39 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
 
         // 12. Event Registrations
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(0).getId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(1).getId()).status(EventRegistrationStatus.ATTENDED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(2).getId()).status(EventRegistrationStatus.CANCELLED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(0).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(1).getUserId()).status(EventRegistrationStatus.ATTENDED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(2).getUserId()).status(EventRegistrationStatus.CANCELLED).build());
 
         // 13. Facility Bookings
         User residentUser = users.get(4);
-        facilityBookingRepository.save(FacilityBooking.builder().facility(facilities.get(0)).user(residentUser).bookingTime(LocalDateTime.now().plusDays(1)).duration(60).status(FacilityBookingStatus.PENDING).createdAt(LocalDateTime.now()).numberOfPeople(2).build());
-        facilityBookingRepository.save(FacilityBooking.builder().facility(facilities.get(0)).user(residentUser).bookingTime(LocalDateTime.now().plusDays(2)).duration(60).status(FacilityBookingStatus.REJECTED).createdAt(LocalDateTime.now()).numberOfPeople(4).build());
-        facilityBookingRepository.save(FacilityBooking.builder().facility(facilities.get(1)).user(users.get(5)).bookingTime(LocalDateTime.now().plusDays(3)).duration(90).status(FacilityBookingStatus.CONFIRMED).approvedBy(admin).approvedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).numberOfPeople(6).build());
+        facilityBookingRepository.save(FacilityBooking.builder()
+            .facility(facilities.get(0))
+            .user(residentUser)
+            .bookingTime(LocalDateTime.now().plusDays(1))
+            .duration(60)
+            .status(FacilityBookingStatus.PENDING)
+            .createdAt(LocalDateTime.now())
+            .numberOfPeople(2)
+            .build());
+        facilityBookingRepository.save(FacilityBooking.builder()
+            .facility(facilities.get(0))
+            .user(residentUser)
+            .bookingTime(LocalDateTime.now().plusDays(2))
+            .duration(60)
+            .status(FacilityBookingStatus.REJECTED)
+            .createdAt(LocalDateTime.now())
+            .numberOfPeople(4)
+            .build());
+        facilityBookingRepository.save(FacilityBooking.builder()
+            .facility(facilities.get(1))
+            .user(users.get(5))
+            .bookingTime(LocalDateTime.now().plusDays(3))
+            .duration(90)
+            .status(FacilityBookingStatus.CONFIRMED)
+            .createdAt(LocalDateTime.now())
+            .numberOfPeople(6)
+            .build());
 
         // BỔ SUNG: Facility booking cho userId=8 (Phạm Thị D)
         User phamThiD = users.stream().filter(u -> u.getUsername().equals("resident4")).findFirst().orElse(null);

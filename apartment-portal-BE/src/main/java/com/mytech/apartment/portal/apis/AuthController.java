@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.mytech.apartment.portal.dtos.ApiResponse;
 import com.mytech.apartment.portal.dtos.ChangePasswordRequest;
@@ -42,12 +43,17 @@ import com.mytech.apartment.portal.services.RefreshTokenService;
 import com.mytech.apartment.portal.services.ResidentService;
 import com.mytech.apartment.portal.services.ApartmentResidentService;
 import com.mytech.apartment.portal.services.ApartmentService;
+import com.mytech.apartment.portal.services.FileUploadService;
+import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -64,6 +70,8 @@ public class AuthController {
     private final ResidentService residentService;
     private final ApartmentResidentService apartmentResidentService;
     private final ApartmentService apartmentService;
+    private final FileUploadService fileUploadService;
+    private final ActivityLogService activityLogService;
 
     @Operation(summary = "Validate token", description = "Validate JWT token and return user info")
     @GetMapping("/validate")
@@ -158,6 +166,12 @@ public class AuthController {
         // Đăng nhập thành công
         String token = jwtProvider.generateToken(auth);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        
+        // Log successful login
+        if (user != null) {
+            activityLogService.logActivity(user.getId(), ActivityActionType.LOGIN, "Đăng nhập thành công");
+        }
+        
         // Trả về JWT và thông tin user
         Map<String, Object> respData = new java.util.HashMap<>();
         JwtResponse jwtResp = new JwtResponse();
@@ -180,6 +194,10 @@ public class AuthController {
         try {
             String origin = request.getHeader("Origin");
             authService.register(req, origin);
+            
+            // Log registration attempt (note: user not authenticated yet, so we log by phone number)
+            activityLogService.logActivityForCurrentUser(ActivityActionType.REGISTER, "Đăng ký tài khoản mới: %s", req.getPhoneNumber());
+            
             return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -202,6 +220,10 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> changePassword(@Valid @RequestBody ChangePasswordRequest req) {
         try {
             authService.changePassword(req);
+            
+            // Log password change
+            activityLogService.logActivityForCurrentUser(ActivityActionType.CHANGE_PASSWORD, "Đổi mật khẩu thành công");
+            
             return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công!"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -213,10 +235,39 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
         try {
             authService.forgotPassword(req.getEmailOrPhone());
-            return ResponseEntity.ok(ApiResponse.success("Đã gửi hướng dẫn khôi phục mật khẩu!"));
+            return ResponseEntity.ok(ApiResponse.success("Email đặt lại mật khẩu đã được gửi!"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
+    }
+
+    /** Upload avatar image */
+    @PostMapping("/upload/avatar")
+    public ResponseEntity<ApiResponse<String>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            // Upload file và lấy URL
+            String imageUrl = fileUploadService.uploadAvatarImage(file);
+            
+            // Cập nhật avatar URL vào database
+            String username = auth.getName();
+            User user = userRepo.findByPhoneNumber(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            user.setAvatarUrl(imageUrl);
+            userRepo.save(user);
+            
+            // Log avatar upload
+            activityLogService.logActivityForCurrentUser(ActivityActionType.UPLOAD_AVATAR, "Upload ảnh đại diện thành công");
+            
+            return ResponseEntity.ok(ApiResponse.success("Upload avatar thành công", imageUrl));
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi upload avatar: " + e.getMessage()));
+        } 
     }
 
     @Operation(summary = "Reset password", description = "Reset password using token")
@@ -296,17 +347,25 @@ public class AuthController {
             return ResponseEntity.status(401).body(ApiResponse.error("Chưa đăng nhập hoặc token không hợp lệ"));
         }
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        
+        // Lấy thông tin user đầy đủ từ database
+        User user = userRepo.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Sử dụng UserMapper để tạo DTO
         UserDto userDto = new UserDto();
-        userDto.setId(userDetails.getId());
-        userDto.setUsername(userDetails.getUsername());
-        userDto.setPhoneNumber(userDetails.getUsername());
-        userDto.setStatus("ACTIVE");
-        // Lỗi: UserDetailsImpl chưa có phương thức getEmail(). 
-        // Sửa: Lấy email từ userRepo bằng userId.
-        String email = userRepo.findById(userDetails.getId()).map(u -> u.getEmail()).orElse(null);
-        userDto.setEmail(email);
-        if (userDetails.getRoles() != null) {
-            userDto.setRoles(userDetails.getRoles().stream().map(r -> r.getName()).collect(java.util.stream.Collectors.toSet()));
+        userDto.setId(user.getId());
+        userDto.setUsername(user.getUsername());
+        userDto.setPhoneNumber(user.getPhoneNumber());
+        userDto.setEmail(user.getEmail());
+        userDto.setStatus(user.getStatus() != null ? user.getStatus().name() : "ACTIVE");
+        userDto.setAvatarUrl(user.getAvatarUrl()); // Bao gồm avatar URL
+        userDto.setCreatedAt(user.getCreatedAt());
+        userDto.setUpdatedAt(user.getUpdatedAt());
+        userDto.setLockReason(user.getLockReason());
+        
+        if (user.getRoles() != null) {
+            userDto.setRoles(user.getRoles().stream().map(r -> r.getName()).collect(java.util.stream.Collectors.toSet()));
         } else {
             userDto.setRoles(new java.util.HashSet<>());
         }

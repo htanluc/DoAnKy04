@@ -10,6 +10,10 @@ import org.springframework.stereotype.Component;
 public class AnnouncementMapper {
 
     public AnnouncementDto toDto(Announcement entity) {
+        return toDto(entity, false); // Default to unread
+    }
+
+    public AnnouncementDto toDto(Announcement entity, boolean isRead) {
         if (entity == null) {
             return null;
         }
@@ -22,6 +26,7 @@ public class AnnouncementMapper {
         dto.setCreatedBy(entity.getCreatedBy());
         dto.setActive(entity.isActive());
         dto.setCreatedAt(entity.getCreatedAt());
+        dto.setRead(isRead);
         return dto;
     }
 

@@ -9,6 +9,8 @@ import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
+import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,8 @@ public class InvoiceService {
     @Autowired private InvoiceRepository invoiceRepository;
     @Autowired private InvoiceMapper    invoiceMapper;
     @Autowired private InvoiceItemMapper invoiceItemMapper;
+    @Autowired private ApartmentResidentRepository apartmentResidentRepository;
+    @Autowired private UserRepository userRepository;
 
     // ... (các method CRUD).
 
@@ -81,5 +85,33 @@ public class InvoiceService {
         return invoiceRepository.findByApartmentIdIn(apartmentIds).stream()
                 .map(invoiceMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * [EN] Get invoices by username (phone number)
+     * [VI] Lấy hóa đơn theo username (số điện thoại)
+     */
+    public List<InvoiceDto> getInvoicesByUsername(String username) {
+        // Tìm user theo username (phone number)
+        var userOpt = userRepository.findByPhoneNumber(username);
+        if (userOpt.isEmpty()) {
+            return List.of();
+        }
+        
+        Long userId = userOpt.get().getId();
+        
+        // Lấy danh sách apartmentId của user
+        List<Long> apartmentIds = apartmentResidentRepository
+            .findByIdUserId(userId)
+            .stream()
+            .map(link -> link.getId().getApartmentId())
+            .collect(Collectors.toList());
+        
+        if (apartmentIds.isEmpty()) {
+            return List.of();
+        }
+        
+        // Lấy hóa đơn theo apartmentIds
+        return getInvoicesByApartmentIds(apartmentIds);
     }
 }

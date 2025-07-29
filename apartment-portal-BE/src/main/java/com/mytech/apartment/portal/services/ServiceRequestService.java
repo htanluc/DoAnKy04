@@ -4,9 +4,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.mytech.apartment.portal.dtos.ServiceRequestAssignmentRequest;
 import com.mytech.apartment.portal.dtos.ServiceRequestCreateRequest;
@@ -60,8 +64,36 @@ public class ServiceRequestService {
         ServiceRequest serviceRequest = new ServiceRequest();
         serviceRequest.setUser(user);
         serviceRequest.setCategory(category);
+        serviceRequest.setTitle(request.getTitle());
         serviceRequest.setDescription(request.getDescription());
-        serviceRequest.setPriority(request.getPriority() != null ? ServiceRequestPriority.valueOf(request.getPriority()) : null);
+        
+        // Xử lý priority với enum mới
+        if (request.getPriority() != null) {
+            try {
+                serviceRequest.setPriority(ServiceRequestPriority.fromString(request.getPriority()));
+            } catch (IllegalArgumentException e) {
+                // Fallback to P3 if priority is invalid
+                serviceRequest.setPriority(ServiceRequestPriority.P3);
+            }
+        } else {
+            serviceRequest.setPriority(ServiceRequestPriority.P3);
+        }
+        
+        // Xử lý attachments
+        if (request.getAttachmentUrls() != null && !request.getAttachmentUrls().isEmpty()) {
+            // Convert List to JSON string
+            String attachmentJson = convertListToJson(request.getAttachmentUrls());
+            serviceRequest.setAttachmentUrls(attachmentJson);
+            
+            // Separate images for backward compatibility
+            List<String> imageUrls = request.getAttachmentUrls().stream()
+                    .filter(this::isImageUrl)
+                    .collect(Collectors.toList());
+            if (!imageUrls.isEmpty()) {
+                serviceRequest.setImageAttachment(convertListToJson(imageUrls));
+            }
+        }
+        
         serviceRequest.setStatus(ServiceRequestStatus.OPEN);
         serviceRequest.setSubmittedAt(LocalDateTime.now());
 
@@ -111,26 +143,24 @@ public class ServiceRequestService {
         ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Service request not found with id " + requestId));
 
-        // Kiểm tra nhân viên tồn tại
-        User assignedUser = userRepository.findById(request.getAssignedToUserId())
-                .orElseThrow(() -> new RuntimeException("Staff not found with id " + request.getAssignedToUserId()));
-
-        // Cập nhật thông tin gán
-        serviceRequest.setAssignedTo(assignedUser);
-        serviceRequest.setAssignedAt(LocalDateTime.now());
-       
+        // Cập nhật priority nếu có
+        if (request.getPriority() != null) {
+            serviceRequest.setPriority(ServiceRequestPriority.fromString(request.getPriority()));
+        }
         serviceRequest.setStatus(ServiceRequestStatus.IN_PROGRESS);
 
         // Cập nhật loại dịch vụ nếu cần
-        // if (request.getServiceCategory() != null) {
-        //     // Tìm category theo tên
-        //     // ServiceCategory category = ServiceCategory.fromString(request.getServiceCategory())
-        //     //         .orElseThrow(() -> new RuntimeException("Service category not found: " + request.getServiceCategory()));
-        //     // serviceRequest.setCategory(category);
-        // }
+        if (request.getAssignedToUserId() != null) {
+            User assignedUser = userRepository.findById(request.getAssignedToUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found with id " + request.getAssignedToUserId()));
+            serviceRequest.setAssignedTo(assignedUser);
+            serviceRequest.setAssignedAt(LocalDateTime.now());
+        }
 
         // Lưu ghi chú admin
-
+        if (request.getAdminNotes() != null) {
+            serviceRequest.setResolutionNotes(request.getAdminNotes());
+        }
 
         serviceRequestRepository.save(serviceRequest);
     }
@@ -150,24 +180,23 @@ public class ServiceRequestService {
     @Transactional
     public void updateServiceRequestStatus(Long requestId, ServiceRequestStatusUpdateRequest request) {
         ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
-            .orElseThrow(() -> new RuntimeException("Service request not found with id " + requestId));
+                .orElseThrow(() -> new RuntimeException("Service request not found with id " + requestId));
 
-        // Cập nhật status
+        // Cập nhật trạng thái
         serviceRequest.setStatus(ServiceRequestStatus.valueOf(request.getStatus()));
 
-        // Ghi chú xử lý
+        // Cập nhật ghi chú xử lý
         if (request.getResolutionNotes() != null) {
             serviceRequest.setResolutionNotes(request.getResolutionNotes());
         }
 
-        // Đánh giá
+        // Cập nhật đánh giá nếu có
         if (request.getRating() != null) {
             serviceRequest.setRating(request.getRating());
         }
 
-        // Nếu completed flag = true và status = COMPLETED thì ghi completedAt
-        if (request.isCompleted()
-            && ServiceRequestStatus.COMPLETED.equals(ServiceRequestStatus.valueOf(request.getStatus()))) {
+        // Cập nhật thời gian hoàn thành nếu hoàn thành
+        if (request.getIsCompleted() && "COMPLETED".equals(request.getStatus())) {
             serviceRequest.setCompletedAt(LocalDateTime.now());
         }
 
@@ -190,5 +219,26 @@ public class ServiceRequestService {
         return serviceRequestRepository.findByUserId(userId).stream()
             .map(serviceRequestMapper::toDto)
             .collect(Collectors.toList());
+    }
+
+    // Helper methods for file handling
+    private String convertListToJson(List<String> list) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            // Fallback to simple comma-separated string
+            return String.join(",", list);
+        }
+    }
+
+    private boolean isImageUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        String lowerUrl = url.toLowerCase();
+        return lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg") || 
+               lowerUrl.endsWith(".png") || lowerUrl.endsWith(".gif") || 
+               lowerUrl.endsWith(".bmp") || lowerUrl.endsWith(".webp");
     }
 } 

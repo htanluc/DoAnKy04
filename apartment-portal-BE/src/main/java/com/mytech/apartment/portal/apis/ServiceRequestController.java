@@ -3,6 +3,9 @@ package com.mytech.apartment.portal.apis;
 import com.mytech.apartment.portal.dtos.*;
 import com.mytech.apartment.portal.services.ServiceRequestService;
 import com.mytech.apartment.portal.services.UserService;
+import com.mytech.apartment.portal.services.FileUploadService;
+import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -11,9 +14,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -25,6 +33,12 @@ public class ServiceRequestController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private FileUploadService fileUploadService;
+
+    @Autowired
+    private ActivityLogService activityLogService;
 
     /** Lấy danh sách tất cả yêu cầu hỗ trợ (admin) */
     @GetMapping("/admin/support-requests")
@@ -43,13 +57,99 @@ public class ServiceRequestController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /** Test endpoint để kiểm tra authentication */
+    @GetMapping("/support-requests/test-auth")
+    public ResponseEntity<Map<String, Object>> testAuth() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Map<String, Object> response = new HashMap<>();
+            
+            if (auth == null) {
+                response.put("authenticated", false);
+                response.put("message", "No authentication found");
+                return ResponseEntity.status(401).body(response);
+            }
+            
+            if (!auth.isAuthenticated()) {
+                response.put("authenticated", false);
+                response.put("message", "Not authenticated");
+                return ResponseEntity.status(401).body(response);
+            }
+            
+            String username = auth.getName();
+            response.put("authenticated", true);
+            response.put("username", username);
+            response.put("authorities", auth.getAuthorities().stream()
+                    .map(Object::toString)
+                    .collect(Collectors.toList()));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("authenticated", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
     /** Tạo mới yêu cầu hỗ trợ */
     @PostMapping("/support-requests")
     public ResponseEntity<ServiceRequestDto> createServiceRequest(
             @Valid @RequestBody ServiceRequestCreateRequest request
     ) {
-        ServiceRequestDto dto = serviceRequestService.createServiceRequest(request);
-        return ResponseEntity.ok(dto);
+        try {
+            System.out.println("ServiceRequestController: createServiceRequest called");
+            
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                System.out.println("ServiceRequestController: Authentication failed - no auth or not authenticated");
+                return ResponseEntity.status(401).build();
+            }
+            
+            String username = auth.getName();
+            System.out.println("ServiceRequestController: Authenticated username: " + username);
+            
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            if (userId == null) {
+                System.out.println("ServiceRequestController: User not found for phone number: " + username);
+                return ResponseEntity.status(401).build();
+            }
+            
+            System.out.println("ServiceRequestController: Found user ID: " + userId);
+            
+            // Set residentId from authenticated user
+            request.setResidentId(userId);
+            System.out.println("ServiceRequestController: Final request: " + request);
+            
+            ServiceRequestDto dto = serviceRequestService.createServiceRequest(request);
+            System.out.println("ServiceRequestController: Service request created successfully with ID: " + dto.getId());
+            
+            // Log service request creation
+            activityLogService.logActivityForCurrentUser(ActivityActionType.CREATE_SERVICE_REQUEST, 
+                "Tạo yêu cầu dịch vụ: %s", request.getTitle());
+            
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            System.err.println("ServiceRequestController: Error in createServiceRequest: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /** Upload file cho service request */
+    @PostMapping("/upload/service-request")
+    public ResponseEntity<ApiResponse<String>> uploadServiceRequestFile(@RequestParam("file") MultipartFile file) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            String imageUrl = fileUploadService.uploadServiceRequestImage(file);
+            return ResponseEntity.ok(ApiResponse.success("Upload file thành công", imageUrl));
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi upload file: " + e.getMessage()));
+        }
     }
 
     /** Cập nhật yêu cầu hỗ trợ theo ID (admin) */

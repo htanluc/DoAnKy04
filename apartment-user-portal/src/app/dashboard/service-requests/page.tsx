@@ -1,35 +1,35 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { 
-  Search, 
   Plus, 
   Clock, 
   CheckCircle, 
   XCircle, 
   AlertTriangle,
   MessageSquare,
-  Wrench,
-  Home,
-  Settings,
-  Sparkles,
-  TrendingUp,
-  Star,
-  Zap,
-  Target,
-  Shield,
-  Droplets,
-  Lightbulb,
+  FileText,
+  User,
   Calendar,
+  Wrench,
+  Droplets,
+  Shield,
+  Zap,
+  Settings,
   Upload,
   Image,
   X
 } from 'lucide-react'
-import { fetchCurrentResident, fetchMySupportRequests, createSupportRequest } from '@/lib/api'
+import { createSupportRequest, fetchMySupportRequests } from '@/lib/api'
+import ImageUpload from '@/components/ui/image-upload'
 
 interface ServiceRequest {
   id: string
@@ -108,12 +108,12 @@ export default function ServiceRequestsPage() {
           setCategories(data.data)
         }
       })
-      .catch(err => console.error('Error fetching categories:', err))
+      .catch((err: any) => console.error('Error fetching categories:', err))
 
-    // Fetch current user
-    fetchCurrentResident()
-      .then(data => setCurrentUser(data))
-      .catch(err => console.error('Error fetching user:', err))
+    // Fetch current user - removed as function doesn't exist
+    // fetchCurrentResident()
+    //   .then((data: any) => setCurrentUser(data))
+    //   .catch((err: any) => console.error('Error fetching user:', err))
   }, [])
 
   const formatDate = (dateString: string) => {
@@ -207,9 +207,9 @@ export default function ServiceRequestsPage() {
       
       const response = await fetch('http://localhost:8080/api/upload/service-request', {
         method: 'POST',
-        headers: {
+        headers: token ? {
           'Authorization': `Bearer ${token}`
-        },
+        } : {},
         body: formData
       })
       
@@ -504,55 +504,15 @@ export default function ServiceRequestsPage() {
               </div>
               
               {/* File Upload Section */}
-              <div>
-                <label className="text-sm font-medium">Hình ảnh/Video đính kèm</label>
-                <div className="mt-2">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,video/*"
-                      onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-                      className="hidden"
-                      id="file-upload"
-                      disabled={uploading}
-                    />
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">
-                        {uploading ? 'Đang upload...' : 'Click để chọn file hoặc kéo thả vào đây'}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Hỗ trợ: JPG, PNG, GIF, MP4, AVI (Tối đa 10MB/file)
-                      </p>
-                    </label>
-                  </div>
-                  
-                  {/* Uploaded Files Preview */}
-                  {uploadedFiles.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm font-medium text-gray-700">Files đã upload:</p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {uploadedFiles.map((file, index) => (
-                          <div key={index} className="relative group">
-                            <div className="bg-gray-100 rounded-lg p-2 flex items-center space-x-2">
-                              <Image className="h-4 w-4 text-gray-500" />
-                              <span className="text-xs text-gray-700 truncate">{file.name}</span>
-                              <button
-                                onClick={() => removeFile(index)}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Xóa file"
-                              >
-                                <X className="h-3 w-3 text-red-500 hover:text-red-700" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ImageUpload
+                onImagesUploaded={(urls) => setUploadedUrls(prev => [...prev, ...urls])}
+                onImagesRemoved={(urls) => setUploadedUrls(prev => prev.filter(url => !urls.includes(url)))}
+                uploadedUrls={uploadedUrls}
+                maxImages={5}
+                endpoint="/api/upload/service-request"
+                title="Hình ảnh đính kèm"
+                description="Upload hình ảnh để mô tả vấn đề"
+              />
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setShowCreateForm(false)}>
                   Hủy

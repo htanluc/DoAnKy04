@@ -423,18 +423,23 @@ export default function UpdateInfoPage() {
                         formData.append('file', file);
                         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
                         try {
-                          const res = await fetch('/api/auth/me/avatar', {
+                          const res = await fetch('http://localhost:8080/api/auth/upload/avatar', {
                             method: 'POST',
                             body: formData,
-                            credentials: 'include',
                             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                           });
                           if (res.ok) {
-                            // Sau khi upload thành công, reload lại user info/avatar
-                            const data = await fetchCurrentResident();
-                            setUser(data.user);
+                            const result = await res.json();
+                            if (result.success && result.data) {
+                              // Cập nhật avatar URL trong user state
+                              setUser(prev => prev ? { ...prev, avatar: result.data } : prev);
+                              alert('Upload ảnh thành công!');
+                            } else {
+                              alert('Upload ảnh thất bại: ' + (result.message || 'Lỗi không xác định'));
+                            }
                           } else {
-                            alert('Upload ảnh thất bại');
+                            const errorText = await res.text();
+                            alert('Upload ảnh thất bại: ' + errorText);
                           }
                         } catch (error) {
                           alert('Đã xảy ra lỗi khi upload ảnh');

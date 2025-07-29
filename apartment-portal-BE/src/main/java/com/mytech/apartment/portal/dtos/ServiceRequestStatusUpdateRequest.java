@@ -1,19 +1,23 @@
 package com.mytech.apartment.portal.dtos;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 
 @Data
 public class ServiceRequestStatusUpdateRequest {
-    @NotBlank(message = "Status không được để trống")
-    private String status;
-
-    // Nếu front-end muốn gửi thêm ghi chú xử lý
-    private String resolutionNotes;
-
-    // Nếu front-end muốn gửi đánh giá luôn (nếu có)
-    private Integer rating;
-
-    // Nếu front-end muốn đánh dấu hoàn thành
-    private boolean completed;
-}
+    
+    @NotBlank(message = "Trạng thái không được để trống")
+    private String status; // OPEN, IN_PROGRESS, COMPLETED, CANCELLED
+    
+    private String resolutionNotes; // Ghi chú xử lý
+    
+    @Min(value = 1, message = "Rating must be between 1 and 5")
+    @Max(value = 5, message = "Rating must be between 1 and 5")
+    private Integer rating; // Đánh giá 1-5 (sau khi hoàn thành)
+    
+    @NotNull(message = "Thời gian hoàn thành không được để trống")
+    private Boolean isCompleted; // true nếu hoàn thành
+} 

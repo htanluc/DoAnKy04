@@ -6,6 +6,8 @@ import com.mytech.apartment.portal.dtos.EventUpdateRequest;
 import com.mytech.apartment.portal.services.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,19 +18,33 @@ public class EventController {
     private EventService eventService;
 
     /**
-     * Get all events (Resident FE)
+     * Get all events (Resident FE) - with registration status
      */
     @GetMapping("/api/events")
     public List<EventDto> getAllEventsForResident() {
-        return eventService.getAllEvents();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return eventService.getAllEvents();
+        }
+        
+        String username = auth.getName();
+        return eventService.getAllEventsForUser(username);
     }
 
     /**
-     * Get event by ID (Resident FE)
+     * Get event by ID (Resident FE) - with registration status
      */
     @GetMapping("/api/events/{id}")
     public ResponseEntity<EventDto> getEventByIdForResident(@PathVariable("id") Long id) {
-        return eventService.getEventById(id)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return eventService.getEventById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        }
+        
+        String username = auth.getName();
+        return eventService.getEventByIdForUser(id, username)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

@@ -13,4 +13,5 @@ public class AnnouncementDto {
     private Long createdBy;
     private boolean isActive;
     private LocalDateTime createdAt;
+    private boolean isRead; // Thêm trường này để biết user đã đọc chưa
 } 

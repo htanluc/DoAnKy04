@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "activity_log")
+@Table(name = "activity_logs")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

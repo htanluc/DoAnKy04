@@ -15,6 +15,12 @@ public class FacilityBookingDto {
     private LocalDateTime createdAt;
     private Double totalCost;
     private Integer numberOfPeople;
+    
+    // QR Code fields
+    private String qrCode;
+    private LocalDateTime qrExpiresAt;
+    private Integer checkedInCount;
+    private Integer maxCheckins;
 
     // Constructors
     public FacilityBookingDto() {}
@@ -68,4 +74,17 @@ public class FacilityBookingDto {
     public void setTotalCost(Double totalCost) { this.totalCost = totalCost; }
     public Integer getNumberOfPeople() { return numberOfPeople; }
     public void setNumberOfPeople(Integer numberOfPeople) { this.numberOfPeople = numberOfPeople; }
+    
+    // QR Code getters and setters
+    public String getQrCode() { return qrCode; }
+    public void setQrCode(String qrCode) { this.qrCode = qrCode; }
+    
+    public LocalDateTime getQrExpiresAt() { return qrExpiresAt; }
+    public void setQrExpiresAt(LocalDateTime qrExpiresAt) { this.qrExpiresAt = qrExpiresAt; }
+    
+    public Integer getCheckedInCount() { return checkedInCount; }
+    public void setCheckedInCount(Integer checkedInCount) { this.checkedInCount = checkedInCount; }
+    
+    public Integer getMaxCheckins() { return maxCheckins; }
+    public void setMaxCheckins(Integer maxCheckins) { this.maxCheckins = maxCheckins; }
 } 

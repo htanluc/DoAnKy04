@@ -8,6 +8,9 @@ public class ActivityLogDto {
     private Long logId;
     private Long userId;
     private String actionType;
+    private String actionTypeDisplayName;
     private String description;
     private LocalDateTime timestamp;
+    private String username;
+    private String userFullName;
 } 
