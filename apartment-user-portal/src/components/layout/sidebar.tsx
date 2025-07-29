@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
+import { cn, getAvatarUrl } from "@/lib/utils"
 import {
   Home,
   FileText,
@@ -11,7 +11,9 @@ import {
   MessageSquare,
   User,
   Building,
-  Settings
+  Settings,
+  Car,
+  Activity
 } from "lucide-react"
 
 const navigation = [
@@ -21,6 +23,8 @@ const navigation = [
   { name: "Sự kiện", href: "/dashboard/events", icon: Calendar },
   { name: "Yêu cầu dịch vụ", href: "/dashboard/service-requests", icon: MessageSquare },
   { name: "Đặt tiện ích", href: "/dashboard/facility-bookings", icon: Building },
+  { name: "Quản lý xe", href: "/dashboard/vehicles", icon: Car },
+  { name: "Hoạt động", href: "/dashboard/activity-logs", icon: Activity },
   { name: "Cập nhật thông tin", href: "/dashboard/update-info", icon: User },
 ]
 
@@ -37,7 +41,7 @@ export default function Sidebar({ user, resident, apartment, roles }: SidebarPro
   return (
     <div className="flex h-full w-64 flex-col bg-white border-r border-gray-200">
       <div className="flex h-16 items-center px-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">Cư dân Portal</h1>
+        <h1 className="text-xl font-bold text-gray-900">Menu</h1>
       </div>
       
       <nav className="flex-1 space-y-1 px-4 py-4">

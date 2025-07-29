@@ -41,7 +41,7 @@ export default function AuthGuard({ children, requiredRoles = [] }: AuthGuardPro
             const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
             setHasPermission(hasRequiredRole);
             if (!hasRequiredRole) {
-              router.replace('/');
+              router.replace('/login');
             }
           } else {
             setHasPermission(true)
