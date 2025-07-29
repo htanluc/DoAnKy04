@@ -161,6 +161,7 @@ export async function cancelFacilityBooking(id: string) {
 export async function registerEvent(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
+  
   const res = await fetch('http://localhost:8080/api/event-registrations/register', {
     method: 'POST',
     headers: {
@@ -169,7 +170,11 @@ export async function registerEvent(data: any) {
     },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Đăng ký sự kiện thất bại');
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error('Đăng ký sự kiện thất bại: ' + errorText);
+  }
   return res.json();
 }
 
@@ -197,7 +202,10 @@ export async function createSupportRequest(data: any) {
     },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Gửi yêu cầu hỗ trợ thất bại');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || `HTTP ${res.status}: Gửi yêu cầu hỗ trợ thất bại`);
+  }
   return res.json();
 }
 
@@ -594,4 +602,36 @@ export async function fetchUserProfile() {
   const data = await res.json();
   if (!res.ok || !data.success) throw new Error(data.message || 'Không thể lấy thông tin user');
   return data.data;
+} 
+
+export async function markAnnouncementAsRead(id: string) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) throw new Error('Chưa đăng nhập');
+  
+  const res = await fetch(`http://localhost:8080/api/announcements/${id}/read`, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  
+  if (!res.ok) throw new Error('Không thể đánh dấu đã đọc');
+  return res.ok;
+}
+
+export async function markAllAnnouncementsAsRead(ids: string[]) {
+  // Nếu backend có API PUT /api/announcements/read-all thì dùng, nếu không thì tuần tự từng cái
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) throw new Error('Chưa đăng nhập');
+  // Nếu có API batch, ưu tiên dùng
+  // const res = await fetch('http://localhost:8080/api/announcements/read-all', {
+  //   method: 'PUT',
+  //   headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ ids }),
+  // });
+  // if (!res.ok) throw new Error('Không thể đánh dấu tất cả đã đọc');
+  // return res.ok;
+  // Nếu không có API batch, gọi từng cái
+  for (const id of ids) {
+    await markAnnouncementAsRead(id);
+  }
+  return true;
 } 

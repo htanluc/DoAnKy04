@@ -57,25 +57,52 @@ public class DataInitializer implements CommandLineRunner {
         Role cleanerRole = roleRepository.save(Role.builder().name("CLEANER").description("Nhân viên vệ sinh - Dọn dẹp và bảo trì").build());
         Role securityRole = roleRepository.save(Role.builder().name("SECURITY").description("Bảo vệ - An ninh và tuần tra").build());
 
-        // 2. Users
+        // 2. Users - Kiểm tra tồn tại trước khi tạo
         List<User> users = new ArrayList<>();
-        users.add(userRepository.save(User.builder().username("admin").email("admin@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234567").status(UserStatus.ACTIVE).roles(Set.of(adminRole)).build()));
-        users.add(userRepository.save(User.builder().username("manager").email("manager@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234568").status(UserStatus.ACTIVE).roles(Set.of(adminRole)).build()));
-        users.add(userRepository.save(User.builder().username("staff1").email("staff1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234569").status(UserStatus.ACTIVE).roles(Set.of(staffRole)).build()));
-        users.add(userRepository.save(User.builder().username("staff2").email("staff2@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234570").status(UserStatus.ACTIVE).roles(Set.of(staffRole)).build()));
-        users.add(userRepository.save(User.builder().username("resident1").email("nguyenvanA@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234571").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build()));
-        users.add(userRepository.save(User.builder().username("resident2").email("tranthiB@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234572").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build()));
-        users.add(userRepository.save(User.builder().username("resident3").email("levanC@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234573").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build()));
-        users.add(userRepository.save(User.builder().username("resident4").email("phamthiD@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234574").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build()));
-        users.add(userRepository.save(User.builder().username("resident5").email("hoangvanE@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234575").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build()));
-        users.add(userRepository.save(User.builder().username("resident6").email("dangthiF@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234576").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build()));
-        users.add(userRepository.save(User.builder().username("technician1").email("technician1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234577").status(UserStatus.ACTIVE).roles(Set.of(technicianRole)).build()));
-        users.add(userRepository.save(User.builder().username("cleaner1").email("cleaner1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234578").status(UserStatus.ACTIVE).roles(Set.of(cleanerRole)).build()));
-        users.add(userRepository.save(User.builder().username("security1").email("security1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234579").status(UserStatus.ACTIVE).roles(Set.of(securityRole)).build()));
+        
+        // Tạo user admin nếu chưa tồn tại
+        User adminUser = userRepository.findByEmail("admin@apartment.com")
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("admin")
+                .email("admin@apartment.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234567")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(adminRole))
+                .build()));
+        users.add(adminUser);
+        
+        // Tạo các user khác nếu chưa tồn tại
+        users.add(userRepository.findByEmail("manager@apartment.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("manager").email("manager@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234568").status(UserStatus.ACTIVE).roles(Set.of(adminRole)).build())));
+        users.add(userRepository.findByEmail("staff1@apartment.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("staff1").email("staff1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234569").status(UserStatus.ACTIVE).roles(Set.of(staffRole)).build())));
+        users.add(userRepository.findByEmail("staff2@apartment.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("staff2").email("staff2@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234570").status(UserStatus.ACTIVE).roles(Set.of(staffRole)).build())));
+        users.add(userRepository.findByEmail("nguyenvanA@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident1").email("nguyenvanA@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234571").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+        users.add(userRepository.findByEmail("tranthiB@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident2").email("tranthiB@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234572").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+        users.add(userRepository.findByEmail("levanC@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident3").email("levanC@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234573").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+        users.add(userRepository.findByEmail("phamthiD@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident4").email("phamthiD@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234574").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+        users.add(userRepository.findByEmail("hoangvanE@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident5").email("hoangvanE@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234575").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+        users.add(userRepository.findByEmail("dangthiF@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident6").email("dangthiF@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234576").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+        users.add(userRepository.findByEmail("technician1@apartment.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("technician1").email("technician1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234577").status(UserStatus.ACTIVE).roles(Set.of(technicianRole)).build())));
+        users.add(userRepository.findByEmail("cleaner1@apartment.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("cleaner1").email("cleaner1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234578").status(UserStatus.ACTIVE).roles(Set.of(cleanerRole)).build())));
+        users.add(userRepository.findByEmail("security1@apartment.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("security1").email("security1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234579").status(UserStatus.ACTIVE).roles(Set.of(securityRole)).build())));
 
         // Thêm resident bị khóa, resident inactive
-        users.add(userRepository.save(User.builder().username("resident_locked").email("locked@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234580").status(UserStatus.LOCKED).roles(Set.of(residentRole)).build()));
-        users.add(userRepository.save(User.builder().username("resident_inactive").email("inactive@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234581").status(UserStatus.INACTIVE).roles(Set.of(residentRole)).build()));
+        users.add(userRepository.findByEmail("locked@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident_locked").email("locked@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234580").status(UserStatus.LOCKED).roles(Set.of(residentRole)).build())));
+        users.add(userRepository.findByEmail("inactive@gmail.com")
+            .orElseGet(() -> userRepository.save(User.builder().username("resident_inactive").email("inactive@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234581").status(UserStatus.INACTIVE).roles(Set.of(residentRole)).build())));
 
         // 3. Buildings
         Building buildingA = buildingRepository.save(Building.builder().buildingName("Tòa A").address("123 Đường ABC, Quận 1, TP.HCM").floors(20).description("Tòa nhà cao cấp với đầy đủ tiện ích").build());

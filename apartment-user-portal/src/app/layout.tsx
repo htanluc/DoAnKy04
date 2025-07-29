@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Apartment User Portal',
-  description: 'Portal quản lý chung cư dành cho cư dân',
+  title: 'Trải Nghiệm Căn Hộ FPT',
+  description: 'Trải Nghiệm Căn Hộ FPT',
 }
 
 export default function RootLayout({

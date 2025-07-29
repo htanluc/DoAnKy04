@@ -255,10 +255,11 @@ export default function RegisterPage() {
             <div className="flex items-start space-x-2">
               <input
                 type="checkbox"
+                id="terms"
                 className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 required
               />
-              <span className="text-sm text-gray-600">
+              <label htmlFor="terms" className="text-sm text-gray-600">
                 Tôi đồng ý với{' '}
                 <Link href="/terms" className="text-blue-600 hover:text-blue-500">
                   Điều khoản sử dụng
@@ -267,7 +268,7 @@ export default function RegisterPage() {
                 <Link href="/privacy" className="text-blue-600 hover:text-blue-500">
                   Chính sách bảo mật
                 </Link>
-              </span>
+              </label>
             </div>
 
             <Button

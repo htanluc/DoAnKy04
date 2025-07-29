@@ -16,7 +16,15 @@ import {
   XCircle,
   Building,
   MapPin,
-  DollarSign
+  DollarSign,
+  Eye,
+  CalendarDays,
+  QrCode,
+  Sparkles,
+  TrendingUp,
+  Star,
+  Zap,
+  Target
 } from 'lucide-react'
 import {
   fetchMyFacilityBookings,
@@ -28,6 +36,177 @@ import {
   createVisaPayment
 } from '@/lib/api'
 import type { FC, JSX } from 'react'
+
+// Custom CSS for animations
+const customStyles = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideInFromLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes slideInFromRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: calc(200px + 100%) 0;
+    }
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+      transform: translate3d(0,0,0);
+    }
+    40%, 43% {
+      transform: translate3d(0, -30px, 0);
+    }
+    70% {
+      transform: translate3d(0, -15px, 0);
+    }
+    90% {
+      transform: translate3d(0, -4px, 0);
+    }
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+  
+  .animate-slide-in-left {
+    animation: slideInFromLeft 0.5s ease-out;
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInFromRight 0.5s ease-out;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 2s infinite;
+  }
+  
+  .animate-bounce-slow {
+    animation: bounce 2s infinite;
+  }
+  
+  .facility-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+  }
+  
+  .facility-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .facility-card.available {
+    border: 2px solid #10b981;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  }
+  
+  .facility-card.maintenance {
+    border: 2px solid #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+  }
+  
+  .facility-card.closed {
+    border: 2px solid #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+  }
+  
+  .booking-card {
+    transition: all 0.3s ease;
+  }
+  
+  .booking-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .status-badge {
+    transition: all 0.2s ease;
+  }
+  
+  .status-badge:hover {
+    transform: scale(1.1);
+  }
+  
+  .summary-card {
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  }
+  
+  .summary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  .time-slot {
+    transition: all 0.2s ease;
+  }
+  
+  .time-slot:hover {
+    transform: scale(1.05);
+  }
+  
+  .time-slot.available {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  }
+  
+  .time-slot.booked {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  }
+  
+  .time-slot.partial {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  }
+  
+  .time-slot.passed {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  }
+`
 
 interface Facility {
   id: string
@@ -51,12 +230,39 @@ interface Booking {
   date: string
   numberOfPeople: number
   totalCost: number
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED'
   purpose: string
   createdAt: string
+  qrCode?: string
+  qrExpiresAt?: string
+  checkedInCount?: number
+  maxCheckins?: number
+}
+
+interface HourlyAvailability {
+  hour: number
+  usedCapacity: number
+  availableCapacity: number
+  isAvailable: boolean
+  bookingCount: number
+}
+
+interface FacilityAvailability {
+  facilityId: string
+  facilityName: string
+  totalCapacity: number
+  date: string
+  hourlyData: HourlyAvailability[]
 }
 
 const FacilityBookingsPage: FC = () => {
+  const todayStr = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
   const [facilities, setFacilities] = useState<Facility[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -65,13 +271,23 @@ const FacilityBookingsPage: FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [showBookingForm, setShowBookingForm] = useState(false)
+  const [showAvailability, setShowAvailability] = useState(false)
   const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null)
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })
+  const [availability, setAvailability] = useState<FacilityAvailability | null>(null)
   const [newBooking, setNewBooking] = useState({
     date: '',
     startTime: '',
     endTime: '',
     numberOfPeople: 1,
-    purpose: ''
+    purpose: '',
+    duration: 60
   })
   const paymentMethods = [
     { id: 'momo', name: 'MoMo', description: 'Thanh toán qua ví MoMo' },
@@ -86,6 +302,10 @@ const FacilityBookingsPage: FC = () => {
   // State cho lỗi realtime
   const [numberError, setNumberError] = useState<string | null>(null);
   const [timeError, setTimeError] = useState<string | null>(null);
+  const [showAddToSlotModal, setShowAddToSlotModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{hour: number, availableCapacity: number} | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [userSelectedDate, setUserSelectedDate] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,6 +331,35 @@ const FacilityBookingsPage: FC = () => {
     }
     fetchData()
   }, [])
+
+  // Fetch availability khi chọn facility và date
+  useEffect(() => {
+    if (selectedFacility && selectedDate) {
+      fetchAvailability(selectedFacility.id, selectedDate);
+    }
+  }, [selectedFacility, selectedDate]);
+
+  // Khi chọn ngày ở form đặt lịch, cập nhật ngày xem lịch (chỉ khi đang trong form booking)
+  useEffect(() => {
+    if (showBookingForm && newBooking.date && newBooking.date !== selectedDate) {
+      setSelectedDate(newBooking.date);
+    }
+  }, [newBooking.date, showBookingForm]);
+
+  const fetchAvailability = async (facilityId: string, date: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/facilities/${facilityId}/availability?date=${date}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAvailability(data);
+      }
+    } catch (error) {
+      console.error('Error fetching availability:', error);
+    }
+  };
 
   const filteredBookings = bookings.filter((booking: Booking) => {
     const matchesSearch = booking.facilityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -154,22 +403,33 @@ const FacilityBookingsPage: FC = () => {
             Đã xác nhận
           </span>
         )
-      case 'CANCELLED':
+      case 'REJECTED':
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <XCircle className="h-3 w-3 mr-1" />
+            Bị từ chối
+          </span>
+        )
+      case 'CANCELLED':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
             <XCircle className="h-3 w-3 mr-1" />
             Đã hủy
           </span>
         )
       case 'COMPLETED':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             <CheckCircle className="h-3 w-3 mr-1" />
             Hoàn thành
           </span>
         )
       default:
-        return null
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            {status}
+          </span>
+        )
     }
   }
 
@@ -201,18 +461,106 @@ const FacilityBookingsPage: FC = () => {
   const handleBookFacility = (facility: Facility) => {
     setSelectedFacility(facility)
     setShowBookingForm(true)
+    setNewBooking(prev => ({ ...prev, date: selectedDate, duration: 60 }))
   }
+
+  const handleViewAvailability = (facility: Facility) => {
+    setSelectedFacility(facility);
+    setShowAvailability(true);
+    // Sử dụng ngày đã chọn (nếu người dùng đã chọn) hoặc ngày hiện tại
+    const dateToUse = userSelectedDate ? selectedDate : todayStr;
+    setSelectedDate(dateToUse);
+    setNewBooking(prev => ({ ...prev, date: dateToUse, duration: 60 }));
+    // Fetch availability cho ngày đã chọn
+    fetchAvailability(facility.id, dateToUse);
+    
+    // Scroll đến phần lịch sau khi modal mở
+    setTimeout(() => {
+      const availabilitySection = document.getElementById('availability-section');
+      if (availabilitySection) {
+        availabilitySection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
 
   const isFacilityTimeOverlap = (facilityId: string, newStart: string, newEnd: string) => {
     return bookings.some(b => {
       if (b.facilityId !== facilityId) return false;
-      if (!['PENDING', 'CONFIRMED', 'COMPLETED'].includes(b.status)) return false;
+      if (!['PENDING', 'CONFIRMED'].includes(b.status)) return false; // Bỏ COMPLETED và REJECTED để cho phép đặt lại
+      
       const bookedStart = new Date(b.startTime).getTime();
-      const bookedEnd = new Date(b.endTime).getTime();
       const newStartTime = new Date(newStart).getTime();
-      const newEndTime = new Date(newEnd).getTime();
-      return (newStartTime < bookedEnd && newEndTime > bookedStart);
+      
+      // Chỉ kiểm tra trùng slot bắt đầu
+      // Không kiểm tra overlap duration để cho phép booking liên tiếp
+      return Math.abs(newStartTime - bookedStart) < 60000; // Chênh lệch < 1 phút
     });
+  };
+
+  const isTimeSlotPassed = (hour: number, date: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    
+    // Tạo datetime cho slot cần kiểm tra
+    const slotDateTime = new Date(`${date}T${hour.toString().padStart(2, '0')}:00:00`);
+    
+    // So sánh trực tiếp datetime
+    return slotDateTime < now;
+  };
+
+  const isWithinOperatingHours = (hour: number, facility: Facility) => {
+    if (!facility.openingHours) return true; // Nếu không có giờ hoạt động, cho phép tất cả
+    
+    const hours = facility.openingHours.split(' - ');
+    if (hours.length !== 2) return true; // Format không đúng, cho phép tất cả
+    
+    const startHour = parseInt(hours[0].split(':')[0]);
+    const endHour = parseInt(hours[1].split(':')[0]);
+    
+    // Xử lý trường hợp qua đêm (ví dụ: 22:00 - 06:00)
+    if (startHour > endHour) {
+      return hour >= startHour || hour < endHour;
+    } else {
+      return hour >= startHour && hour < endHour;
+    }
+  };
+
+  const getSlotColor = (hour: HourlyAvailability, date: string) => {
+    // Nếu thời gian đã qua, hiển thị xám
+    if (isTimeSlotPassed(hour.hour, date)) {
+      return 'bg-gray-300 text-gray-500 cursor-not-allowed';
+    }
+    
+    // Nếu ngoài giờ hoạt động, ẩn slot
+    if (!isWithinOperatingHours(hour.hour, selectedFacility!)) {
+      return 'hidden';
+    }
+    
+    // Logic màu sắc cho slot còn hiệu lực
+    if (hour.availableCapacity === 0) {
+      return 'bg-red-200 text-red-800 cursor-not-allowed';
+    } else if (hour.availableCapacity < hour.usedCapacity) {
+      return 'bg-yellow-200 text-yellow-800 cursor-pointer hover:bg-yellow-300';
+    } else {
+      return 'bg-green-200 text-green-800 cursor-pointer hover:bg-green-300';
+    }
+  };
+
+  const handleAddToSlot = (hour: number, availableCapacity: number) => {
+    // Không cho phép đặt slot đã qua
+    if (isTimeSlotPassed(hour, selectedDate)) {
+      return;
+    }
+    
+    setSelectedSlot({ hour, availableCapacity });
+    setShowAddToSlotModal(true);
+    setNewBooking(prev => ({
+      ...prev,
+      date: selectedDate,
+      startTime: `${hour.toString().padStart(2, '0')}:00`,
+      endTime: `${(hour + 1).toString().padStart(2, '0')}:00`,
+      numberOfPeople: 1
+    }));
   };
 
   const handleCreateBooking = async () => {
@@ -220,93 +568,44 @@ const FacilityBookingsPage: FC = () => {
     setError(null);
     setSuccess(null);
     setPaymentError('');
+    
     // Kiểm tra số lượng người đặt
-    if (newBooking.numberOfPeople > 10) {
-      setNumberError('Số lượng người đặt tối đa là 10!');
+    if (newBooking.numberOfPeople > selectedFacility.capacity) {
+      setNumberError(`Số lượng người đặt tối đa là ${selectedFacility.capacity}!`);
       return;
     }
-    // Kiểm tra overlap thời gian
+    
+    // Kiểm tra slot còn trống nếu đặt thêm
+    if (selectedSlot && newBooking.numberOfPeople > selectedSlot.availableCapacity) {
+      setNumberError(`Slot này chỉ còn ${selectedSlot.availableCapacity} chỗ trống!`);
+      return;
+    }
+    
+    // Kiểm tra thời gian đã qua - validation chính xác
     const bookingTime = `${newBooking.date}T${newBooking.startTime}:00`;
     const endTime = `${newBooking.date}T${newBooking.endTime}:00`;
+    const now = new Date();
+    const bookingStart = new Date(bookingTime);
+    const bookingEnd = new Date(endTime);
+    
+    if (bookingStart < now) {
+      setTimeError('Không thể đặt lịch cho thời gian đã qua!');
+      return;
+    }
+    
+    if (bookingEnd < now) {
+      setTimeError('Thời gian kết thúc không thể trong quá khứ!');
+      return;
+    }
+    
+    // Kiểm tra overlap thời gian (chỉ kiểm tra slot bắt đầu)
     if (isFacilityTimeOverlap(selectedFacility.id, bookingTime, endTime)) {
-      setTimeError('Bạn đã có lịch đặt trùng thời gian với tiện ích này!');
+      setTimeError('Bạn đã có lịch đặt trùng slot bắt đầu với tiện ích này!');
       return;
     }
-    if (payBefore && selectedPaymentMethod) {
-      // Gọi API tạo booking trước, lấy bookingId, rồi gọi API thanh toán
-      let bookingRes = null;
-      try {
-        // Ghép ngày + giờ bắt đầu thành LocalDateTime ISO
-        const bookingTime = `${newBooking.date}T${newBooking.startTime}:00`;
-        const [startHour, startMinute] = newBooking.startTime.split(":").map(Number);
-        const [endHour, endMinute] = newBooking.endTime.split(":").map(Number);
-        let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
-        if (duration <= 0) duration += 24 * 60;
-        const bookingData = {
-          facilityId: selectedFacility.id,
-          bookingTime,
-          duration,
-          numberOfPeople: newBooking.numberOfPeople,
-          purpose: newBooking.purpose
-        };
-        // Tạo booking trước
-        bookingRes = await createFacilityBooking(bookingData);
-        // Giả sử backend trả về bookingId và totalCost
-        const bookingId = bookingRes.id || bookingRes.bookingId;
-        const amount = bookingRes.totalCost || selectedFacility.usageFee;
-        setPaymentLoading(true);
-        let data, payUrl;
-        if (selectedPaymentMethod === 'vnpay') {
-          data = await createVNPayPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
-          payUrl = data.data?.payUrl || data.data?.payurl;
-        } else if (selectedPaymentMethod === 'momo') {
-          data = await createMoMoPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
-          payUrl = data.data?.payUrl || data.data?.payurl;
-        } else if (selectedPaymentMethod === 'zalopay') {
-          data = await createZaloPayPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
-          payUrl = data.data?.payUrl || data.data?.payurl;
-        } else if (selectedPaymentMethod === 'visa') {
-          data = await createVisaPayment(bookingId, amount, `Thanh toán đặt tiện ích ${selectedFacility.name}`);
-          payUrl = data.data?.payUrl || data.data?.payurl;
-        } else {
-          setPaymentError('Phương thức thanh toán không hợp lệ');
-          setPaymentLoading(false);
-          // Xóa booking nếu tạo booking thành công nhưng không chọn được phương thức thanh toán
-          if (bookingRes && bookingRes.id) {
-            await cancelFacilityBooking(bookingRes.id);
-          }
-          return;
-        }
-        if (payUrl) {
-          if (selectedPaymentMethod === 'vnpay') {
-            window.location.href = payUrl;
-          } else {
-            window.open(payUrl, '_blank');
-          }
-        } else {
-          setPaymentError('Không nhận được đường dẫn thanh toán');
-          // Xóa booking nếu không lấy được payUrl
-          if (bookingRes && bookingRes.id) {
-            await cancelFacilityBooking(bookingRes.id);
-          }
-        }
-      } catch (err: any) {
-        setPaymentError(err.message || 'Thanh toán thất bại');
-        // Xóa booking nếu thanh toán lỗi
-        if (bookingRes && bookingRes.id) {
-          await cancelFacilityBooking(bookingRes.id);
-        }
-      } finally {
-        setPaymentLoading(false);
-      }
-      // Sau khi xử lý xong, reload lại danh sách booking
-      const data = await fetchMyFacilityBookings();
-      setBookings(data);
-      return;
-    }
-    // Nếu không thanh toán trước, chỉ tạo booking như cũ
+    
+    // Tạo booking
     try {
-      const bookingTime = `${newBooking.date}T${newBooking.startTime}:00`;
       const [startHour, startMinute] = newBooking.startTime.split(":").map(Number);
       const [endHour, endMinute] = newBooking.endTime.split(":").map(Number);
       let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
@@ -319,9 +618,33 @@ const FacilityBookingsPage: FC = () => {
         purpose: newBooking.purpose
       };
       await createFacilityBooking(bookingData);
-      setSuccess('Đặt tiện ích thành công!');
+      const successMessage = showAddToSlotModal 
+        ? `Đặt thêm ${newBooking.numberOfPeople} người cho slot ${selectedSlot?.hour}:00 thành công!`
+        : 'Đặt tiện ích thành công!';
+      setSuccess(successMessage);
       const data = await fetchMyFacilityBookings();
       setBookings(data);
+      // Refresh availability
+      if (selectedFacility && newBooking.date) {
+        fetchAvailability(selectedFacility.id, newBooking.date);
+      }
+      // Đóng modal nếu đang đặt thêm
+      if (showAddToSlotModal) {
+        setShowAddToSlotModal(false);
+        setSelectedSlot(null);
+      }
+      // Reset form nếu đặt mới
+      if (!showAddToSlotModal) {
+        setShowBookingForm(false);
+        setNewBooking({
+          date: '',
+          startTime: '',
+          endTime: '',
+          numberOfPeople: 1,
+          purpose: '',
+          duration: 0
+        });
+      }
     } catch (err: any) {
       setError(err.message || 'Đặt tiện ích thất bại');
     }
@@ -336,6 +659,10 @@ const FacilityBookingsPage: FC = () => {
       // Refresh bookings
       const data = await fetchMyFacilityBookings()
       setBookings(data)
+      // Refresh availability nếu đang xem
+      if (selectedFacility && selectedDate) {
+        fetchAvailability(selectedFacility.id, selectedDate);
+      }
     } catch (err: any) {
       setError(err.message || 'Hủy đặt tiện ích thất bại')
     }
@@ -347,6 +674,10 @@ const FacilityBookingsPage: FC = () => {
 
   const getConfirmedBookings = () => {
     return bookings.filter(booking => booking.status === 'CONFIRMED').length
+  }
+
+  const getRejectedBookings = () => {
+    return bookings.filter(booking => booking.status === 'REJECTED').length
   }
 
   const getTotalSpent = () => {
@@ -372,7 +703,7 @@ const FacilityBookingsPage: FC = () => {
 
   const isFacilityBooked = (facilityId: string) => {
     return bookings.some(
-      (b) => b.facilityId === facilityId && ['PENDING', 'CONFIRMED', 'COMPLETED'].includes(b.status)
+      (b) => b.facilityId === facilityId && ['PENDING', 'CONFIRMED'].includes(b.status) // Bỏ COMPLETED và REJECTED
     );
   };
 
@@ -380,8 +711,8 @@ const FacilityBookingsPage: FC = () => {
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     setNewBooking(prev => ({ ...prev, numberOfPeople: value }));
-    if (value > 10) {
-      setNumberError('Số lượng người đặt tối đa là 10!');
+    if (selectedFacility && value > selectedFacility.capacity) {
+      setNumberError(`Số lượng người đặt tối đa là ${selectedFacility.capacity}!`);
     } else {
       setNumberError(null);
     }
@@ -390,20 +721,65 @@ const FacilityBookingsPage: FC = () => {
   // Hàm kiểm tra realtime thời gian
   const handleTimeChange = (field: 'startTime' | 'endTime', value: string) => {
     setNewBooking(prev => ({ ...prev, [field]: value }));
-    // Kiểm tra overlap nếu đã có đủ thông tin
     const date = newBooking.date;
     const start = field === 'startTime' ? value : newBooking.startTime;
     const end = field === 'endTime' ? value : newBooking.endTime;
-    if (date && start && end) {
+    if (date && start && end && selectedFacility) {
       const bookingTime = `${date}T${start}:00`;
       const endTime = `${date}T${end}:00`;
-      if (isFacilityTimeOverlap(selectedFacility?.id || '', bookingTime, endTime)) {
-        setTimeError('Bạn đã có lịch đặt trùng thời gian với tiện ích này!');
+      
+      // Kiểm tra thời gian đã qua - so sánh datetime chính xác
+      const now = new Date();
+      const bookingStart = new Date(bookingTime);
+      if (bookingStart < now) {
+        setTimeError('Không thể chọn thời gian quá khứ!');
+        return;
+      }
+      
+      // Kiểm tra thời gian kết thúc đã qua
+      const bookingEnd = new Date(endTime);
+      if (bookingEnd < now) {
+        setTimeError('Thời gian kết thúc không thể trong quá khứ!');
+        return;
+      }
+      
+      // Check duration >= 30 minutes
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      let duration = (eh * 60 + em) - (sh * 60 + sm);
+      if (duration <= 0) duration += 24 * 60; // Handle overnight bookings
+      if (duration < 30) {
+        setTimeError('Thời gian đặt tối thiểu là 30 phút!');
+        return;
+      }
+      
+      if (isFacilityTimeOverlap(selectedFacility.id, bookingTime, endTime)) {
+        setTimeError('Bạn đã có lịch đặt trùng slot bắt đầu với tiện ích này!');
       } else {
         setTimeError(null);
       }
     } else {
       setTimeError(null);
+    }
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSelectedDate = e.target.value;
+    setSelectedDate(newSelectedDate);
+    setNewBooking(prev => ({ ...prev, date: newSelectedDate, duration: 60 }));
+    setUserSelectedDate(true); // Đánh dấu người dùng đã chọn ngày
+    
+    // Kiểm tra ngày đã qua
+    if (newSelectedDate < todayStr) {
+      setDateError('Không thể chọn ngày trong quá khứ!');
+      return;
+    }
+    
+    setDateError(null);
+    
+    // Fetch availability cho ngày mới
+    if (selectedFacility) {
+      fetchAvailability(selectedFacility.id, newSelectedDate);
     }
   };
 
@@ -430,10 +806,37 @@ const FacilityBookingsPage: FC = () => {
               <p className="text-gray-600">Đặt và quản lý các tiện ích của chung cư</p>
             </div>
           </div>
+          
+          {/* Success/Error Messages */}
+          {success && (
+            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+              {success}
+            </div>
+          )}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          {dateError && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {dateError}
+            </div>
+          )}
+          {timeError && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {timeError}
+            </div>
+          )}
+          {numberError && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {numberError}
+            </div>
+          )}
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tổng đặt chỗ</CardTitle>
@@ -475,6 +878,19 @@ const FacilityBookingsPage: FC = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bị từ chối</CardTitle>
+              <XCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{getRejectedBookings()}</div>
+              <p className="text-xs text-muted-foreground">
+                Đặt chỗ bị từ chối
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tổng chi tiêu</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -486,6 +902,23 @@ const FacilityBookingsPage: FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Date Selector */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium">Chọn ngày:</label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+                min={todayStr}
+                className="w-48"
+              />
+              {dateError && <div className="text-red-500 text-xs mt-1">{dateError}</div>}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Facilities Section */}
         <Card className="mb-8">
@@ -530,10 +963,11 @@ const FacilityBookingsPage: FC = () => {
                       <div className="pt-3">
                         <Button 
                           className="w-full"
-                          onClick={() => handleBookFacility(facility)}
-                          disabled={facility.status !== 'AVAILABLE' || isFacilityBooked(facility.id)}
+                          onClick={() => handleViewAvailability(facility)}
+                          disabled={facility.status !== 'AVAILABLE'}
                         >
-                          {facility.status !== 'AVAILABLE' ? 'Không khả dụng' : isFacilityBooked(facility.id) ? 'Đã đặt' : 'Đặt ngay'}
+                          <Eye className="h-4 w-4 mr-2" />
+                          Xem lịch
                         </Button>
                       </div>
                     </div>
@@ -543,6 +977,184 @@ const FacilityBookingsPage: FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Availability View */}
+        {showAvailability && selectedFacility && availability && (
+          <Card className="mb-6" id="availability-section">
+            <CardHeader>
+              <CardTitle>Lịch {selectedFacility.name} - {formatDate(selectedDate)}</CardTitle>
+              <CardDescription>
+                Sức chứa theo từng giờ trong ngày - Có thể đặt thêm người vào slot đã có booking
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
+                {availability.hourlyData.map((hour) => (
+                  <div
+                    key={hour.hour}
+                    className={`p-3 rounded-lg text-center transition-colors ${
+                      getSlotColor(hour, selectedDate)
+                    }`}
+                    onClick={() => hour.isAvailable && !isTimeSlotPassed(hour.hour, selectedDate) && handleAddToSlot(hour.hour, hour.availableCapacity)}
+                    title={
+                      isTimeSlotPassed(hour.hour, selectedDate) 
+                        ? 'Thời gian này đã qua, không thể đặt lịch'
+                        : hour.isAvailable 
+                          ? `Đặt thêm người cho slot ${hour.hour}:00 (còn ${hour.availableCapacity} chỗ)`
+                          : 'Slot này đã hết chỗ'
+                    }
+                  >
+                    <div className="font-semibold">{hour.hour}:00</div>
+                    <div className="text-sm">
+                      {hour.usedCapacity}/{hour.usedCapacity + hour.availableCapacity}
+                    </div>
+                    <div className="text-xs">
+                      {hour.bookingCount} booking
+                    </div>
+                    {hour.availableCapacity > 0 && !isTimeSlotPassed(hour.hour, selectedDate) && (
+                      <div className="text-xs font-medium text-green-700">
+                        +{hour.availableCapacity}
+                      </div>
+                    )}
+                    {isTimeSlotPassed(hour.hour, selectedDate) && (
+                      <div className="text-xs font-medium text-gray-500">
+                        Đã qua
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 text-sm text-gray-600">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-green-200 rounded"></div>
+                    <span>Còn nhiều chỗ (&gt;50%)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-yellow-200 rounded"></div>
+                    <span>Ít chỗ (&lt;50%)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-red-200 rounded"></div>
+                    <span>Hết chỗ</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                    <span>Đã qua</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  * Click vào slot có màu để đặt thêm người. Slot xám là thời gian đã qua.
+                </p>
+              </div>
+              <div className="mt-4">
+                <Button variant="outline" onClick={() => {
+                  setShowAvailability(false);
+                  setUserSelectedDate(false); // Reset khi đóng modal
+                }}>
+                  Đóng
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Add to Slot Modal */}
+        {showAddToSlotModal && selectedFacility && selectedSlot && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Đặt thêm cho slot {selectedSlot.hour}:00</CardTitle>
+              <CardDescription>
+                Slot còn {selectedSlot.availableCapacity} chỗ trống. Bạn có thể đặt thêm người vào slot này.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ngày đặt
+                    </label>
+                    <Input
+                      type="date"
+                      value={newBooking.date}
+                      onChange={(e) => setNewBooking(prev => ({ ...prev, date: e.target.value, duration: 60 }))}
+                      min={todayStr}
+                      disabled
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Số người thêm
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max={selectedSlot.availableCapacity}
+                      value={newBooking.numberOfPeople}
+                      onChange={handleNumberChange}
+                    />
+                    {numberError && <div className="text-red-500 text-xs mt-1">{numberError}</div>}
+                    <div className="text-xs text-gray-500 mt-1">
+                      Slot còn {selectedSlot.availableCapacity} chỗ trống
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Giờ bắt đầu
+                    </label>
+                    <Input
+                      type="time"
+                      value={newBooking.startTime}
+                      disabled
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Giờ kết thúc
+                    </label>
+                    <Input
+                      type="time"
+                      value={newBooking.endTime}
+                      disabled
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mục đích sử dụng
+                  </label>
+                  <Input
+                    placeholder="Nhập mục đích sử dụng..."
+                    value={newBooking.purpose}
+                    onChange={(e) => setNewBooking(prev => ({ ...prev, purpose: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleCreateBooking}
+                    disabled={!newBooking.purpose || !!numberError}
+                  >
+                    Đặt thêm
+                  </Button>
+                  <Button variant="outline" onClick={() => {
+                    setShowAddToSlotModal(false);
+                    setSelectedSlot(null);
+                  }}>
+                    Hủy
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Booking Form */}
         {showBookingForm && selectedFacility && (
@@ -563,8 +1175,8 @@ const FacilityBookingsPage: FC = () => {
                     <Input
                       type="date"
                       value={newBooking.date}
-                      onChange={(e) => setNewBooking(prev => ({ ...prev, date: e.target.value }))}
-                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setNewBooking(prev => ({ ...prev, date: e.target.value, duration: 60 }))}
+                      min={todayStr}
                     />
                   </div>
                   
@@ -590,8 +1202,6 @@ const FacilityBookingsPage: FC = () => {
                     </label>
                     <Input
                       type="time"
-                      min={selectedFacility.openingHours ?? ''}
-                      max={selectedFacility.openingHours ?? ''}
                       value={newBooking.startTime}
                       onChange={e => handleTimeChange('startTime', e.target.value)}
                     />
@@ -600,17 +1210,47 @@ const FacilityBookingsPage: FC = () => {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Giờ kết thúc
+                      Thời gian sử dụng (phút)
                     </label>
                     <Input
-                      type="time"
-                      min={selectedFacility.openingHours ?? ''}
-                      max={selectedFacility.openingHours ?? ''}
-                      value={newBooking.endTime}
-                      onChange={e => handleTimeChange('endTime', e.target.value)}
+                      type="number"
+                      min="30"
+                      max="480"
+                      step="30"
+                      value={newBooking.duration || 60}
+                      onChange={e => {
+                        const duration = parseInt(e.target.value);
+                        const startTime = newBooking.startTime;
+                        if (startTime && duration) {
+                          const [hours, minutes] = startTime.split(':');
+                          const startDate = new Date();
+                          startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                          const endDate = new Date(startDate.getTime() + duration * 60000);
+                          const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+                          setNewBooking(prev => ({ 
+                            ...prev, 
+                            duration: duration,
+                            endTime: endTime 
+                          }));
+                        }
+                      }}
                     />
-                    {timeError && <div className="text-red-500 text-xs mt-1">{timeError}</div>}
+                    <div className="text-xs text-gray-500 mt-1">
+                      Tối thiểu 30 phút, tối đa 8 giờ (480 phút)
+                    </div>
                   </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Giờ kết thúc (tự động tính)
+                  </label>
+                  <Input
+                    type="time"
+                    value={newBooking.endTime}
+                    disabled
+                    className="bg-gray-50"
+                  />
                 </div>
                 
                 <div>
@@ -701,6 +1341,12 @@ const FacilityBookingsPage: FC = () => {
                 >
                   Hoàn thành
                 </Button>
+                <Button
+                  variant={filterStatus === 'REJECTED' ? 'default' : 'outline'}
+                  onClick={() => setFilterStatus('REJECTED')}
+                >
+                  Bị từ chối
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -757,7 +1403,48 @@ const FacilityBookingsPage: FC = () => {
                         </div>
                         
                         <div className="flex gap-2 ml-4">
-                          
+                          {booking.status === 'PENDING' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelBooking(booking.id)}
+                            >
+                              Hủy
+                            </Button>
+                          )}
+                          {booking.status === 'CONFIRMED' && (
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs text-blue-600 font-medium">
+                                Đã xác nhận - Không thể hủy
+                              </span>
+                              {booking.qrCode && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Tạo QR code popup
+                                    const qrData = `FACILITY_${booking.id}_${Date.now()}`;
+                                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+                                    window.open(qrUrl, '_blank', 'width=300,height=300');
+                                  }}
+                                  className="text-xs"
+                                >
+                                  <QrCode className="h-3 w-3 mr-1" />
+                                  Xem QR Code
+                                </Button>
+                              )}
+                              {booking.checkedInCount !== undefined && booking.maxCheckins !== undefined && (
+                                <span className="text-xs text-gray-500">
+                                  Check-in: {booking.checkedInCount}/{booking.maxCheckins}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {booking.status === 'REJECTED' && (
+                            <span className="text-xs text-red-600 font-medium">
+                              Không thể huỷ booking đã bị từ chối
+                            </span>
+                          )}
                         </div>
                       </div>
                     </CardContent>

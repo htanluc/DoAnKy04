@@ -116,7 +116,14 @@ export const login = async (credentials: LoginRequest): Promise<AuthResponse> =>
         username: userData.username,
         email: userData.email,
         phoneNumber: userData.phoneNumber,
-        roles: Array.isArray(userData.roles) ? userData.roles : [],
+        roles: Array.isArray(userData.roles) ? userData.roles.map((role: any) => {
+          // Nếu role là string, chuyển thành object
+          if (typeof role === 'string') {
+            return { id: 0, name: role };
+          }
+          // Nếu role là object, giữ nguyên
+          return role;
+        }) : [],
         status: userData.status,
         lockReason: userData.lockReason
       } : null
@@ -268,6 +275,20 @@ export function getRoleNames(user: any): string[] {
   if (Array.isArray(user.roles) && user.roles.every((r: any) => typeof r === 'object' && r !== null && 'name' in r)) {
     return user.roles.map((r: any) => String(r.name).trim());
   }
+  
+  // Nếu là mảng hỗn hợp (string và object)
+  if (Array.isArray(user.roles)) {
+    return user.roles.map((r: any) => {
+      if (typeof r === 'string') {
+        return r.trim();
+      }
+      if (typeof r === 'object' && r !== null && 'name' in r) {
+        return String(r.name).trim();
+      }
+      return String(r).trim();
+    });
+  }
+  
   return [];
 }
 
