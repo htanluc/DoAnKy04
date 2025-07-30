@@ -106,7 +106,7 @@ public class ResidentController {
         if (residentOpt == null) return ResponseEntity.status(401).body("Resident not found");
         var resident = residentOpt;
         // Lấy apartmentResident (liên kết user với apartment)
-        var apartmentResidentOpt = apartmentResidentRepository.findByIdUserId(user.getId());
+        var apartmentResidentOpt = apartmentResidentRepository.findByIdResidentId(user.getId()); // Sửa từ findByIdUserId thành findByIdResidentId
         var apartmentResident = apartmentResidentOpt.isEmpty() ? null : apartmentResidentOpt.get(0);
         // Lấy apartment
         var apartment = (apartmentResident != null) ? apartmentRepository.findById(apartmentResident.getId().getApartmentId()).orElse(null) : null;

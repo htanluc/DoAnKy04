@@ -6,7 +6,7 @@ import java.time.LocalDate;
 @Data
 public class ApartmentResidentDto {
     private Long apartmentId;
-    private Long userId;
+    private Long residentId; // Sửa từ userId thành residentId
     private String relationType;
     private LocalDate moveInDate;
     private LocalDate moveOutDate;

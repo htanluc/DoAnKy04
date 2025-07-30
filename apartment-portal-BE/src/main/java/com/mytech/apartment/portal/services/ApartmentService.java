@@ -10,9 +10,15 @@ import com.mytech.apartment.portal.models.enums.ApartmentStatus;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -37,19 +43,41 @@ public class ApartmentService {
     @Autowired
     private ApartmentResidentMapper apartmentResidentMapper;
 
+    private final Counter apartmentAccessCounter;
+    private final Counter apartmentUpdateCounter;
+
+    public ApartmentService(MeterRegistry meterRegistry) {
+        this.apartmentAccessCounter = Counter.builder("apartment.access")
+                .description("Number of apartment access operations")
+                .register(meterRegistry);
+        this.apartmentUpdateCounter = Counter.builder("apartment.update")
+                .description("Number of apartment update operations")
+                .register(meterRegistry);
+    }
+
+    @Timed(value = "apartment.get.all", description = "Time taken to get all apartments")
+    @Cacheable(value = "apartments", key = "'all'")
     public List<ApartmentDto> getAllApartments() {
+        apartmentAccessCounter.increment();
         return apartmentRepository.findAll().stream()
                 .map(apartmentMapper::toDto)
                 .collect(Collectors.toList());
     }
 
+    @Timed(value = "apartment.get.by.id", description = "Time taken to get apartment by ID")
+    @Cacheable(value = "apartments", key = "#id")
     public Optional<ApartmentDto> getApartmentById(Long id) {
+        apartmentAccessCounter.increment();
         return apartmentRepository.findById(id)
                 .map(apartmentMapper::toDto);
     }
 
+    @Timed(value = "apartment.update", description = "Time taken to update apartment")
     @Transactional
+    @CachePut(value = "apartments", key = "#id")
+    @CacheEvict(value = "apartments", key = "'all'")
     public ApartmentDto updateApartment(Long id, ApartmentUpdateRequest request) {
+        apartmentUpdateCounter.increment();
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Apartment not found with id " + id));
 
@@ -88,7 +116,7 @@ public class ApartmentService {
     }
 
     public List<ApartmentResidentDto> getApartmentLinksOfUser(Long userId) {
-        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId);
+        List<ApartmentResident> links = apartmentResidentRepository.findByIdResidentId(userId); // Sửa từ findByIdUserId thành findByIdResidentId
         return links.stream()
             .map(apartmentResidentMapper::toDto)
             .collect(Collectors.toList());
@@ -132,7 +160,7 @@ public class ApartmentService {
     }
 
     public List<ApartmentDto> getApartmentsOfResident(Long userId) {
-        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId);
+        List<ApartmentResident> links = apartmentResidentRepository.findByIdResidentId(userId); // Sửa từ findByIdUserId thành findByIdResidentId
         return links.stream()
             .map(link -> apartmentRepository.findById(link.getId().getApartmentId()))
             .filter(Optional::isPresent)
