@@ -43,7 +43,7 @@ public class ApartmentResidentService {
     }
 
     public List<ApartmentResidentDto> getApartmentResidentsByUserId(Long userId) {
-        return apartmentResidentRepository.findByIdUserId(userId).stream()
+        return apartmentResidentRepository.findByIdResidentId(userId).stream() // Sửa từ findByIdUserId thành findByIdResidentId
                 .map(entity -> {
                     ApartmentResidentDto dto = apartmentResidentMapper.toDto(entity);
                     // Bổ sung thông tin căn hộ và tòa

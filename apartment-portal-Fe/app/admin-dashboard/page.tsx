@@ -5,6 +5,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { useLanguage } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Users, 
   Building2, 
@@ -17,10 +18,15 @@ import {
   Bot, 
   BarChart3,
   Plus,
-  TrendingUp
+  TrendingUp,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { announcementsApi, eventsApi, facilitiesApi } from '@/lib/api';
+import { getToken } from '@/lib/auth';
+import RealTimeNotifications from '@/components/real-time-notifications';
+import LiveChat from '@/components/live-chat';
 
 interface ActivityLog {
   id?: string | number;
@@ -47,20 +53,36 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchCounts() {
       try {
-        // TODO: Thay thế các API dưới đây bằng các hàm getAll thực tế cho users, residents, apartments, invoices, supportRequests nếu đã có
+        // Fetch counts từ các API thực tế
         const [announcements, events, facilities] = await Promise.all([
           announcementsApi.getAll(),
           eventsApi.getAll(),
           facilitiesApi.getAll(),
         ]);
+        
+        // TODO: Thêm các API calls cho users, residents, apartments, invoices, supportRequests
+        // const [users, residents, apartments, invoices, supportRequests] = await Promise.all([
+        //   usersApi.getAll(),
+        //   residentsApi.getAll(), 
+        //   apartmentsApi.getAll(),
+        //   invoicesApi.getAll(),
+        //   supportRequestsApi.getAll(),
+        // ]);
+        
         setCounts((prev) => ({
           ...prev,
           announcements: announcements.length,
           events: events.length,
           facilities: facilities.length,
+          // users: users.length,
+          // residents: residents.length,
+          // apartments: apartments.length,
+          // invoices: invoices.length,
+          // supportRequests: supportRequests.length,
         }));
-      } catch (e) {
-        // Có thể xử lý lỗi ở đây
+      } catch (error) {
+        console.error('Error fetching counts:', error);
+        // Không set error state để tránh crash UI, chỉ log lỗi
       }
     }
     fetchCounts();
@@ -69,16 +91,27 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchActivities() {
       try {
-        // TODO: Thay thế URL dưới đây bằng endpoint thật nếu đã có
-        const res = await fetch('/api/admin/activity-logs?limit=10');
+        const res = await fetch('/api/admin/activity-logs?limit=10', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        
         if (res.status === 404) {
           setActivities([]); // Không có log, không phải lỗi nghiêm trọng
           return;
         }
-        if (!res.ok) throw new Error('Failed to fetch');
+        
+        if (!res.ok) {
+          console.error('Failed to fetch activities:', res.status);
+          setActivities([]);
+          return;
+        }
+        
         const data = await res.json();
-        setActivities(data.slice(0, 10));
-      } catch {
+        setActivities(Array.isArray(data) ? data.slice(0, 10) : data.data?.slice(0, 10) || []);
+      } catch (error) {
+        console.error('Error fetching activities:', error);
         setActivities([]);
       }
     }
@@ -185,7 +218,19 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout title={t('admin.dashboard.title')}>
-      <div className="space-y-6">
+      <div className="p-6 space-y-6">
+        {/* Header with Real-time Notifications */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            <p className="text-gray-600">Quản lý hệ thống chung cư</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <RealTimeNotifications />
+            <LiveChat />
+          </div>
+        </div>
+
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
           <h2 className="text-2xl font-bold mb-2">

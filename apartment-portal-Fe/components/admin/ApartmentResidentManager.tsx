@@ -192,6 +192,7 @@ export default function ApartmentResidentManager({ apartmentId }: ApartmentResid
                 className="border rounded px-2 py-1"
                 value={selectedResidentId}
                 onChange={e => setSelectedResidentId(e.target.value)}
+                aria-label="Chọn cư dân"
               >
                 <option value="">-- Chọn cư dân --</option>
                 {allResidents.map(r => (
@@ -202,6 +203,7 @@ export default function ApartmentResidentManager({ apartmentId }: ApartmentResid
                 className="border rounded px-2 py-1"
                 value={relationType}
                 onChange={e => setRelationType(e.target.value)}
+                aria-label="Chọn loại quan hệ"
               >
                 {RELATION_TYPES.map(rt => (
                   <option key={rt.value} value={rt.value}>{rt.label}</option>
