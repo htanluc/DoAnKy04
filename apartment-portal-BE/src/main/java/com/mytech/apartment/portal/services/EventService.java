@@ -30,6 +30,9 @@ public class EventService {
     @Autowired
     private EventRegistrationRepository eventRegistrationRepository;
 
+    @Autowired
+    private UserService userService;
+
     public List<EventDto> getAllEvents() {
         return eventRepository.findAll().stream()
                 .map(eventMapper::toDto)
@@ -78,17 +81,23 @@ public class EventService {
      * Get all events for a specific user with registration status
      */
     public List<EventDto> getAllEventsForUser(String username) {
-        // For now, return all events without user-specific registration status
-        // This can be enhanced later to include user registration status
-        return getAllEvents();
+        Long userId = userService.getUserIdByPhoneNumber(username);
+        return getAllEvents(userId);
     }
 
     /**
      * Get event by ID for a specific user with registration status
      */
     public Optional<EventDto> getEventByIdForUser(Long id, String username) {
-        // For now, return the event without user-specific registration status
-        // This can be enhanced later to include user registration status
-        return getEventById(id);
+        Long userId = userService.getUserIdByPhoneNumber(username);
+        if (userId == null) {
+            return getEventById(id);
+        }
+        
+        return eventRepository.findById(id).map(event -> {
+            int participantCount = eventRegistrationRepository.countByEventIdAndStatus(event.getId(), EventRegistrationStatus.REGISTERED);
+            boolean isRegistered = eventRegistrationRepository.existsByEventIdAndResidentIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
+            return eventMapper.toDto(event, participantCount, isRegistered, false);
+        });
     }
 } 

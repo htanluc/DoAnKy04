@@ -3,6 +3,8 @@ package com.mytech.apartment.portal.config;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -361,10 +363,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // 12. Event Registrations
         // Sửa lỗi: Resident không có getId(), dùng getUserId()
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(0).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(1).getUserId()).status(EventRegistrationStatus.ATTENDED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(2).getUserId()).status(EventRegistrationStatus.CANCELLED).build());
-        
+
         // Thêm event registrations mới
         eventRegistrationRepository.save(EventRegistration.builder().event(events.get(1)).residentId(residents.get(3).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
         eventRegistrationRepository.save(EventRegistration.builder().event(events.get(1)).residentId(residents.get(4).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
@@ -630,8 +629,87 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
+        // 23. Cleanup duplicate event registrations (after ALL event registrations are created)
+        System.out.println("🧹 Cleaning up duplicate event registrations...");
+        cleanupDuplicateEventRegistrations();
         
         System.out.println("✅ Data seeding completed successfully!");
 
+    }
+
+    /**
+     * Cleanup duplicate event registrations
+     * Removes duplicate registrations for the same event-resident pair
+     * Keeps only the most recent REGISTERED one, or the most recent one if no REGISTERED exists
+     */
+    private void cleanupDuplicateEventRegistrations() {
+        try {
+            System.out.println("🔍 Starting duplicate event registration cleanup...");
+            
+            // Get all event registrations
+            List<EventRegistration> allRegistrations = eventRegistrationRepository.findAll();
+            System.out.println("📊 Total event registrations found: " + allRegistrations.size());
+            
+            // Group by event_id and resident_id
+            Map<String, List<EventRegistration>> groupedRegistrations = allRegistrations.stream()
+                .collect(Collectors.groupingBy(reg -> reg.getEvent().getId() + "-" + reg.getResidentId()));
+            
+            System.out.println("📋 Unique event-resident combinations: " + groupedRegistrations.size());
+            
+            int totalDeleted = 0;
+            int duplicatesFound = 0;
+            
+            for (Map.Entry<String, List<EventRegistration>> entry : groupedRegistrations.entrySet()) {
+                List<EventRegistration> registrations = entry.getValue();
+                
+                // If there's only one registration, skip
+                if (registrations.size() <= 1) {
+                    continue;
+                }
+                
+                duplicatesFound++;
+                System.out.println("⚠️  Found " + registrations.size() + " registrations for " + entry.getKey());
+                
+                // Find the registration to keep
+                EventRegistration registrationToKeep = null;
+                
+                // First, try to find the most recent REGISTERED one
+                List<EventRegistration> registeredOnes = registrations.stream()
+                    .filter(reg -> reg.getStatus() == EventRegistrationStatus.REGISTERED)
+                    .collect(Collectors.toList());
+                
+                if (!registeredOnes.isEmpty()) {
+                    // Keep the most recent REGISTERED one
+                    registrationToKeep = registeredOnes.stream()
+                        .max(Comparator.comparing(EventRegistration::getRegisteredAt))
+                        .orElse(registeredOnes.get(0));
+                    System.out.println("✅ Keeping REGISTERED registration ID: " + registrationToKeep.getId());
+                } else {
+                    // If no REGISTERED ones, keep the most recent one
+                    registrationToKeep = registrations.stream()
+                        .max(Comparator.comparing(EventRegistration::getRegisteredAt))
+                        .orElse(registrations.get(0));
+                    System.out.println("✅ Keeping most recent registration ID: " + registrationToKeep.getId());
+                }
+                
+                // Delete all other registrations
+                for (EventRegistration reg : registrations) {
+                    if (!reg.getId().equals(registrationToKeep.getId())) {
+                        eventRegistrationRepository.delete(reg);
+                        totalDeleted++;
+                        System.out.println("🗑️  Deleted registration ID: " + reg.getId() + " (status: " + reg.getStatus() + ")");
+                    }
+                }
+            }
+            
+            System.out.println("📈 Summary:");
+            System.out.println("   - Duplicate groups found: " + duplicatesFound);
+            System.out.println("   - Total registrations deleted: " + totalDeleted);
+            System.out.println("✅ Cleanup completed successfully!");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error during cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 } 

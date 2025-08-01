@@ -35,7 +35,13 @@ public class ActivityLogService {
     }
 
     public List<ActivityLogDto> getActivityLogsByUserId(Long userId) {
-        return activityLogRepository.findByUserId(userId).stream()
+        return activityLogRepository.findRecentByUserIdOrderByTimestampDesc(userId).stream()
+                .map(activityLogMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<ActivityLogDto> getRecentActivityLogsByUserId(Long userId, int limit) {
+        return activityLogRepository.findRecentByUserIdOrderByTimestampDescLimit(userId, limit).stream()
                 .map(activityLogMapper::toDto)
                 .collect(Collectors.toList());
     }
