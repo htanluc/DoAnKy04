@@ -6,7 +6,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 
 export default function WaterMeterListPage() {
   const { readings, loading, error, updateReading, addReading, deleteReading, patchReading, bulkGenerate, fetchReadingsByMonth, fetchReadings } = useWaterMeter();
-  const { apartments } = useApartments();
+  const { apartments, loading: apartmentsLoading, error: apartmentsError } = useApartments();
   const [editId, setEditId] = useState<string | number | null>(null);
   const [editForm, setEditForm] = useState<{ currentReading?: number }>({});
   const [search, setSearch] = useState("");

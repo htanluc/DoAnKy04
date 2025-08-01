@@ -4,7 +4,7 @@ import React from 'react';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { LogOut, User, Home, Users, Building2, Bell, Calendar, Coffee, Receipt, MessageSquare, BarChart3, Settings, ClipboardList, History, LifeBuoy } from 'lucide-react';
+import { LogOut, User, Home, Users, Building2, Bell, Calendar, Coffee, Receipt, MessageSquare, BarChart3, Settings, ClipboardList, History, LifeBuoy, Calculator } from 'lucide-react';
 import LanguageSwitcher from '@/components/language-switcher';
 import {
   SidebarProvider,
@@ -32,6 +32,7 @@ const adminMenuItems = [
   { href: '/admin-dashboard/announcements', label: 'admin.announcements.title', icon: <Bell className="h-5 w-5" /> },
   { href: '/admin-dashboard/events', label: 'admin.events.title', icon: <Calendar className="h-5 w-5" /> },
   { href: '/admin-dashboard/invoices', label: 'admin.invoices.title', icon: <Receipt className="h-5 w-5" /> },
+  { href: '/admin-dashboard/yearly-billing', label: 'Tạo biểu phí 1 năm', icon: <Calculator className="h-5 w-5" /> },
   { href: '/admin-dashboard/feedbacks', label: 'admin.feedbacks.title', icon: <MessageSquare className="h-5 w-5" /> },
   { href: '/admin-dashboard/support-requests', label: 'admin.support-requests.title', icon: <LifeBuoy className="h-5 w-5" /> },
   { href: '/admin-dashboard/water-meter', label: 'Quản lý chỉ số nước', icon: <BarChart3 className="h-5 w-5" /> },

@@ -39,7 +39,7 @@ echo Schema đã được tạo thành công!
 
 echo.
 echo 3. Import dữ liệu mẫu...
-mysql -h %DB_HOST% -P %DB_PORT% -u %DB_USER% -p%DB_PASS% %DB_NAME% < src\main\resources\sample-data.sql
+mysql -h %DB_HOST% -P %DB_PORT% -u %DB_USER% -p%DB_PASS% %DB_NAME% < src\main\resources\data.sql
 
 if %ERRORLEVEL% NEQ 0 (
     echo Lỗi: Không thể import dữ liệu mẫu

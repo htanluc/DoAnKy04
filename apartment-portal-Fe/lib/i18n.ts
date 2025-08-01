@@ -653,6 +653,80 @@ export const translations: Translations = {
     en: 'Invoice Type'
   },
 
+  // Yearly Billing
+  'admin.yearly-billing.title': {
+    vi: 'Tạo biểu phí 1 năm',
+    en: 'Create Yearly Billing'
+  },
+  'admin.yearly-billing.subtitle': {
+    vi: 'Tạo biểu phí dịch vụ cho tất cả căn hộ hoặc một căn hộ cụ thể trong 1 năm',
+    en: 'Create service billing for all apartments or a specific apartment for 1 year'
+  },
+  'admin.yearly-billing.create': {
+    vi: 'Tạo biểu phí',
+    en: 'Create Billing'
+  },
+  'admin.yearly-billing.config': {
+    vi: 'Cấu hình phí',
+    en: 'Fee Configuration'
+  },
+  'admin.yearly-billing.history': {
+    vi: 'Lịch sử',
+    en: 'History'
+  },
+  'admin.yearly-billing.info': {
+    vi: 'Thông tin',
+    en: 'Information'
+  },
+  'admin.yearly-billing.year': {
+    vi: 'Năm tạo biểu phí',
+    en: 'Billing Year'
+  },
+  'admin.yearly-billing.scope': {
+    vi: 'Phạm vi tạo biểu phí',
+    en: 'Billing Scope'
+  },
+  'admin.yearly-billing.allApartments': {
+    vi: 'Tất cả căn hộ',
+    en: 'All Apartments'
+  },
+  'admin.yearly-billing.specificApartment': {
+    vi: 'Căn hộ cụ thể',
+    en: 'Specific Apartment'
+  },
+  'admin.yearly-billing.selectApartment': {
+    vi: 'Chọn căn hộ',
+    en: 'Select Apartment'
+  },
+  'admin.yearly-billing.feeConfig': {
+    vi: 'Cấu hình đơn giá',
+    en: 'Fee Configuration'
+  },
+  'admin.yearly-billing.serviceFee': {
+    vi: 'Phí dịch vụ (VND/m²)',
+    en: 'Service Fee (VND/m²)'
+  },
+  'admin.yearly-billing.waterFee': {
+    vi: 'Phí nước (VND/m³)',
+    en: 'Water Fee (VND/m³)'
+  },
+  'admin.yearly-billing.parkingFee': {
+    vi: 'Phí gửi xe (VND/tháng)',
+    en: 'Parking Fee (VND/month)'
+  },
+  'admin.yearly-billing.feeSummary': {
+    vi: 'Tóm tắt đơn giá',
+    en: 'Fee Summary'
+  },
+  'admin.yearly-billing.createButton': {
+    vi: 'Tạo biểu phí 1 năm',
+    en: 'Create Yearly Billing'
+  },
+  'admin.yearly-billing.creating': {
+    vi: 'Đang tạo biểu phí...',
+    en: 'Creating billing...'
+  },
+
   // Feedback Management
   'admin.feedbacks.title': {
     vi: 'Quản lý phản hồi',

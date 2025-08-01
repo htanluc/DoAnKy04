@@ -18,9 +18,13 @@ public class ServiceFeeConfig {
     private Integer month; // Tháng áp dụng
     private Integer year;  // Năm áp dụng
 
-    private Double parkingFee;         // Giá gửi xe/tháng
     private Double serviceFeePerM2;    // Giá dịch vụ/m2
     private Double waterFeePerM3;      // Giá nước/m3
+    
+    // Phí gửi xe theo loại
+    private Double motorcycleFee;      // Phí gửi xe máy/tháng
+    private Double car4SeatsFee;       // Phí gửi ô tô 4 chỗ/tháng
+    private Double car7SeatsFee;       // Phí gửi ô tô 7 chỗ/tháng
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

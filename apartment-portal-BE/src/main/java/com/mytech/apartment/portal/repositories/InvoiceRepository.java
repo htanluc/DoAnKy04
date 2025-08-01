@@ -5,6 +5,7 @@ import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,4 +24,16 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     /** Lấy danh sách hóa đơn theo status */
     List<Invoice> findByStatus(InvoiceStatus status);
+    
+    /** Đếm hóa đơn theo billing period bắt đầu với prefix */
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.billingPeriod LIKE :prefix%")
+    long countByBillingPeriodStartingWith(@Param("prefix") String prefix);
+    
+    /** Đếm hóa đơn theo billing period và status */
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.billingPeriod LIKE :prefix% AND i.status = :status")
+    long countByBillingPeriodStartingWithAndStatus(@Param("prefix") String prefix, @Param("status") InvoiceStatus status);
+    
+    /** Tính tổng tiền theo billing period */
+    @Query("SELECT SUM(i.totalAmount) FROM Invoice i WHERE i.billingPeriod LIKE :prefix%")
+    Double sumTotalAmountByBillingPeriodStartingWith(@Param("prefix") String prefix);
 }
