@@ -21,8 +21,9 @@ public class BillingJob {
     @Autowired
     private List<MonthlyFeeService> feeServices;
 
+    // Tạm thời comment để tránh chạy liên tục
     // Chạy vào 00:00 ngày 5 hàng tháng
-    @Scheduled(cron = "0 0 0 5 * *")
+    // @Scheduled(cron = "0 0 0 5 * *")
     public void runMonthlyBilling() {
         String period = LocalDate.now()
             .minusMonths(1)

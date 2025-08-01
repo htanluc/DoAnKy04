@@ -15,7 +15,8 @@ public class WaterMeterScheduler {
         this.waterMeterService = waterMeterService;
     }
 
-    @Scheduled(cron = "0 0 0 1 * *")
+    // Tạm thời comment để tránh chạy liên tục
+    // @Scheduled(cron = "0 0 0 1 * *")
     public void generateNextMonthTemplate() {
         String nextMonth = YearMonth.now().plusMonths(1).toString();
         waterMeterService.generateHistory(nextMonth);

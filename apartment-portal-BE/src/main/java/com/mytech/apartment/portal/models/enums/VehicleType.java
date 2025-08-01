@@ -7,7 +7,14 @@ import java.math.BigDecimal;
 @Getter
 public enum VehicleType {
     MOTORCYCLE("Xe máy", new BigDecimal("50000")),
-    CAR("Ô tô", new BigDecimal("200000"));
+    CAR_4_SEATS("Ô tô 4 chỗ", new BigDecimal("200000")),
+    CAR_7_SEATS("Ô tô 7 chỗ", new BigDecimal("250000")),
+    TRUCK("Xe tải", new BigDecimal("300000")),
+    VAN("Xe van", new BigDecimal("250000")),
+    ELECTRIC_MOTORCYCLE("Xe máy điện", new BigDecimal("40000")),
+    ELECTRIC_CAR("Ô tô điện", new BigDecimal("150000")),
+    BICYCLE("Xe đạp", new BigDecimal("20000")),
+    ELECTRIC_BICYCLE("Xe đạp điện", new BigDecimal("30000"));
 
     private final String displayName;
     private final BigDecimal monthlyFee;

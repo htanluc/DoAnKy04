@@ -114,4 +114,23 @@ public class InvoiceService {
         // Lấy hóa đơn theo apartmentIds
         return getInvoicesByApartmentIds(apartmentIds);
     }
+
+    /**
+     * [EN] Get all invoices (admin only)
+     * [VI] Lấy tất cả hóa đơn (chỉ admin)
+     */
+    public List<InvoiceDto> getAllInvoices() {
+        return invoiceRepository.findAll().stream()
+                .map(invoiceMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * [EN] Get invoice by ID
+     * [VI] Lấy hóa đơn theo ID
+     */
+    public Optional<InvoiceDto> getInvoiceById(Long id) {
+        return invoiceRepository.findById(id)
+                .map(invoiceMapper::toDto);
+    }
 }
