@@ -46,6 +46,8 @@ import com.mytech.apartment.portal.services.ApartmentService;
 import com.mytech.apartment.portal.services.FileUploadService;
 import com.mytech.apartment.portal.services.ActivityLogService;
 import com.mytech.apartment.portal.models.enums.ActivityActionType;
+import com.mytech.apartment.portal.services.NotificationService;
+import com.mytech.apartment.portal.services.MetricsService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,6 +56,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -72,6 +75,12 @@ public class AuthController {
     private final ApartmentService apartmentService;
     private final FileUploadService fileUploadService;
     private final ActivityLogService activityLogService;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private MetricsService metricsService;
 
     @Operation(summary = "Validate token", description = "Validate JWT token and return user info")
     @GetMapping("/validate")
@@ -152,15 +161,26 @@ public class AuthController {
         // Kiểm tra role khi đăng nhập FE user (port 3001)
         String referer = request.getHeader("referer");
         String host = request.getHeader("host");
+        String origin = request.getHeader("origin");
+        
         List<String> roles = ud.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .map(r -> r.replace("ROLE_", ""))
                 .collect(Collectors.toList());
-        boolean isResident = roles.contains("RESIDENT");
-        boolean isUserPortal = (host != null && host.contains(":3001")) || (referer != null && referer.contains(":3001"));
-        if (isUserPortal && !isResident) {
-            return ResponseEntity.status(403).body(ApiResponse.error("Chỉ cư dân (RESIDENT) được phép đăng nhập tại portal này."));
+        
+        // Kiểm tra xem có phải user portal không (port 3001 hoặc origin chứa user portal)
+        boolean isUserPortal = (host != null && host.contains(":3001")) || 
+                              (referer != null && referer.contains(":3001")) ||
+                              (origin != null && origin.contains(":3001"));
+        
+        // Nếu là user portal, chỉ cho phép RESIDENT và STAFF
+        if (isUserPortal) {
+            boolean isResident = roles.contains("RESIDENT");
+            boolean isStaff = roles.contains("STAFF");
+            if (!isResident && !isStaff) {
+                return ResponseEntity.status(403).body(ApiResponse.error("Chỉ cư dân (RESIDENT) và nhân viên (STAFF) được phép đăng nhập tại portal này."));
+            }
         }
 
         // Đăng nhập thành công
@@ -377,7 +397,7 @@ public class AuthController {
         if (residentDto != null) {
             // Tìm tất cả liên kết căn hộ của resident, lấy liên kết đầu tiên (nếu có)
             java.util.List<ApartmentResidentDto> links = apartmentResidentService.getAllApartmentResidents().stream()
-                .filter(link -> link.getUserId() != null && link.getUserId().equals(userDetails.getId()))
+                .filter(link -> link.getResidentId() != null && link.getResidentId().equals(userDetails.getId())) // Sửa từ getUserId thành getResidentId
                 .toList();
             if (!links.isEmpty()) {
                 apartmentResidentDto = links.get(0);
