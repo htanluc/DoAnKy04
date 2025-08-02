@@ -15,7 +15,7 @@ public class ApartmentResidentMapper {
         ApartmentResidentDto dto = new ApartmentResidentDto();
         if (entity.getId() != null) {
             dto.setApartmentId(entity.getId().getApartmentId());
-            dto.setResidentId(entity.getId().getResidentId()); // Sửa từ getUserId() thành getResidentId()
+            dto.setUserId(entity.getId().getUserId());
         }
         dto.setRelationType(entity.getRelationType());
         dto.setMoveInDate(entity.getMoveInDate());
@@ -29,7 +29,7 @@ public class ApartmentResidentMapper {
             return null;
         }
         ApartmentResident entity = new ApartmentResident();
-        ApartmentResidentId id = new ApartmentResidentId(dto.getApartmentId(), dto.getResidentId()); // Sửa từ getUserId() thành getResidentId()
+        ApartmentResidentId id = new ApartmentResidentId(dto.getApartmentId(), dto.getUserId());
         entity.setId(id);
         entity.setRelationType(dto.getRelationType());
         entity.setMoveInDate(dto.getMoveInDate());

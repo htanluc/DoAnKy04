@@ -216,6 +216,18 @@ export async function cancelEventRegistration(registrationId: string) {
   return true;
 }
 
+// Hủy đăng ký sự kiện theo event ID
+export async function cancelEventRegistrationByEventId(eventId: string) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) throw new Error('Chưa đăng nhập');
+  const res = await fetch(`http://localhost:8080/api/event-registrations/cancel/${eventId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Hủy đăng ký sự kiện thất bại');
+  return true;
+}
+
 // Gửi yêu cầu hỗ trợ
 export async function createSupportRequest(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;

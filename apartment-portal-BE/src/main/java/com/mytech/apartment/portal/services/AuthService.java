@@ -16,8 +16,7 @@ import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.EmailVerificationToken;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.repositories.EmailVerificationTokenRepository;
-import com.mytech.apartment.portal.models.Resident;
-import com.mytech.apartment.portal.repositories.ResidentRepository;
+
 import com.mytech.apartment.portal.models.enums.UserStatus;
 import com.mytech.apartment.portal.dtos.UserCreateRequest;
 
@@ -36,8 +35,7 @@ public class AuthService {
     @Autowired
     private EmailVerificationTokenRepository emailVerificationTokenRepository;
 
-    @Autowired
-    private ResidentRepository residentRepository;
+
 
     @Autowired
     private UserService userService;
@@ -68,15 +66,10 @@ public class AuthService {
         userCreateRequest.setPhoneNumber(request.getPhoneNumber());
         userCreateRequest.setPassword(request.getPassword());
         userCreateRequest.setEmail(request.getEmail());
+        userCreateRequest.setFullName(request.getFullName());
+        userCreateRequest.setIdCardNumber(request.getIdCardNumber());
         // Không set roles để UserService.registerUser tự gán role RESIDENT
         User user = userService.registerUserReturnEntity(userCreateRequest);
-        // Tạo resident tương ứng với user mới
-        Resident resident = new Resident();
-        resident.setUserId(user.getId());
-        resident.setFullName(request.getFullName());
-        resident.setIdCardNumber(request.getIdCardNumber());
-        resident.setStatus(user.getStatus() == com.mytech.apartment.portal.models.enums.UserStatus.ACTIVE ? 1 : 0);
-        residentRepository.save(resident);
         // Tạo token xác thực email
         String token = UUID.randomUUID().toString();
         LocalDateTime expiry = LocalDateTime.now().plusHours(24);
@@ -95,8 +88,7 @@ public class AuthService {
             }
             emailService.sendVerificationEmail(user.getEmail(), verifyLink);
         } catch (Exception e) {
-            // Nếu gửi email thất bại, xóa user và resident đã tạo
-            residentRepository.delete(resident);
+            // Nếu gửi email thất bại, xóa user đã tạo
             userRepository.delete(user);
             throw new RuntimeException("Đăng ký thất bại do không gửi được email xác thực: " + e.getMessage());
         }

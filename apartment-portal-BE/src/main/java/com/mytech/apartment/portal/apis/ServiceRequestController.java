@@ -117,8 +117,8 @@ public class ServiceRequestController {
             
             System.out.println("ServiceRequestController: Found user ID: " + userId);
             
-            // Set residentId from authenticated user
-            request.setResidentId(userId);
+            // Set userId from authenticated user
+            request.setUserId(userId); // Changed from setResidentId to setUserId
             System.out.println("ServiceRequestController: Final request: " + request);
             
             ServiceRequestDto dto = serviceRequestService.createServiceRequest(request);

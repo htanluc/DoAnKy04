@@ -37,13 +37,13 @@ public class ApartmentResidentService {
                 .collect(Collectors.toList());
     }
 
-    public Optional<ApartmentResidentDto> getApartmentResidentById(Long apartmentId, Long residentId) {
-        ApartmentResidentId id = new ApartmentResidentId(apartmentId, residentId);
+    public Optional<ApartmentResidentDto> getApartmentResidentById(Long apartmentId, Long userId) {
+        ApartmentResidentId id = new ApartmentResidentId(apartmentId, userId);
         return apartmentResidentRepository.findById(id).map(apartmentResidentMapper::toDto);
     }
 
     public List<ApartmentResidentDto> getApartmentResidentsByUserId(Long userId) {
-        return apartmentResidentRepository.findByIdResidentId(userId).stream() // Sửa từ findByIdUserId thành findByIdResidentId
+        return apartmentResidentRepository.findByIdUserId(userId).stream() // Changed from findByIdResidentId to findByIdUserId
                 .map(entity -> {
                     ApartmentResidentDto dto = apartmentResidentMapper.toDto(entity);
                     // Bổ sung thông tin căn hộ và tòa
@@ -69,8 +69,8 @@ public class ApartmentResidentService {
     }
 
     @Transactional
-    public void removeResidentFromApartment(Long apartmentId, Long residentId) {
-        ApartmentResidentId id = new ApartmentResidentId(apartmentId, residentId);
+    public void removeResidentFromApartment(Long apartmentId, Long userId) {
+        ApartmentResidentId id = new ApartmentResidentId(apartmentId, userId);
         if (!apartmentResidentRepository.existsById(id)) {
             throw new RuntimeException("Apartment-Resident relationship not found");
         }

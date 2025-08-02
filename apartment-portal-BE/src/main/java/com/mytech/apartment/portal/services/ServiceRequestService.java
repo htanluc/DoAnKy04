@@ -54,8 +54,8 @@ public class ServiceRequestService {
     }
 
     public ServiceRequestDto createServiceRequest(ServiceRequestCreateRequest request) {
-        User user = userRepository.findById(request.getResidentId())
-                .orElseThrow(() -> new RuntimeException("User not found with id " + request.getResidentId()));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found with id " + request.getUserId()));
 
         // Lấy category từ categoryId
         ServiceCategory category = serviceCategoryRepository.findById(request.getCategoryId())

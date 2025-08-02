@@ -16,7 +16,7 @@ public class FeedbackMapper {
         return new FeedbackDto(
             feedback.getId(),
             feedback.getUser() != null ? feedback.getUser().getId() : null,
-            feedback.getUser() != null ? feedback.getUser().getUsername() : null,
+            feedback.getUser() != null ? feedback.getUser().getFullName() : null,
             feedback.getCategory() != null ? feedback.getCategory().getCategoryCode() : null,
             feedback.getCategory() != null ? feedback.getCategory().getCategoryName() : null,
             null, // title field doesn't exist in entity

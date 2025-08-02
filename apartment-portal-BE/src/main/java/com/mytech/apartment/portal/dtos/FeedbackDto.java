@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 public class FeedbackDto {
     private Long id;
-    private Long residentId;
-    private String residentName;
+    private Long userId;
+    private String userName;
     private String categoryId;
     private String categoryName;
     private String title;
@@ -19,12 +19,12 @@ public class FeedbackDto {
     // Constructors
     public FeedbackDto() {}
 
-    public FeedbackDto(Long id, Long residentId, String residentName, String categoryId, String categoryName,
+    public FeedbackDto(Long id, Long userId, String userName, String categoryId, String categoryName,
                       String title, String content, Integer rating, String status, String response,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
-        this.residentId = residentId;
-        this.residentName = residentName;
+        this.userId = userId;
+        this.userName = userName;
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.title = title;
@@ -40,11 +40,11 @@ public class FeedbackDto {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Long getResidentId() { return residentId; }
-    public void setResidentId(Long residentId) { this.residentId = residentId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
-    public String getResidentName() { return residentName; }
-    public void setResidentName(String residentName) { this.residentName = residentName; }
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
 
     public String getCategoryId() { return categoryId; }
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }

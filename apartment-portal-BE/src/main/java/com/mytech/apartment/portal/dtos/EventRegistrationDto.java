@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public class EventRegistrationDto {
     private Long id;
     private Long eventId;
-    private Long residentId;
+    private Long userId;
     private LocalDateTime registeredAt;
     private String status;
 } 

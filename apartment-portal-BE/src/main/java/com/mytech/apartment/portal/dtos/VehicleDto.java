@@ -21,7 +21,6 @@ public class VehicleDto {
     private String statusDisplayName;
     private BigDecimal monthlyFee;
     private String userFullName;
-    private String residentFullName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 } 

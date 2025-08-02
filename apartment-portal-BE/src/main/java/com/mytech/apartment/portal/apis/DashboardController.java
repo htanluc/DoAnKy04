@@ -24,6 +24,8 @@ import com.mytech.apartment.portal.repositories.InvoiceRepository;
 import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
 import com.mytech.apartment.portal.security.UserDetailsImpl;
 import com.mytech.apartment.portal.services.WaterMeterService;
+import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.dtos.ActivityLogDto;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -42,13 +44,16 @@ public class DashboardController {
     @Autowired
     private WaterMeterService waterMeterService;
 
+    @Autowired
+    private ActivityLogService activityLogService;
+
     @GetMapping("/stats")
     public ResponseEntity<?> getDashboardStats(Authentication authentication) {
         Long userId = ((UserDetailsImpl) authentication.getPrincipal()).getId();
 
         // 1) Danh sách apartmentId liên kết với user
         List<Long> apartmentIds = apartmentResidentRepository
-            .findByIdResidentId(userId) // Sửa từ findByIdUserId thành findByIdResidentId
+            .findByIdUserId(userId) // Changed from findByIdResidentId to findByIdUserId
             .stream()
             .map(link -> link.getId().getApartmentId())
             .collect(Collectors.toList());
@@ -98,5 +103,19 @@ public class DashboardController {
         stats.put("totalWaterFee",       totalWaterFee);
 
         return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Get recent activities for the authenticated user
+     */
+    @GetMapping("/recent-activities")
+    public ResponseEntity<List<ActivityLogDto>> getRecentActivities(Authentication authentication) {
+        try {
+            Long userId = ((UserDetailsImpl) authentication.getPrincipal()).getId();
+            List<ActivityLogDto> activities = activityLogService.getRecentActivityLogsByUserId(userId, 10);
+            return ResponseEntity.ok(activities);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

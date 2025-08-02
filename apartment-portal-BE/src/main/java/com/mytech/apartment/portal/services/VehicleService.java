@@ -3,11 +3,11 @@ package com.mytech.apartment.portal.services;
 import com.mytech.apartment.portal.dtos.VehicleCreateRequest;
 import com.mytech.apartment.portal.dtos.VehicleDto;
 import com.mytech.apartment.portal.mappers.VehicleMapper;
-import com.mytech.apartment.portal.models.Resident;
+import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.Vehicle;
 import com.mytech.apartment.portal.models.enums.VehicleStatus;
 import com.mytech.apartment.portal.models.enums.VehicleType;
-import com.mytech.apartment.portal.repositories.ResidentRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.repositories.VehicleRepository;
 import com.mytech.apartment.portal.services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleMapper vehicleMapper;
-    private final ResidentRepository residentRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
 
     public VehicleDto createVehicle(VehicleCreateRequest request, Authentication authentication) {
@@ -34,21 +34,19 @@ public class VehicleService {
             throw new RuntimeException("Biển số xe đã được đăng ký");
         }
 
-        // Lấy thông tin resident từ user hiện tại
+        // Lấy thông tin user hiện tại
         String username = authentication.getName();
         Long userId = userService.getUserIdByPhoneNumber(username);
         if (userId == null) {
             throw new RuntimeException("Không tìm thấy thông tin người dùng");
         }
         
-        Resident resident = residentRepository.findByUserId(userId);
-        if (resident == null) {
-            throw new RuntimeException("Không tìm thấy thông tin cư dân");
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người dùng"));
 
         // Tạo vehicle mới
         Vehicle vehicle = vehicleMapper.toEntity(request);
-        vehicle.setResident(resident);
+        vehicle.setUser(user);
         vehicle.setMonthlyFee(request.getVehicleType().getMonthlyFee());
 
         Vehicle savedVehicle = vehicleRepository.save(vehicle);
@@ -62,7 +60,7 @@ public class VehicleService {
             throw new RuntimeException("Không tìm thấy thông tin người dùng");
         }
         
-        List<Vehicle> vehicles = vehicleRepository.findByResidentUserId(userId);
+        List<Vehicle> vehicles = vehicleRepository.findByUserId(userId);
         return vehicles.stream()
                 .map(vehicleMapper::toDto)
                 .collect(Collectors.toList());

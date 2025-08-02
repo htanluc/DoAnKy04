@@ -52,8 +52,8 @@ public class Vehicle {
     private BigDecimal monthlyFee;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resident_user_id", nullable = false)
-    private Resident resident;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -44,15 +44,15 @@ public class FacilityBookingService {
 
     public FacilityBookingDto createFacilityBooking(FacilityBookingCreateRequest request) {
         // Validate dữ liệu đầu vào
-        if (request.getFacilityId() == null || request.getBookingTime() == null || request.getDuration() == null || request.getResidentId() == null) {
+        if (request.getFacilityId() == null || request.getBookingTime() == null || request.getDuration() == null || request.getUserId() == null) {
             throw new RuntimeException("Thiếu thông tin đặt chỗ");
         }
         
         Facility facility = facilityRepository.findById(request.getFacilityId())
                 .orElseThrow(() -> new RuntimeException("Facility not found with id " + request.getFacilityId()));
 
-        User user = userRepository.findById(request.getResidentId())
-                .orElseThrow(() -> new RuntimeException("User not found with id " + request.getResidentId()));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found with id " + request.getUserId()));
 
         // Parse bookingTime từ String sang LocalDateTime
         LocalDateTime bookingTime;

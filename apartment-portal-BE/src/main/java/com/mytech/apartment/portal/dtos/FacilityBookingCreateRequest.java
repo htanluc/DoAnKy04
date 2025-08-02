@@ -9,7 +9,7 @@ public class FacilityBookingCreateRequest {
     @NotNull(message = "facilityId không được để trống")
     private Long facilityId;
     
-    private Long residentId;
+    private Long userId;
     
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -31,9 +31,9 @@ public class FacilityBookingCreateRequest {
     // Constructors
     public FacilityBookingCreateRequest() {}
 
-    public FacilityBookingCreateRequest(Long facilityId, Long residentId, LocalDateTime startTime, LocalDateTime endTime, String purpose) {
+    public FacilityBookingCreateRequest(Long facilityId, Long userId, LocalDateTime startTime, LocalDateTime endTime, String purpose) {
         this.facilityId = facilityId;
-        this.residentId = residentId;
+        this.userId = userId;
         this.startTime = startTime;
         this.endTime = endTime;
         this.purpose = purpose;
@@ -43,8 +43,8 @@ public class FacilityBookingCreateRequest {
     public Long getFacilityId() { return facilityId; }
     public void setFacilityId(Long facilityId) { this.facilityId = facilityId; }
 
-    public Long getResidentId() { return residentId; }
-    public void setResidentId(Long residentId) { this.residentId = residentId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }

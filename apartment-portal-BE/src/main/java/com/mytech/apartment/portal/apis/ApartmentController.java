@@ -155,7 +155,7 @@ public class ApartmentController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         // Lấy userId từ username (giả sử username là unique, có thể là phone/email/username)
-        // Tìm userId qua service ResidentService
+        // Tìm userId qua service UserService
         Long userId = null;
         try {
             userId = apartmentService.getUserIdByUsername(username);

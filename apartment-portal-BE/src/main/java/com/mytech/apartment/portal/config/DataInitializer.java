@@ -3,6 +3,8 @@ package com.mytech.apartment.portal.config;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -28,7 +30,6 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private RoleRepository roleRepository;
     @Autowired private BuildingRepository buildingRepository;
     @Autowired private ApartmentRepository apartmentRepository;
-    @Autowired private ResidentRepository residentRepository;
     @Autowired private ApartmentResidentRepository apartmentResidentRepository;
     @Autowired private FacilityRepository facilityRepository;
     @Autowired private ServiceCategoryRepository serviceCategoryRepository;
@@ -80,32 +81,157 @@ public class DataInitializer implements CommandLineRunner {
             .orElseGet(() -> userRepository.save(User.builder().username("staff1").email("staff1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234569").status(UserStatus.ACTIVE).roles(Set.of(staffRole)).build())));
         users.add(userRepository.findByEmail("staff2@apartment.com")
             .orElseGet(() -> userRepository.save(User.builder().username("staff2").email("staff2@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234570").status(UserStatus.ACTIVE).roles(Set.of(staffRole)).build())));
+        
+        // Tạo resident users với thông tin đầy đủ
+        String[] names = {"Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D", "Hoàng Văn E", "Đặng Thị F", 
+                         "Vũ Thị G", "Đỗ Văn H", "Bùi Thị I", "Ngô Văn J", "Lý Thị K", "Hồ Văn L"};
+        
         users.add(userRepository.findByEmail("nguyenvanA@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident1").email("nguyenvanA@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234571").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident1")
+                .email("nguyenvanA@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234571")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[0])
+                .dateOfBirth(LocalDate.of(1980, 1, 1))
+                .idCardNumber("123456789012")
+                .build())));
         users.add(userRepository.findByEmail("tranthiB@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident2").email("tranthiB@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234572").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident2")
+                .email("tranthiB@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234572")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[1])
+                .dateOfBirth(LocalDate.of(1981, 2, 2))
+                .idCardNumber("123456789013")
+                .build())));
         users.add(userRepository.findByEmail("levanC@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident3").email("levanC@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234573").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident3")
+                .email("levanC@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234573")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[2])
+                .dateOfBirth(LocalDate.of(1982, 3, 3))
+                .idCardNumber("123456789014")
+                .build())));
         users.add(userRepository.findByEmail("phamthiD@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident4").email("phamthiD@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234574").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident4")
+                .email("phamthiD@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234574")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[3])
+                .dateOfBirth(LocalDate.of(1983, 4, 4))
+                .idCardNumber("123456789015")
+                .build())));
         users.add(userRepository.findByEmail("hoangvanE@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident5").email("hoangvanE@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234575").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident5")
+                .email("hoangvanE@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234575")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[4])
+                .dateOfBirth(LocalDate.of(1984, 5, 5))
+                .idCardNumber("123456789016")
+                .build())));
         users.add(userRepository.findByEmail("dangthiF@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident6").email("dangthiF@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234576").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident6")
+                .email("dangthiF@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234576")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[5])
+                .dateOfBirth(LocalDate.of(1985, 6, 6))
+                .idCardNumber("123456789017")
+                .build())));
         
         // Thêm 6 resident users mới
         users.add(userRepository.findByEmail("vuthiG@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident7").email("vuthiG@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234582").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident7")
+                .email("vuthiG@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234582")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[6])
+                .dateOfBirth(LocalDate.of(1986, 7, 7))
+                .idCardNumber("123456789018")
+                .build())));
         users.add(userRepository.findByEmail("dovanH@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident8").email("dovanH@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234583").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident8")
+                .email("dovanH@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234583")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[7])
+                .dateOfBirth(LocalDate.of(1987, 8, 8))
+                .idCardNumber("123456789019")
+                .build())));
         users.add(userRepository.findByEmail("buithiI@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident9").email("buithiI@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234584").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident9")
+                .email("buithiI@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234584")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[8])
+                .dateOfBirth(LocalDate.of(1988, 9, 9))
+                .idCardNumber("123456789020")
+                .build())));
         users.add(userRepository.findByEmail("ngovanJ@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident10").email("ngovanJ@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234585").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident10")
+                .email("ngovanJ@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234585")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[9])
+                .dateOfBirth(LocalDate.of(1989, 10, 10))
+                .idCardNumber("123456789021")
+                .build())));
         users.add(userRepository.findByEmail("lythiK@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident11").email("lythiK@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234586").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident11")
+                .email("lythiK@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234586")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[10])
+                .dateOfBirth(LocalDate.of(1990, 11, 11))
+                .idCardNumber("123456789022")
+                .build())));
         users.add(userRepository.findByEmail("hovanL@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident12").email("hovanL@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234587").status(UserStatus.ACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident12")
+                .email("hovanL@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234587")
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName(names[11])
+                .dateOfBirth(LocalDate.of(1991, 12, 12))
+                .idCardNumber("123456789023")
+                .build())));
         
         users.add(userRepository.findByEmail("technician1@apartment.com")
             .orElseGet(() -> userRepository.save(User.builder().username("technician1").email("technician1@apartment.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234577").status(UserStatus.ACTIVE).roles(Set.of(technicianRole)).build())));
@@ -116,9 +242,29 @@ public class DataInitializer implements CommandLineRunner {
 
         // Thêm resident bị khóa, resident inactive
         users.add(userRepository.findByEmail("locked@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident_locked").email("locked@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234580").status(UserStatus.LOCKED).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident_locked")
+                .email("locked@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234580")
+                .status(UserStatus.LOCKED)
+                .roles(Set.of(residentRole))
+                .fullName("Nguyễn Văn Locked")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .idCardNumber("999999999999")
+                .build())));
         users.add(userRepository.findByEmail("inactive@gmail.com")
-            .orElseGet(() -> userRepository.save(User.builder().username("resident_inactive").email("inactive@gmail.com").passwordHash(passwordEncoder.encode("password")).phoneNumber("0901234581").status(UserStatus.INACTIVE).roles(Set.of(residentRole)).build())));
+            .orElseGet(() -> userRepository.save(User.builder()
+                .username("resident_inactive")
+                .email("inactive@gmail.com")
+                .passwordHash(passwordEncoder.encode("password"))
+                .phoneNumber("0901234581")
+                .status(UserStatus.INACTIVE)
+                .roles(Set.of(residentRole))
+                .fullName("Trần Thị Inactive")
+                .dateOfBirth(LocalDate.of(1991, 2, 2))
+                .idCardNumber("888888888888")
+                .build())));
 
         // 3. Buildings - Chỉ tạo nếu chưa có buildings nào
         List<Building> buildings;
@@ -162,38 +308,20 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // 5. Residents
-        String[] names = {"Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D", "Hoàng Văn E", "Đặng Thị F", 
-                         "Vũ Thị G", "Đỗ Văn H", "Bùi Thị I", "Ngô Văn J", "Lý Thị K", "Hồ Văn L"};
-        List<Resident> residents = new ArrayList<>();
-        for (int i = 0; i < 12; i++) {
-            Resident resident = Resident.builder()
-                .userId(users.get(4 + i).getId())
-                .fullName(names[i])
-                .dateOfBirth(LocalDate.of(1980 + i, (i % 12) + 1, (i % 28) + 1))
-                .idCardNumber("123456789" + String.format("%03d", i + 12))
-                .familyRelation(i < 6 ? "Chủ hộ" : "Thành viên")
-                .status(1)
-                .build();
-            residents.add(residentRepository.save(resident));
-        }
-        
-        // Thêm resident bị khóa và inactive
-        Resident lockedResident = residentRepository.save(Resident.builder().userId(users.get(users.size()-2).getId()).fullName("Nguyễn Văn Locked").dateOfBirth(LocalDate.of(1990,1,1)).idCardNumber("999999999999").familyRelation("Chủ hộ").status(0).build());
-        Resident inactiveResident = residentRepository.save(Resident.builder().userId(users.get(users.size()-1).getId()).fullName("Trần Thị Inactive").dateOfBirth(LocalDate.of(1991,2,2)).idCardNumber("888888888888").familyRelation("Chủ hộ").status(0).build());
-        residents.add(lockedResident);
-        residents.add(inactiveResident);
-
-        // 6. Apartment Residents (liên kết resident với apartment)
-        for (int i = 0; i < residents.size() && i < apartments.size(); i++) {
-            apartmentResidentRepository.save(ApartmentResident.builder()
-                .id(new ApartmentResidentId(apartments.get(i).getId(), residents.get(i).getUserId()))
-                .moveInDate(LocalDate.now().minusMonths(6 + i))
-                .relationType("OWNER")
-                .build());
+        // 5. Apartment Residents (liên kết user với apartment) - Đã loại bỏ Resident, sử dụng User trực tiếp
+        for (int i = 0; i < users.size() && i < apartments.size(); i++) {
+            User user = users.get(i);
+            // Chỉ liên kết các user có role RESIDENT với apartment
+            if (user.getRoles().contains(residentRole)) {
+                apartmentResidentRepository.save(ApartmentResident.builder()
+                    .id(new ApartmentResidentId(apartments.get(i).getId(), user.getId()))
+                    .moveInDate(LocalDate.now().minusMonths(6 + i))
+                    .relationType("OWNER")
+                    .build());
+            }
         }
 
-        // 7. Facilities - Chỉ tạo nếu chưa có facilities nào
+        // 6. Facilities - Chỉ tạo nếu chưa có facilities nào
         List<Facility> facilities;
         if (facilityRepository.count() == 0) {
             facilities = new ArrayList<>();
@@ -359,19 +487,14 @@ public class DataInitializer implements CommandLineRunner {
             .createdAt(LocalDateTime.now())
             .build()));
 
-        // 12. Event Registrations
-        // Sửa lỗi: Resident không có getId(), dùng getUserId()
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(0).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(1).getUserId()).status(EventRegistrationStatus.ATTENDED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(0)).residentId(residents.get(2).getUserId()).status(EventRegistrationStatus.CANCELLED).build());
-        
+        // 12. Event Registrations - Sử dụng User thay vì Resident
         // Thêm event registrations mới
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(1)).residentId(residents.get(3).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(1)).residentId(residents.get(4).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(2)).residentId(residents.get(5).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(3)).residentId(residents.get(6).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(4)).residentId(residents.get(7).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
-        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(5)).residentId(residents.get(8).getUserId()).status(EventRegistrationStatus.REGISTERED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(1)).user(users.get(3)).status(EventRegistrationStatus.REGISTERED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(1)).user(users.get(4)).status(EventRegistrationStatus.REGISTERED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(2)).user(users.get(5)).status(EventRegistrationStatus.REGISTERED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(3)).user(users.get(6)).status(EventRegistrationStatus.REGISTERED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(4)).user(users.get(7)).status(EventRegistrationStatus.REGISTERED).build());
+        eventRegistrationRepository.save(EventRegistration.builder().event(events.get(5)).user(users.get(8)).status(EventRegistrationStatus.REGISTERED).build());
 
         // 13. Facility Bookings
         User residentUser = users.get(4);
@@ -437,9 +560,12 @@ public class DataInitializer implements CommandLineRunner {
             .build());
 
         // 14. Invoices & Invoice Items
-        for (Resident resident : residents) {
-            // Sửa lỗi: findByUserId(Long) không tồn tại, dùng findByIdResidentId(Long)
-            List<ApartmentResident> links = apartmentResidentRepository.findByIdResidentId(resident.getUserId());
+        for (User user : users) {
+            // Chỉ tạo invoice cho các user có role RESIDENT
+            if (!user.getRoles().contains(residentRole)) continue;
+            
+            // Sửa lỗi: findByUserId(Long) không tồn tại, dùng findByIdUserId(Long)
+            List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(user.getId());
             if (links.isEmpty()) continue;
             Long apartmentId = links.get(0).getApartmentId();
             
@@ -467,8 +593,8 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // 16. Service Requests
-        serviceRequestRepository.save(ServiceRequest.builder().user(residentUser).category(serviceCategories.get(0)).description("Cần sửa ống nước").submittedAt(LocalDateTime.now()).status(ServiceRequestStatus.OPEN).priority(ServiceRequestPriority.P2).build());
-        serviceRequestRepository.save(ServiceRequest.builder().user(residentUser).category(serviceCategories.get(1)).description("Cần sửa điện").submittedAt(LocalDateTime.now()).status(ServiceRequestStatus.COMPLETED).priority(ServiceRequestPriority.P1).resolutionNotes("Đã sửa xong").completedAt(LocalDateTime.now()).build());
+        serviceRequestRepository.save(ServiceRequest.builder().user(users.get(4)).category(serviceCategories.get(0)).description("Cần sửa ống nước").submittedAt(LocalDateTime.now()).status(ServiceRequestStatus.OPEN).priority(ServiceRequestPriority.P2).build());
+        serviceRequestRepository.save(ServiceRequest.builder().user(users.get(4)).category(serviceCategories.get(1)).description("Cần sửa điện").submittedAt(LocalDateTime.now()).status(ServiceRequestStatus.COMPLETED).priority(ServiceRequestPriority.P1).resolutionNotes("Đã sửa xong").completedAt(LocalDateTime.now()).build());
         
         // Thêm service requests mới
         User residentUser2 = users.get(5);
@@ -485,40 +611,40 @@ public class DataInitializer implements CommandLineRunner {
         serviceRequestRepository.save(ServiceRequest.builder().user(users.get(10)).category(serviceCategories.get(1)).description("Vòi nước bị rò rỉ").submittedAt(LocalDateTime.now().minusDays(8)).status(ServiceRequestStatus.COMPLETED).priority(ServiceRequestPriority.P1).resolutionNotes("Đã thay vòi nước mới").completedAt(LocalDateTime.now().minusDays(7)).build());
 
         // 17. Feedback
-        feedbackRepository.save(Feedback.builder().user(residentUser).category(feedbackCategories.get(0)).content("Đề xuất tăng cường bảo vệ").submittedAt(LocalDateTime.now()).status(FeedbackStatus.PENDING).build());
-        feedbackRepository.save(Feedback.builder().user(residentUser).category(feedbackCategories.get(2)).content("Khen ngợi dịch vụ vệ sinh").submittedAt(LocalDateTime.now()).status(FeedbackStatus.RESPONDED).response("Cảm ơn phản hồi").respondedAt(LocalDateTime.now()).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(4)).category(feedbackCategories.get(0)).content("Đề xuất tăng cường bảo vệ").submittedAt(LocalDateTime.now()).status(FeedbackStatus.PENDING).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(4)).category(feedbackCategories.get(2)).content("Khen ngợi dịch vụ vệ sinh").submittedAt(LocalDateTime.now()).status(FeedbackStatus.RESPONDED).response("Cảm ơn phản hồi").respondedAt(LocalDateTime.now()).build());
         
         // Thêm feedback mới
         User residentUser4 = users.get(7);
         User residentUser5 = users.get(8);
-        feedbackRepository.save(Feedback.builder().user(residentUser2).category(feedbackCategories.get(1)).content("Khiếu nại về tiếng ồn từ căn hộ bên cạnh").submittedAt(LocalDateTime.now().minusDays(1)).status(FeedbackStatus.RESPONDED).response("Đã liên hệ với cư dân để giải quyết").respondedAt(LocalDateTime.now()).build());
-        feedbackRepository.save(Feedback.builder().user(residentUser3).category(feedbackCategories.get(0)).content("Đề xuất lắp thêm camera an ninh").submittedAt(LocalDateTime.now().minusDays(2)).status(FeedbackStatus.PENDING).build());
-        feedbackRepository.save(Feedback.builder().user(residentUser4).category(feedbackCategories.get(2)).content("Khen ngợi dịch vụ kỹ thuật nhanh chóng").submittedAt(LocalDateTime.now().minusDays(3)).status(FeedbackStatus.RESPONDED).response("Cảm ơn sự tin tưởng của bạn").respondedAt(LocalDateTime.now().minusDays(1)).build());
-        feedbackRepository.save(Feedback.builder().user(residentUser5).category(feedbackCategories.get(1)).content("Khiếu nại về chất lượng nước").submittedAt(LocalDateTime.now().minusDays(4)).status(FeedbackStatus.PENDING).response("Đang kiểm tra và xử lý").respondedAt(LocalDateTime.now().minusDays(2)).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(5)).category(feedbackCategories.get(1)).content("Khiếu nại về tiếng ồn từ căn hộ bên cạnh").submittedAt(LocalDateTime.now().minusDays(1)).status(FeedbackStatus.RESPONDED).response("Đã liên hệ với cư dân để giải quyết").respondedAt(LocalDateTime.now()).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(6)).category(feedbackCategories.get(0)).content("Đề xuất lắp thêm camera an ninh").submittedAt(LocalDateTime.now().minusDays(2)).status(FeedbackStatus.PENDING).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(7)).category(feedbackCategories.get(2)).content("Khen ngợi dịch vụ kỹ thuật nhanh chóng").submittedAt(LocalDateTime.now().minusDays(3)).status(FeedbackStatus.RESPONDED).response("Cảm ơn sự tin tưởng của bạn").respondedAt(LocalDateTime.now().minusDays(1)).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(8)).category(feedbackCategories.get(1)).content("Khiếu nại về chất lượng nước").submittedAt(LocalDateTime.now().minusDays(4)).status(FeedbackStatus.PENDING).response("Đang kiểm tra và xử lý").respondedAt(LocalDateTime.now().minusDays(2)).build());
 
         // 18. Activity Logs
-        activityLogRepository.save(ActivityLog.builder().user(residentUser).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now()).build());
-        activityLogRepository.save(ActivityLog.builder().user(residentUser).actionType("PAYMENT").description("Thanh toán hóa đơn").timestamp(LocalDateTime.now()).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now()).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType("PAYMENT").description("Thanh toán hóa đơn").timestamp(LocalDateTime.now()).build());
         
         // Thêm activity logs mới
-        activityLogRepository.save(ActivityLog.builder().user(residentUser2).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(2)).build());
-        activityLogRepository.save(ActivityLog.builder().user(residentUser2).actionType("FACILITY_BOOKING").description("Đặt phòng gym").timestamp(LocalDateTime.now().minusHours(1)).build());
-        activityLogRepository.save(ActivityLog.builder().user(residentUser3).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(3)).build());
-        activityLogRepository.save(ActivityLog.builder().user(residentUser3).actionType("SERVICE_REQUEST").description("Tạo yêu cầu sửa chữa").timestamp(LocalDateTime.now().minusHours(2)).build());
-        activityLogRepository.save(ActivityLog.builder().user(adminUser).actionType("ANNOUNCEMENT_CREATE").description("Tạo thông báo mới").timestamp(LocalDateTime.now().minusHours(4)).build());
-        activityLogRepository.save(ActivityLog.builder().user(adminUser).actionType("USER_MANAGEMENT").description("Quản lý người dùng").timestamp(LocalDateTime.now().minusHours(5)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(2)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType("FACILITY_BOOKING").description("Đặt phòng gym").timestamp(LocalDateTime.now().minusHours(1)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(3)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType("SERVICE_REQUEST").description("Tạo yêu cầu sửa chữa").timestamp(LocalDateTime.now().minusHours(2)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType("ANNOUNCEMENT_CREATE").description("Tạo thông báo mới").timestamp(LocalDateTime.now().minusHours(4)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType("USER_MANAGEMENT").description("Quản lý người dùng").timestamp(LocalDateTime.now().minusHours(5)).build());
 
         // 19. AI QA History
-        aiQaHistoryRepository.save(AiQaHistory.builder().user(residentUser).question("Làm sao đổi mật khẩu?").aiAnswer("Vào phần tài khoản để đổi mật khẩu.").askedAt(LocalDateTime.now()).responseTime(1200).feedback("HELPFUL").build());
-        aiQaHistoryRepository.save(AiQaHistory.builder().user(residentUser).question("Làm sao đăng ký sự kiện?").aiAnswer("Chọn sự kiện và nhấn Đăng ký.").askedAt(LocalDateTime.now()).responseTime(900).feedback("NOT_HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(4)).question("Làm sao đổi mật khẩu?").aiAnswer("Vào phần tài khoản để đổi mật khẩu.").askedAt(LocalDateTime.now()).responseTime(1200).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(4)).question("Làm sao đăng ký sự kiện?").aiAnswer("Chọn sự kiện và nhấn Đăng ký.").askedAt(LocalDateTime.now()).responseTime(900).feedback("NOT_HELPFUL").build());
         
         // Thêm AI QA history mới
-        aiQaHistoryRepository.save(AiQaHistory.builder().user(residentUser2).question("Làm sao thanh toán hóa đơn?").aiAnswer("Vào phần hóa đơn và chọn phương thức thanh toán phù hợp.").askedAt(LocalDateTime.now().minusHours(1)).responseTime(800).feedback("HELPFUL").build());
-        aiQaHistoryRepository.save(AiQaHistory.builder().user(residentUser3).question("Giờ mở cửa phòng gym?").aiAnswer("Phòng gym mở cửa từ 6:00-22:00 hàng ngày.").askedAt(LocalDateTime.now().minusHours(2)).responseTime(600).feedback("HELPFUL").build());
-        aiQaHistoryRepository.save(AiQaHistory.builder().user(residentUser4).question("Làm sao báo cáo sự cố?").aiAnswer("Vào phần yêu cầu dịch vụ để tạo báo cáo sự cố.").askedAt(LocalDateTime.now().minusHours(3)).responseTime(1000).feedback("HELPFUL").build());
-        aiQaHistoryRepository.save(AiQaHistory.builder().user(residentUser5).question("Phí dịch vụ bao nhiêu?").aiAnswer("Phí dịch vụ thay đổi theo loại dịch vụ, vui lòng xem chi tiết trong phần hóa đơn.").askedAt(LocalDateTime.now().minusHours(4)).responseTime(1500).feedback("NOT_HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(5)).question("Làm sao thanh toán hóa đơn?").aiAnswer("Vào phần hóa đơn và chọn phương thức thanh toán phù hợp.").askedAt(LocalDateTime.now().minusHours(1)).responseTime(800).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(6)).question("Giờ mở cửa phòng gym?").aiAnswer("Phòng gym mở cửa từ 6:00-22:00 hàng ngày.").askedAt(LocalDateTime.now().minusHours(2)).responseTime(600).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(7)).question("Làm sao báo cáo sự cố?").aiAnswer("Vào phần yêu cầu dịch vụ để tạo báo cáo sự cố.").askedAt(LocalDateTime.now().minusHours(3)).responseTime(1000).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(8)).question("Phí dịch vụ bao nhiêu?").aiAnswer("Phí dịch vụ thay đổi theo loại dịch vụ, vui lòng xem chi tiết trong phần hóa đơn.").askedAt(LocalDateTime.now().minusHours(4)).responseTime(1500).feedback("NOT_HELPFUL").build());
 
-        // 20. Vehicles (Cars) - Tạo ít nhất 1 xe cho mỗi resident
+        // 20. Vehicles (Cars) - Tạo ít nhất 1 xe cho mỗi resident user
         String[] carBrands = {"Toyota", "Honda", "Ford", "Hyundai", "Mazda", "Kia", "Nissan", "Mitsubishi", "Suzuki", "Daihatsu", "Chevrolet", "BMW", "Mercedes", "Audi"};
         String[] carModels = {"Vios", "City", "Ranger", "Accent", "CX-5", "Cerato", "Sunny", "Lancer", "Swift", "Terios", "Spark", "X3", "C-Class", "A4"};
         String[] carColors = {"Trắng", "Đen", "Bạc", "Xanh", "Đỏ", "Vàng", "Xám", "Nâu"};
@@ -539,8 +665,11 @@ public class DataInitializer implements CommandLineRunner {
             "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop"
         };
         
-        for (int i = 0; i < residents.size(); i++) {
-            Resident resident = residents.get(i);
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            // Chỉ tạo vehicle cho các user có role RESIDENT
+            if (!user.getRoles().contains(residentRole)) continue;
+            
             String licensePlate = "30A-" + String.format("%05d", 10000 + i);
             String brand = carBrands[i % carBrands.length];
             String model = carModels[i % carModels.length];
@@ -559,7 +688,7 @@ public class DataInitializer implements CommandLineRunner {
                 .imageUrls(imageUrlsArray)
                 .status(VehicleStatus.APPROVED)
                 .monthlyFee(new BigDecimal("150000"))
-                .resident(resident)
+                .user(user) // Changed from resident to user
                 .build());
         }
 
@@ -583,9 +712,10 @@ public class DataInitializer implements CommandLineRunner {
             "Báo cáo sự cố an ninh"
         };
         
-        for (int i = 0; i < residents.size(); i++) {
-            Resident resident = residents.get(i);
-            User currentResidentUser = users.get(4 + i); // resident users start from index 4
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            // Chỉ tạo service request cho các user có role RESIDENT
+            if (!user.getRoles().contains(residentRole)) continue;
             
             // Tạo 5 service requests cho mỗi resident với các trạng thái khác nhau
             for (int j = 0; j < 5; j++) {
@@ -594,7 +724,7 @@ public class DataInitializer implements CommandLineRunner {
                 String description = descriptions[(i * 5 + j) % descriptions.length];
                 
                 ServiceRequest serviceRequest = ServiceRequest.builder()
-                    .user(currentResidentUser)
+                    .user(user)
                     .category(serviceCategories.get(j % serviceCategories.size()))
                     .description(description)
                     .submittedAt(LocalDateTime.now().minusDays(j + 1))
@@ -613,8 +743,10 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // 22. Additional Event Registrations - Đăng ký thêm sự kiện cho mỗi resident
-        for (int i = 0; i < residents.size(); i++) {
-            Resident resident = residents.get(i);
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            // Chỉ đăng ký event cho các user có role RESIDENT
+            if (!user.getRoles().contains(residentRole)) continue;
             
             // Đăng ký cho 6 sự kiện khác nhau với các trạng thái khác nhau
             EventRegistrationStatus[] regStatuses = {EventRegistrationStatus.REGISTERED, EventRegistrationStatus.CANCELLED};
@@ -624,14 +756,93 @@ public class DataInitializer implements CommandLineRunner {
                 
                 eventRegistrationRepository.save(EventRegistration.builder()
                     .event(events.get(j))
-                    .residentId(resident.getUserId())
+                    .user(user) // Changed from residentId to user
                     .status(status)
                     .build());
             }
         }
 
+        // 23. Cleanup duplicate event registrations (after ALL event registrations are created)
+        System.out.println("🧹 Cleaning up duplicate event registrations...");
+        cleanupDuplicateEventRegistrations();
         
         System.out.println("✅ Data seeding completed successfully!");
 
+    }
+
+    /**
+     * Cleanup duplicate event registrations
+     * Removes duplicate registrations for the same event-user pair
+     * Keeps only the most recent REGISTERED one, or the most recent one if no REGISTERED exists
+     */
+    private void cleanupDuplicateEventRegistrations() {
+        try {
+            System.out.println("🔍 Starting duplicate event registration cleanup...");
+            
+            // Get all event registrations
+            List<EventRegistration> allRegistrations = eventRegistrationRepository.findAll();
+            System.out.println("📊 Total event registrations found: " + allRegistrations.size());
+            
+            // Group by event_id and user_id
+            Map<String, List<EventRegistration>> groupedRegistrations = allRegistrations.stream()
+                .collect(Collectors.groupingBy(reg -> reg.getEvent().getId() + "-" + reg.getUser().getId()));
+            
+            System.out.println("📋 Unique event-user combinations: " + groupedRegistrations.size());
+            
+            int totalDeleted = 0;
+            int duplicatesFound = 0;
+            
+            for (Map.Entry<String, List<EventRegistration>> entry : groupedRegistrations.entrySet()) {
+                List<EventRegistration> registrations = entry.getValue();
+                
+                // If there's only one registration, skip
+                if (registrations.size() <= 1) {
+                    continue;
+                }
+                
+                duplicatesFound++;
+                System.out.println("⚠️  Found " + registrations.size() + " registrations for " + entry.getKey());
+                
+                // Find the registration to keep
+                EventRegistration registrationToKeep = null;
+                
+                // First, try to find the most recent REGISTERED one
+                List<EventRegistration> registeredOnes = registrations.stream()
+                    .filter(reg -> reg.getStatus() == EventRegistrationStatus.REGISTERED)
+                    .collect(Collectors.toList());
+                
+                if (!registeredOnes.isEmpty()) {
+                    // Keep the most recent REGISTERED one
+                    registrationToKeep = registeredOnes.stream()
+                        .max(Comparator.comparing(EventRegistration::getRegisteredAt))
+                        .orElse(registeredOnes.get(0));
+                    System.out.println("✅ Keeping REGISTERED registration ID: " + registrationToKeep.getId());
+                } else {
+                    // If no REGISTERED ones, keep the most recent one
+                    registrationToKeep = registrations.stream()
+                        .max(Comparator.comparing(EventRegistration::getRegisteredAt))
+                        .orElse(registrations.get(0));
+                    System.out.println("✅ Keeping most recent registration ID: " + registrationToKeep.getId());
+                }
+                
+                // Delete all other registrations
+                for (EventRegistration reg : registrations) {
+                    if (!reg.getId().equals(registrationToKeep.getId())) {
+                        eventRegistrationRepository.delete(reg);
+                        totalDeleted++;
+                        System.out.println("🗑️  Deleted registration ID: " + reg.getId() + " (status: " + reg.getStatus() + ")");
+                    }
+                }
+            }
+            
+            System.out.println("📈 Summary:");
+            System.out.println("   - Duplicate groups found: " + duplicatesFound);
+            System.out.println("   - Total registrations deleted: " + totalDeleted);
+            System.out.println("✅ Cleanup completed successfully!");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error during cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 } 

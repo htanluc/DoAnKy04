@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,7 @@ import {
   TrendingUp,
   Star
 } from 'lucide-react'
-import { registerEvent, cancelEventRegistration } from '@/lib/api'
+import { registerEvent, cancelEventRegistrationByEventId } from '@/lib/api'
 import type { JSX } from 'react'
 
 // Custom CSS for animations
@@ -144,110 +144,80 @@ export default function EventsPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const hasFetched = useRef(false)
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true)
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8080/api/events', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('Lỗi khi lấy sự kiện')
-        const data = await res.json()
-        setEvents(data)
-      } catch (error) {
-        console.error('Error fetching events:', error)
-      } finally {
-        setLoading(false)
-      }
+  const fetchEvents = useCallback(async () => {
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8080/api/events', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Lỗi khi lấy sự kiện')
+      const data = await res.json()
+      setEvents(data)
+      hasFetched.current = true
+    } catch (error) {
+      console.error('Error fetching events:', error)
+    } finally {
+      setLoading(false)
     }
-    fetchEvents()
   }, [])
 
-  const getEventStatus = (event: Event) => {
+  useEffect(() => {
+    // Prevent multiple API calls
+    if (hasFetched.current) return
+    fetchEvents()
+  }, [fetchEvents])
+
+  const getEventStatus = useCallback((event: Event) => {
     const now = new Date();
+    const [startDatePart, startTimePart] = event.startTime.split(' ');
+    const [startYear, startMonth, startDay] = startDatePart.split('-');
+    const [startHour, startMinute] = startTimePart.split(':');
+    const startTime = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), parseInt(startHour), parseInt(startMinute));
     
-    // Kiểm tra xem startTime và endTime có tồn tại và có định dạng đúng không
-    if (!event.startTime || !event.endTime) {
-      return 'UPCOMING'; // Fallback nếu không có thời gian
+    const [endDatePart, endTimePart] = event.endTime.split(' ');
+    const [endYear, endMonth, endDay] = endDatePart.split('-');
+    const [endHour, endMinute] = endTimePart.split(':');
+    const endTime = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), parseInt(endHour), parseInt(endMinute));
+    
+    if (now > endTime) {
+      return 'COMPLETED';
+    } else if (now >= startTime && now <= endTime) {
+      return 'ONGOING';
+    } else {
+      return 'UPCOMING';
     }
-    
-    try {
-      const [startDatePart, startTimePart] = event.startTime.split(' ');
-      if (!startDatePart || !startTimePart) {
-        return 'UPCOMING';
-      }
-      
-      const [startYear, startMonth, startDay] = startDatePart.split('-');
-      const [startHour, startMinute] = startTimePart.split(':');
-      const startTime = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), parseInt(startHour), parseInt(startMinute));
-      
-      const [endDatePart, endTimePart] = event.endTime.split(' ');
-      if (!endDatePart || !endTimePart) {
-        return 'UPCOMING';
-      }
-      
-      const [endYear, endMonth, endDay] = endDatePart.split('-');
-      const [endHour, endMinute] = endTimePart.split(':');
-      const endTime = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), parseInt(endHour), parseInt(endMinute));
-      
-      if (now > endTime) {
-        return 'COMPLETED';
-      } else if (now >= startTime && now <= endTime) {
-        return 'ONGOING';
-      } else {
-        return 'UPCOMING';
-      }
-    } catch (error) {
-      console.error('Error parsing event time:', error);
-      return 'UPCOMING'; // Fallback nếu có lỗi parse
-    }
-  }
+  }, [])
 
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.location.toLowerCase().includes(searchTerm.toLowerCase())
-    const eventStatus = getEventStatus(event)
-    const matchesStatus = filterStatus === 'all' || eventStatus === filterStatus
-    
-    return matchesSearch && matchesStatus
-  })
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           event.location.toLowerCase().includes(searchTerm.toLowerCase())
+      const eventStatus = getEventStatus(event)
+      const matchesStatus = filterStatus === 'all' || eventStatus === filterStatus
+      
+      return matchesSearch && matchesStatus
+    })
+  }, [events, searchTerm, filterStatus, getEventStatus])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     // Parse format "yyyy-MM-dd HH:mm:ss"
-    if (!dateString) return 'N/A';
-    
-    try {
-      const [datePart] = dateString.split(' ');
-      if (!datePart) return 'N/A';
-      
-      const [year, month, day] = datePart.split('-');
-      return `${day}/${month}/${year}`;
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'N/A';
-    }
-  }
+    const [datePart] = dateString.split(' ');
+    const [year, month, day] = datePart.split('-');
+    return `${day}/${month}/${year}`;
+  }, [])
 
-  const formatTime = (dateString: string) => {
+  const formatTime = useCallback((dateString: string) => {
     // Parse format "yyyy-MM-dd HH:mm:ss"
-    if (!dateString) return 'N/A';
-    
-    try {
-      const [datePart, timePart] = dateString.split(' ');
-      if (!timePart) return 'N/A';
-      
-      const [hours, minutes] = timePart.split(':');
-      return `${hours}:${minutes}`;
-    } catch (error) {
-      console.error('Error formatting time:', error);
-      return 'N/A';
-    }
-  }
+    const [datePart, timePart] = dateString.split(' ');
+    const [hours, minutes] = timePart.split(':');
+    return `${hours}:${minutes}`;
+  }, [])
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case 'UPCOMING':
         return (
@@ -273,46 +243,50 @@ export default function EventsPage() {
       default:
         return null
     }
-  }
+  }, [])
 
-  const handleRegister = async (eventId: string) => {
+  const handleRegister = useCallback(async (eventId: string) => {
     setError(null)
     setSuccess(null)
     try {
       await registerEvent({ eventId: parseInt(eventId) })
       setSuccess('Đăng ký sự kiện thành công!')
-      // Update local state
-      setEvents(prev => prev.map(event => event.id === eventId ? { ...event, registered: true, participantCount: event.participantCount + 1 } : event))
+      // Refresh data to get updated registration status
+      hasFetched.current = false
+      fetchEvents()
     } catch (err: any) {
       if (err.message.includes('đã đăng ký')) {
         setSuccess('Bạn đã đăng ký sự kiện này rồi!')
-        // Update local state to reflect already registered
-        setEvents(prev => prev.map(event => event.id === eventId ? { ...event, registered: true } : event))
+        // Refresh data to get updated registration status
+        hasFetched.current = false
+        fetchEvents()
       } else {
         setError(err.message || 'Đăng ký sự kiện thất bại')
       }
     }
-  }
+  }, [fetchEvents])
 
-  const handleUnregister = async (registrationId: string) => {
+  const handleUnregister = useCallback(async (eventId: string) => {
     setError(null)
     setSuccess(null)
     try {
-      await cancelEventRegistration(registrationId)
+      await cancelEventRegistrationByEventId(eventId)
       setSuccess('Hủy đăng ký sự kiện thành công!')
-      setEvents(prev => prev.map(event => event.id === registrationId ? { ...event, registered: false, participantCount: event.participantCount - 1 } : event))
+      // Refresh data to get updated registration status
+      hasFetched.current = false
+      fetchEvents()
     } catch (err: any) {
       setError(err.message || 'Hủy đăng ký sự kiện thất bại')
     }
-  }
+  }, [fetchEvents])
 
-  const getUpcomingEvents = () => {
+  const getUpcomingEvents = useMemo(() => {
     return events.filter(event => getEventStatus(event) === 'UPCOMING').length
-  }
+  }, [events, getEventStatus])
 
-  const getRegisteredEvents = () => {
+  const getRegisteredEvents = useMemo(() => {
     return events.filter(event => event.registered).length
-  }
+  }, [events])
 
   if (loading) {
     return (
@@ -406,7 +380,7 @@ export default function EventsPage() {
                 <Clock className="h-5 w-5 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-gray-900 mb-1">{getUpcomingEvents()}</div>
+                <div className="text-3xl font-bold text-gray-900 mb-1">{getUpcomingEvents}</div>
                 <p className="text-xs text-gray-500 flex items-center">
                   <AlertTriangle className="h-3 w-3 mr-1" />
                   Sự kiện sắp diễn ra
@@ -422,7 +396,7 @@ export default function EventsPage() {
                 <Users className="h-5 w-5 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-gray-900 mb-1">{getRegisteredEvents()}</div>
+                <div className="text-3xl font-bold text-gray-900 mb-1">{getRegisteredEvents}</div>
                 <p className="text-xs text-gray-500 flex items-center">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Sự kiện đã đăng ký

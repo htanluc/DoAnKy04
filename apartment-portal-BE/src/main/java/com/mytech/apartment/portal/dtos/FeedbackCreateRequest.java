@@ -1,7 +1,7 @@
 package com.mytech.apartment.portal.dtos;
 
 public class FeedbackCreateRequest {
-    private Long residentId;
+    private Long userId;
     private String categoryId;
     private String title;
     private String content;
@@ -10,8 +10,8 @@ public class FeedbackCreateRequest {
     // Constructors
     public FeedbackCreateRequest() {}
 
-    public FeedbackCreateRequest(Long residentId, String categoryId, String title, String content, Integer rating) {
-        this.residentId = residentId;
+    public FeedbackCreateRequest(Long userId, String categoryId, String title, String content, Integer rating) {
+        this.userId = userId;
         this.categoryId = categoryId;
         this.title = title;
         this.content = content;
@@ -19,8 +19,8 @@ public class FeedbackCreateRequest {
     }
 
     // Getters and Setters
-    public Long getResidentId() { return residentId; }
-    public void setResidentId(Long residentId) { this.residentId = residentId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getCategoryId() { return categoryId; }
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }

@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 @Data
 public class EmergencyContactDto {
     private Long id;
-    private Long residentId;
+    private Long userId;
     private String name;
     private String phone;
     private String relationship;

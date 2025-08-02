@@ -46,7 +46,7 @@ public class FacilityBookingController {
                 userId = userDetails.getId();
             }
             if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
-            req.setResidentId(userId);
+            req.setUserId(userId); // Changed from setResidentId to setUserId
             FacilityBookingDto saved = facilityBookingService.createFacilityBooking(req);
             // Ghi log
             String facilityName = saved.getFacilityName() != null ? saved.getFacilityName() : "";

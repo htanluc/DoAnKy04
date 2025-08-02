@@ -5,8 +5,8 @@ import java.util.List;
 
 public class ServiceRequestDto {
     private Long id;
-    private Long residentId;
-    private String residentName;
+    private Long userId;
+    private String userName;
     private String categoryId;
     private String categoryName;
     private String title;
@@ -24,12 +24,12 @@ public class ServiceRequestDto {
     // Constructors
     public ServiceRequestDto() {}
 
-    public ServiceRequestDto(Long id, Long residentId, String residentName, String categoryId, String categoryName,
+    public ServiceRequestDto(Long id, Long userId, String userName, String categoryId, String categoryName,
                            String title, String description, String priority, String status, String assignedTo,
                            String resolution, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {
         this.id = id;
-        this.residentId = residentId;
-        this.residentName = residentName;
+        this.userId = userId;
+        this.userName = userName;
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.title = title;
@@ -43,13 +43,13 @@ public class ServiceRequestDto {
         this.resolvedAt = resolvedAt;
     }
 
-    public ServiceRequestDto(Long id, Long residentId, String residentName, String categoryId, String categoryName,
+    public ServiceRequestDto(Long id, Long userId, String userName, String categoryId, String categoryName,
                            String title, String description, String priority, String status, String assignedTo,
                            String resolution, List<String> attachmentUrls, List<String> imageUrls,
                            LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {
         this.id = id;
-        this.residentId = residentId;
-        this.residentName = residentName;
+        this.userId = userId;
+        this.userName = userName;
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.title = title;
@@ -69,11 +69,11 @@ public class ServiceRequestDto {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Long getResidentId() { return residentId; }
-    public void setResidentId(Long residentId) { this.residentId = residentId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
-    public String getResidentName() { return residentName; }
-    public void setResidentName(String residentName) { this.residentName = residentName; }
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
 
     public String getCategoryId() { return categoryId; }
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }

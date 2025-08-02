@@ -9,5 +9,7 @@ public class UserCreateRequest {
     private String phoneNumber;
     private String password;
     private String email;
+    private String fullName;
+    private String idCardNumber;
     private Set<String> roles;
 } 

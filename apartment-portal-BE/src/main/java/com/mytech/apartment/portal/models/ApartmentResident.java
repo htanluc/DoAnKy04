@@ -34,7 +34,7 @@ public class ApartmentResident {
         return id != null ? id.getApartmentId() : null;
     }
 
-    public Long getResidentId() {
-        return id != null ? id.getResidentId() : null;
+    public Long getUserId() {
+        return id != null ? id.getUserId() : null;
     }
 }
