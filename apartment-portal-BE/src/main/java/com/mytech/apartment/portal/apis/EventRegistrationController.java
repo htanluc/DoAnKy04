@@ -21,8 +21,6 @@ import com.mytech.apartment.portal.repositories.EventRepository;
 import com.mytech.apartment.portal.repositories.EventRegistrationRepository;
 import java.util.Optional;
 import com.mytech.apartment.portal.models.enums.EventRegistrationStatus;
-import com.mytech.apartment.portal.repositories.ResidentRepository;
-import com.mytech.apartment.portal.models.Resident;
 import java.util.ArrayList;
 
 @RestController
@@ -39,9 +37,6 @@ public class EventRegistrationController {
 
     @Autowired
     private EventRegistrationRepository registrationRepository;
-
-    @Autowired
-    private ResidentRepository residentRepository;
 
     // Endpoint for a resident to register for an event
     @PostMapping("/event-registrations/register")
@@ -66,18 +61,8 @@ public class EventRegistrationController {
             
             System.out.println("Found user ID: " + userId);
             
-            // Get resident ID from user ID
-            Resident resident = residentRepository.findByUserId(userId);
-            if (resident == null) {
-                System.out.println("Resident not found for user ID: " + userId);
-                return ResponseEntity.status(401).body(null);
-            }
-            
-            Long residentId = resident.getUserId(); // In Resident model, userId is the primary key
-            System.out.println("Found resident ID: " + residentId);
-            
-            // Set residentId from authenticated user
-            request.setResidentId(residentId);
+            // Set userId from authenticated user
+            request.setUserId(userId);
             System.out.println("Final request: " + request);
             
             EventRegistrationDto registration = eventRegistrationService.registerForEvent(request);
@@ -119,16 +104,6 @@ public class EventRegistrationController {
             
             System.out.println("Found user ID: " + userId + " for event ID: " + eventId);
             
-            // Get resident ID from user ID
-            Resident resident = residentRepository.findByUserId(userId);
-            if (resident == null) {
-                System.out.println("Resident not found for user ID: " + userId);
-                return ResponseEntity.status(401).body(Map.of("error", "Resident not found"));
-            }
-            
-            Long residentId = resident.getUserId(); // In Resident model, userId is the primary key
-            System.out.println("Found resident ID: " + residentId + " for event ID: " + eventId);
-            
             // Check if event exists
             if (!eventRepository.existsById(eventId)) {
                 System.out.println("Event with ID " + eventId + " does not exist");
@@ -136,9 +111,9 @@ public class EventRegistrationController {
             }
             
             // Check if user has registration for this event
-            Optional<EventRegistration> registration = registrationRepository.findByEventIdAndResidentId(eventId, residentId);
+            Optional<EventRegistration> registration = registrationRepository.findByEventIdAndUserId(eventId, userId);
             if (!registration.isPresent()) {
-                System.out.println("No registration found for event ID: " + eventId + " and resident ID: " + residentId);
+                System.out.println("No registration found for event ID: " + eventId + " and user ID: " + userId);
                 return ResponseEntity.status(404).body(Map.of("error", "Registration not found"));
             }
             
@@ -150,8 +125,8 @@ public class EventRegistrationController {
                 return ResponseEntity.status(400).body(Map.of("error", "Registration is not in REGISTERED status"));
             }
             
-            // Cancel registration by event ID and resident ID
-            boolean success = eventRegistrationService.cancelRegistrationByEventAndUser(eventId, residentId);
+            // Cancel registration by event ID and user ID
+            boolean success = eventRegistrationService.cancelRegistrationByEventAndUser(eventId, userId);
             System.out.println("Cancel registration result: " + success);
             
             if (success) {
@@ -269,50 +244,41 @@ public class EventRegistrationController {
             result.put("userId", userId);
             
             if (userId != null) {
-                // Get resident ID from user ID
-                Resident resident = residentRepository.findByUserId(userId);
-                result.put("residentFound", resident != null);
+                // Check if event exists
+                boolean eventExists = eventRepository.existsById(eventId);
+                result.put("eventExists", eventExists);
                 
-                if (resident != null) {
-                    Long residentId = resident.getUserId(); // Primary key of Resident
-                    result.put("residentId", residentId);
+                if (eventExists) {
+                    // Get registration for this user and event
+                    Optional<EventRegistration> registration = registrationRepository.findByEventIdAndUserId(eventId, userId);
+                    result.put("hasRegistration", registration.isPresent());
                     
-                    // Check if event exists
-                    boolean eventExists = eventRepository.existsById(eventId);
-                    result.put("eventExists", eventExists);
-                    
-                    if (eventExists) {
-                        // Get registration for this resident and event
-                        Optional<EventRegistration> registration = registrationRepository.findByEventIdAndResidentId(eventId, residentId);
-                        result.put("hasRegistration", registration.isPresent());
-                        
-                        if (registration.isPresent()) {
-                            EventRegistration reg = registration.get();
-                            result.put("registrationId", reg.getId());
-                            result.put("registrationStatus", reg.getStatus());
-                            result.put("registrationResidentId", reg.getResidentId());
-                        }
-                        
-                        // Get all registrations for this event
-                        List<EventRegistration> allRegistrations = registrationRepository.findByEventId(eventId);
-                        result.put("totalRegistrationsForEvent", allRegistrations.size());
-                        result.put("registrations", allRegistrations.stream().map(r -> Map.of(
-                            "id", r.getId(),
-                            "residentId", r.getResidentId(),
-                            "status", r.getStatus(),
-                            "registeredAt", r.getRegisteredAt()
-                        )).collect(Collectors.toList()));
-                        
-                        // Get all registrations for this resident
-                        List<EventRegistration> residentRegistrations = registrationRepository.findByResidentId(residentId);
-                        result.put("totalRegistrationsForResident", residentRegistrations.size());
-                        result.put("residentRegistrations", residentRegistrations.stream().map(r -> Map.of(
-                            "id", r.getId(),
-                            "eventId", r.getEvent().getId(),
-                            "status", r.getStatus(),
-                            "registeredAt", r.getRegisteredAt()
-                        )).collect(Collectors.toList()));
+                    if (registration.isPresent()) {
+                        EventRegistration reg = registration.get();
+                        result.put("registrationId", reg.getId());
+                        result.put("registrationStatus", reg.getStatus());
+                        result.put("registrationUserId", reg.getUser().getId());
                     }
+                    
+                    // Get all registrations for this event
+                    List<EventRegistration> allRegistrations = registrationRepository.findByEventId(eventId);
+                    result.put("totalRegistrationsForEvent", allRegistrations.size());
+                    result.put("registrations", allRegistrations.stream().map(r -> Map.of(
+                        "id", r.getId(),
+                        "userId", r.getUser().getId(),
+                        "status", r.getStatus(),
+                        "registeredAt", r.getRegisteredAt()
+                    )).collect(Collectors.toList()));
+                    
+                    // Get all registrations for this user
+                    List<EventRegistration> userRegistrations = registrationRepository.findByUserId(userId);
+                    result.put("totalRegistrationsForUser", userRegistrations.size());
+                    result.put("userRegistrations", userRegistrations.stream().map(r -> Map.of(
+                        "id", r.getId(),
+                        "eventId", r.getEvent().getId(),
+                        "status", r.getStatus(),
+                        "registeredAt", r.getRegisteredAt()
+                    )).collect(Collectors.toList()));
                 }
             }
             
@@ -339,18 +305,11 @@ public class EventRegistrationController {
                 return ResponseEntity.status(401).body(Map.of("error", "User not found"));
             }
             
-            Resident resident = residentRepository.findByUserId(userId);
-            if (resident == null) {
-                return ResponseEntity.status(401).body(Map.of("error", "Resident not found"));
-            }
-            
-            Long residentId = resident.getUserId();
             result.put("userId", userId);
-            result.put("residentId", residentId);
             result.put("eventId", eventId);
             
-            // Find all registrations for this event and resident
-            List<EventRegistration> registrations = registrationRepository.findAllByEventIdAndResidentId(eventId, residentId);
+            // Find all registrations for this event and user
+            List<EventRegistration> registrations = registrationRepository.findAllByEventIdAndUserId(eventId, userId);
             result.put("totalRegistrationsFound", registrations.size());
             
             if (registrations.size() > 1) {

@@ -21,6 +21,6 @@ public class ApartmentResidentId implements Serializable {
 	@Column(name = "apartment_id")
     private Long apartmentId;
 
-    @Column(name = "resident_id")
-    private Long residentId;
+    @Column(name = "user_id")
+    private Long userId;
 }

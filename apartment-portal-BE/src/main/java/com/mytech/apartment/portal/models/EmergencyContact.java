@@ -17,8 +17,8 @@ public class EmergencyContact {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "resident_id", nullable = false)
-    private Resident resident;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private String name;

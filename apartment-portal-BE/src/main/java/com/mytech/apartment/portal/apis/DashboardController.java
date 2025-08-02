@@ -53,7 +53,7 @@ public class DashboardController {
 
         // 1) Danh sách apartmentId liên kết với user
         List<Long> apartmentIds = apartmentResidentRepository
-            .findByIdResidentId(userId) // Sửa từ findByIdUserId thành findByIdResidentId
+            .findByIdUserId(userId) // Changed from findByIdResidentId to findByIdUserId
             .stream()
             .map(link -> link.getId().getApartmentId())
             .collect(Collectors.toList());

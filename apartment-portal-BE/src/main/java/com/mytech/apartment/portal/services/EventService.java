@@ -45,7 +45,7 @@ public class EventService {
             int participantCount = eventRegistrationRepository.countByEventIdAndStatus(event.getId(), EventRegistrationStatus.REGISTERED);
             boolean isRegistered = false;
             if (userId != null) {
-                isRegistered = eventRegistrationRepository.existsByEventIdAndResidentIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
+                isRegistered = eventRegistrationRepository.existsByEventIdAndUserIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
             }
             return eventMapper.toDto(event, participantCount, isRegistered, false); // isEnded không cần thiết nữa
         }).collect(java.util.stream.Collectors.toList());
@@ -96,7 +96,7 @@ public class EventService {
         
         return eventRepository.findById(id).map(event -> {
             int participantCount = eventRegistrationRepository.countByEventIdAndStatus(event.getId(), EventRegistrationStatus.REGISTERED);
-            boolean isRegistered = eventRegistrationRepository.existsByEventIdAndResidentIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
+            boolean isRegistered = eventRegistrationRepository.existsByEventIdAndUserIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
             return eventMapper.toDto(event, participantCount, isRegistered, false);
         });
     }

@@ -28,9 +28,9 @@ public class ApartmentResidentController {
      * Get apartment-resident link by composite ID
      * Lấy liên kết cư dân - căn hộ theo ID kép
      */
-    @GetMapping("/{apartmentId}/{residentId}")
-    public ResponseEntity<ApartmentResidentDto> getApartmentResidentById(@PathVariable("apartmentId") Long apartmentId, @PathVariable("residentId") Long residentId) {
-        return apartmentResidentService.getApartmentResidentById(apartmentId, residentId)
+    @GetMapping("/{apartmentId}/{userId}")
+    public ResponseEntity<ApartmentResidentDto> getApartmentResidentById(@PathVariable("apartmentId") Long apartmentId, @PathVariable("userId") Long userId) {
+        return apartmentResidentService.getApartmentResidentById(apartmentId, userId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -48,10 +48,10 @@ public class ApartmentResidentController {
      * Delete apartment-resident link by composite ID
      * Xóa liên kết cư dân - căn hộ theo ID kép
      */
-    @DeleteMapping("/{apartmentId}/{residentId}")
-    public ResponseEntity<Void> removeResidentFromApartment(@PathVariable("apartmentId") Long apartmentId, @PathVariable("residentId") Long residentId) {
+    @DeleteMapping("/{apartmentId}/{userId}")
+    public ResponseEntity<Void> removeResidentFromApartment(@PathVariable("apartmentId") Long apartmentId, @PathVariable("userId") Long userId) {
         try {
-            apartmentResidentService.removeResidentFromApartment(apartmentId, residentId);
+            apartmentResidentService.removeResidentFromApartment(apartmentId, userId);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();

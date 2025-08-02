@@ -15,15 +15,14 @@ public interface VehicleMapper {
 
     @Mapping(target = "vehicleTypeDisplayName", source = "vehicleType.displayName")
     @Mapping(target = "statusDisplayName", source = "status.displayName")
-    @Mapping(target = "userFullName", ignore = true)
-    @Mapping(target = "residentFullName", source = "resident.fullName")
+    @Mapping(target = "userFullName", source = "user.fullName")
     @Mapping(target = "imageUrls", source = "imageUrls", qualifiedByName = "stringToArray")
     VehicleDto toDto(Vehicle entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "monthlyFee", source = "vehicleType", qualifiedByName = "calculateMonthlyFee")
-    @Mapping(target = "resident", ignore = true)
+    @Mapping(target = "user", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "imageUrls", source = "imageUrls", qualifiedByName = "arrayToString")

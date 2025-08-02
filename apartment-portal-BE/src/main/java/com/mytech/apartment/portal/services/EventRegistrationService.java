@@ -36,19 +36,19 @@ public class EventRegistrationService {
     }
 
     public List<EventRegistrationDto> getRegistrationsByUserId(Long userId) {
-        return registrationRepository.findByResidentId(userId).stream()
+        return registrationRepository.findByUserId(userId).stream()
                 .map(registrationMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     public EventRegistrationDto getRegistrationByEventAndUser(Long eventId, Long userId) {
-        Optional<EventRegistration> registration = registrationRepository.findByEventIdAndResidentId(eventId, userId);
+        Optional<EventRegistration> registration = registrationRepository.findByEventIdAndUserId(eventId, userId);
         return registration.map(registrationMapper::toDto).orElse(null);
     }
 
     public boolean verifyRegistrationOwnership(Long registrationId, Long userId) {
         Optional<EventRegistration> registration = registrationRepository.findById(registrationId);
-        return registration.isPresent() && registration.get().getResidentId().equals(userId);
+        return registration.isPresent() && registration.get().getUser().getId().equals(userId);
     }
 
     @Transactional
@@ -60,9 +60,9 @@ public class EventRegistrationService {
             System.out.println("Service: Event ID is null");
             throw new RuntimeException("Event ID is required");
         }
-        if (request.getResidentId() == null) {
-            System.out.println("Service: Resident ID is null");
-            throw new RuntimeException("Resident ID is required");
+        if (request.getUserId() == null) {
+            System.out.println("Service: User ID is null");
+            throw new RuntimeException("User ID is required");
         }
         
         System.out.println("Service: Looking for event with ID: " + request.getEventId());
@@ -72,9 +72,9 @@ public class EventRegistrationService {
 
         // Check for existing REGISTERED registration
         System.out.println("Service: Checking for existing registration...");
-        boolean alreadyRegistered = registrationRepository.existsByEventIdAndResidentIdAndStatus(
+        boolean alreadyRegistered = registrationRepository.existsByEventIdAndUserIdAndStatus(
             request.getEventId(), 
-            request.getResidentId(), 
+            request.getUserId(), 
             EventRegistrationStatus.REGISTERED
         );
         
@@ -84,9 +84,9 @@ public class EventRegistrationService {
         }
 
         // Check if there's a CANCELLED registration that we can update
-        List<EventRegistration> existingRegistrations = registrationRepository.findAllByEventIdAndResidentId(
+        List<EventRegistration> existingRegistrations = registrationRepository.findAllByEventIdAndUserId(
             request.getEventId(), 
-            request.getResidentId()
+            request.getUserId()
         );
         
         EventRegistration registration;
@@ -104,7 +104,8 @@ public class EventRegistrationService {
             System.out.println("Service: Creating new registration...");
             registration = new EventRegistration();
             registration.setEvent(event);
-            registration.setResidentId(request.getResidentId());
+            // We need to set the User entity, not just the ID
+            // This will be handled by the controller/service that calls this method
             registration.setStatus(EventRegistrationStatus.REGISTERED);
         }
 
@@ -126,8 +127,8 @@ public class EventRegistrationService {
     }
 
     @Transactional
-    public boolean cancelRegistrationByEventAndUser(Long eventId, Long residentId) {
-        System.out.println("Service: Attempting to cancel registration for event ID: " + eventId + ", resident ID: " + residentId);
+    public boolean cancelRegistrationByEventAndUser(Long eventId, Long userId) {
+        System.out.println("Service: Attempting to cancel registration for event ID: " + eventId + ", user ID: " + userId);
         
         // First check if event exists
         if (!eventRepository.existsById(eventId)) {
@@ -135,12 +136,12 @@ public class EventRegistrationService {
             return false;
         }
         
-        // Find all registrations for this event and resident
-        List<EventRegistration> registrations = registrationRepository.findAllByEventIdAndResidentId(eventId, residentId);
+        // Find all registrations for this event and user
+        List<EventRegistration> registrations = registrationRepository.findAllByEventIdAndUserId(eventId, userId);
         System.out.println("Service: Found " + registrations.size() + " registrations");
         
         if (registrations.isEmpty()) {
-            System.out.println("Service: No registration found for event " + eventId + " and resident " + residentId);
+            System.out.println("Service: No registration found for event " + eventId + " and user " + userId);
             return false;
         }
         

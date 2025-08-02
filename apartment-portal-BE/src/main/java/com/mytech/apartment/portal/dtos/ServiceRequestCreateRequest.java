@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public class ServiceRequestCreateRequest {
-    // residentId sẽ được set tự động từ authentication, không cần validation
-    private Long residentId;
+    // userId sẽ được set tự động từ authentication, không cần validation
+    private Long userId;
     
     @NotNull(message = "Category ID is required")
     private Long categoryId;
@@ -27,16 +27,16 @@ public class ServiceRequestCreateRequest {
     // Constructors
     public ServiceRequestCreateRequest() {}
 
-    public ServiceRequestCreateRequest(Long residentId, Long categoryId, String title, String description, String priority) {
-        this.residentId = residentId;
+    public ServiceRequestCreateRequest(Long userId, Long categoryId, String title, String description, String priority) {
+        this.userId = userId;
         this.categoryId = categoryId;
         this.title = title;
         this.description = description;
         this.priority = priority;
     }
 
-    public ServiceRequestCreateRequest(Long residentId, Long categoryId, String title, String description, String priority, List<String> attachmentUrls) {
-        this.residentId = residentId;
+    public ServiceRequestCreateRequest(Long userId, Long categoryId, String title, String description, String priority, List<String> attachmentUrls) {
+        this.userId = userId;
         this.categoryId = categoryId;
         this.title = title;
         this.description = description;
@@ -45,8 +45,8 @@ public class ServiceRequestCreateRequest {
     }
 
     // Getters and Setters
-    public Long getResidentId() { return residentId; }
-    public void setResidentId(Long residentId) { this.residentId = residentId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }

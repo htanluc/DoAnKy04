@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS users (
     status VARCHAR(20) NOT NULL,
     lock_reason VARCHAR(255),
     avatar_url VARCHAR(500),
+    full_name VARCHAR(100),
+    date_of_birth DATE,
+    id_card_number VARCHAR(20) UNIQUE,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
@@ -51,28 +54,19 @@ CREATE TABLE IF NOT EXISTS apartments (
     FOREIGN KEY (building_id) REFERENCES buildings(id)
 );
 
--- 6. RESIDENTS (Thông tin cư dân)
-CREATE TABLE IF NOT EXISTS residents (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNIQUE,
-    full_name VARCHAR(100),
-    date_of_birth DATE,
-    id_card_number VARCHAR(20) UNIQUE,
-    family_relation VARCHAR(50),
-    status INT NOT NULL DEFAULT 0,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
+-- 6. RESIDENTS (Thông tin cư dân) - Đã tích hợp vào bảng users
+-- Bảng residents đã được loại bỏ, thông tin cư dân được lưu trữ trong bảng users
 
--- 7. APARTMENT_RESIDENTS (Liên kết căn hộ - cư dân)
+-- 7. APARTMENT_RESIDENTS (Liên kết căn hộ - người dùng)
 CREATE TABLE IF NOT EXISTS apartment_residents (
     apartment_id BIGINT NOT NULL,
-    resident_id BIGINT NOT NULL,  -- Sửa từ user_id thành resident_id
+    user_id BIGINT NOT NULL,
     relation_type VARCHAR(50) NOT NULL,
     move_in_date DATE,
     move_out_date DATE,
-    PRIMARY KEY (apartment_id, resident_id),
+    PRIMARY KEY (apartment_id, user_id),
     FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
-    FOREIGN KEY (resident_id) REFERENCES residents(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 8. FACILITIES (Tiện ích)
@@ -123,11 +117,11 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS event_registrations (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     event_id BIGINT NOT NULL,
-    resident_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
     status VARCHAR(20) NOT NULL,
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (event_id) REFERENCES events(id),
-    FOREIGN KEY (resident_id) REFERENCES residents(id)
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- 13. FACILITY_BOOKINGS (Đặt tiện ích)
@@ -324,13 +318,13 @@ CREATE TABLE announcement_reads (
 -- 28. EMERGENCY_CONTACTS table
 CREATE TABLE emergency_contacts (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    resident_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     relationship VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (resident_id) REFERENCES residents(id) ON DELETE CASCADE
-) COMMENT '28. EMERGENCY_CONTACTS - Emergency contact information for residents';
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) COMMENT '28. EMERGENCY_CONTACTS - Emergency contact information for users';
 
 -- =====================================================
 -- INDEXES ĐỂ TỐI ƯU HIỆU SUẤT
@@ -379,11 +373,11 @@ CREATE INDEX idx_activity_logs_timestamp ON activity_logs(timestamp);
 
 -- Indexes cho apartment_residents
 CREATE INDEX idx_apartment_residents_apartment_id ON apartment_residents(apartment_id);
-CREATE INDEX idx_apartment_residents_resident_id ON apartment_residents(resident_id);
+CREATE INDEX idx_apartment_residents_user_id ON apartment_residents(user_id);
 
 -- Indexes cho event_registrations
 CREATE INDEX idx_event_registrations_event_id ON event_registrations(event_id);
-CREATE INDEX idx_event_registrations_resident_id ON event_registrations(resident_id);
+CREATE INDEX idx_event_registrations_user_id ON event_registrations(user_id);
 CREATE INDEX idx_event_registrations_status ON event_registrations(status);
 
 -- =====================================================
@@ -609,28 +603,94 @@ INSERT INTO apartments (building_id, floor_number, unit_number, area, status) VA
 (3, 5, 'C5-02', 100.0, 'OCCUPIED'),
 (3, 5, 'C5-03', 105.0, 'OCCUPIED');
 
--- 6. RESIDENTS
-INSERT INTO residents (user_id, full_name, date_of_birth, id_card_number, family_relation, status) VALUES
--- Active residents
-(8, 'Nguyễn Văn A', '1985-03-15', '123456789012', 'Chủ hộ', 1),
-(9, 'Trần Thị B', '1986-04-16', '123456789013', 'Chủ hộ', 1),
-(10, 'Lê Văn C', '1987-05-17', '123456789014', 'Chủ hộ', 1),
-(11, 'Phạm Thị D', '1988-06-18', '123456789015', 'Chủ hộ', 1),
-(12, 'Hoàng Văn E', '1989-07-19', '123456789016', 'Chủ hộ', 1),
-(13, 'Đặng Thị F', '1990-08-20', '123456789017', 'Chủ hộ', 1),
-(14, 'Vũ Thị G', '1991-09-21', '123456789018', 'Chủ hộ', 1),
-(15, 'Nguyễn Thị H', '1992-10-22', '123456789019', 'Chủ hộ', 1),
-(16, 'Trần Văn I', '1993-11-23', '123456789020', 'Chủ hộ', 1),
-(17, 'Lê Văn J', '1994-12-24', '123456789021', 'Chủ hộ', 1),
+-- 6. RESIDENTS - Thông tin đã được tích hợp vào bảng users
+-- Cập nhật thông tin cư dân vào bảng users
+UPDATE users SET 
+    full_name = 'Nguyễn Văn A',
+    date_of_birth = '1985-03-15',
+    id_card_number = '123456789012'
+WHERE id = 8;
 
--- Residents with different statuses
-(18, 'Nguyễn Văn Locked', '1990-01-01', '999999999999', 'Chủ hộ', 0),
-(19, 'Trần Thị Inactive', '1991-02-02', '888888888888', 'Chủ hộ', 0),
-(20, 'Lê Văn Suspended', '1992-03-03', '777777777777', 'Chủ hộ', 0),
-(21, 'Phạm Thị Pending', '1993-04-04', '666666666666', 'Chủ hộ', 0);
+UPDATE users SET 
+    full_name = 'Trần Thị B',
+    date_of_birth = '1986-04-16',
+    id_card_number = '123456789013'
+WHERE id = 9;
+
+UPDATE users SET 
+    full_name = 'Lê Văn C',
+    date_of_birth = '1987-05-17',
+    id_card_number = '123456789014'
+WHERE id = 10;
+
+UPDATE users SET 
+    full_name = 'Phạm Thị D',
+    date_of_birth = '1988-06-18',
+    id_card_number = '123456789015'
+WHERE id = 11;
+
+UPDATE users SET 
+    full_name = 'Hoàng Văn E',
+    date_of_birth = '1989-07-19',
+    id_card_number = '123456789016'
+WHERE id = 12;
+
+UPDATE users SET 
+    full_name = 'Đặng Thị F',
+    date_of_birth = '1990-08-20',
+    id_card_number = '123456789017'
+WHERE id = 13;
+
+UPDATE users SET 
+    full_name = 'Vũ Thị G',
+    date_of_birth = '1991-09-21',
+    id_card_number = '123456789018'
+WHERE id = 14;
+
+UPDATE users SET 
+    full_name = 'Nguyễn Thị H',
+    date_of_birth = '1992-10-22',
+    id_card_number = '123456789019'
+WHERE id = 15;
+
+UPDATE users SET 
+    full_name = 'Trần Văn I',
+    date_of_birth = '1993-11-23',
+    id_card_number = '123456789020'
+WHERE id = 16;
+
+UPDATE users SET 
+    full_name = 'Lê Văn J',
+    date_of_birth = '1994-12-24',
+    id_card_number = '123456789021'
+WHERE id = 17;
+
+UPDATE users SET 
+    full_name = 'Nguyễn Văn Locked',
+    date_of_birth = '1990-01-01',
+    id_card_number = '999999999999'
+WHERE id = 18;
+
+UPDATE users SET 
+    full_name = 'Trần Thị Inactive',
+    date_of_birth = '1991-02-02',
+    id_card_number = '888888888888'
+WHERE id = 19;
+
+UPDATE users SET 
+    full_name = 'Lê Văn Suspended',
+    date_of_birth = '1992-03-03',
+    id_card_number = '777777777777'
+WHERE id = 20;
+
+UPDATE users SET 
+    full_name = 'Phạm Thị Pending',
+    date_of_birth = '1993-04-04',
+    id_card_number = '666666666666'
+WHERE id = 21;
 
 -- 7. APARTMENT_RESIDENTS
-INSERT INTO apartment_residents (apartment_id, resident_id, relation_type, move_in_date) VALUES
+INSERT INTO apartment_residents (apartment_id, user_id, relation_type, move_in_date) VALUES
 -- Active residents with apartments
 (1, 8, 'OWNER', DATE_SUB(CURDATE(), INTERVAL 6 MONTH)),
 (2, 9, 'OWNER', DATE_SUB(CURDATE(), INTERVAL 7 MONTH)),
@@ -732,7 +792,7 @@ INSERT INTO events (title, description, start_time, end_time, location, created_
 ('Lễ hội trung thu', 'Lễ hội trung thu cho trẻ em với múa lân và phá cỗ', '2024-09-15 18:00:00', '2024-09-15 22:00:00', 'Sân chung', DATE_SUB(NOW(), INTERVAL 3 MONTH));
 
 -- 13. EVENT_REGISTRATIONS - Diverse event registrations for different scenarios
-INSERT INTO event_registrations (event_id, resident_id, status, registered_at) VALUES
+INSERT INTO event_registrations (event_id, user_id, status, registered_at) VALUES
 -- Christmas Party registrations (event_id = 1)
 (1, 1, 'REGISTERED', NOW()),
 (1, 2, 'ATTENDED', NOW()),

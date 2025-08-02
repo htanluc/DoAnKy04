@@ -10,9 +10,9 @@ import java.util.Optional;
 @Repository
 public interface EventRegistrationRepository extends JpaRepository<EventRegistration, Long> {
     int countByEventIdAndStatus(Long eventId, EventRegistrationStatus status);
-    boolean existsByEventIdAndResidentIdAndStatus(Long eventId, Long residentId, EventRegistrationStatus status);
+    boolean existsByEventIdAndUserIdAndStatus(Long eventId, Long userId, EventRegistrationStatus status);
     List<EventRegistration> findByEventId(Long eventId);
-    List<EventRegistration> findByResidentId(Long residentId);
-    Optional<EventRegistration> findByEventIdAndResidentId(Long eventId, Long residentId);
-    List<EventRegistration> findAllByEventIdAndResidentId(Long eventId, Long residentId);
+    List<EventRegistration> findByUserId(Long userId);
+    Optional<EventRegistration> findByEventIdAndUserId(Long eventId, Long userId);
+    List<EventRegistration> findAllByEventIdAndUserId(Long eventId, Long userId);
 } 

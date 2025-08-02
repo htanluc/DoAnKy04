@@ -6,8 +6,8 @@ public class FacilityBookingDto {
     private Long id;
     private Long facilityId;
     private String facilityName;
-    private Long residentId;
-    private String residentName;
+    private Long userId;
+    private String userName;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String status;
@@ -25,13 +25,13 @@ public class FacilityBookingDto {
     // Constructors
     public FacilityBookingDto() {}
 
-    public FacilityBookingDto(Long id, Long facilityId, String facilityName, Long residentId, String residentName, 
+    public FacilityBookingDto(Long id, Long facilityId, String facilityName, Long userId, String userName, 
                              LocalDateTime startTime, LocalDateTime endTime, String status, String purpose, LocalDateTime createdAt) {
         this.id = id;
         this.facilityId = facilityId;
         this.facilityName = facilityName;
-        this.residentId = residentId;
-        this.residentName = residentName;
+        this.userId = userId;
+        this.userName = userName;
         this.startTime = startTime;
         this.endTime = endTime;
         this.status = status;
@@ -49,11 +49,11 @@ public class FacilityBookingDto {
     public String getFacilityName() { return facilityName; }
     public void setFacilityName(String facilityName) { this.facilityName = facilityName; }
 
-    public Long getResidentId() { return residentId; }
-    public void setResidentId(Long residentId) { this.residentId = residentId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
-    public String getResidentName() { return residentName; }
-    public void setResidentName(String residentName) { this.residentName = residentName; }
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
 
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }

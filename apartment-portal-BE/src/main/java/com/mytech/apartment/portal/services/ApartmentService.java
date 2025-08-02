@@ -116,7 +116,7 @@ public class ApartmentService {
     }
 
     public List<ApartmentResidentDto> getApartmentLinksOfUser(Long userId) {
-        List<ApartmentResident> links = apartmentResidentRepository.findByIdResidentId(userId); // Sửa từ findByIdUserId thành findByIdResidentId
+        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId); // Changed from findByIdResidentId to findByIdUserId
         return links.stream()
             .map(apartmentResidentMapper::toDto)
             .collect(Collectors.toList());
@@ -160,7 +160,7 @@ public class ApartmentService {
     }
 
     public List<ApartmentDto> getApartmentsOfResident(Long userId) {
-        List<ApartmentResident> links = apartmentResidentRepository.findByIdResidentId(userId); // Sửa từ findByIdUserId thành findByIdResidentId
+        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId); // Changed from findByIdResidentId to findByIdUserId
         return links.stream()
             .map(link -> apartmentRepository.findById(link.getId().getApartmentId()))
             .filter(Optional::isPresent)

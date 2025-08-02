@@ -28,7 +28,6 @@ import com.mytech.apartment.portal.dtos.LoginRequest;
 import com.mytech.apartment.portal.dtos.RegisterRequest;
 import com.mytech.apartment.portal.dtos.ResetPasswordRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
-import com.mytech.apartment.portal.dtos.ResidentDto;
 import com.mytech.apartment.portal.dtos.ApartmentResidentDto;
 import com.mytech.apartment.portal.dtos.ApartmentDto;
 import com.mytech.apartment.portal.models.RefreshToken;
@@ -40,7 +39,6 @@ import com.mytech.apartment.portal.security.UserDetailsImpl;
 import com.mytech.apartment.portal.security.jwt.JwtProvider;
 import com.mytech.apartment.portal.services.AuthService;
 import com.mytech.apartment.portal.services.RefreshTokenService;
-import com.mytech.apartment.portal.services.ResidentService;
 import com.mytech.apartment.portal.services.ApartmentResidentService;
 import com.mytech.apartment.portal.services.ApartmentService;
 import com.mytech.apartment.portal.services.FileUploadService;
@@ -70,7 +68,6 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final ResidentService residentService;
     private final ApartmentResidentService apartmentResidentService;
     private final ApartmentService apartmentService;
     private final FileUploadService fileUploadService;
@@ -389,22 +386,21 @@ public class AuthController {
         } else {
             userDto.setRoles(new java.util.HashSet<>());
         }
-        // Lấy resident
-        ResidentDto residentDto = residentService.getResidentByUserId(userDetails.getId()).orElse(null);
+        
         // Lấy apartmentResident (nếu có)
         ApartmentResidentDto apartmentResidentDto = null;
         ApartmentDto apartmentDto = null;
-        if (residentDto != null) {
-            // Tìm tất cả liên kết căn hộ của resident, lấy liên kết đầu tiên (nếu có)
-            java.util.List<ApartmentResidentDto> links = apartmentResidentService.getAllApartmentResidents().stream()
-                .filter(link -> link.getResidentId() != null && link.getResidentId().equals(userDetails.getId())) // Sửa từ getUserId thành getResidentId
-                .toList();
-            if (!links.isEmpty()) {
-                apartmentResidentDto = links.get(0);
-                // Lấy thông tin căn hộ
-                apartmentDto = apartmentService.getApartmentById(apartmentResidentDto.getApartmentId()).orElse(null);
-            }
+        
+        // Tìm tất cả liên kết căn hộ của user, lấy liên kết đầu tiên (nếu có)
+        java.util.List<ApartmentResidentDto> links = apartmentResidentService.getAllApartmentResidents().stream()
+            .filter(link -> link.getUserId() != null && link.getUserId().equals(userDetails.getId()))
+            .toList();
+        if (!links.isEmpty()) {
+            apartmentResidentDto = links.get(0);
+            // Lấy thông tin căn hộ
+            apartmentDto = apartmentService.getApartmentById(apartmentResidentDto.getApartmentId()).orElse(null);
         }
+        
         // Lấy token từ SecurityContextHolder
         String token = null;
         if (authentication.getCredentials() != null) {
@@ -413,7 +409,6 @@ public class AuthController {
         java.util.Map<String, Object> resp = new java.util.HashMap<>();
         resp.put("user", userDto);
         resp.put("roles", userDto.getRoles());
-        resp.put("resident", residentDto);
         resp.put("apartmentResident", apartmentResidentDto);
         resp.put("apartment", apartmentDto);
         resp.put("token", token);

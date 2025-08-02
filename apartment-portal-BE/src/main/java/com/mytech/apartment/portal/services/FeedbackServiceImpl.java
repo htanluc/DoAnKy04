@@ -32,7 +32,7 @@ public class FeedbackServiceImpl implements FeedbackService {
         Feedback feedback = new Feedback();
         // Giả lập lấy user (nên lấy từ context thực tế)
         User user = new User();
-        user.setId(request.getResidentId());
+        user.setId(request.getUserId());
         feedback.setUser(user);
         FeedbackCategory category = feedbackCategoryRepository.findById(request.getCategoryId()).orElse(null);
         feedback.setCategory(category);

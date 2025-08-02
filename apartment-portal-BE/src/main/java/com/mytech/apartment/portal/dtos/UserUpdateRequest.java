@@ -1,7 +1,9 @@
 package com.mytech.apartment.portal.dtos;
 
 import lombok.Data;
+import java.time.LocalDate;
 import java.util.Set;
+import java.util.List;
 
 @Data
 public class UserUpdateRequest {
@@ -11,10 +13,7 @@ public class UserUpdateRequest {
     private Set<String> roles;
     private String avatarUrl;
     private String fullName;
-    private String dateOfBirth;
+    private LocalDate dateOfBirth;
     private String idCardNumber;
-    private String familyRelation;
-    private String address;
-    private String emergencyContactName;
-    private String emergencyContactPhone;
+    private List<EmergencyContactDto> emergencyContacts;
 } 

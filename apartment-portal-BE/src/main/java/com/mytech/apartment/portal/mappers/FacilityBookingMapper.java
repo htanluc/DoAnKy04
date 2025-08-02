@@ -24,7 +24,7 @@ public class FacilityBookingMapper {
             booking.getFacility() != null ? booking.getFacility().getId() : null,
             booking.getFacility() != null ? booking.getFacility().getName() : null,
             booking.getUser() != null ? booking.getUser().getId() : null,
-            booking.getUser() != null ? booking.getUser().getUsername() : null,
+            booking.getUser() != null ? booking.getUser().getFullName() : null,
             startTime,
             endTime,
             booking.getStatus() != null ? booking.getStatus().name() : null,

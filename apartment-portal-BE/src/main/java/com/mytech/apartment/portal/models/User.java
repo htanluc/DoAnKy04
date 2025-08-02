@@ -4,9 +4,12 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import com.mytech.apartment.portal.models.enums.UserStatus;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.ArrayList;
 
 
 @Entity
@@ -49,6 +52,19 @@ public class User {
     @CreationTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Thêm các trường từ Resident
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "id_card_number", unique = true)
+    private String idCardNumber;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<EmergencyContact> emergencyContacts = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
