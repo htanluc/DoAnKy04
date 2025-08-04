@@ -98,8 +98,8 @@ public class SecurityConfiguration {
               .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
               .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
               .requestMatchers("/api/auth/**").permitAll()
-              .requestMatchers("/api/test/**").permitAll()  // Test endpoints không cần auth
               .requestMatchers("/uploads/**", "/api/files/**").permitAll()  // Static files không cần auth
+              .requestMatchers("/stripe-checkout.html", "/api/payments/stripe/success", "/api/payments/stripe/cancel", "/api/payments/stripe/webhook").permitAll()  // Stripe checkout pages cần thiết
               .requestMatchers("/api/admin/**").hasRole("ADMIN")
               .requestMatchers("/api/invoices/**","/api/facility-bookings/**","/api/residents/**", "/api/announcements/**", "/api/events/**", "/api/facilities/**", "/api/feedback/**", "/api/support-requests/**", "/api/upload/**", "/api/event-registrations/**", "/api/activity-logs/**", "/api/vehicles/**")
                   .hasRole("RESIDENT")

@@ -111,31 +111,60 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
           </button>
           <div className="flex items-center space-x-2">
             <Building2 className="h-6 w-6 text-blue-600" />
-            <h1 className="text-xl font-semibold text-gray-900">Cư dân Portal</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Xin Chào Cư Dân Căn hộ FPT</h1>
           </div>
         </div>
 
-        {/* Right side - Notifications, time, user info */}
+        {/* Right side - Announcements, time, user info */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <div className="relative">
-            <button 
-              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          {/* Announcements */}
+          <div className="relative flex items-center justify-center">
+            <a 
+              href="/dashboard/announcements"
+              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors relative flex items-center justify-center"
               title="Thông báo"
             >
-              <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {unreadCount}
+                <span
+                  className="absolute flex items-center justify-center"
+                  style={{
+                    top: '-10px',
+                    left: '60%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 10,
+                  }}
+                >
+                  <span
+                    className="bg-red-500 text-white text-xs font-bold rounded-full border-2 border-white shadow"
+                    style={{
+                      minWidth: '20px',
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.85rem',
+                      lineHeight: 1,
+                      padding: '0 4px',
+                    }}
+                  >
+                    {unreadCount}
+                  </span>
                 </span>
               )}
-            </button>
+              <Bell className="h-6 w-6" />
+            </a>
           </div>
 
-          {/* Time */}
-          <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-            <Clock className="h-4 w-4" />
-            <span>{formatTime(currentTime)}</span>
+          {/* Time - Centered, larger, more beautiful */}
+          <div className="hidden md:flex flex-col items-center justify-center mx-6">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-6 w-6 text-blue-500" />
+              <span className="text-2xl font-bold text-gray-800 tracking-wide drop-shadow-sm">
+                {formatTime(currentTime)}
+              </span>
+            </div>
+            {/* Optional: Add a subtle label below */}
+            {/* <span className="text-xs text-gray-400 mt-1">Giờ hiện tại</span> */}
           </div>
 
           {/* User info */}

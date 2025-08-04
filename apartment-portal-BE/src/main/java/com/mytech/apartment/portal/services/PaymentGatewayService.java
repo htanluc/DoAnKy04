@@ -58,6 +58,7 @@ public class PaymentGatewayService {
     private ZaloPayGateway zaloPayGateway;
     @Autowired
     private PayPalGateway payPalGateway;
+
     @Autowired
     private StripeGateway stripeGateway;
 
@@ -339,6 +340,14 @@ public class PaymentGatewayService {
 
     public Map<String, Object> createPayPalPayment(String orderId, Long amount, String orderInfo) {
         return payPalGateway.createPayment(orderId, amount, orderInfo);
+    }
+
+    public Map<String, Object> createStripePayment(String orderId, Long amount, String orderInfo) {
+        return stripeGateway.createPayment(orderId, amount, orderInfo);
+    }
+
+    public Map<String, Object> createStripePayment(String orderId, Long amount, String orderInfo, Long invoiceId, Long userId) {
+        return stripeGateway.createPayment(orderId, amount, orderInfo, invoiceId, userId);
     }
 
     /**
