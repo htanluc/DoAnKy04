@@ -741,3 +741,9 @@ feedback      VARCHAR(50)    -- Phản hồi của người dùng về câu tr�
 - Bảng **Activity_Log** để lưu nhật ký hành động.  
 - Bảng **AI_QA_History** để lưu lịch sử hỏi đáp AI.
 
+
+
+Số thẻ: 4242 4242 4242 4242
+Ngày hết hạn: 12/25
+CVC: 123
+Tên: NGUYEN VAN A

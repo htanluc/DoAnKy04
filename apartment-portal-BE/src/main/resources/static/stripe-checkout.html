@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán Stripe - Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .checkout-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .stripe-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .stripe-logo h1 {
+            color: #6772e5;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+        .payment-form {
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #32325d;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e6ebf1;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #6772e5;
+        }
+        .card-number {
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="16" viewBox="0 0 20 16"><rect width="20" height="16" fill="%23f6f9fc"/><path d="M0 0h20v2H0zM0 4h20v2H0zM0 8h20v2H0zM0 12h20v2H0z" fill="%23aab7c4"/></svg>') no-repeat right 12px center;
+            background-size: 20px;
+        }
+        .card-row {
+            display: flex;
+            gap: 15px;
+        }
+        .card-row .form-group {
+            flex: 1;
+        }
+        .pay-button {
+            width: 100%;
+            background: #6772e5;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .pay-button:hover {
+            background: #5469d4;
+        }
+        .pay-button:disabled {
+            background: #aab7c4;
+            cursor: not-allowed;
+        }
+        .amount-display {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f6f9fc;
+            border-radius: 8px;
+        }
+        .amount-display h2 {
+            margin: 0;
+            color: #32325d;
+            font-size: 28px;
+        }
+        .amount-display p {
+            margin: 5px 0 0 0;
+            color: #6b7c93;
+        }
+        .secure-badge {
+            text-align: center;
+            margin-top: 20px;
+            color: #6b7c93;
+            font-size: 14px;
+        }
+        .secure-badge::before {
+            content: "🔒 ";
+        }
+    </style>
+</head>
+<body>
+    <div class="checkout-container">
+        <div class="stripe-logo">
+            <h1>Stripe Checkout</h1>
+        </div>
+        
+        <div class="amount-display">
+            <h2 id="amount">0 VND</h2>
+            <p>Thanh toán an toàn</p>
+        </div>
+
+        <form class="payment-form" id="payment-form">
+            <div class="form-group">
+                <label for="card-number">Số thẻ</label>
+                <input type="text" id="card-number" class="card-number" placeholder="1234 5678 9012 3456" maxlength="19">
+            </div>
+            
+            <div class="card-row">
+                <div class="form-group">
+                    <label for="expiry">Ngày hết hạn</label>
+                    <input type="text" id="expiry" placeholder="MM/YY" maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label for="cvc">CVC</label>
+                    <input type="text" id="cvc" placeholder="123" maxlength="3">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="name">Tên chủ thẻ</label>
+                <input type="text" id="name" placeholder="NGUYEN VAN A">
+            </div>
+            
+            <button type="submit" class="pay-button" id="pay-button">
+                Thanh toán ngay
+            </button>
+        </form>
+        
+        <div class="secure-badge">
+            Thanh toán được bảo mật bởi Stripe
+        </div>
+    </div>
+
+    <script>
+        // Lấy thông tin từ URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const amount = urlParams.get('amount') || '100000';
+        const orderId = urlParams.get('orderId') || 'DEMO_ORDER';
+        const invoiceId = urlParams.get('invoiceId');
+        const userId = urlParams.get('userId');
+        
+        // Hiển thị số tiền
+        document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(amount);
+
+        // Format số thẻ
+        document.getElementById('card-number').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
+            value = value.replace(/(\d{4})/g, '$1 ').trim();
+            e.target.value = value;
+        });
+
+        // Format ngày hết hạn
+        document.getElementById('expiry').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value;
+        });
+
+        // Format CVC
+        document.getElementById('cvc').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        // Xử lý thanh toán
+        document.getElementById('payment-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('pay-button');
+            button.disabled = true;
+            button.textContent = 'Đang xử lý...';
+            
+            // Simulate payment processing
+            setTimeout(() => {
+                // Redirect to success page with additional parameters
+                let successUrl = `/api/payments/stripe/success?orderId=${orderId}&amount=${amount}`;
+                if (invoiceId) {
+                    successUrl += `&invoiceId=${invoiceId}`;
+                }
+                if (userId) {
+                    successUrl += `&userId=${userId}`;
+                }
+                window.location.href = successUrl;
+            }, 2000);
+        });
+    </script>
+</body>
+</html> 

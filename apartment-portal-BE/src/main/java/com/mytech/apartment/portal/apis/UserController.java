@@ -142,6 +142,62 @@ public class UserController {
         return userService.getRolesOfUser(id);
     }
 
+    /**
+     * [EN] Get current user profile
+     * [VI] Lấy thông tin profile của user hiện tại
+     */
+    @GetMapping("/residents/me")
+    public ResponseEntity<UserDto> getCurrentUser() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            String username = auth.getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            if (userId == null) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            UserDto userDto = userService.getUserById(userId);
+            if (userDto == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * [EN] Update current user profile
+     * [VI] Cập nhật thông tin profile của user hiện tại
+     */
+    @PutMapping("/residents/me")
+    public ResponseEntity<UserDto> updateCurrentUser(@RequestBody UserUpdateRequest request) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            String username = auth.getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            if (userId == null) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            UserDto updatedUser = userService.updateUser(userId, request);
+            return ResponseEntity.ok(updatedUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @PostMapping("/{id}/roles/assign")
     public void assignRoleToUser(@PathVariable("id") Long id, @RequestParam Long roleId) {
         userService.assignRoleToUser(id, roleId);

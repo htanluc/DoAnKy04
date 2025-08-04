@@ -451,7 +451,7 @@ export async function createVisaPayment(invoiceId: number, amount: number, order
     orderInfo: orderInfo
   });
   
-  const res = await fetch(`http://localhost:8080/api/payments/visa?${params}`, {
+  const res = await fetch(`http://localhost:8080/api/payments/stripe?${params}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
