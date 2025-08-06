@@ -1,10 +1,10 @@
 package com.mytech.apartment.portal.dtos;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import com.mytech.apartment.portal.models.enums.RelationType;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,17 +14,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ApartmentResidentDto {
+public class ApartmentResidentCreateRequest {
+    @NotNull(message = "ID căn hộ không được để trống")
     private Long apartmentId;
+
+    @NotNull(message = "ID người dùng không được để trống")
     private Long userId;
-    private String apartmentUnitNumber;
-    private String userFullName;
-    private String userEmail;
-    private String userPhoneNumber;
+
+    @NotNull(message = "Loại quan hệ không được để trống")
     private RelationType relationType;
-    private String relationTypeDisplayName;
+
     private LocalDate moveInDate;
     private LocalDate moveOutDate;
-    private Boolean isPrimaryResident;
-    private LocalDateTime createdAt;
+    private Boolean isPrimaryResident = false;
 } 

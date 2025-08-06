@@ -4,47 +4,50 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-    name = "water_meter_readings",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"apartment_id", "reading_month"})
-)
+@Table(name = "water_meter_readings")
 @Data
 public class WaterMeterReading {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long readingId;
+    private Long id;
 
     @Column(name = "apartment_id", nullable = false)
-    private Integer apartmentId;
+    private Long apartmentId;
 
-    @Column(name = "reading_month", length = 7, nullable = false)
-    private String readingMonth; // "yyyy-MM"
+    @Column(name = "reading_date", nullable = false)
+    private LocalDate readingDate;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal previousReading;
+    @Column(name = "meter_reading", nullable = false, precision = 10, scale = 2)
+    private BigDecimal meterReading;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal currentReading;
-
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "consumption", precision = 10, scale = 2)
     private BigDecimal consumption;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "unit_price", precision = 10, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "total_amount", precision = 15, scale = 2)
+    private BigDecimal totalAmount;
+
+    @Column(name = "recorded_by", nullable = false)
+    private Long recordedBy;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     /**
-     * Tính consumption và set createdAt khi insert hoặc update.
+     * Set createdAt khi insert hoặc update.
      */
     @PrePersist
     @PreUpdate
-    public void calculateConsumption() {
+    public void setCreatedAt() {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
-        this.consumption = currentReading.subtract(previousReading);
     }
 }

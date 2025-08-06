@@ -14,6 +14,9 @@ public class VehicleCreateRequest {
     @NotNull(message = "Loại phương tiện không được để trống")
     private VehicleType vehicleType;
 
+    @NotNull(message = "Căn hộ không được để trống")
+    private Long apartmentId;
+
     private String[] imageUrls;
 
     private String brand;

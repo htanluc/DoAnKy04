@@ -35,8 +35,8 @@ public class YearlyBillingService {
     @Autowired
     private VehicleRepository vehicleRepository;
 
-    @Autowired
-    private WaterMeterReadingRepository waterMeterReadingRepository;
+    // @Autowired
+    // private WaterMeterReadingRepository waterMeterReadingRepository;
 
     @Autowired
     private ApartmentResidentRepository apartmentResidentRepository;
@@ -198,7 +198,7 @@ public class YearlyBillingService {
      */
     private double calculateParkingFee(Long apartmentId, int month, int year, Optional<ServiceFeeConfig> feeConfig) {
         // Lấy danh sách xe của tất cả cư dân trong căn hộ
-        List<ApartmentResident> residents = apartmentResidentRepository.findByIdApartmentId(apartmentId);
+        List<ApartmentResident> residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
         double totalParkingFee = 0.0;
         
         for (ApartmentResident resident : residents) {
@@ -239,6 +239,8 @@ public class YearlyBillingService {
      * Tính phí nước
      */
     private double calculateWaterFee(Long apartmentId, int month, int year, Optional<ServiceFeeConfig> feeConfig) {
+        // Tạm thời comment out water meter reading functionality
+        /*
         // Tìm chỉ số nước của tháng trước
         String previousMonth = String.format("%04d-%02d", year, month);
         Optional<WaterMeterReading> reading = waterMeterReadingRepository.findByApartmentIdAndReadingMonth(
@@ -249,6 +251,7 @@ public class YearlyBillingService {
             double waterRate = feeConfig.isPresent() ? feeConfig.get().getWaterFeePerM3() : 15000.0;
             return consumption * waterRate;
         }
+        */
         
         return 0.0;
     }

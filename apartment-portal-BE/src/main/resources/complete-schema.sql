@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS apartments (
 CREATE TABLE IF NOT EXISTS apartment_residents (
     apartment_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
-    relation_type VARCHAR(50) NOT NULL,
+    relation_type ENUM('OWNER', 'TENANT', 'FAMILY_MEMBER', 'GUEST', 'MANAGER', 'CO_OWNER') NOT NULL,
     move_in_date DATE,
     move_out_date DATE,
     is_primary_resident BOOLEAN DEFAULT FALSE,
@@ -382,6 +382,25 @@ CREATE TABLE emergency_contacts (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 30. VEHICLES (Phương tiện)
+CREATE TABLE IF NOT EXISTS vehicles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    license_plate VARCHAR(20) NOT NULL UNIQUE,
+    vehicle_type VARCHAR(50) NOT NULL,
+    brand VARCHAR(100),
+    model VARCHAR(100),
+    color VARCHAR(50),
+    image_urls TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    monthly_fee DECIMAL(10,2),
+    user_id BIGINT NOT NULL,
+    apartment_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE
+);
+
 -- =====================================================
 -- INSERT DỮ LIỆU MẪU
 -- =====================================================
@@ -412,6 +431,34 @@ INSERT IGNORE INTO service_fee_config (fee_type, fee_name, base_amount, unit_pri
 ('INTERNET', 'Phí mạng', 100000.00, 0.00, 'FIXED', 'Phí internet cố định'),
 ('CLEANING', 'Phí vệ sinh', 50000.00, 0.00, 'FIXED', 'Phí vệ sinh cố định'),
 ('SECURITY', 'Phí bảo vệ', 100000.00, 0.00, 'FIXED', 'Phí bảo vệ cố định');
+
+-- Insert feedback categories
+INSERT IGNORE INTO feedback_categories (category_code, category_name, description) VALUES
+('SUGGESTION', 'Đề xuất', 'Đề xuất cải tiến dịch vụ'),
+('COMPLAINT', 'Khiếu nại', 'Khiếu nại về dịch vụ'),
+('COMPLIMENT', 'Khen ngợi', 'Khen ngợi dịch vụ');
+
+-- Insert service categories
+INSERT IGNORE INTO service_categories (category_code, category_name, assigned_role, description) VALUES
+('ELECTRICITY', 'Điện', 'TECHNICIAN', 'Sửa chữa điện, thay bóng đèn, ổ cắm'),
+('PLUMBING', 'Nước', 'TECHNICIAN', 'Sửa ống nước, vòi nước, bồn cầu'),
+('CLEANING', 'Vệ sinh', 'CLEANER', 'Dọn dẹp, lau chùi, vệ sinh chung'),
+('SECURITY', 'An ninh', 'SECURITY', 'Tuần tra, kiểm tra an ninh, xử lý sự cố'),
+('HVAC', 'Điều hòa', 'TECHNICIAN', 'Bảo trì, sửa chữa điều hòa'),
+('ELEVATOR', 'Thang máy', 'TECHNICIAN', 'Bảo trì, sửa chữa thang máy'),
+('GARDENING', 'Cây xanh', 'CLEANER', 'Chăm sóc cây xanh, cắt tỉa'),
+('GENERAL', 'Khác', 'STAFF', 'Các yêu cầu khác');
+
+-- Insert sample facilities
+INSERT IGNORE INTO facilities (name, description, capacity, other_details, usage_fee, opening_hours, status) VALUES
+('Phòng Gym', 'Phòng tập thể dục với đầy đủ thiết bị hiện đại', 20, 'Mở cửa 6:00-22:00, có huấn luyện viên', 50000.0, '06:00 - 22:00', 'ACTIVE'),
+('Hồ bơi', 'Hồ bơi ngoài trời với view đẹp', 50, 'Mở cửa 6:00-21:00, có cứu hộ', 100000.0, '06:00 - 21:00', 'ACTIVE'),
+('Phòng họp', 'Phòng họp đa năng cho cư dân', 30, 'Có thể đặt trước, có máy chiếu', 30000.0, '08:00 - 20:00', 'ACTIVE'),
+('Sân tennis', 'Sân tennis ngoài trời chất lượng cao', 8, 'Có đèn chiếu sáng, có thể chơi ban đêm', 80000.0, '06:00 - 22:00', 'ACTIVE'),
+('Khu BBQ', 'Khu vực nướng BBQ ngoài trời', 40, 'Có bàn ghế, lò nướng', 50000.0, '16:00 - 22:00', 'ACTIVE'),
+('Phòng sinh hoạt cộng đồng', 'Phòng đa năng cho các hoạt động cộng đồng', 100, 'Có sân khấu, âm thanh ánh sáng', 20000.0, '08:00 - 22:00', 'ACTIVE'),
+('Bãi đỗ xe', 'Bãi đỗ xe có mái che', 200, 'Miễn phí cho cư dân', 10000.0, '24/7', 'ACTIVE'),
+('Khu vui chơi trẻ em', 'Sân chơi an toàn cho trẻ em', 30, 'Có đồ chơi, có ghế ngồi cho phụ huynh', 30000.0, '06:00 - 20:00', 'ACTIVE');
 
 -- =====================================================
 -- INDEXES TỐI ƯU HÓA
@@ -503,6 +550,13 @@ CREATE INDEX idx_water_meter_readings_recorded_by ON water_meter_readings(record
 -- Emergency contacts indexes
 CREATE INDEX idx_emergency_contacts_user_id ON emergency_contacts(user_id);
 CREATE INDEX idx_emergency_contacts_primary ON emergency_contacts(is_primary);
+
+-- Vehicle indexes
+CREATE INDEX idx_vehicles_user_id ON vehicles(user_id);
+CREATE INDEX idx_vehicles_apartment_id ON vehicles(apartment_id);
+CREATE INDEX idx_vehicles_license_plate ON vehicles(license_plate);
+CREATE INDEX idx_vehicles_status ON vehicles(status);
+CREATE INDEX idx_vehicles_vehicle_type ON vehicles(vehicle_type);
 
 -- =====================================================
 -- TRIGGERS TỐI ƯU HÓA

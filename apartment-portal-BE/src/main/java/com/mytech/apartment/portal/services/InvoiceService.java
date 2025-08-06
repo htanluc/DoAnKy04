@@ -102,9 +102,9 @@ public class InvoiceService {
         
         // Lấy danh sách căn hộ của user
         List<Long> apartmentIds = apartmentResidentRepository
-            .findByIdUserId(userId)
+            .findByUser_Id(userId)
             .stream()
-            .map(link -> link.getId().getApartmentId())
+            .map(link -> link.getApartmentId())
             .collect(Collectors.toList());
         
         if (apartmentIds.isEmpty()) {

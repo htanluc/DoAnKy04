@@ -392,9 +392,7 @@ public class AuthController {
         ApartmentDto apartmentDto = null;
         
         // Tìm tất cả liên kết căn hộ của user, lấy liên kết đầu tiên (nếu có)
-        java.util.List<ApartmentResidentDto> links = apartmentResidentService.getAllApartmentResidents().stream()
-            .filter(link -> link.getUserId() != null && link.getUserId().equals(userDetails.getId()))
-            .toList();
+        java.util.List<ApartmentResidentDto> links = apartmentResidentService.getApartmentsByUser(userDetails.getId());
         if (!links.isEmpty()) {
             apartmentResidentDto = links.get(0);
             // Lấy thông tin căn hộ

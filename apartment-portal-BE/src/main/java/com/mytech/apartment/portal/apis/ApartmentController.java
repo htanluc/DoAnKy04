@@ -154,11 +154,15 @@ public class ApartmentController {
     public ResponseEntity<List<ApartmentDto>> getMyApartments() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
-        // Lấy userId từ username (giả sử username là unique, có thể là phone/email/username)
-        // Tìm userId qua service UserService
+        // Lấy userId từ username (có thể là phone/email/username)
         Long userId = null;
         try {
+            // Thử tìm bằng username trước
             userId = apartmentService.getUserIdByUsername(username);
+            // Nếu không tìm thấy, thử tìm bằng phoneNumber
+            if (userId == null) {
+                userId = apartmentService.getUserIdByPhoneNumber(username);
+            }
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
         }
@@ -178,7 +182,12 @@ public class ApartmentController {
         String username = auth.getName();
         Long userId = null;
         try {
+            // Thử tìm bằng username trước
             userId = apartmentService.getUserIdByUsername(username);
+            // Nếu không tìm thấy, thử tìm bằng phoneNumber
+            if (userId == null) {
+                userId = apartmentService.getUserIdByPhoneNumber(username);
+            }
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Không xác định được user hiện tại");
         }

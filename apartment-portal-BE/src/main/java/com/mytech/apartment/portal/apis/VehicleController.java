@@ -41,11 +41,12 @@ public class VehicleController {
             try {
                 activityLogService.logActivityForCurrentUser(
                     ActivityActionType.REGISTER_VEHICLE, 
-                    "Đăng ký xe mới: %s %s (%s), biển số: %s", 
+                    "Đăng ký xe mới: %s %s (%s), biển số: %s, căn hộ: %s", 
                     vehicle.getBrand(), 
                     vehicle.getModel(),
                     vehicle.getVehicleType(),
-                    vehicle.getLicensePlate()
+                    vehicle.getLicensePlate(),
+                    vehicle.getApartmentUnitNumber()
                 );
                 System.out.println("VehicleController: Activity logged successfully for vehicle registration");
             } catch (Exception e) {
@@ -109,6 +110,20 @@ public class VehicleController {
     @GetMapping("/vehicles/my")
     public ResponseEntity<List<VehicleDto>> getMyVehicles(Authentication authentication) {
         List<VehicleDto> vehicles = vehicleService.getVehiclesByCurrentUser(authentication);
+        return ResponseEntity.ok(vehicles);
+    }
+
+    @GetMapping("/vehicles/apartment/{apartmentId}")
+    public ResponseEntity<List<VehicleDto>> getVehiclesByApartment(@PathVariable Long apartmentId) {
+        List<VehicleDto> vehicles = vehicleService.getVehiclesByApartment(apartmentId);
+        return ResponseEntity.ok(vehicles);
+    }
+
+    @GetMapping("/vehicles/user/{userId}/apartment/{apartmentId}")
+    public ResponseEntity<List<VehicleDto>> getVehiclesByUserAndApartment(
+            @PathVariable Long userId, 
+            @PathVariable Long apartmentId) {
+        List<VehicleDto> vehicles = vehicleService.getVehiclesByUserAndApartment(userId, apartmentId);
         return ResponseEntity.ok(vehicles);
     }
 
