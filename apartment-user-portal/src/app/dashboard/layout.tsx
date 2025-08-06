@@ -4,10 +4,6 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/sidebar'
 import Header from '@/components/layout/header'
-import { LayoutTest } from '@/components/ui/layout-test'
-import { MenuDebug } from '@/components/ui/menu-debug'
-import { MenuTest } from '@/components/ui/menu-test'
-import { MenuSimpleTest } from '@/components/ui/menu-simple-test'
 import { fetchUserProfile } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -148,69 +144,50 @@ export default function DashboardLayout({
   }
 
   return (
-    <LayoutTest>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
-        {/* Sidebar */}
-        <Sidebar 
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar 
+        user={profile?.user} 
+        resident={profile?.resident}
+        apartment={profile?.apartment}
+        roles={profile?.roles}
+        isOpen={isMenuOpen}
+        onToggle={toggleMenu}
+      />
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <Header 
+          onMenuToggle={toggleMenu}
+          isMenuOpen={isMenuOpen}
           user={profile?.user} 
           resident={profile?.resident}
           apartment={profile?.apartment}
           roles={profile?.roles}
-          isOpen={isMenuOpen}
-          onToggle={toggleMenu}
         />
 
-        {/* Main content area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <Header 
-            onMenuToggle={toggleMenu}
-            isMenuOpen={isMenuOpen}
-            user={profile?.user} 
-            resident={profile?.resident}
-            apartment={profile?.apartment}
-            roles={profile?.roles}
-          />
-
-          {/* Main content with Suspense for better loading */}
-          <main className="flex-1 overflow-y-auto relative content-stable">
-            <div className="p-4 sm:p-6">
-              <Suspense fallback={
-                <div className="space-y-6">
-                  <Skeleton className="h-8 w-64" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="rounded-lg border bg-card p-6">
-                        <Skeleton className="h-4 w-24 mb-4" />
-                        <Skeleton className="h-8 w-16" />
-                      </div>
-                    ))}
-                  </div>
+        {/* Main content with Suspense for better loading */}
+        <main className="flex-1 overflow-y-auto relative content-stable">
+          <div className="p-4 sm:p-6">
+            <Suspense fallback={
+              <div className="space-y-6">
+                <Skeleton className="h-8 w-64" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-lg border bg-card p-6">
+                      <Skeleton className="h-4 w-24 mb-4" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                  ))}
                 </div>
-              }>
-                {children}
-              </Suspense>
-            </div>
-          </main>
-        </div>
+              </div>
+            }>
+              {children}
+            </Suspense>
+          </div>
+        </main>
       </div>
-
-      {/* Debug components for development */}
-      <MenuDebug 
-        isMenuOpen={isMenuOpen}
-        isMobile={isMobile}
-        onToggle={toggleMenu}
-      />
-      <MenuTest 
-        isMenuOpen={isMenuOpen}
-        isMobile={isMobile}
-        onToggle={toggleMenu}
-      />
-      <MenuSimpleTest 
-        isMenuOpen={isMenuOpen}
-        isMobile={isMobile}
-        onToggle={toggleMenu}
-      />
-    </LayoutTest>
+    </div>
   )
 } 
