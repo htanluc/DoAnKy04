@@ -2,6 +2,7 @@ package com.mytech.apartment.portal.apis;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,9 @@ import com.mytech.apartment.portal.dtos.ManualPaymentRequest;
 import com.mytech.apartment.portal.dtos.PaymentDto;
 import com.mytech.apartment.portal.dtos.PaymentGatewayRequest;
 import com.mytech.apartment.portal.dtos.PaymentGatewayResponse;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.models.enums.PaymentMethod;
+import com.mytech.apartment.portal.services.SmartActivityLogService;
 import com.mytech.apartment.portal.services.AutoPaymentService;
 import com.mytech.apartment.portal.services.PaymentGatewayService;
 import com.mytech.apartment.portal.services.PaymentService;
@@ -31,32 +34,54 @@ import jakarta.validation.Valid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestHeader;
 import java.util.HashMap;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/payments")
 @Tag(name = "Payment", description = "Payment management endpoints")
+@RequiredArgsConstructor
 public class PaymentController {
     private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
 
-    @Autowired
-    private PaymentService paymentService;
-    
-    @Autowired
-    private PaymentGatewayService paymentGatewayService;
-    
-    @Autowired
-    private AutoPaymentService autoPaymentService;
-    
-    @Autowired
-    private com.mytech.apartment.portal.services.UserService userService;
-    
-    @Autowired
-    private com.mytech.apartment.portal.config.StripeConfig stripeConfig;
+    private final PaymentService paymentService;
+    private final PaymentGatewayService paymentGatewayService;
+    private final AutoPaymentService autoPaymentService;
+    private final SmartActivityLogService smartActivityLogService;
+    private final com.mytech.apartment.portal.services.UserService userService;
+    private final com.mytech.apartment.portal.config.StripeConfig stripeConfig;
+
+    // Cooldown mechanism to prevent rapid repeated payment attempts
+    private final Map<String, LocalDateTime> paymentCooldowns = new ConcurrentHashMap<>();
+    private static final int PAYMENT_COOLDOWN_SECONDS = 5; // 5 seconds cooldown
+
+    /**
+     * Check if payment is in cooldown for the given user and invoice
+     */
+    private boolean isPaymentInCooldown(Long userId, Long invoiceId) {
+        String key = userId + "-" + invoiceId;
+        LocalDateTime lastAttempt = paymentCooldowns.get(key);
+        if (lastAttempt != null) {
+            LocalDateTime cooldownEnd = lastAttempt.plusSeconds(PAYMENT_COOLDOWN_SECONDS);
+            if (LocalDateTime.now().isBefore(cooldownEnd)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Set payment cooldown for the given user and invoice
+     */
+    private void setPaymentCooldown(Long userId, Long invoiceId) {
+        String key = userId + "-" + invoiceId;
+        paymentCooldowns.put(key, LocalDateTime.now());
+    }
 
     /**
      * Get all payments
@@ -86,8 +111,22 @@ public class PaymentController {
     public ResponseEntity<PaymentDto> recordManualPayment(@RequestBody ManualPaymentRequest request) {
         try {
             PaymentDto paymentDto = paymentService.recordManualPayment(request);
+            
+            // Log admin payment activity with detailed error handling (smart logging)
+            try {
+                smartActivityLogService.logSmartActivity(ActivityActionType.PAY_INVOICE, 
+                    "Admin ghi nhận thanh toán thủ công cho hóa đơn #%d, số tiền: %,.0f VND", 
+                    request.getInvoiceId(), request.getAmount());
+                System.out.println("PaymentController: Activity logged successfully for manual payment");
+            } catch (Exception e) {
+                System.err.println("PaymentController: Error logging activity: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
             return ResponseEntity.ok(paymentDto);
         } catch (RuntimeException e) {
+            System.err.println("PaymentController: Error recording manual payment: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(null);
         }
     }
@@ -100,6 +139,22 @@ public class PaymentController {
     public ResponseEntity<PaymentGatewayResponse> createPaymentViaGateway(
             @Valid @RequestBody PaymentGatewayRequest request) {
         try {
+            // Check cooldown
+            String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            
+            if (userId != null && isPaymentInCooldown(userId, request.getInvoiceId())) {
+                return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                    null, null, "FAILED", "Vui lòng đợi 5 giây trước khi thử lại", null
+                ));
+            }
+            
+            // Set cooldown
+            if (userId != null) {
+                setPaymentCooldown(userId, request.getInvoiceId());
+            }
+            
             PaymentGatewayResponse response = paymentGatewayService.createPayment(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -120,8 +175,23 @@ public class PaymentController {
             @RequestParam Long amount,
             @RequestParam String orderInfo) {
         try {
+            // Check cooldown
+            String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            
+            if (userId != null && isPaymentInCooldown(userId, invoiceId)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng đợi 5 giây trước khi thử lại"));
+            }
+            
+            // Set cooldown
+            if (userId != null) {
+                setPaymentCooldown(userId, invoiceId);
+            }
+
             String orderId = paymentGatewayService.generateOrderId();
             Map<String, Object> response = paymentGatewayService.createMoMoPayment(orderId, amount, orderInfo);
+
             // Đảm bảo trả về đúng trường payUrl
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("payUrl", response.get("payUrl"));
@@ -144,6 +214,7 @@ public class PaymentController {
             @RequestParam(required = false) String language) {
         try {
             Map<String, Object> response = paymentGatewayService.createVNPayPaymentFull(amount, orderInfo, bankCode, language);
+
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("payUrl", response.get("payUrl"));
             return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán VNPay thành công", data));
@@ -163,8 +234,23 @@ public class PaymentController {
             @RequestParam Long amount,
             @RequestParam String orderInfo) {
         try {
+            // Check cooldown
+            String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            
+            if (userId != null && isPaymentInCooldown(userId, invoiceId)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng đợi 5 giây trước khi thử lại"));
+            }
+            
+            // Set cooldown
+            if (userId != null) {
+                setPaymentCooldown(userId, invoiceId);
+            }
+
             String orderId = paymentGatewayService.generateOrderId();
             Map<String, Object> response = paymentGatewayService.createZaloPayPayment(orderId, amount, orderInfo);
+
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("payUrl", response.get("payUrl"));
             return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán ZaloPay thành công", data));
@@ -184,8 +270,23 @@ public class PaymentController {
             @RequestParam Long amount,
             @RequestParam String orderInfo) {
         try {
+            // Check cooldown
+            String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            
+            if (userId != null && isPaymentInCooldown(userId, invoiceId)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng đợi 5 giây trước khi thử lại"));
+            }
+            
+            // Set cooldown
+            if (userId != null) {
+                setPaymentCooldown(userId, invoiceId);
+            }
+
             String orderId = paymentGatewayService.generateOrderId();
             Map<String, Object> response = paymentGatewayService.createVisaPayment(orderId, amount, orderInfo);
+
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("payUrl", response.get("payUrl"));
             return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán thẻ quốc tế thành công", data));
@@ -205,8 +306,23 @@ public class PaymentController {
             @RequestParam Long amount,
             @RequestParam String orderInfo) {
         try {
+            // Check cooldown
+            String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            
+            if (userId != null && isPaymentInCooldown(userId, invoiceId)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng đợi 5 giây trước khi thử lại"));
+            }
+            
+            // Set cooldown
+            if (userId != null) {
+                setPaymentCooldown(userId, invoiceId);
+            }
+
             String orderId = paymentGatewayService.generateOrderId();
             Map<String, Object> response = paymentGatewayService.createPayPalPayment(orderId, amount, orderInfo);
+
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("payUrl", response.get("payUrl"));
             return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán PayPal thành công", data));
@@ -226,22 +342,27 @@ public class PaymentController {
             @RequestParam Long amount,
             @RequestParam String orderInfo) {
         try {
-            // Lấy userId từ người dùng hiện tại
+            // Check cooldown
             String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-            
-            // Tìm user ID từ username (phone number)
             Long userId = userService.getUserIdByPhoneNumber(username);
-            if (userId == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Không tìm thấy thông tin người dùng"));
+            
+            if (userId != null && isPaymentInCooldown(userId, invoiceId)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng đợi 5 giây trước khi thử lại"));
             }
             
+            // Set cooldown
+            if (userId != null) {
+                setPaymentCooldown(userId, invoiceId);
+            }
+
             // Cập nhật orderInfo để bao gồm thông tin user
             String updatedOrderInfo = orderInfo + " - User " + userId;
-            
+
             String orderId = paymentGatewayService.generateOrderId();
             // Pass invoiceId explicitly to avoid regex parsing issues
             Map<String, Object> response = paymentGatewayService.createStripePayment(orderId, amount, updatedOrderInfo, invoiceId, userId);
+
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("payUrl", response.get("payUrl"));
             data.put("checkoutSessionId", response.get("checkoutSessionId"));
@@ -367,8 +488,6 @@ public class PaymentController {
         }
     }
 
-
-
     /**
      * Stripe webhook endpoint
      * Webhook từ Stripe để xử lý payment events
@@ -382,54 +501,69 @@ public class PaymentController {
             System.out.println("=== STRIPE WEBHOOK RECEIVED ===");
             System.out.println("Payload: " + payload);
             System.out.println("Signature: " + signature);
-            
+
             // Verify webhook signature
             com.stripe.model.Event event = com.stripe.net.Webhook.constructEvent(
                 payload, signature, stripeConfig.getWebhookSecret());
-            
+
             System.out.println("Event Type: " + event.getType());
-            
+
             // Process the event
             if ("checkout.session.completed".equals(event.getType())) {
                 com.stripe.model.checkout.Session session = (com.stripe.model.checkout.Session) event.getData().getObject();
                 System.out.println("Session ID: " + session.getId());
                 System.out.println("Payment Status: " + session.getPaymentStatus());
                 System.out.println("Amount Total: " + session.getAmountTotal());
-                
+
                 // Extract metadata
                 String orderId = session.getMetadata().get("orderId");
                 String invoiceIdStr = session.getMetadata().get("invoiceId");
                 String userIdStr = session.getMetadata().get("userId");
-                
+
                 System.out.println("OrderId: " + orderId);
                 System.out.println("InvoiceId: " + invoiceIdStr);
                 System.out.println("UserId: " + userIdStr);
-                
+
                 // Process successful payment
-                if ("paid".equals(session.getPaymentStatus()) && 
+                if ("paid".equals(session.getPaymentStatus()) &&
                     invoiceIdStr != null && userIdStr != null) {
                     try {
                         Long invoiceId = Long.parseLong(invoiceIdStr);
                         Long userId = Long.parseLong(userIdStr);
-                        
+
                         // Tạo payment record
-                        com.mytech.apartment.portal.dtos.ManualPaymentRequest paymentRequest = 
+                        com.mytech.apartment.portal.dtos.ManualPaymentRequest paymentRequest =
                             new com.mytech.apartment.portal.dtos.ManualPaymentRequest();
                         paymentRequest.setInvoiceId(invoiceId);
                         paymentRequest.setPaidByUserId(userId);
                         paymentRequest.setAmount((double) session.getAmountTotal()); // VND amount is already in correct units
                         paymentRequest.setMethod("VISA");
                         paymentRequest.setReferenceCode(session.getId());
-                        
+
                         // Lưu payment vào database
-                        paymentService.recordManualPayment(paymentRequest);
+                        com.mytech.apartment.portal.dtos.PaymentDto savedPayment = paymentService.recordManualPayment(paymentRequest);
                         System.out.println("✅ Webhook: Payment recorded successfully");
+                        
+                        // Log successful payment activity (smart logging)
+                        try {
+                            // Get user object for logging since webhook context has no authenticated user
+                            com.mytech.apartment.portal.models.User user = userService.getUserEntityById(userId);
+                            if (user != null) {
+                                smartActivityLogService.logSmartActivity(user, ActivityActionType.PAY_INVOICE, 
+                                    "Thanh toán thành công hóa đơn #%d qua Stripe, số tiền: %,.0f VND", 
+                                    invoiceId, (double) session.getAmountTotal());
+                            } else {
+                                System.err.println("User not found for logging payment activity: " + userId);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error logging payment activity: " + e.getMessage());
+                        }
                     } catch (Exception e) {
                         System.err.println("❌ Webhook: Error recording payment: " + e.getMessage());
                     }
                 }
             }
-            
+
             return ResponseEntity.ok("Webhook processed successfully");
         } catch (com.stripe.exception.SignatureVerificationException e) {
             System.err.println("Webhook signature verification failed: " + e.getMessage());
@@ -439,11 +573,6 @@ public class PaymentController {
             return ResponseEntity.badRequest().body("Webhook error");
         }
     }
-
-    /**
-     * Test payment recording endpoint - để test thủ công
-     */
-
 
     /**
      * Stripe payment cancel callback
@@ -456,7 +585,7 @@ public class PaymentController {
         try {
             System.out.println("=== STRIPE CANCEL CALLBACK ===");
             System.out.println("OrderId: " + orderId);
-            
+
             String htmlResponse = String.format("""
                 <!DOCTYPE html>
                 <html lang="vi">
@@ -528,7 +657,7 @@ public class PaymentController {
                 </body>
                 </html>
                 """, orderId);
-            
+
             return ResponseEntity.ok(htmlResponse);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi xử lý hủy thanh toán: " + e.getMessage());
@@ -548,18 +677,18 @@ public class PaymentController {
             System.out.println("=== STRIPE SUCCESS CALLBACK ===");
             System.out.println("Session ID: " + session_id);
             System.out.println("OrderId: " + orderId);
-            
+
             // Verify payment with Stripe
             try {
                 com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.retrieve(session_id);
                 System.out.println("Payment Status: " + session.getPaymentStatus());
                 System.out.println("Amount Total: " + session.getAmountTotal());
-                
+
                 // Extract metadata from session - PRIORITIZE DIRECT METADATA
                 String invoiceIdStr = session.getMetadata().get("invoiceId");
                 String userIdStr = session.getMetadata().get("userId");
                 String orderInfo = session.getMetadata().get("orderInfo");
-                
+
                 System.out.println("=== METADATA DEBUG ===");
                 System.out.println("All metadata: " + session.getMetadata());
                 System.out.println("InvoiceId from metadata: " + invoiceIdStr);
@@ -570,15 +699,15 @@ public class PaymentController {
                 System.out.println("InvoiceId is empty: " + (invoiceIdStr != null && invoiceIdStr.isEmpty()));
                 System.out.println("UserId is empty: " + (userIdStr != null && userIdStr.isEmpty()));
                 System.out.println("=== END METADATA DEBUG ===");
-                
+
                 // ONLY use fallback parsing if metadata is completely missing or empty
-                boolean needFallback = (invoiceIdStr == null || invoiceIdStr.trim().isEmpty() || 
+                boolean needFallback = (invoiceIdStr == null || invoiceIdStr.trim().isEmpty() ||
                                        userIdStr == null || userIdStr.trim().isEmpty());
-                
+
                 if (needFallback && orderInfo != null) {
                     System.out.println("=== FALLBACK PARSING FROM ORDERINFO (METADATA MISSING) ===");
                     System.out.println("OrderInfo: " + orderInfo);
-                    
+
                     // Parse invoiceId using regex - avoid matching year patterns like "2024-11"
                     java.util.regex.Pattern invoicePattern = java.util.regex.Pattern.compile("hóa đơn\\s*(\\d+)(?!-\\d{2})");
                     java.util.regex.Matcher invoiceMatcher = invoicePattern.matcher(orderInfo);
@@ -602,7 +731,7 @@ public class PaymentController {
                             }
                         }
                     }
-                    
+
                     // Parse userId using regex
                     java.util.regex.Pattern userPattern = java.util.regex.Pattern.compile("User\\s*(\\d+)");
                     java.util.regex.Matcher userMatcher = userPattern.matcher(orderInfo);
@@ -610,50 +739,65 @@ public class PaymentController {
                         userIdStr = userMatcher.group(1);
                         System.out.println("Parsed userId from orderInfo (fallback): " + userIdStr);
                     }
-                    
+
                     System.out.println("=== END FALLBACK PARSING ===");
                 } else if (!needFallback) {
                     System.out.println("✅ Using invoiceId and userId directly from metadata");
                     System.out.println("InvoiceId: " + invoiceIdStr);
                     System.out.println("UserId: " + userIdStr);
                 }
-                
+
                 // Xử lý thanh toán thành công và lưu vào database
                 if ("paid".equals(session.getPaymentStatus()) && invoiceIdStr != null && !invoiceIdStr.trim().isEmpty() && userIdStr != null && !userIdStr.trim().isEmpty()) {
                     try {
                         Long invoiceId = Long.parseLong(invoiceIdStr.trim());
                         Long userId = Long.parseLong(userIdStr.trim());
-                        
+
                         System.out.println("=== PROCESSING PAYMENT ===");
                         System.out.println("Invoice ID: " + invoiceId);
                         System.out.println("User ID: " + userId);
                         System.out.println("Amount from Stripe: " + session.getAmountTotal());
                         System.out.println("Amount in VND: " + session.getAmountTotal()); // VND doesn't need division
                         System.out.println("Session ID: " + session_id);
-                        
+
                         // Kiểm tra xem payment đã tồn tại chưa
                         boolean paymentExists = paymentService.getPaymentsByInvoice(invoiceId)
                             .stream()
                             .anyMatch(payment -> session_id.equals(payment.getReferenceCode()));
-                        
+
                         if (paymentExists) {
                             System.out.println("⚠️ Payment already exists for session: " + session_id);
                             System.out.println("✅ Payment was already recorded successfully");
                         } else {
                             // Tạo payment record
-                            com.mytech.apartment.portal.dtos.ManualPaymentRequest paymentRequest = 
+                            com.mytech.apartment.portal.dtos.ManualPaymentRequest paymentRequest =
                                 new com.mytech.apartment.portal.dtos.ManualPaymentRequest();
                             paymentRequest.setInvoiceId(invoiceId);
                             paymentRequest.setPaidByUserId(userId);
                             paymentRequest.setAmount((double) session.getAmountTotal()); // VND amount is already in correct units
                             paymentRequest.setMethod("VISA");
                             paymentRequest.setReferenceCode(session_id);
-                            
+
                             // Lưu payment vào database
                             com.mytech.apartment.portal.dtos.PaymentDto savedPayment = paymentService.recordManualPayment(paymentRequest);
                             System.out.println("✅ Payment recorded successfully");
                             System.out.println("Payment ID: " + savedPayment.getId());
                             System.out.println("Payment Status: " + savedPayment.getStatus());
+                            
+                            // Log successful payment activity (smart logging)
+                            try {
+                                // Get user object for logging since callback context has no authenticated user
+                                com.mytech.apartment.portal.models.User user = userService.getUserEntityById(userId);
+                                if (user != null) {
+                                    smartActivityLogService.logSmartActivity(user, ActivityActionType.PAY_INVOICE, 
+                                        "Thanh toán thành công hóa đơn #%d qua Stripe, số tiền: %,.0f VND", 
+                                        invoiceId, (double) session.getAmountTotal());
+                                } else {
+                                    System.err.println("User not found for logging payment activity: " + userId);
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Error logging payment activity: " + e.getMessage());
+                            }
                         }
                     } catch (NumberFormatException e) {
                         System.err.println("❌ Lỗi khi parse invoiceId hoặc userId: " + e.getMessage());
@@ -674,7 +818,7 @@ public class PaymentController {
                 System.err.println("❌ Lỗi khi verify payment với Stripe: " + e.getMessage());
                 e.printStackTrace();
             }
-            
+
             // Xử lý an toàn số tiền từ session
             String formattedAmount = "0";
             try {
@@ -686,7 +830,7 @@ public class PaymentController {
             } catch (Exception e) {
                 System.err.println("Lỗi khi format amount: " + e.getMessage());
             }
-            
+
             String htmlResponse = String.format("""
                 <!DOCTYPE html>
                 <html lang="vi">
@@ -757,16 +901,16 @@ public class PaymentController {
                         <h1 class="success-title">Thanh toán thành công!</h1>
                         <p class="success-message">Cảm ơn bạn đã thanh toán. Giao dịch đã được xử lý thành công.</p>
                         <div class="amount">%s VND</div>
-                                                 <p>Mã đơn hàng: %s</p>
-                         <p>Session ID: %s</p>
-                                                  <a href="javascript:window.close();" class="back-button">Đóng trang này</a>
-                          <br><br>
-                          <a href="http://localhost:3001/dashboard/invoices" class="back-button" style="background: #10b981;">Quay lại trang hóa đơn</a>
+                        <p>Mã đơn hàng: %s</p>
+                        <p>Session ID: %s</p>
+                        <a href="javascript:window.close();" class="back-button">Đóng trang này</a>
+                        <br><br>
+                        <a href="http://localhost:3001/dashboard/invoices" class="back-button" style="background: #10b981;">Quay lại trang hóa đơn</a>
                     </div>
                 </body>
                 </html>
-                                 """, formattedAmount, orderId, session_id);
-            
+                """, formattedAmount, orderId, session_id);
+
             return ResponseEntity.ok(htmlResponse);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi xử lý thanh toán: " + e.getMessage());
@@ -887,43 +1031,4 @@ public class PaymentController {
             return ResponseEntity.badRequest().build();
         }
     }
-
-    /**
-     * Check and fix existing payment for a specific session
-     */
-
-
-
-
-
-
-
-
-    /**
-     * Comprehensive Stripe testing endpoint
-     * Endpoint toàn diện cho việc test Stripe với nhiều scenario khác nhau
-     */
-
-
-
-
-
-
-    /**
-     * Simulate complete payment flow
-     * Mô phỏng toàn bộ quy trình thanh toán
-     */
-
-
-
-
-
-
-
-
-
-
-
-
-
-} 
+}

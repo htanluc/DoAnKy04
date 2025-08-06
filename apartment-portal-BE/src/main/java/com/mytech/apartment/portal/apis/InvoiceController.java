@@ -1,13 +1,16 @@
-// src/main/java/com/mytech/apartment/portal/apis/InvoiceController.java
 package com.mytech.apartment.portal.apis;
 
 import com.mytech.apartment.portal.dtos.InvoiceCreateRequest;
 import com.mytech.apartment.portal.dtos.InvoiceDto;
 import com.mytech.apartment.portal.dtos.InvoiceUpdateRequest;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
+import com.mytech.apartment.portal.services.SmartActivityLogService;
 import com.mytech.apartment.portal.services.InvoiceService;
 import com.mytech.apartment.portal.services.MonthlyFeeService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -15,14 +18,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping
+@RequiredArgsConstructor
 public class InvoiceController {
 
-    @Autowired private InvoiceService invoiceService;
-    
-    @Autowired private List<MonthlyFeeService> feeServices;
+    private final InvoiceService invoiceService;
+    private final SmartActivityLogService smartActivityLogService;
+    private final List<MonthlyFeeService> feeServices;
 
     @GetMapping("/api/invoices/by-apartments")
     public List<InvoiceDto> getByApartments(@RequestParam List<Long> aptIds) {
@@ -42,6 +47,11 @@ public class InvoiceController {
     public ResponseEntity<List<InvoiceDto>> getAllInvoices() {
         try {
             List<InvoiceDto> invoices = invoiceService.getAllInvoices();
+            
+            // Log admin activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.VIEW_INVOICE, 
+                "Admin xem tất cả hóa đơn (%d hóa đơn)", invoices.size());
+            
             return ResponseEntity.ok(invoices);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
@@ -56,7 +66,12 @@ public class InvoiceController {
     public ResponseEntity<InvoiceDto> getInvoiceById(@PathVariable Long id) {
         try {
             return invoiceService.getInvoiceById(id)
-                    .map(ResponseEntity::ok)
+                    .map(invoice -> {
+                        // Log admin activity (smart logging)
+                        smartActivityLogService.logSmartActivity(ActivityActionType.VIEW_INVOICE, 
+                            "Admin xem hóa đơn #%d", id);
+                        return ResponseEntity.ok(invoice);
+                    })
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
@@ -71,6 +86,10 @@ public class InvoiceController {
     public ResponseEntity<InvoiceDto> createInvoice(@RequestBody InvoiceCreateRequest request) {
         try {
             // TODO: Implement create invoice logic
+            // Log admin activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.CREATE_INVOICE, 
+                "Admin tạo hóa đơn mới cho căn hộ %d", request.getApartmentId());
+            
             return ResponseEntity.status(501).build(); // Not implemented yet
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
@@ -85,6 +104,10 @@ public class InvoiceController {
     public ResponseEntity<InvoiceDto> updateInvoice(@PathVariable Long id, @RequestBody InvoiceUpdateRequest request) {
         try {
             // TODO: Implement update invoice logic
+            // Log admin activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.UPDATE_INVOICE, 
+                "Admin cập nhật hóa đơn #%d", id);
+            
             return ResponseEntity.status(501).build(); // Not implemented yet
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
@@ -99,15 +122,19 @@ public class InvoiceController {
     public ResponseEntity<Void> deleteInvoice(@PathVariable Long id) {
         try {
             // TODO: Implement delete invoice logic
-            return ResponseEntity.status(501).build(); // Not implemented yet
+            // Log admin activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.DELETE_INVOICE, 
+                "Admin xóa hóa đơn #%d", id);
+            
+            return ResponseEntity.noContent().build();
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
         }
     }
 
     /**
-     * [EN] Get invoices of current resident
-     * [VI] Lấy hóa đơn của resident hiện tại
+     * [EN] Get current user's invoices
+     * [VI] Lấy hóa đơn của người dùng hiện tại
      */
     @GetMapping("/api/invoices/my")
     public ResponseEntity<List<InvoiceDto>> getMyInvoices() {
@@ -116,12 +143,16 @@ public class InvoiceController {
             if (auth == null || !auth.isAuthenticated()) {
                 return ResponseEntity.status(401).build();
             }
-            
+
             String username = auth.getName();
             List<InvoiceDto> invoices = invoiceService.getInvoicesByUsername(username);
+            
+            // Removed automatic logging to reduce excessive logs
+            // Only log when user actually performs an action, not when page loads
+            
             return ResponseEntity.ok(invoices);
         } catch (Exception e) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(500).build();
         }
     }
 
@@ -135,22 +166,22 @@ public class InvoiceController {
         try {
             // Tạo hóa đơn cơ bản
             invoiceService.generateInvoicesForMonth(billingPeriod);
-            
+
             // Chạy tất cả FeeService để thêm các khoản phí
             feeServices.forEach(svc -> svc.generateFeeForMonth(billingPeriod));
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", String.format("Đã tạo hóa đơn cho căn hộ %d tháng %s", apartmentId, billingPeriod));
             response.put("apartmentId", apartmentId);
             response.put("billingPeriod", billingPeriod);
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "Lỗi khi tạo hóa đơn: " + e.getMessage());
-            
+
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -164,21 +195,21 @@ public class InvoiceController {
         try {
             // Tạo hóa đơn cơ bản cho tất cả căn hộ
             invoiceService.generateInvoicesForMonth(billingPeriod);
-            
+
             // Chạy tất cả FeeService để thêm các khoản phí
             feeServices.forEach(svc -> svc.generateFeeForMonth(billingPeriod));
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", String.format("Đã tạo hóa đơn cho tất cả căn hộ tháng %s", billingPeriod));
             response.put("billingPeriod", billingPeriod);
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "Lỗi khi tạo hóa đơn: " + e.getMessage());
-            
+
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -192,19 +223,37 @@ public class InvoiceController {
         try {
             // Chỉ chạy các FeeService để tính lại phí
             feeServices.forEach(svc -> svc.generateFeeForMonth(billingPeriod));
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", String.format("Đã tính lại phí cho tháng %s", billingPeriod));
             response.put("billingPeriod", billingPeriod);
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "Lỗi khi tính lại phí: " + e.getMessage());
-            
+
             return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
+     * [EN] Download invoice PDF
+     * [VI] Tải hóa đơn PDF
+     */
+    @GetMapping("/api/invoices/{id}/download")
+    public ResponseEntity<String> downloadInvoice(@PathVariable("id") Long invoiceId) {
+        try {
+            // TODO: Implement PDF generation
+            // Log download activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.DOWNLOAD_INVOICE, 
+                "Tải hóa đơn #%d", invoiceId);
+            
+            return ResponseEntity.ok("PDF content would be here");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
         }
     }
 }

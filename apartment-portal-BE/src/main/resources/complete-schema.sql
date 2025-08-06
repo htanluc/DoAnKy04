@@ -268,7 +268,10 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     description TEXT,
     ip_address VARCHAR(45),
     user_agent TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    resource_type VARCHAR(100),
+    resource_id BIGINT,
+    additional_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -480,7 +483,7 @@ CREATE INDEX idx_service_requests_submitted_at ON service_requests(submitted_at)
 -- Activity log indexes
 CREATE INDEX idx_activity_logs_user_id ON activity_logs(user_id);
 CREATE INDEX idx_activity_logs_action_type ON activity_logs(action_type);
-CREATE INDEX idx_activity_logs_timestamp ON activity_logs(timestamp);
+CREATE INDEX idx_activity_logs_created_at ON activity_logs(created_at);
 
 -- Apartment residents indexes
 CREATE INDEX idx_apartment_residents_apartment_id ON apartment_residents(apartment_id);

@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -41,10 +41,31 @@ interface SidebarProps {
 
 export default function Sidebar({ user, resident, apartment, roles, isOpen = true, onToggle }: SidebarProps) {
   const pathname = usePathname()
+  const [isMobile, setIsMobile] = useState(false)
+  const [lastPathname, setLastPathname] = useState(pathname)
 
-  // Sửa lỗi: Đưa các hàm vào trong component để sử dụng props
+  // Detect screen size changes
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
+
+  // Auto-close sidebar on mobile when route changes (but not on initial load)
+  useEffect(() => {
+    if (isMobile && isOpen && onToggle && lastPathname !== pathname && lastPathname !== '') {
+      console.log('Route changed, auto-closing menu on mobile')
+      onToggle()
+    }
+    setLastPathname(pathname)
+  }, [pathname, isMobile, isOpen, onToggle, lastPathname])
+
   const getUserDisplayName = () => {
-    // Ưu tiên: resident.fullName > user.username > fallback
     if (resident?.fullName) {
       return resident.fullName
     }
@@ -55,7 +76,6 @@ export default function Sidebar({ user, resident, apartment, roles, isOpen = tru
   }
 
   const getUserInfo = () => {
-    // Ưu tiên: apartment.unitNumber > user.phoneNumber > fallback
     if (apartment?.unitNumber) {
       return apartment.unitNumber
     }
@@ -65,44 +85,53 @@ export default function Sidebar({ user, resident, apartment, roles, isOpen = tru
     return ""
   }
 
+  const handleCloseMenu = () => {
+    console.log('Sidebar close clicked')
+    if (onToggle) {
+      onToggle()
+    }
+  }
+
   return (
     <>
-      {/* Hamburger button for mobile only - only show when menu is closed */}
-      <button
-        className={cn(
-          "fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md border border-gray-200 text-gray-700 md:hidden",
-          isOpen ? "hidden" : "block"
-        )}
-        aria-label="Mở menu"
-        onClick={onToggle}
-        type="button"
-      >
-        <Menu className="h-6 w-6" />
-      </button>
+      {/* Mobile overlay */}
+      {isOpen && isMobile && (
+        <div
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 transition-opacity duration-300"
+          onClick={handleCloseMenu}
+          aria-label="Đóng menu"
+        />
+      )}
 
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-gray-200 transition-transform duration-200",
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full",
-          "md:relative md:translate-x-0 md:flex"
+          "md:relative md:translate-x-0 md:flex md:z-auto"
         )}
-        style={{ height: "100vh" }}
+        style={{ 
+          height: "100vh",
+          transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)"
+        }}
       >
-        {/* Close button for mobile */}
+        {/* Header */}
         <div className="flex h-16 items-center px-6 border-b border-gray-200 justify-between">
           <h1 className="text-xl font-bold text-gray-900">Menu</h1>
-          <button
-            className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100"
-            aria-label="Đóng menu"
-            onClick={onToggle}
-            type="button"
-          >
-            <X className="h-6 w-6" />
-          </button>
+          {isMobile && (
+            <button
+              className="p-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors focus-ring btn-accessible"
+              aria-label="Đóng menu"
+              onClick={handleCloseMenu}
+              type="button"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          )}
         </div>
         
-        <nav className="flex-1 space-y-1 px-4 py-4">
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1 px-4 py-4 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             return (
@@ -110,46 +139,46 @@ export default function Sidebar({ user, resident, apartment, roles, isOpen = tru
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                  "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
                   isActive
-                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700 shadow-sm"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}
-                onClick={onToggle} // Đóng menu khi chọn link trên mobile
+                onClick={() => {
+                  if (isMobile && onToggle) {
+                    console.log('Navigation item clicked, closing menu')
+                    onToggle()
+                  }
+                }}
               >
                 <item.icon
                   className={cn(
-                    "mr-3 h-5 w-5 flex-shrink-0",
+                    "mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200",
                     isActive ? "text-blue-700" : "text-gray-400 group-hover:text-gray-500"
                   )}
                 />  
-                {item.name}
+                <span className="truncate">{item.name}</span>
               </Link>
             )
           })}
         </nav>
         
+        {/* User profile */}
         <div className="border-t border-gray-200 p-4">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8">
-                <AvatarImage src={getAvatarUrl(user)} alt={getUserDisplayName()} />
-                <AvatarFallback>{getUserDisplayName().charAt(0)}</AvatarFallback>
-              </Avatar>
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              <AvatarImage src={getAvatarUrl(user)} alt={getUserDisplayName()} />
+              <AvatarFallback className="bg-blue-100 text-blue-600">
+                {getUserDisplayName().charAt(0)}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold">{getUserDisplayName()}</p>
-              <p className="text-xs text-gray-500">{getUserInfo()}</p>
+              <p className="font-semibold text-sm truncate">{getUserDisplayName()}</p>
+              <p className="text-xs text-gray-500 truncate">{getUserInfo()}</p>
             </div>
           </div>
         </div>
       </div>
-      {/* Overlay for mobile when sidebar is open */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-30 md:hidden"
-          onClick={onToggle}
-          aria-label="Đóng menu"
-        />
-      )}
     </>
   )
 } 

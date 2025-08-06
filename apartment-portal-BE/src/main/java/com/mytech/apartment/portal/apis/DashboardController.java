@@ -112,7 +112,8 @@ public class DashboardController {
     public ResponseEntity<List<ActivityLogDto>> getRecentActivities(Authentication authentication) {
         try {
             Long userId = ((UserDetailsImpl) authentication.getPrincipal()).getId();
-            List<ActivityLogDto> activities = activityLogService.getRecentActivityLogsByUserId(userId, 10);
+            // SỬA LỖI: Đổi sang phương thức đúng của ActivityLogService
+            List<ActivityLogDto> activities = activityLogService.getRecentActivitiesForUser(userId, 10);
             return ResponseEntity.ok(activities);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

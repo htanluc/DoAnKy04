@@ -1,53 +1,65 @@
 package com.mytech.apartment.portal.mappers;
 
-import com.mytech.apartment.portal.models.ActivityLog;
 import com.mytech.apartment.portal.dtos.ActivityLogDto;
+import com.mytech.apartment.portal.models.ActivityLog;
 import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ActivityLogMapper {
-    
+
     public ActivityLogDto toDto(ActivityLog entity) {
         if (entity == null) {
             return null;
         }
         
         ActivityLogDto dto = new ActivityLogDto();
-        dto.setLogId(entity.getLogId());
+        dto.setLogId(entity.getId());
         dto.setUserId(entity.getUser() != null ? entity.getUser().getId() : null);
-        dto.setActionType(entity.getActionType());
+        dto.setActionType(entity.getActionType() != null ? entity.getActionType().name() : null);
         
         // Set display name for action type
         try {
-            ActivityActionType actionType = ActivityActionType.fromCode(entity.getActionType());
-            dto.setActionTypeDisplayName(actionType.getDisplayName());
-        } catch (IllegalArgumentException e) {
-            dto.setActionTypeDisplayName(entity.getActionType()); // Fallback to code
+            if (entity.getActionType() != null) {
+                dto.setActionTypeDisplayName(entity.getActionType().getDisplayName());
+            } else {
+                dto.setActionTypeDisplayName("Unknown");
+            }
+        } catch (Exception e) {
+            dto.setActionTypeDisplayName(entity.getActionType() != null ? entity.getActionType().name() : "Unknown");
         }
         
         dto.setDescription(entity.getDescription());
-        dto.setTimestamp(entity.getTimestamp());
+        dto.setTimestamp(entity.getCreatedAt());
         
         // Set user information
         if (entity.getUser() != null) {
             dto.setUsername(entity.getUser().getUsername());
-            dto.setUserFullName(entity.getUser().getUsername()); // Default to username, can be enhanced later
+            dto.setUserFullName(entity.getUser().getFullName());
         }
         
         return dto;
     }
-    
+
     public ActivityLog toEntity(ActivityLogDto dto) {
         if (dto == null) {
             return null;
         }
         
         ActivityLog entity = new ActivityLog();
-        entity.setLogId(dto.getLogId());
-        entity.setActionType(dto.getActionType());
+        entity.setId(dto.getLogId());
+        
+        if (dto.getActionType() != null) {
+            try {
+                entity.setActionType(ActivityActionType.valueOf(dto.getActionType()));
+            } catch (IllegalArgumentException e) {
+                // Handle invalid action type
+                entity.setActionType(null);
+            }
+        }
+        
         entity.setDescription(dto.getDescription());
-        entity.setTimestamp(dto.getTimestamp());
+        entity.setCreatedAt(dto.getTimestamp());
         
         return entity;
     }

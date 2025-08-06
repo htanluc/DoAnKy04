@@ -4,6 +4,8 @@ import com.mytech.apartment.portal.dtos.AnnouncementCreateRequest;
 import com.mytech.apartment.portal.dtos.AnnouncementDto;
 import com.mytech.apartment.portal.dtos.AnnouncementUpdateRequest;
 import com.mytech.apartment.portal.services.AnnouncementService;
+import com.mytech.apartment.portal.services.SmartActivityLogService;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,6 +18,9 @@ import java.util.List;
 public class AnnouncementController {
     @Autowired
     private AnnouncementService announcementService;
+    
+    @Autowired
+    private SmartActivityLogService smartActivityLogService;
 
     /**
      * Get all announcements (Resident FE) - with read status
@@ -28,7 +33,16 @@ public class AnnouncementController {
         }
         
         String username = auth.getName();
-        return announcementService.getAllAnnouncementsForUser(username);
+        List<AnnouncementDto> announcements = announcementService.getAllAnnouncementsForUser(username);
+        
+        // Log activity: View announcements (smart logging - chỉ log khi thực sự xem)
+        smartActivityLogService.logSmartActivity(
+            ActivityActionType.VIEW_ANNOUNCEMENT, 
+            "Xem danh sách thông báo (%d thông báo)", 
+            announcements.size()
+        );
+        
+        return announcements;
     }
 
     /**
@@ -44,9 +58,20 @@ public class AnnouncementController {
         }
         
         String username = auth.getName();
-        return announcementService.getAnnouncementByIdForUser(id, username)
-                .map(ResponseEntity::ok)
+        ResponseEntity<AnnouncementDto> response = announcementService.getAnnouncementByIdForUser(id, username)
+                .map(announcement -> {
+                    // Log activity: View specific announcement (smart logging)
+                    smartActivityLogService.logSmartActivity(
+                        ActivityActionType.VIEW_ANNOUNCEMENT, 
+                        "Xem chi tiết thông báo: %s (#%d)", 
+                        announcement.getTitle(),
+                        announcement.getId()
+                    );
+                    return ResponseEntity.ok(announcement);
+                })
                 .orElse(ResponseEntity.notFound().build());
+        
+        return response;
     }
 
     /**
@@ -63,6 +88,12 @@ public class AnnouncementController {
             String username = auth.getName();
             boolean success = announcementService.markAsRead(id, username);
             if (success) {
+                // Log activity: Mark announcement as read (luôn log vì đây là hành động quan trọng)
+                smartActivityLogService.logSmartActivity(
+                    ActivityActionType.MARK_ANNOUNCEMENT_READ, 
+                    "Đánh dấu thông báo #%d đã đọc", 
+                    id
+                );
                 return ResponseEntity.ok().build();
             } else {
                 return ResponseEntity.badRequest().build();
