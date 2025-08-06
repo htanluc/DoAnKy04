@@ -4,6 +4,8 @@ import com.mytech.apartment.portal.dtos.EventCreateRequest;
 import com.mytech.apartment.portal.dtos.EventDto;
 import com.mytech.apartment.portal.dtos.EventUpdateRequest;
 import com.mytech.apartment.portal.services.EventService;
+import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,6 +18,8 @@ import java.util.List;
 public class EventController {
     @Autowired
     private EventService eventService;
+    @Autowired
+    private ActivityLogService activityLogService;
 
     /**
      * Get all events (Resident FE) - with registration status
@@ -72,7 +76,13 @@ public class EventController {
      */
     @PostMapping("/api/admin/events")
     public EventDto createEvent(@RequestBody EventCreateRequest request) {
-        return eventService.createEvent(request);
+        EventDto createdEvent = eventService.createEvent(request);
+        activityLogService.logActivityForCurrentUser(
+            ActivityActionType.CREATE_EVENT,
+            "Tạo sự kiện mới: %s",
+            createdEvent.getTitle()
+        );
+        return createdEvent;
     }
 
     /**
@@ -82,6 +92,11 @@ public class EventController {
     public ResponseEntity<EventDto> updateEvent(@PathVariable("id") Long id, @RequestBody EventUpdateRequest request) {
         try {
             EventDto updatedEvent = eventService.updateEvent(id, request);
+            activityLogService.logActivityForCurrentUser(
+                ActivityActionType.UPDATE_EVENT,
+                "Cập nhật sự kiện: %s",
+                updatedEvent.getTitle()
+            );
             return ResponseEntity.ok(updatedEvent);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -94,6 +109,11 @@ public class EventController {
     @DeleteMapping("/api/admin/events/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable("id") Long id) {
         eventService.deleteEvent(id);
+        activityLogService.logActivityForCurrentUser(
+            ActivityActionType.DELETE_EVENT,
+            "Xóa sự kiện: #%d",
+            id
+        );
         return ResponseEntity.noContent().build();
     }
 } 

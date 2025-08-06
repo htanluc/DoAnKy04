@@ -1,89 +1,120 @@
 package com.mytech.apartment.portal.models.enums;
 
 public enum ActivityActionType {
-    // Authentication & User Management
-    LOGIN("LOGIN", "Đăng nhập"),
-    LOGOUT("LOGOUT", "Đăng xuất"),
-    REGISTER("REGISTER", "Đăng ký tài khoản"),
-    CHANGE_PASSWORD("CHANGE_PASSWORD", "Đổi mật khẩu"),
-    FORGOT_PASSWORD("FORGOT_PASSWORD", "Quên mật khẩu"),
-    RESET_PASSWORD("RESET_PASSWORD", "Đặt lại mật khẩu"),
-    UPDATE_PROFILE("UPDATE_PROFILE", "Cập nhật thông tin cá nhân"),
-    UPLOAD_AVATAR("UPLOAD_AVATAR", "Upload ảnh đại diện"),
+    // Authentication
+    LOGIN,
+    LOGOUT,
+    PASSWORD_CHANGE,
     
     // Invoice & Payment
-    VIEW_INVOICE("VIEW_INVOICE", "Xem hóa đơn"),
-    PAY_INVOICE("PAY_INVOICE", "Thanh toán hóa đơn"),
-    DOWNLOAD_INVOICE("DOWNLOAD_INVOICE", "Tải hóa đơn"),
-    
-    // Announcements
-    VIEW_ANNOUNCEMENT("VIEW_ANNOUNCEMENT", "Xem thông báo"),
-    MARK_ANNOUNCEMENT_READ("MARK_ANNOUNCEMENT_READ", "Đánh dấu thông báo đã đọc"),
-    
-    // Events
-    VIEW_EVENT("VIEW_EVENT", "Xem sự kiện"),
-    REGISTER_EVENT("REGISTER_EVENT", "Đăng ký sự kiện"),
-    CANCEL_EVENT_REGISTRATION("CANCEL_EVENT_REGISTRATION", "Hủy đăng ký sự kiện"),
-    
-    // Service Requests
-    CREATE_SERVICE_REQUEST("CREATE_SERVICE_REQUEST", "Tạo yêu cầu dịch vụ"),
-    UPDATE_SERVICE_REQUEST("UPDATE_SERVICE_REQUEST", "Cập nhật yêu cầu dịch vụ"),
-    CANCEL_SERVICE_REQUEST("CANCEL_SERVICE_REQUEST", "Hủy yêu cầu dịch vụ"),
-    RATE_SERVICE_REQUEST("RATE_SERVICE_REQUEST", "Đánh giá yêu cầu dịch vụ"),
-    
-    // Facility Bookings
-    CREATE_FACILITY_BOOKING("CREATE_FACILITY_BOOKING", "Đặt tiện ích"),
-    UPDATE_FACILITY_BOOKING("UPDATE_FACILITY_BOOKING", "Cập nhật đặt tiện ích"),
-    CANCEL_FACILITY_BOOKING("CANCEL_FACILITY_BOOKING", "Hủy đặt tiện ích"),
-    CHECK_IN_FACILITY("CHECK_IN_FACILITY", "Check-in tiện ích"),
-    CHECK_OUT_FACILITY("CHECK_OUT_FACILITY", "Check-out tiện ích"),
+    VIEW_INVOICE,
+    DOWNLOAD_INVOICE,
+    PAY_INVOICE,
+    CREATE_INVOICE,
+    UPDATE_INVOICE,
+    DELETE_INVOICE,
     
     // Vehicle Management
-    REGISTER_VEHICLE("REGISTER_VEHICLE", "Đăng ký xe"),
-    UPDATE_VEHICLE("UPDATE_VEHICLE", "Cập nhật thông tin xe"),
-    DELETE_VEHICLE("DELETE_VEHICLE", "Xóa đăng ký xe"),
+    REGISTER_VEHICLE,
+    UPDATE_VEHICLE,
+    DELETE_VEHICLE,
     
-    // Feedback
-    CREATE_FEEDBACK("CREATE_FEEDBACK", "Gửi phản hồi"),
-    UPDATE_FEEDBACK("UPDATE_FEEDBACK", "Cập nhật phản hồi"),
-    DELETE_FEEDBACK("DELETE_FEEDBACK", "Xóa phản hồi"),
+    // Facility Booking
+    CREATE_FACILITY_BOOKING,
+    UPDATE_FACILITY_BOOKING,
+    CANCEL_FACILITY_BOOKING,
+    FACILITY_CHECKIN,
+    FACILITY_CHECKOUT,
     
-    // File Operations
-    UPLOAD_FILE("UPLOAD_FILE", "Upload file"),
-    DELETE_FILE("DELETE_FILE", "Xóa file"),
+    // Announcements & Events
+    VIEW_ANNOUNCEMENT,
+    MARK_ANNOUNCEMENT_READ,
+    VIEW_EVENT,
+    CREATE_EVENT,
+    UPDATE_EVENT,
+    DELETE_EVENT,
+    CANCEL_EVENT_REGISTRATION,
     
-    // System
-    VIEW_DASHBOARD("VIEW_DASHBOARD", "Xem trang tổng quan"),
-    VIEW_ACTIVITY_LOGS("VIEW_ACTIVITY_LOGS", "Xem lịch sử hoạt động"),
-    EXPORT_DATA("EXPORT_DATA", "Xuất dữ liệu"),
+    // Support & Feedback
+    CREATE_SUPPORT_REQUEST,
+    UPDATE_SUPPORT_REQUEST,
+    SUBMIT_FEEDBACK,
     
-    // Error & Security
-    LOGIN_FAILED("LOGIN_FAILED", "Đăng nhập thất bại"),
-    UNAUTHORIZED_ACCESS("UNAUTHORIZED_ACCESS", "Truy cập trái phép"),
-    SESSION_EXPIRED("SESSION_EXPIRED", "Phiên đăng nhập hết hạn");
-
-    private final String code;
-    private final String displayName;
-
-    ActivityActionType(String code, String displayName) {
-        this.code = code;
-        this.displayName = displayName;
-    }
-
-    public String getCode() {
-        return code;
-    }
+    // Staff Portal
+    VIEW_STAFF_DASHBOARD,
+    CREATE_STAFF_TASK,
+    UPDATE_STAFF_TASK,
+    COMPLETE_STAFF_TASK,
+    
+    // Admin Actions
+    CREATE_USER,
+    UPDATE_USER,
+    DELETE_USER,
+    CREATE_ANNOUNCEMENT,
+    UPDATE_ANNOUNCEMENT,
+    DELETE_ANNOUNCEMENT,
+    REGISTER_EVENT,
+    
+    // Additional action types
+    CREATE_SERVICE_REQUEST,
+    USER_MANAGEMENT,
+    ANNOUNCEMENT_CREATE,
+    SERVICE_REQUEST,
+    FACILITY_BOOKING,
+    PAYMENT;
 
     public String getDisplayName() {
-        return displayName;
+        switch (this) {
+            case LOGIN: return "Đăng nhập";
+            case LOGOUT: return "Đăng xuất";
+            case PASSWORD_CHANGE: return "Đổi mật khẩu";
+            case VIEW_INVOICE: return "Xem hóa đơn";
+            case DOWNLOAD_INVOICE: return "Tải hóa đơn";
+            case PAY_INVOICE: return "Thanh toán hóa đơn";
+            case REGISTER_VEHICLE: return "Đăng ký xe";
+            case UPDATE_VEHICLE: return "Cập nhật thông tin xe";
+            case DELETE_VEHICLE: return "Xóa thông tin xe";
+            case CREATE_FACILITY_BOOKING: return "Đặt tiện ích";
+            case UPDATE_FACILITY_BOOKING: return "Cập nhật đặt tiện ích";
+            case CANCEL_FACILITY_BOOKING: return "Hủy đặt tiện ích";
+            case FACILITY_CHECKIN: return "Check-in tiện ích";
+            case FACILITY_CHECKOUT: return "Check-out tiện ích";
+            case VIEW_ANNOUNCEMENT: return "Xem thông báo";
+            case MARK_ANNOUNCEMENT_READ: return "Đánh dấu đã đọc thông báo";
+            case VIEW_EVENT: return "Xem sự kiện";
+            case CREATE_EVENT: return "Tạo sự kiện";
+            case UPDATE_EVENT: return "Cập nhật sự kiện";
+            case DELETE_EVENT: return "Xóa sự kiện";
+            case CANCEL_EVENT_REGISTRATION: return "Hủy đăng ký sự kiện";
+            case CREATE_SUPPORT_REQUEST: return "Tạo yêu cầu hỗ trợ";
+            case UPDATE_SUPPORT_REQUEST: return "Cập nhật yêu cầu hỗ trợ";
+            case SUBMIT_FEEDBACK: return "Gửi phản hồi";
+            case VIEW_STAFF_DASHBOARD: return "Xem bảng điều khiển nhân viên";
+            case CREATE_STAFF_TASK: return "Tạo nhiệm vụ nhân viên";
+            case UPDATE_STAFF_TASK: return "Cập nhật nhiệm vụ nhân viên";
+            case COMPLETE_STAFF_TASK: return "Hoàn thành nhiệm vụ nhân viên";
+            case CREATE_USER: return "Tạo người dùng";
+            case UPDATE_USER: return "Cập nhật người dùng";
+            case DELETE_USER: return "Xóa người dùng";
+            case CREATE_ANNOUNCEMENT: return "Tạo thông báo";
+            case UPDATE_ANNOUNCEMENT: return "Cập nhật thông báo";
+            case DELETE_ANNOUNCEMENT: return "Xóa thông báo";
+            case REGISTER_EVENT: return "Đăng ký sự kiện";
+            case CREATE_SERVICE_REQUEST: return "Tạo yêu cầu dịch vụ";
+            case USER_MANAGEMENT: return "Quản lý người dùng";
+            case ANNOUNCEMENT_CREATE: return "Tạo thông báo";
+            case SERVICE_REQUEST: return "Yêu cầu dịch vụ";
+            case FACILITY_BOOKING: return "Đặt tiện ích";
+            case PAYMENT: return "Thanh toán";
+            default: return this.name();
+        }
     }
 
     public static ActivityActionType fromCode(String code) {
-        for (ActivityActionType type : values()) {
-            if (type.code.equals(code)) {
-                return type;
-            }
+        try {
+            return ActivityActionType.valueOf(code);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid activity action type: " + code);
         }
-        throw new IllegalArgumentException("Unknown activity action type: " + code);
     }
 } 

@@ -17,6 +17,11 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     
     List<Vehicle> findByUserId(Long userId);
     
+    // Alias method for finding vehicles by resident user ID (same as findByUserId)
+    default List<Vehicle> findByResidentUserId(Long userId) {
+        return findByUserId(userId);
+    }
+    
     List<Vehicle> findByStatus(VehicleStatus status);
     
 

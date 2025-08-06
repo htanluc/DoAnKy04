@@ -623,16 +623,16 @@ public class DataInitializer implements CommandLineRunner {
         feedbackRepository.save(Feedback.builder().user(users.get(8)).category(feedbackCategories.get(1)).content("Khiếu nại về chất lượng nước").submittedAt(LocalDateTime.now().minusDays(4)).status(FeedbackStatus.PENDING).response("Đang kiểm tra và xử lý").respondedAt(LocalDateTime.now().minusDays(2)).build());
 
         // 18. Activity Logs
-        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now()).build());
-        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType("PAYMENT").description("Thanh toán hóa đơn").timestamp(LocalDateTime.now()).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType(ActivityActionType.LOGIN).description("Đăng nhập").createdAt(LocalDateTime.now()).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType(ActivityActionType.PAYMENT).description("Thanh toán hóa đơn").createdAt(LocalDateTime.now()).build());
         
         // Thêm activity logs mới
-        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(2)).build());
-        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType("FACILITY_BOOKING").description("Đặt phòng gym").timestamp(LocalDateTime.now().minusHours(1)).build());
-        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(3)).build());
-        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType("SERVICE_REQUEST").description("Tạo yêu cầu sửa chữa").timestamp(LocalDateTime.now().minusHours(2)).build());
-        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType("ANNOUNCEMENT_CREATE").description("Tạo thông báo mới").timestamp(LocalDateTime.now().minusHours(4)).build());
-        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType("USER_MANAGEMENT").description("Quản lý người dùng").timestamp(LocalDateTime.now().minusHours(5)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType(ActivityActionType.LOGIN).description("Đăng nhập").createdAt(LocalDateTime.now().minusHours(2)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType(ActivityActionType.FACILITY_BOOKING).description("Đặt phòng gym").createdAt(LocalDateTime.now().minusHours(1)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType(ActivityActionType.LOGIN).description("Đăng nhập").createdAt(LocalDateTime.now().minusHours(3)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType(ActivityActionType.SERVICE_REQUEST).description("Tạo yêu cầu sửa chữa").createdAt(LocalDateTime.now().minusHours(2)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType(ActivityActionType.ANNOUNCEMENT_CREATE).description("Tạo thông báo mới").createdAt(LocalDateTime.now().minusHours(4)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType(ActivityActionType.USER_MANAGEMENT).description("Quản lý người dùng").createdAt(LocalDateTime.now().minusHours(5)).build());
 
         // 19. AI QA History
         aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(4)).question("Làm sao đổi mật khẩu?").aiAnswer("Vào phần tài khoản để đổi mật khẩu.").askedAt(LocalDateTime.now()).responseTime(1200).feedback("HELPFUL").build());
@@ -681,7 +681,7 @@ public class DataInitializer implements CommandLineRunner {
             
             vehicleRepository.save(Vehicle.builder()
                 .licensePlate(licensePlate)
-                .vehicleType(VehicleType.CAR)
+                .vehicleType(VehicleType.CAR_4_SEATS)
                 .brand(brand)
                 .model(model)
                 .color(color)
@@ -766,6 +766,10 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("🧹 Cleaning up duplicate event registrations...");
         cleanupDuplicateEventRegistrations();
         
+        // 24. Create sample activity logs
+        System.out.println("📝 Creating sample activity logs...");
+        createSampleActivityLogs(users);
+        
         System.out.println("✅ Data seeding completed successfully!");
 
     }
@@ -842,6 +846,83 @@ public class DataInitializer implements CommandLineRunner {
             
         } catch (Exception e) {
             System.err.println("❌ Error during cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Create sample activity logs for users
+     */
+    private void createSampleActivityLogs(List<User> users) {
+        try {
+            System.out.println("📝 Creating sample activity logs...");
+            
+            // Get resident users only
+            List<User> residents = users.stream()
+                .filter(user -> user.getRoles().stream().anyMatch(role -> role.getName().equals("RESIDENT")))
+                .collect(Collectors.toList());
+            
+            // Create sample activity logs for each resident
+            for (User resident : residents) {
+                // Login activities
+                activityLogRepository.save(ActivityLog.builder()
+                    .user(resident)
+                    .actionType(ActivityActionType.LOGIN)
+                    .description("Đăng nhập vào hệ thống")
+                    .ipAddress("192.168.1.100")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    .createdAt(LocalDateTime.now().minusDays(1))
+                    .build());
+                
+                // View invoice activities
+                activityLogRepository.save(ActivityLog.builder()
+                    .user(resident)
+                    .actionType(ActivityActionType.VIEW_INVOICE)
+                    .description("Xem danh sách hóa đơn cá nhân (3 hóa đơn)")
+                    .ipAddress("192.168.1.100")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    .createdAt(LocalDateTime.now().minusDays(1))
+                    .build());
+                
+                // Payment activities
+                activityLogRepository.save(ActivityLog.builder()
+                    .user(resident)
+                    .actionType(ActivityActionType.PAY_INVOICE)
+                    .description("Khởi tạo thanh toán MoMo cho hóa đơn #123, số tiền: 1,500,000 VND")
+                    .ipAddress("192.168.1.100")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    .resourceType("INVOICE")
+                    .resourceId(123L)
+                    .createdAt(LocalDateTime.now().minusDays(2))
+                    .build());
+                
+                // View announcements
+                activityLogRepository.save(ActivityLog.builder()
+                    .user(resident)
+                    .actionType(ActivityActionType.VIEW_ANNOUNCEMENT)
+                    .description("Xem thông báo: Thông báo về việc bảo trì thang máy")
+                    .ipAddress("192.168.1.100")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    .createdAt(LocalDateTime.now().minusDays(3))
+                    .build());
+                
+                // Facility booking
+                activityLogRepository.save(ActivityLog.builder()
+                    .user(resident)
+                    .actionType(ActivityActionType.CREATE_FACILITY_BOOKING)
+                    .description("Đặt tiện ích: Phòng gym - 2024-01-15 18:00-20:00")
+                    .ipAddress("192.168.1.100")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    .resourceType("FACILITY_BOOKING")
+                    .resourceId(456L)
+                    .createdAt(LocalDateTime.now().minusDays(4))
+                    .build());
+            }
+            
+            System.out.println("✅ Sample activity logs created successfully!");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error creating sample activity logs: " + e.getMessage());
             e.printStackTrace();
         }
     }

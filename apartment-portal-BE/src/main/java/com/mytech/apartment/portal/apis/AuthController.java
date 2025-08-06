@@ -42,7 +42,7 @@ import com.mytech.apartment.portal.services.RefreshTokenService;
 import com.mytech.apartment.portal.services.ApartmentResidentService;
 import com.mytech.apartment.portal.services.ApartmentService;
 import com.mytech.apartment.portal.services.FileUploadService;
-import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.services.SmartActivityLogService;
 import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.services.NotificationService;
 import com.mytech.apartment.portal.services.MetricsService;
@@ -71,7 +71,7 @@ public class AuthController {
     private final ApartmentResidentService apartmentResidentService;
     private final ApartmentService apartmentService;
     private final FileUploadService fileUploadService;
-    private final ActivityLogService activityLogService;
+    private final SmartActivityLogService smartActivityLogService;
 
     @Autowired
     private NotificationService notificationService;
@@ -186,7 +186,7 @@ public class AuthController {
         
         // Log successful login
         if (user != null) {
-            activityLogService.logActivity(user.getId(), ActivityActionType.LOGIN, "Đăng nhập thành công");
+            smartActivityLogService.logSmartActivity(ActivityActionType.LOGIN, "Đăng nhập thành công");
         }
         
         // Trả về JWT và thông tin user
@@ -213,7 +213,7 @@ public class AuthController {
             authService.register(req, origin);
             
             // Log registration attempt (note: user not authenticated yet, so we log by phone number)
-            activityLogService.logActivityForCurrentUser(ActivityActionType.REGISTER, "Đăng ký tài khoản mới: %s", req.getPhoneNumber());
+            smartActivityLogService.logSmartActivity(ActivityActionType.CREATE_USER, "Đăng ký tài khoản mới: %s", req.getPhoneNumber());
             
             return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."));
         } catch (Exception e) {
@@ -239,7 +239,7 @@ public class AuthController {
             authService.changePassword(req);
             
             // Log password change
-            activityLogService.logActivityForCurrentUser(ActivityActionType.CHANGE_PASSWORD, "Đổi mật khẩu thành công");
+            smartActivityLogService.logSmartActivity(ActivityActionType.PASSWORD_CHANGE, "Đổi mật khẩu thành công");
             
             return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công!"));
         } catch (Exception e) {
@@ -279,7 +279,7 @@ public class AuthController {
             userRepo.save(user);
             
             // Log avatar upload
-            activityLogService.logActivityForCurrentUser(ActivityActionType.UPLOAD_AVATAR, "Upload ảnh đại diện thành công");
+            smartActivityLogService.logSmartActivity(ActivityActionType.UPDATE_USER, "Upload ảnh đại diện thành công");
             
             return ResponseEntity.ok(ApiResponse.success("Upload avatar thành công", imageUrl));
         } catch (IOException e) {

@@ -63,7 +63,9 @@ class YearlyBillingServiceTest {
             .year(year)
             .serviceFeePerM2(5000.0)
             .waterFeePerM3(15000.0)
-            .parkingFee(200000.0)
+            .motorcycleFee(100000.0)
+            .car4SeatsFee(200000.0)
+            .car7SeatsFee(250000.0)
             .build();
 
         // Mock water meter reading
@@ -129,7 +131,7 @@ class YearlyBillingServiceTest {
         when(serviceFeeConfigRepository.save(any(ServiceFeeConfig.class))).thenReturn(new ServiceFeeConfig());
 
         // Act
-        yearlyBillingService.createYearlyFeeConfig(year, serviceFeePerM2, waterFeePerM3, parkingFee);
+        yearlyBillingService.createYearlyFeeConfig(year, serviceFeePerM2, waterFeePerM3, 100000.0, 200000.0, 250000.0);
 
         // Assert
         verify(serviceFeeConfigRepository, times(12)).save(any(ServiceFeeConfig.class)); // 12 tháng
@@ -149,14 +151,16 @@ class YearlyBillingServiceTest {
             .year(year)
             .serviceFeePerM2(5000.0)
             .waterFeePerM3(15000.0)
-            .parkingFee(200000.0)
+            .motorcycleFee(100000.0)
+            .car4SeatsFee(200000.0)
+            .car7SeatsFee(250000.0)
             .build();
 
         when(serviceFeeConfigRepository.findByMonthAndYear(month, year)).thenReturn(Optional.of(existingConfig));
         when(serviceFeeConfigRepository.save(any(ServiceFeeConfig.class))).thenReturn(existingConfig);
 
         // Act
-        yearlyBillingService.updateFeeConfig(month, year, serviceFeePerM2, waterFeePerM3, parkingFee);
+        yearlyBillingService.updateFeeConfig(month, year, serviceFeePerM2, waterFeePerM3, 100000.0, 200000.0, 250000.0);
 
         // Assert
         verify(serviceFeeConfigRepository).save(any(ServiceFeeConfig.class));
@@ -180,7 +184,9 @@ class YearlyBillingServiceTest {
             .year(year)
             .serviceFeePerM2(5000.0)
             .waterFeePerM3(15000.0)
-            .parkingFee(200000.0)
+            .motorcycleFee(100000.0)
+            .car4SeatsFee(200000.0)
+            .car7SeatsFee(250000.0)
             .build();
 
         // Mock water meter reading
