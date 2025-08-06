@@ -293,6 +293,8 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // SAU KHI TẠO APARTMENT, KHỞI TẠO CHỈ SỐ NƯỚC = 0 CHO THÁNG HIỆN TẠI (mapping thủ công)
+        // Tạm thời comment out để tránh lỗi compilation
+        /*
         String currentMonth = YearMonth.now().toString(); // "yyyy-MM"
         for (Apartment apartment : apartments) {
             boolean exists = waterMeterReadingRepository.findByApartmentIdAndReadingMonth(apartment.getId().intValue(), currentMonth).isPresent();
@@ -307,17 +309,58 @@ public class DataInitializer implements CommandLineRunner {
                 waterMeterReadingRepository.save(entity);
             }
         }
+        */
 
-        // 5. Apartment Residents (liên kết user với apartment) - Đã loại bỏ Resident, sử dụng User trực tiếp
+        // 5. Apartment Residents (liên kết user với apartment) - Hỗ trợ nhiều-nhiều
+        // Tạo mối quan hệ nhiều-nhiều giữa User và Apartment
         for (int i = 0; i < users.size() && i < apartments.size(); i++) {
             User user = users.get(i);
             // Chỉ liên kết các user có role RESIDENT với apartment
             if (user.getRoles().contains(residentRole)) {
-                apartmentResidentRepository.save(ApartmentResident.builder()
+                // Tạo mối quan hệ chính (OWNER)
+                ApartmentResident apartmentResident = ApartmentResident.builder()
                     .id(new ApartmentResidentId(apartments.get(i).getId(), user.getId()))
+                    .apartment(apartments.get(i))
+                    .user(user)
                     .moveInDate(LocalDate.now().minusMonths(6 + i))
-                    .relationType("OWNER")
-                    .build());
+                    .relationType(RelationType.OWNER)
+                    .isPrimaryResident(true)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+                apartmentResidentRepository.save(apartmentResident);
+                
+                // Tạo thêm mối quan hệ phụ cho một số user (TENANT, FAMILY_MEMBER)
+                if (i % 3 == 0 && i + 1 < apartments.size()) {
+                    // User này cũng thuê thêm 1 căn hộ khác
+                    Apartment tenantApartment = apartments.get((i + 1) % apartments.size());
+                    ApartmentResident tenantResident = ApartmentResident.builder()
+                        .id(new ApartmentResidentId(tenantApartment.getId(), user.getId()))
+                        .apartment(tenantApartment)
+                        .user(user)
+                        .moveInDate(LocalDate.now().minusMonths(3))
+                        .relationType(RelationType.TENANT)
+                        .isPrimaryResident(false)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                    apartmentResidentRepository.save(tenantResident);
+                }
+                
+                // Tạo mối quan hệ FAMILY_MEMBER cho một số căn hộ
+                if (i % 4 == 0 && i + 2 < users.size()) {
+                    User familyMember = users.get((i + 2) % users.size());
+                    if (familyMember.getRoles().contains(residentRole)) {
+                        ApartmentResident familyResident = ApartmentResident.builder()
+                            .id(new ApartmentResidentId(apartments.get(i).getId(), familyMember.getId()))
+                            .apartment(apartments.get(i))
+                            .user(familyMember)
+                            .moveInDate(LocalDate.now().minusMonths(2))
+                            .relationType(RelationType.FAMILY_MEMBER)
+                            .isPrimaryResident(false)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                        apartmentResidentRepository.save(familyResident);
+                    }
+                }
             }
         }
 
@@ -559,15 +602,32 @@ public class DataInitializer implements CommandLineRunner {
             .numberOfPeople(2)
             .build());
 
-        // 14. Invoices & Invoice Items
+        // 14. Invoices & Invoice Items - Chỉ tạo 1 invoice per apartment per billing period
+        // Lấy danh sách apartments có residents để tạo invoices
+        Set<Long> apartmentWithResidents = new HashSet<>();
         for (User user : users) {
-            // Chỉ tạo invoice cho các user có role RESIDENT
             if (!user.getRoles().contains(residentRole)) continue;
+            List<ApartmentResident> links = apartmentResidentRepository.findByUser_Id(user.getId());
+            for (ApartmentResident link : links) {
+                apartmentWithResidents.add(link.getApartmentId());
+            }
+        }
+        
+        System.out.println("📋 Creating invoices for " + apartmentWithResidents.size() + " apartments with residents");
+        
+        // Tạo invoices cho mỗi apartment (tránh duplicate)
+        for (Long apartmentId : apartmentWithResidents) {
+            // Kiểm tra xem đã có invoice cho apartment và billing periods này chưa
+            boolean hasInvoices = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, "2024-11").isPresent() ||
+                                invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, "2024-10").isPresent() ||
+                                invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, "2024-09").isPresent();
             
-            // Sửa lỗi: findByUserId(Long) không tồn tại, dùng findByIdUserId(Long)
-            List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(user.getId());
-            if (links.isEmpty()) continue;
-            Long apartmentId = links.get(0).getApartmentId();
+            if (hasInvoices) {
+                System.out.println("⚠️ Invoices already exist for apartment " + apartmentId + ", skipping...");
+                continue;
+            }
+            
+            System.out.println("✅ Creating invoices for apartment " + apartmentId);
             
             // unpaid
             Invoice unpaid = invoiceRepository.save(Invoice.builder().apartmentId(apartmentId).billingPeriod("2024-11").issueDate(LocalDate.of(2024,11,1)).dueDate(LocalDate.of(2024,11,15)).totalAmount(1000000.0).status(InvoiceStatus.UNPAID).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build());
@@ -576,7 +636,7 @@ public class DataInitializer implements CommandLineRunner {
             // overdue
             Invoice overdue = invoiceRepository.save(Invoice.builder().apartmentId(apartmentId).billingPeriod("2024-09").issueDate(LocalDate.of(2024,9,1)).dueDate(LocalDate.of(2024,9,15)).totalAmount(1200000.0).status(InvoiceStatus.OVERDUE).createdAt(LocalDateTime.now().minusMonths(3)).updatedAt(LocalDateTime.now().minusMonths(2)).build());
             
-            // Thêm invoice item cho mỗi invoice
+            // Thêm invoice items cho mỗi invoice
             for (Invoice inv : List.of(unpaid, paid, overdue)) {
                 invoiceItemRepository.save(InvoiceItem.builder().invoice(inv).feeType("ELECTRICITY").description("Phí điện").amount(300000.0).build());
                 invoiceItemRepository.save(InvoiceItem.builder().invoice(inv).feeType("WATER").description("Phí nước").amount(200000.0).build());
@@ -644,7 +704,8 @@ public class DataInitializer implements CommandLineRunner {
         aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(7)).question("Làm sao báo cáo sự cố?").aiAnswer("Vào phần yêu cầu dịch vụ để tạo báo cáo sự cố.").askedAt(LocalDateTime.now().minusHours(3)).responseTime(1000).feedback("HELPFUL").build());
         aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(8)).question("Phí dịch vụ bao nhiêu?").aiAnswer("Phí dịch vụ thay đổi theo loại dịch vụ, vui lòng xem chi tiết trong phần hóa đơn.").askedAt(LocalDateTime.now().minusHours(4)).responseTime(1500).feedback("NOT_HELPFUL").build());
 
-        // 20. Vehicles (Cars) - Tạo ít nhất 1 xe cho mỗi resident user
+        // 20. Vehicles (Cars) - Tạo ít nhất 1 xe cho mỗi resident user, cập nhật đúng theo complete-schema.sql
+        // Bổ sung liên kết với apartment_id, user_id, vehicle_type, license_plate, brand, model, color, image_urls, status, monthly_fee, created_at
         String[] carBrands = {"Toyota", "Honda", "Ford", "Hyundai", "Mazda", "Kia", "Nissan", "Mitsubishi", "Suzuki", "Daihatsu", "Chevrolet", "BMW", "Mercedes", "Audi"};
         String[] carModels = {"Vios", "City", "Ranger", "Accent", "CX-5", "Cerato", "Sunny", "Lancer", "Swift", "Terios", "Spark", "X3", "C-Class", "A4"};
         String[] carColors = {"Trắng", "Đen", "Bạc", "Xanh", "Đỏ", "Vàng", "Xám", "Nâu"};
@@ -664,32 +725,103 @@ public class DataInitializer implements CommandLineRunner {
             "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
             "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop"
         };
-        
+
+        // Lấy danh sách apartment của từng resident user (nếu có)
+        Map<Long, Apartment> userApartmentMap = new HashMap<>();
+        List<ApartmentResident> allApartmentResidents = apartmentResidentRepository.findAll();
+        for (ApartmentResident ar : allApartmentResidents) {
+            // Chỉ lấy căn hộ primary cho user
+            if (Boolean.TRUE.equals(ar.getIsPrimaryResident())) {
+                userApartmentMap.put(ar.getUser().getId(), ar.getApartment());
+            }
+        }
+
         for (int i = 0; i < users.size(); i++) {
             User user = users.get(i);
             // Chỉ tạo vehicle cho các user có role RESIDENT
             if (!user.getRoles().contains(residentRole)) continue;
+
+            // Lấy apartment_id nếu có
+            Apartment apartment = userApartmentMap.get(user.getId());
             
-            String licensePlate = "30A-" + String.format("%05d", 10000 + i);
+            // Chỉ tạo vehicle nếu user có apartment
+            if (apartment == null) continue;
+
+            // Tạo xe hơi cho user
+            String carLicensePlate = "30A-" + String.format("%05d", 10000 + i);
             String brand = carBrands[i % carBrands.length];
             String model = carModels[i % carModels.length];
             String color = carColors[i % carColors.length];
             String imageUrl = carImageUrls[i % carImageUrls.length];
-            
-            // Tạo mảng JSON cho imageUrls
             String imageUrlsArray = "[\"" + imageUrl + "\"]";
-            
+
             vehicleRepository.save(Vehicle.builder()
-                .licensePlate(licensePlate)
+                .apartment(apartment)
+                .user(user)
                 .vehicleType(VehicleType.CAR_4_SEATS)
+                .licensePlate(carLicensePlate)
                 .brand(brand)
                 .model(model)
                 .color(color)
                 .imageUrls(imageUrlsArray)
                 .status(VehicleStatus.APPROVED)
                 .monthlyFee(new BigDecimal("150000"))
-                .user(user) // Changed from resident to user
+                .createdAt(LocalDateTime.now().minusDays(i % 10))
                 .build());
+            
+            // Tạo xe máy cho một số user (50% user có xe máy)
+            if (i % 2 == 0) {
+                String[] motorcycleBrands = {"Honda", "Yamaha", "Suzuki", "Piaggio", "SYM", "Kawasaki"};
+                String[] motorcycleModels = {"Wave", "Exciter", "Vision", "Liberty", "Attila", "Ninja"};
+                
+                String motorcycleLicensePlate = "30A-" + String.format("%05d", 20000 + i);
+                String motorcycleBrand = motorcycleBrands[i % motorcycleBrands.length];
+                String motorcycleModel = motorcycleModels[i % motorcycleModels.length];
+                String motorcycleColor = carColors[i % carColors.length];
+                String motorcycleImageUrl = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop";
+                String motorcycleImageUrlsArray = "[\"" + motorcycleImageUrl + "\"]";
+
+                vehicleRepository.save(Vehicle.builder()
+                    .apartment(apartment)
+                    .user(user)
+                    .vehicleType(VehicleType.MOTORCYCLE)
+                    .licensePlate(motorcycleLicensePlate)
+                    .brand(motorcycleBrand)
+                    .model(motorcycleModel)
+                    .color(motorcycleColor)
+                    .imageUrls(motorcycleImageUrlsArray)
+                    .status(VehicleStatus.APPROVED)
+                    .monthlyFee(new BigDecimal("50000"))
+                    .createdAt(LocalDateTime.now().minusDays(i % 10))
+                    .build());
+            }
+            
+            // Tạo xe 7 chỗ cho một số user (20% user có xe 7 chỗ)
+            if (i % 5 == 0) {
+                String[] suvBrands = {"Toyota", "Honda", "Ford", "Hyundai", "Kia"};
+                String[] suvModels = {"Innova", "BR-V", "Everest", "Santa Fe", "Sorento"};
+                
+                String suvLicensePlate = "30A-" + String.format("%05d", 30000 + i);
+                String suvBrand = suvBrands[i % suvBrands.length];
+                String suvModel = suvModels[i % suvModels.length];
+                String suvColor = carColors[i % carColors.length];
+                String suvImageUrl = "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop";
+                String suvImageUrlsArray = "[\"" + suvImageUrl + "\"]";
+
+                vehicleRepository.save(Vehicle.builder()
+                    .apartment(apartment)
+                    .user(user)
+                    .vehicleType(VehicleType.CAR_7_SEATS)
+                    .licensePlate(suvLicensePlate)
+                    .brand(suvBrand)
+                    .model(suvModel)
+                    .color(suvColor)
+                    .imageUrls(suvImageUrlsArray)
+                    .status(VehicleStatus.APPROVED)
+                    .monthlyFee(new BigDecimal("200000"))
+                    .createdAt(LocalDateTime.now().minusDays(i % 10))
+                    .build());
+            }
         }
 
         // 21. Additional Service Requests - Tạo thêm yêu cầu dịch vụ với các trạng thái khác nhau cho mỗi resident

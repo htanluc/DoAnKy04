@@ -4,29 +4,31 @@ import lombok.Data;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 public class WaterMeterReadingDto {
 
-    private Long readingId;
+    private Long id;
 
     @NotNull
-    private Integer apartmentId;
+    private Long apartmentId;
 
-    @NotBlank
-    // định dạng "yyyy-MM"
-    @Pattern(regexp = "\\d{4}-\\d{2}")
-    private String readingMonth;
+    @NotNull
+    private LocalDate readingDate;
 
     @NotNull
     @DecimalMin("0.00")
-    private BigDecimal previousReading;
-
-    @NotNull
-    @DecimalMin("0.00")
-    private BigDecimal currentReading;
+    private BigDecimal meterReading;
 
     private BigDecimal consumption;
+
+    private BigDecimal unitPrice;
+
+    private BigDecimal totalAmount;
+
+    @NotNull
+    private Long recordedBy;
 
     // Mới: tên căn hộ
     private String apartmentName;

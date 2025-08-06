@@ -16,6 +16,8 @@ public interface VehicleMapper {
     @Mapping(target = "vehicleTypeDisplayName", source = "vehicleType.displayName")
     @Mapping(target = "statusDisplayName", source = "status.displayName")
     @Mapping(target = "userFullName", source = "user.fullName")
+    @Mapping(target = "apartmentId", source = "apartment.id")
+    @Mapping(target = "apartmentUnitNumber", source = "apartment.unitNumber")
     @Mapping(target = "imageUrls", source = "imageUrls", qualifiedByName = "stringToArray")
     VehicleDto toDto(Vehicle entity);
 
@@ -23,6 +25,7 @@ public interface VehicleMapper {
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "monthlyFee", source = "vehicleType", qualifiedByName = "calculateMonthlyFee")
     @Mapping(target = "user", ignore = true)
+    @Mapping(target = "apartment", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "imageUrls", source = "imageUrls", qualifiedByName = "arrayToString")
@@ -34,28 +37,28 @@ public interface VehicleMapper {
     }
 
     @Named("stringToArray")
-    default String[] stringToArray(String imageUrls) {
-        if (imageUrls == null || imageUrls.trim().isEmpty()) {
+    default String[] stringToArray(String jsonString) {
+        if (jsonString == null || jsonString.trim().isEmpty()) {
             return new String[0];
         }
         try {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(imageUrls, String[].class);
+            return mapper.readValue(jsonString, String[].class);
         } catch (JsonProcessingException e) {
             return new String[0];
         }
     }
 
     @Named("arrayToString")
-    default String arrayToString(String[] imageUrls) {
-        if (imageUrls == null || imageUrls.length == 0) {
-            return null;
+    default String arrayToString(String[] array) {
+        if (array == null || array.length == 0) {
+            return "[]";
         }
         try {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsString(imageUrls);
+            return mapper.writeValueAsString(array);
         } catch (JsonProcessingException e) {
-            return null;
+            return "[]";
         }
     }
 } 

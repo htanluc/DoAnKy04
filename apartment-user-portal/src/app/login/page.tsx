@@ -107,7 +107,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <Building2 className="h-8 w-8 text-blue-600 mr-2" />
-            <h1 className="text-2xl font-bold text-gray-900">Apartment Portal</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Trải Nghiệm Căn Hộ FPT</h1>
           </div>
           <CardTitle className="text-2xl text-center">Đăng nhập</CardTitle>
           <CardDescription className="text-center">
