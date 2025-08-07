@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS facilities (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    location VARCHAR(255),
     capacity INT,
     other_details TEXT,
     usage_fee DOUBLE,
@@ -450,15 +451,15 @@ INSERT IGNORE INTO service_categories (category_code, category_name, assigned_ro
 ('GENERAL', 'Khác', 'STAFF', 'Các yêu cầu khác');
 
 -- Insert sample facilities
-INSERT IGNORE INTO facilities (name, description, capacity, other_details, usage_fee, opening_hours, status) VALUES
-('Phòng Gym', 'Phòng tập thể dục với đầy đủ thiết bị hiện đại', 20, 'Mở cửa 6:00-22:00, có huấn luyện viên', 50000.0, '06:00 - 22:00', 'ACTIVE'),
-('Hồ bơi', 'Hồ bơi ngoài trời với view đẹp', 50, 'Mở cửa 6:00-21:00, có cứu hộ', 100000.0, '06:00 - 21:00', 'ACTIVE'),
-('Phòng họp', 'Phòng họp đa năng cho cư dân', 30, 'Có thể đặt trước, có máy chiếu', 30000.0, '08:00 - 20:00', 'ACTIVE'),
-('Sân tennis', 'Sân tennis ngoài trời chất lượng cao', 8, 'Có đèn chiếu sáng, có thể chơi ban đêm', 80000.0, '06:00 - 22:00', 'ACTIVE'),
-('Khu BBQ', 'Khu vực nướng BBQ ngoài trời', 40, 'Có bàn ghế, lò nướng', 50000.0, '16:00 - 22:00', 'ACTIVE'),
-('Phòng sinh hoạt cộng đồng', 'Phòng đa năng cho các hoạt động cộng đồng', 100, 'Có sân khấu, âm thanh ánh sáng', 20000.0, '08:00 - 22:00', 'ACTIVE'),
-('Bãi đỗ xe', 'Bãi đỗ xe có mái che', 200, 'Miễn phí cho cư dân', 10000.0, '24/7', 'ACTIVE'),
-('Khu vui chơi trẻ em', 'Sân chơi an toàn cho trẻ em', 30, 'Có đồ chơi, có ghế ngồi cho phụ huynh', 30000.0, '06:00 - 20:00', 'ACTIVE');
+INSERT IGNORE INTO facilities (name, description, location, capacity, other_details, usage_fee, opening_hours, status) VALUES
+('Phòng Gym', 'Phòng tập thể dục với đầy đủ thiết bị hiện đại', 'Tầng 1 - Tòa A', 20, 'Mở cửa 6:00-22:00, có huấn luyện viên', 50000.0, '06:00 - 22:00', 'ACTIVE'),
+('Hồ bơi', 'Hồ bơi ngoài trời với view đẹp', 'Khu vực ngoài trời - Tầng trệt', 50, 'Mở cửa 6:00-21:00, có cứu hộ', 100000.0, '06:00 - 21:00', 'ACTIVE'),
+('Phòng họp', 'Phòng họp đa năng cho cư dân', 'Tầng 2 - Tòa B', 30, 'Có thể đặt trước, có máy chiếu', 30000.0, '08:00 - 20:00', 'ACTIVE'),
+('Sân tennis', 'Sân tennis ngoài trời chất lượng cao', 'Khu vực ngoài trời - Tầng trệt', 8, 'Có đèn chiếu sáng, có thể chơi ban đêm', 80000.0, '06:00 - 22:00', 'ACTIVE'),
+('Khu BBQ', 'Khu vực nướng BBQ ngoài trời', 'Khu vực ngoài trời - Tầng trệt', 40, 'Có bàn ghế, lò nướng', 50000.0, '16:00 - 22:00', 'ACTIVE'),
+('Phòng sinh hoạt cộng đồng', 'Phòng đa năng cho các hoạt động cộng đồng', 'Tầng 1 - Tòa C', 100, 'Có sân khấu, âm thanh ánh sáng', 20000.0, '08:00 - 22:00', 'ACTIVE'),
+('Bãi đỗ xe', 'Bãi đỗ xe có mái che', 'Tầng hầm - Tòa A', 200, 'Miễn phí cho cư dân', 10000.0, '24/7', 'ACTIVE'),
+('Khu vui chơi trẻ em', 'Sân chơi an toàn cho trẻ em', 'Khu vực ngoài trời - Tầng trệt', 30, 'Có đồ chơi, có ghế ngồi cho phụ huynh', 30000.0, '06:00 - 20:00', 'ACTIVE');
 
 -- =====================================================
 -- INDEXES TỐI ƯU HÓA

@@ -214,6 +214,7 @@ export default function ApartmentUserLinkModal({ apartmentId }: ApartmentUserLin
                   className="border rounded px-2 py-1"
                   value={relationType}
                   onChange={e => setRelationType(e.target.value)}
+                  aria-label="Loại quan hệ"
                 >
                   {RELATION_TYPES.map(rt => (
                     <option key={rt.value} value={rt.value}>{rt.label}</option>

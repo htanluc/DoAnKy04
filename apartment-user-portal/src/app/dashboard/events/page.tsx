@@ -217,6 +217,20 @@ export default function EventsPage() {
     return `${hours}:${minutes}`;
   }, [])
 
+  const formatDateTime = useCallback((dateString: string) => {
+    // Parse format "yyyy-MM-dd HH:mm:ss"
+    const [datePart, timePart] = dateString.split(' ');
+    const [year, month, day] = datePart.split('-');
+    const [hours, minutes] = timePart.split(':');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }, [])
+
+  const isSameDay = useCallback((startTime: string, endTime: string) => {
+    const [startDatePart] = startTime.split(' ');
+    const [endDatePart] = endTime.split(' ');
+    return startDatePart === endDatePart;
+  }, [])
+
   const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case 'UPCOMING':
@@ -500,14 +514,29 @@ export default function EventsPage() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="space-y-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="h-4 w-4 mr-3 text-blue-500" />
-                          <span className="font-medium">{formatDate(event.startTime)}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Clock className="h-4 w-4 mr-3 text-orange-500" />
-                          <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
-                        </div>
+                        {isSameDay(event.startTime, event.endTime) ? (
+                          <>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Calendar className="h-4 w-4 mr-3 text-blue-500" />
+                              <span className="font-medium">{formatDate(event.startTime)}</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                              <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Calendar className="h-4 w-4 mr-3 text-blue-500" />
+                              <span className="font-medium">Từ: {formatDateTime(event.startTime)}</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Clock className="h-4 w-4 mr-3 text-orange-500" />
+                              <span className="font-medium">Đến: {formatDateTime(event.endTime)}</span>
+                            </div>
+                          </>
+                        )}
                         <div className="flex items-center text-sm text-gray-600">
                           <MapPin className="h-4 w-4 mr-3 text-red-500" />
                           <span className="line-clamp-1">{event.location}</span>

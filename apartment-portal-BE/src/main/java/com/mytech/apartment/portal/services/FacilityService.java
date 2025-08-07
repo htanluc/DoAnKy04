@@ -35,6 +35,7 @@ public class FacilityService {
         Facility facility = new Facility();
         facility.setName(request.getName());
         facility.setDescription(request.getDescription());
+        facility.setLocation(request.getLocation());
         facility.setCapacity(request.getCapacity());
         facility.setOtherDetails(request.getOtherDetails());
         facility.setUsageFee(request.getUsageFee());
