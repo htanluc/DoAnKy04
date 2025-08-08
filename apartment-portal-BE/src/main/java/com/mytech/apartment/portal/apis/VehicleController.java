@@ -211,4 +211,20 @@ public class VehicleController {
 
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * [EN] Get vehicles by user ID (Admin endpoint)
+     * [VI] Lấy danh sách xe của người dùng theo ID (Admin)
+     */
+    @GetMapping("/admin/vehicles/user/{userId}")
+    public ResponseEntity<List<VehicleDto>> getVehiclesByUserId(@PathVariable Long userId) {
+        try {
+            List<VehicleDto> vehicles = vehicleService.getVehiclesByUserId(userId);
+            return ResponseEntity.ok(vehicles);
+        } catch (Exception e) {
+            System.out.println("[ERROR] Lỗi khi lấy danh sách xe cho user " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
 }

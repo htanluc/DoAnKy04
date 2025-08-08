@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL, getToken } from '@/lib/auth';
-import ApartmentResidentManager from '@/components/admin/ApartmentResidentManager';
-import ApartmentUserLinkModal from '@/components/admin/ApartmentUserLinkModal';
+// import ApartmentResidentManager from '@/components/admin/ApartmentResidentManager'; // Moved to apartment detail page
+// import ApartmentUserLinkModal from '@/components/admin/ApartmentUserLinkModal'; // Moved to apartment detail page
 import { Apartment } from '@/lib/api';
 
 export default function ApartmentsPage() {
@@ -105,7 +105,8 @@ export default function ApartmentsPage() {
               {t('admin.apartments.list', 'Danh sách căn hộ')}
             </h2>
             <p className="text-gray-600">
-              {t('admin.apartments.listDesc', 'Quản lý tất cả căn hộ trong hệ thống')}
+              {t('admin.apartments.listDesc', 'Quản lý tất cả căn hộ trong hệ thống')}. 
+              Click vào <Eye className="inline h-4 w-4 mx-1" /> để xem chi tiết và quản lý cư dân.
             </p>
           </div>
           <Link href="/admin-dashboard/apartments/create">
@@ -181,10 +182,13 @@ export default function ApartmentsPage() {
                         <TableCell>{apartment.status}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            {/* Mở modal gán user khi nhấn icon con mắt */}
-                            <ApartmentUserLinkModal apartmentId={apartment.id} />
+                            <Link href={`/admin-dashboard/apartments/${apartment.id}`}>
+                              <Button variant="outline" size="sm" title="Xem chi tiết & quản lý cư dân">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
                             <Link href={`/admin-dashboard/apartments/edit/${apartment.id}`}>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" title="Chỉnh sửa căn hộ">
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </Link>

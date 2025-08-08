@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.mytech.apartment.portal.dtos.WaterMeterReadingDto;
 import com.mytech.apartment.portal.services.WaterMeterService;
+import com.mytech.apartment.portal.services.ApartmentService;
 
 import jakarta.validation.Valid;
 
@@ -18,9 +19,12 @@ import jakarta.validation.Valid;
 public class WaterMeterController {
 
     private final WaterMeterService waterMeterService;
+    private final ApartmentService apartmentService;
 
-    public WaterMeterController(WaterMeterService waterMeterService) {
+    public WaterMeterController(WaterMeterService waterMeterService, 
+                               ApartmentService apartmentService) {
         this.waterMeterService = waterMeterService;
+        this.apartmentService = apartmentService;
     }
 
     // 1. Create or Update (upsert) via POST (tương tự addReading)
@@ -82,8 +86,53 @@ public class WaterMeterController {
 
     // 7. Generate readings for a new month
     @PostMapping("/generate")
-    public ResponseEntity<?> generateReadings(@RequestParam("startMonth") String startMonth) {
-        waterMeterService.generateHistory(startMonth);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Map<String, String>> generateReadings(@RequestParam("startMonth") String startMonth) {
+        try {
+            waterMeterService.generateHistory(startMonth);
+            return ResponseEntity.ok(Map.of(
+                "success", "true",
+                "message", "Đã tạo chỉ số nước cho tháng " + startMonth
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", "false", 
+                "error", e.getMessage()
+            ));
+        }
+    }
+
+    // 8. Generate current month template (use service directly)
+    @PostMapping("/generate-current-month")
+    public ResponseEntity<Map<String, String>> generateCurrentMonthTemplate() {
+        try {
+            String currentMonth = java.time.YearMonth.now().toString();
+            waterMeterService.generateHistory(currentMonth);
+            return ResponseEntity.ok(Map.of(
+                "success", "true",
+                "message", "Đã tạo template chỉ số nước cho tháng hiện tại " + currentMonth
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", "false", 
+                "error", e.getMessage()
+            ));
+        }
+    }
+
+    // 9. Initialize water meter readings for all apartments
+    @PostMapping("/init-all-apartments")
+    public ResponseEntity<Map<String, String>> initAllApartments() {
+        try {
+            apartmentService.initializeWaterMeterForAllApartments();
+            return ResponseEntity.ok(Map.of(
+                "success", "true",
+                "message", "Đã khởi tạo chỉ số nước cho tất cả căn hộ"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", "false", 
+                "error", e.getMessage()
+            ));
+                }
     }
 }

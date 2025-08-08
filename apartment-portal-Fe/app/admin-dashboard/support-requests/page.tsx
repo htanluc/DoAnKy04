@@ -56,14 +56,14 @@ export default function SupportRequestsPage() {
         // Sửa lại mapping cho đúng với dữ liệu API thực tế
         const mapped = data.map((item: any) => ({
           id: item.id,
-          residentName: item.residentName || '',
+          residentName: item.userName || item.user?.username || item.residentName || '',
           title: item.title || item.description || '',
           description: item.description || '',
           category: item.categoryName || '',
           priority: item.priority || '',
           status: item.status || '',
           assignedTo: item.assignedTo || '',
-          createdAt: item.createdAt || '',
+          createdAt: item.createdAt || item.submittedAt || '',
         }));
         setSupportRequests(mapped);
         setLoading(false);
@@ -231,7 +231,7 @@ export default function SupportRequestsPage() {
                     {filteredSupportRequests.map((request) => (
                       <TableRow key={request.id}>
                         <TableCell className="font-medium">
-                          {request.residentName}
+                          {request.residentName || 'Chưa có thông tin'}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
                           {request.title}

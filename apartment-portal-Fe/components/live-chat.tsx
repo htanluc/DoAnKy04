@@ -32,7 +32,7 @@ export default function LiveChat() {
     onlineUsers, 
     sendChatMessage, 
     clearChatMessages 
-  } = useWebSocket(userId || undefined);
+  } = useWebSocket(userId || undefined, undefined, true); // Enable WebSocket when needed
 
   const handleSendMessage = () => {
     if (message.trim() && isConnected) {

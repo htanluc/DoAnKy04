@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,22 @@ public class ApartmentResidentController {
 
     @Autowired
     private ApartmentResidentService apartmentResidentService;
+
+    /**
+     * Get all apartment-resident links
+     * Lấy danh sách liên kết cư dân - căn hộ
+     */
+    @GetMapping
+    public ResponseEntity<List<ApartmentResidentDto>> getAllApartmentResidents() {
+        try {
+            List<ApartmentResidentDto> residents = apartmentResidentService.getAllApartmentResidents();
+            return ResponseEntity.ok(residents);
+        } catch (Exception e) {
+            System.out.println("[ERROR] Lỗi khi lấy danh sách apartment residents: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
 
     // Lấy danh sách RelationType
     @GetMapping("/relation-types")
@@ -94,6 +111,37 @@ public class ApartmentResidentController {
             @RequestBody ApartmentResidentCreateRequest request) {
         ApartmentResidentDto updated = apartmentResidentService.updateApartmentResident(apartmentId, userId, request);
         return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * [EN] Get apartments linked to a user
+     * [VI] Lấy danh sách căn hộ đã liên kết với user
+     */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('APARTMENT_RESIDENT_VIEW')")
+    @GetMapping("/user/{userId}/admin")
+    public ResponseEntity<List<ApartmentResidentDto>> getApartmentsByUserAdmin(@PathVariable("userId") Long userId) {
+        System.out.println("[DEBUG] Getting apartments for user ID: " + userId);
+        
+        try {
+            List<ApartmentResidentDto> result = apartmentResidentService.getApartmentResidentsByUserId(userId);
+            System.out.println("[DEBUG] Found " + (result != null ? result.size() : 0) + " apartment relations for user " + userId);
+            
+            if (result != null && !result.isEmpty()) {
+                result.forEach(relation -> {
+                    System.out.println("[DEBUG] Relation: Apartment " + relation.getApartmentId() + 
+                                     ", User " + relation.getUserId() + 
+                                     ", Type: " + relation.getRelationType() +
+                                     ", Building: " + relation.getBuildingName() +
+                                     ", Unit: " + relation.getUnitNumber());
+                });
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.out.println("[ERROR] Exception getting apartments for user " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
     }
 
     // Xóa mối quan hệ

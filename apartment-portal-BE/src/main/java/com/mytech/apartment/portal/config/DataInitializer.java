@@ -90,7 +90,200 @@ public class DataInitializer implements CommandLineRunner {
         // PART 11: EMERGENCY CONTACTS & ADDITIONAL DATA
         initializeEmergencyContactsAndAdditionalData();
         
-        System.out.println("✅ Comprehensive data initialization completed successfully!");
+        // Thêm feedback mới
+        User residentUser4 = users.get(7);
+        User residentUser5 = users.get(8);
+        feedbackRepository.save(Feedback.builder().user(users.get(5)).category(feedbackCategories.get(1)).content("Khiếu nại về tiếng ồn từ căn hộ bên cạnh").submittedAt(LocalDateTime.now().minusDays(1)).status(FeedbackStatus.RESPONDED).response("Đã liên hệ với cư dân để giải quyết").respondedAt(LocalDateTime.now()).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(6)).category(feedbackCategories.get(0)).content("Đề xuất lắp thêm camera an ninh").submittedAt(LocalDateTime.now().minusDays(2)).status(FeedbackStatus.PENDING).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(7)).category(feedbackCategories.get(2)).content("Khen ngợi dịch vụ kỹ thuật nhanh chóng").submittedAt(LocalDateTime.now().minusDays(3)).status(FeedbackStatus.RESPONDED).response("Cảm ơn sự tin tưởng của bạn").respondedAt(LocalDateTime.now().minusDays(1)).build());
+        feedbackRepository.save(Feedback.builder().user(users.get(8)).category(feedbackCategories.get(1)).content("Khiếu nại về chất lượng nước").submittedAt(LocalDateTime.now().minusDays(4)).status(FeedbackStatus.PENDING).response("Đang kiểm tra và xử lý").respondedAt(LocalDateTime.now().minusDays(2)).build());
+
+        // 18. Activity Logs
+        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now()).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(4)).actionType("PAYMENT").description("Thanh toán hóa đơn").timestamp(LocalDateTime.now()).build());
+        
+        // Thêm activity logs mới
+        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(2)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(5)).actionType("FACILITY_BOOKING").description("Đặt phòng gym").timestamp(LocalDateTime.now().minusHours(1)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType("LOGIN").description("Đăng nhập").timestamp(LocalDateTime.now().minusHours(3)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(6)).actionType("SERVICE_REQUEST").description("Tạo yêu cầu sửa chữa").timestamp(LocalDateTime.now().minusHours(2)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType("ANNOUNCEMENT_CREATE").description("Tạo thông báo mới").timestamp(LocalDateTime.now().minusHours(4)).build());
+        activityLogRepository.save(ActivityLog.builder().user(users.get(0)).actionType("USER_MANAGEMENT").description("Quản lý người dùng").timestamp(LocalDateTime.now().minusHours(5)).build());
+
+        // 19. AI QA History
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(4)).question("Làm sao đổi mật khẩu?").aiAnswer("Vào phần tài khoản để đổi mật khẩu.").askedAt(LocalDateTime.now()).responseTime(1200).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(4)).question("Làm sao đăng ký sự kiện?").aiAnswer("Chọn sự kiện và nhấn Đăng ký.").askedAt(LocalDateTime.now()).responseTime(900).feedback("NOT_HELPFUL").build());
+        
+        // Thêm AI QA history mới
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(5)).question("Làm sao thanh toán hóa đơn?").aiAnswer("Vào phần hóa đơn và chọn phương thức thanh toán phù hợp.").askedAt(LocalDateTime.now().minusHours(1)).responseTime(800).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(6)).question("Giờ mở cửa phòng gym?").aiAnswer("Phòng gym mở cửa từ 6:00-22:00 hàng ngày.").askedAt(LocalDateTime.now().minusHours(2)).responseTime(600).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(7)).question("Làm sao báo cáo sự cố?").aiAnswer("Vào phần yêu cầu dịch vụ để tạo báo cáo sự cố.").askedAt(LocalDateTime.now().minusHours(3)).responseTime(1000).feedback("HELPFUL").build());
+        aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(8)).question("Phí dịch vụ bao nhiêu?").aiAnswer("Phí dịch vụ thay đổi theo loại dịch vụ, vui lòng xem chi tiết trong phần hóa đơn.").askedAt(LocalDateTime.now().minusHours(4)).responseTime(1500).feedback("NOT_HELPFUL").build());
+
+        // 20. Vehicles - Tạo 1 xe máy và 1 xe ô tô cho mỗi resident user
+        String[] carBrands = {"Toyota", "Honda", "Ford", "Hyundai", "Mazda", "Kia", "Nissan", "Mitsubishi", "Suzuki", "Daihatsu", "Chevrolet", "BMW", "Mercedes", "Audi"};
+        String[] carModels = {"Vios", "City", "Ranger", "Accent", "CX-5", "Cerato", "Sunny", "Lancer", "Swift", "Terios", "Spark", "X3", "C-Class", "A4"};
+        String[] motoBrands = {"Honda", "Yamaha", "Suzuki", "SYM", "Piaggio", "Kawasaki", "Honda", "Yamaha", "Suzuki", "SYM", "Piaggio", "Kawasaki", "Honda", "Yamaha"};
+        String[] motoModels = {"Wave", "Sirius", "Raider", "Attila", "Vespa", "Z125", "Winner", "Exciter", "Address", "Elegant", "Liberty", "Ninja", "Vision", "NVX"};
+        String[] colors = {"Trắng", "Đen", "Bạc", "Xanh", "Đỏ", "Vàng", "Xám", "Nâu"};
+        String[] carImageUrls = {
+            "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop"
+        };
+        String[] motoImageUrls = {
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop"
+        };
+        
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            // Chỉ tạo vehicle cho các user có role RESIDENT
+            if (!user.getRoles().contains(residentRole)) continue;
+            
+            // 1. Tạo xe máy cho resident
+            String motoLicensePlate = "30A-" + String.format("%05d", 50000 + i);
+            String motoBrand = motoBrands[i % motoBrands.length];
+            String motoModel = motoModels[i % motoModels.length];
+            String motoColor = colors[i % colors.length];
+            String motoImageUrl = motoImageUrls[i % motoImageUrls.length];
+            String motoImageUrlsArray = "[\"" + motoImageUrl + "\"]";
+            
+            vehicleRepository.save(Vehicle.builder()
+                .licensePlate(motoLicensePlate)
+                .vehicleType(VehicleType.MOTORCYCLE)
+                .brand(motoBrand)
+                .model(motoModel)
+                .color(motoColor)
+                .imageUrls(motoImageUrlsArray)
+                .status(VehicleStatus.APPROVED)
+                .monthlyFee(new BigDecimal("50000")) // Phí xe máy 50k/tháng
+                .user(user)
+                .build());
+            
+            // 2. Tạo xe ô tô cho resident
+            String carLicensePlate = "30A-" + String.format("%05d", 10000 + i);
+            String carBrand = carBrands[i % carBrands.length];
+            String carModel = carModels[i % carModels.length];
+            String carColor = colors[(i + 1) % colors.length]; // Offset để có màu khác
+            String carImageUrl = carImageUrls[i % carImageUrls.length];
+            String carImageUrlsArray = "[\"" + carImageUrl + "\"]";
+            
+            // Random chọn loại xe ô tô (4 chỗ hoặc 7 chỗ)
+            VehicleType carType = (i % 3 == 0) ? VehicleType.CAR_7_SEATS : VehicleType.CAR_4_SEATS;
+            BigDecimal carFee = (carType == VehicleType.CAR_7_SEATS) ? new BigDecimal("250000") : new BigDecimal("200000");
+            
+            vehicleRepository.save(Vehicle.builder()
+                .licensePlate(carLicensePlate)
+                .vehicleType(carType)
+                .brand(carBrand)
+                .model(carModel)
+                .color(carColor)
+                .imageUrls(carImageUrlsArray)
+                .status(VehicleStatus.APPROVED)
+                .monthlyFee(carFee) // Phí xe ô tô 200k (4 chỗ) hoặc 250k (7 chỗ)/tháng
+                .user(user)
+                .build());
+        }
+
+        // 21. Additional Service Requests - Tạo thêm yêu cầu dịch vụ với các trạng thái khác nhau cho mỗi resident
+        ServiceRequestStatus[] statuses = {ServiceRequestStatus.OPEN, ServiceRequestStatus.IN_PROGRESS, ServiceRequestStatus.COMPLETED, ServiceRequestStatus.CANCELLED};
+        ServiceRequestPriority[] priorities = {ServiceRequestPriority.P1, ServiceRequestPriority.P2, ServiceRequestPriority.P3};
+        String[] descriptions = {
+            "Cần sửa chữa điều hòa không lạnh",
+            "Báo cáo tiếng ồn từ căn hộ bên cạnh", 
+            "Yêu cầu thay thế bóng đèn hành lang",
+            "Cần dọn dẹp khu vực chung",
+            "Báo cáo người lạ trong tòa nhà",
+            "Cần sửa chữa thang máy",
+            "Yêu cầu cắt tỉa cây xanh",
+            "Báo cáo rò rỉ nước",
+            "Cần sửa chữa cửa ra vào",
+            "Yêu cầu thông tin về dịch vụ",
+            "Báo cáo mất điện",
+            "Cần sửa chữa hệ thống nước",
+            "Yêu cầu vệ sinh căn hộ",
+            "Báo cáo sự cố an ninh"
+        };
+        
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            // Chỉ tạo service request cho các user có role RESIDENT
+            if (!user.getRoles().contains(residentRole)) continue;
+            
+            // Tạo 5 service requests cho mỗi resident với các trạng thái khác nhau
+            for (int j = 0; j < 5; j++) {
+                ServiceRequestStatus status = statuses[j % statuses.length];
+                ServiceRequestPriority priority = priorities[j % priorities.length];
+                String description = descriptions[(i * 5 + j) % descriptions.length];
+                
+                ServiceRequest serviceRequest = ServiceRequest.builder()
+                    .user(user)
+                    .category(serviceCategories.get(j % serviceCategories.size()))
+                    .description(description)
+                    .submittedAt(LocalDateTime.now().minusDays(j + 1))
+                    .status(status)
+                    .priority(priority)
+                    .build();
+                
+                // Thêm resolution notes và completedAt cho các request đã hoàn thành
+                if (status == ServiceRequestStatus.COMPLETED) {
+                    serviceRequest.setResolutionNotes("Đã xử lý xong yêu cầu");
+                    serviceRequest.setCompletedAt(LocalDateTime.now().minusDays(j));
+                }
+                
+                serviceRequestRepository.save(serviceRequest);
+            }
+        }
+
+        // 22. Additional Event Registrations - Đăng ký thêm sự kiện cho mỗi resident
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            // Chỉ đăng ký event cho các user có role RESIDENT
+            if (!user.getRoles().contains(residentRole)) continue;
+            
+            // Đăng ký cho 6 sự kiện khác nhau với các trạng thái khác nhau
+            EventRegistrationStatus[] regStatuses = {EventRegistrationStatus.REGISTERED, EventRegistrationStatus.CANCELLED};
+            
+            for (int j = 0; j < 6 && j < events.size(); j++) {
+                EventRegistrationStatus status = regStatuses[j % regStatuses.length];
+                
+                eventRegistrationRepository.save(EventRegistration.builder()
+                    .event(events.get(j))
+                    .user(user) // Changed from residentId to user
+                    .status(status)
+                    .build());
+            }
+        }
+
+        // 23. Cleanup duplicate event registrations (after ALL event registrations are created)
+        System.out.println("🧹 Cleaning up duplicate event registrations...");
+        cleanupDuplicateEventRegistrations();
+        
+        System.out.println("✅ Data seeding completed successfully!");
     }
 
     /**
