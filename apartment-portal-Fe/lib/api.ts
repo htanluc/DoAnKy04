@@ -160,6 +160,7 @@ export interface Facility {
   id: number;
   name: string;
   description: string;
+  location: string;
   capacity: number;
   otherDetails: string;
   usageFee: number; // number thay vì string|null
@@ -540,6 +541,7 @@ export interface EventUpdateRequest {
 export interface FacilityCreateRequest {
   name: string;
   description: string;
+  location: string;
   capacity: number;
   otherDetails: string;
   usageFee: number;
@@ -549,6 +551,7 @@ export interface FacilityCreateRequest {
 export interface FacilityUpdateRequest {
   name?: string;
   description?: string;
+  location?: string;
   capacity?: number;
   otherDetails?: string;
   usageFee?: number;

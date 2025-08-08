@@ -19,6 +19,7 @@ public class UserDetailsImpl implements UserDetails {
 	private Collection<? extends GrantedAuthority> authorities;
 	private String status;
 	private Set<Role> roles;
+	private String fullName; // Thêm fullName
 
 	public UserDetailsImpl(User user) {
 		this.id = user.getId();
@@ -26,6 +27,7 @@ public class UserDetailsImpl implements UserDetails {
 		this.password = user.getPasswordHash();
 		this.status = user.getStatus() != null ? user.getStatus().name() : null;
 		this.roles = user.getRoles();
+		this.fullName = user.getFullName(); // Thêm fullName
 		this.authorities = user.getRoles().stream()
 			.map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
 			.collect(Collectors.toList());

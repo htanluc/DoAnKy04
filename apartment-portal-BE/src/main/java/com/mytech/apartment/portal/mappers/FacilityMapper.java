@@ -16,6 +16,7 @@ public class FacilityMapper {
         dto.setId(facility.getId());
         dto.setName(facility.getName());
         dto.setDescription(facility.getDescription());
+        dto.setLocation(facility.getLocation());
         dto.setCapacity(facility.getCapacity());
         dto.setOtherDetails(facility.getOtherDetails());
         dto.setUsageFee(facility.getUsageFee());
@@ -34,6 +35,7 @@ public class FacilityMapper {
         facility.setId(dto.getId());
         facility.setName(dto.getName());
         facility.setDescription(dto.getDescription());
+        facility.setLocation(dto.getLocation());
         facility.setCapacity(dto.getCapacity());
         facility.setOtherDetails(dto.getOtherDetails());
         facility.setUsageFee(dto.getUsageFee());

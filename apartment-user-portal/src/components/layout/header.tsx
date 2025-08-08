@@ -15,6 +15,7 @@ interface HeaderProps {
   resident?: any
   apartment?: any
   roles?: any
+  apartmentResident?: any
 }
 
 export default function Header({ onMenuToggle, isMenuOpen, user, resident, apartment, roles }: HeaderProps) {
@@ -88,11 +89,8 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
   }
 
   const getUserDisplayName = () => {
-    if (resident?.fullName) {
-      return resident.fullName
-    }
-    if (user?.username) {
-      return user.username
+    if (user?.fullName) {
+      return user.fullName
     }
     return ""
   }

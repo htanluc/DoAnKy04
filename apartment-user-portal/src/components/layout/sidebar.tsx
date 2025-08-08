@@ -66,11 +66,8 @@ export default function Sidebar({ user, resident, apartment, roles, isOpen = tru
   }, [pathname, isMobile, isOpen, onToggle, lastPathname])
 
   const getUserDisplayName = () => {
-    if (resident?.fullName) {
-      return resident.fullName
-    }
-    if (user?.username) {
-      return user.username
+    if (user?.fullName) {
+      return user.fullName
     }
     return ""
   }

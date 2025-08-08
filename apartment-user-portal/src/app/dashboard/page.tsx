@@ -127,50 +127,40 @@ export default function DashboardPage() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays === 0) return 'Hôm nay'
-    if (diffDays === 1) return 'Hôm qua'
-    if (diffDays < 7) return `${diffDays} ngày trước`
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
     
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
+    if (diffInMinutes < 1) return 'Vừa xong'
+    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`
+    return date.toLocaleDateString('vi-VN')
   }
 
   const getActivityIcon = (type: string) => {
-    const iconMap: { [key: string]: JSX.Element } = {
-      invoice: <Receipt className="h-4 w-4 text-blue-600" />,
-      announcement: <Bell className="h-4 w-4 text-yellow-600" />,
-      event: <Calendar className="h-4 w-4 text-green-600" />,
-      booking: <Coffee className="h-4 w-4 text-purple-600" />,
-      payment: <DollarSign className="h-4 w-4 text-green-600" />,
-      login: <User className="h-4 w-4 text-gray-600" />,
-      facility_booking: <Building className="h-4 w-4 text-indigo-600" />
+    switch (type) {
+      case 'invoice': return <Receipt className="h-4 w-4" />
+      case 'announcement': return <Bell className="h-4 w-4" />
+      case 'event': return <Calendar className="h-4 w-4" />
+      case 'booking': return <Building className="h-4 w-4" />
+      case 'payment': return <DollarSign className="h-4 w-4" />
+      case 'login': return <User className="h-4 w-4" />
+      case 'facility_booking': return <Coffee className="h-4 w-4" />
+      default: return <Activity className="h-4 w-4" />
     }
-    return iconMap[type] || <Activity className="h-4 w-4 text-gray-600" />
   }
 
   const getStatusBadge = (status?: string) => {
-    if (!status) return null
-
-    const statusConfig: { [key: string]: { color: string; icon: JSX.Element } } = {
-      'pending': { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-3 w-3" /> },
-      'paid': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
-      'overdue': { color: 'bg-red-100 text-red-800', icon: <AlertTriangle className="h-3 w-3" /> },
-      'confirmed': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
-      'cancelled': { color: 'bg-gray-100 text-gray-800', icon: <X className="h-3 w-3" /> }
+    const config = {
+      pending: { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-3 w-3" /> },
+      completed: { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
+      overdue: { color: 'bg-red-100 text-red-800', icon: <AlertTriangle className="h-3 w-3" /> },
+      active: { color: 'bg-blue-100 text-blue-800', icon: <Zap className="h-3 w-3" /> }
     }
-
-    const config = statusConfig[status as keyof typeof statusConfig]
-    if (!config) return null
-
+    
+    const statusConfig = config[status as keyof typeof config] || config.pending
+    
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-        {config.icon}
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
+        {statusConfig.icon}
         <span className="ml-1 capitalize">{status}</span>
       </span>
     )
@@ -240,190 +230,240 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      {/* Enhanced Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-xl p-4 sm:p-6 text-white relative overflow-hidden">
+    <div className="space-y-6 animate-fade-in">
+      {/* Enhanced Welcome Section with Glass Effect */}
+      <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl p-6 sm:p-8 text-white overflow-hidden shadow-2xl">
+        {/* Background Pattern */}
         <div className="absolute inset-0 bg-black bg-opacity-10"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white bg-opacity-10 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white bg-opacity-10 rounded-full translate-y-12 -translate-x-12"></div>
+        
         <div className="relative flex items-center justify-between">
-          <div className="space-y-2 flex-1 min-w-0">
-            <h1 className="text-xl sm:text-3xl font-bold mb-2 animate-slide-up text-ellipsis">
-              Chào mừng trở lại! 👋
-            </h1>
-            <p className="text-blue-100 text-sm sm:text-lg text-ellipsis">
+          <div className="space-y-3 flex-1 min-w-0">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-6 w-6 text-yellow-300 animate-pulse" />
+              <h1 className="text-2xl sm:text-4xl font-bold mb-2 animate-slide-up text-ellipsis">
+                Chào mừng trở lại! 👋
+              </h1>
+            </div>
+            <p className="text-blue-100 text-lg sm:text-xl text-ellipsis">
               Căn hộ {apartmentInfo.apartmentNumber} - {apartmentInfo.buildingName}
             </p>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3">
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="text-xs sm:text-sm">Tầng {apartmentInfo.floor}</span>
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-4">
+              <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-lg px-3 py-1">
+                <MapPin className="h-4 w-4" />
+                <span className="text-sm font-medium">Tầng {apartmentInfo.floor}</span>
               </div>
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <Square className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="text-xs sm:text-sm">{apartmentInfo.area}m²</span>
+              <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-lg px-3 py-1">
+                <Square className="h-4 w-4" />
+                <span className="text-sm font-medium">{apartmentInfo.area}m²</span>
               </div>
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <Bed className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="text-xs sm:text-sm">{apartmentInfo.bedrooms} phòng ngủ</span>
+              <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-lg px-3 py-1">
+                <Bed className="h-4 w-4" />
+                <span className="text-sm font-medium">{apartmentInfo.bedrooms} phòng ngủ</span>
               </div>
             </div>
           </div>
-          <div className="hidden sm:block animate-scale-in flex-shrink-0 ml-4">
-            <Building className="h-16 sm:h-20 w-16 sm:w-20 text-blue-200" />
+          <div className="hidden sm:block relative">
+            <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <Building2 className="h-10 w-10 text-white" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full border-2 border-white flex items-center justify-center">
+              <CheckCircle className="h-3 w-3 text-white" />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-stagger">
-        <Card className="hover-lift transition-smooth border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-ellipsis">Tổng hóa đơn</CardTitle>
-            <Receipt className="h-4 w-4 text-blue-600 flex-shrink-0" />
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Tổng hóa đơn</CardTitle>
+              <Receipt className="h-6 w-6 text-blue-200" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.totalInvoices}</div>
-            <p className="text-xs text-muted-foreground text-ellipsis">
-              {stats.pendingInvoices} chờ thanh toán
-            </p>
+            <div className="text-2xl font-bold">{stats.totalInvoices}</div>
+            <p className="text-blue-200 text-sm">Hóa đơn trong tháng</p>
           </CardContent>
         </Card>
 
-        <Card className="hover-lift transition-smooth border-l-4 border-l-yellow-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-ellipsis">Thông báo mới</CardTitle>
-            <Bell className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+        <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Chờ thanh toán</CardTitle>
+              <Clock className="h-6 w-6 text-orange-200" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.unreadAnnouncements}</div>
-            <p className="text-xs text-muted-foreground text-ellipsis">
-              Cần đọc ngay
-            </p>
+            <div className="text-2xl font-bold">{stats.pendingInvoices}</div>
+            <p className="text-orange-200 text-sm">Hóa đơn chờ xử lý</p>
           </CardContent>
         </Card>
 
-        <Card className="hover-lift transition-smooth border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-ellipsis">Sự kiện sắp tới</CardTitle>
-            <Calendar className="h-4 w-4 text-green-600 flex-shrink-0" />
+        <Card className="bg-gradient-to-br from-green-500 to-emerald-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Sự kiện sắp tới</CardTitle>
+              <Calendar className="h-6 w-6 text-green-200" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.upcomingEvents}</div>
-            <p className="text-xs text-muted-foreground text-ellipsis">
-              Trong tháng này
-            </p>
+            <div className="text-2xl font-bold">{stats.upcomingEvents}</div>
+            <p className="text-green-200 text-sm">Sự kiện trong tuần</p>
           </CardContent>
         </Card>
 
-        <Card className="hover-lift transition-smooth border-l-4 border-l-purple-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-ellipsis">Đặt tiện ích</CardTitle>
-            <Coffee className="h-4 w-4 text-purple-600 flex-shrink-0" />
+        <Card className="bg-gradient-to-br from-purple-500 to-pink-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Thông báo mới</CardTitle>
+              <Bell className="h-6 w-6 text-purple-200" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-purple-600">{stats.activeBookings}</div>
-            <p className="text-xs text-muted-foreground text-ellipsis">
-              Đang hoạt động
-            </p>
+            <div className="text-2xl font-bold">{stats.unreadAnnouncements}</div>
+            <p className="text-purple-200 text-sm">Thông báo chưa đọc</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Enhanced Quick Actions */}
-      <Card className="hover-lift transition-smooth">
+      {/* Quick Actions */}
+      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Zap className="h-5 w-5 mr-2 text-yellow-600" />
-            Thao tác nhanh
-          </CardTitle>
+          <div className="flex items-center space-x-2">
+            <Zap className="h-5 w-5 text-blue-600" />
+            <CardTitle>Thao tác nhanh</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Link href="/dashboard/invoices">
-              <Button variant="outline" className="w-full h-auto p-3 sm:p-4 flex flex-col items-center space-y-2 hover-scale">
-                <Receipt className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                <span className="text-xs sm:text-sm font-medium text-ellipsis">Xem hóa đơn</span>
-                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-              </Button>
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300 cursor-pointer border border-blue-200 hover:border-blue-300">
+                <div className="flex flex-col items-center text-center space-y-2">
+                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Receipt className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Hóa đơn</span>
+                </div>
+              </div>
             </Link>
-            <Link href="/dashboard/announcements">
-              <Button variant="outline" className="w-full h-auto p-3 sm:p-4 flex flex-col items-center space-y-2 hover-scale">
-                <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
-                <span className="text-xs sm:text-sm font-medium text-ellipsis">Thông báo</span>
-                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-              </Button>
-            </Link>
+
             <Link href="/dashboard/facility-bookings">
-              <Button variant="outline" className="w-full h-auto p-3 sm:p-4 flex flex-col items-center space-y-2 hover-scale">
-                <Coffee className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                <span className="text-xs sm:text-sm font-medium text-ellipsis">Đặt tiện ích</span>
-                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-              </Button>
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all duration-300 cursor-pointer border border-green-200 hover:border-green-300">
+                <div className="flex flex-col items-center text-center space-y-2">
+                  <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Building className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Đặt tiện ích</span>
+                </div>
+              </div>
             </Link>
+
             <Link href="/dashboard/service-requests">
-              <Button variant="outline" className="w-full h-auto p-3 sm:p-4 flex flex-col items-center space-y-2 hover-scale">
-                <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                <span className="text-xs sm:text-sm font-medium text-ellipsis">Yêu cầu dịch vụ</span>
-                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-              </Button>
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 transition-all duration-300 cursor-pointer border border-orange-200 hover:border-orange-300">
+                <div className="flex flex-col items-center text-center space-y-2">
+                  <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Wrench className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Yêu cầu dịch vụ</span>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/dashboard/announcements">
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 cursor-pointer border border-purple-200 hover:border-purple-300">
+                <div className="flex flex-col items-center text-center space-y-2">
+                  <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Bell className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Thông báo</span>
+                </div>
+              </div>
             </Link>
           </div>
         </CardContent>
       </Card>
 
-      {/* Enhanced Recent Activities */}
-      <Card className="hover-lift transition-smooth">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Activity className="h-5 w-5 mr-2 text-blue-600" />
-              Hoạt động gần đây
-            </div>
-            <Link href="/dashboard/activity-logs">
-              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
-                Xem tất cả
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity, index) => (
-                <div 
-                  key={activity.id} 
-                  className="flex items-center space-x-3 sm:space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors animate-slide-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 text-ellipsis">
-                      {activity.title}
-                    </p>
-                    <p className="text-sm text-gray-500 text-ellipsis-2">
-                      {activity.description}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center space-x-2">
-                    {getStatusBadge(activity.status)}
-                    <span className="text-xs text-gray-400 whitespace-nowrap">
-                      {formatDate(activity.timestamp)}
-                    </span>
-                  </div>
+      {/* Recent Activities */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  <CardTitle>Hoạt động gần đây</CardTitle>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>Chưa có hoạt động nào</p>
-                <p className="text-sm mt-1">Các hoạt động sẽ xuất hiện ở đây</p>
+                <Link href="/dashboard/activity-logs">
+                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                    Xem tất cả
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentActivities.slice(0, 5).map((activity, index) => (
+                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{activity.title}</p>
+                      <p className="text-xs text-gray-500 mt-1">{activity.description}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-gray-400">{formatDate(activity.timestamp)}</span>
+                        {activity.status && getStatusBadge(activity.status)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Apartment Info */}
+        <div className="lg:col-span-1">
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Home className="h-5 w-5 text-blue-600" />
+                <CardTitle>Thông tin căn hộ</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Số căn hộ</span>
+                  <span className="text-sm font-semibold text-gray-900">{apartmentInfo.apartmentNumber}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Tòa nhà</span>
+                  <span className="text-sm font-semibold text-gray-900">{apartmentInfo.buildingName}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Diện tích</span>
+                  <span className="text-sm font-semibold text-gray-900">{apartmentInfo.area}m²</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Phòng ngủ</span>
+                  <span className="text-sm font-semibold text-gray-900">{apartmentInfo.bedrooms}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-pink-50 to-pink-100 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Tầng</span>
+                  <span className="text-sm font-semibold text-gray-900">{apartmentInfo.floor}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 } 
+  

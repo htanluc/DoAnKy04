@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/components/layout/sidebar'
-import Header from '@/components/layout/header'
+import EnhancedLayout from '@/components/layout/enhanced-layout'
 import { fetchUserProfile } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -64,36 +63,8 @@ export default function DashboardLayout({
 }) {
   const [isLoading, setIsLoading] = useState(true)
   const [profile, setProfile] = useState<any>(null)
-  const [isMenuOpen, setIsMenuOpen] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isMobile, setIsMobile] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
   const router = useRouter()
-
-  // Detect screen size changes
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      
-      // Only auto-close/auto-open on initial load, not on every resize
-      if (!isInitialized) {
-        if (mobile) {
-          console.log('Initial load - setting menu closed on mobile')
-          setIsMenuOpen(false)
-        } else {
-          console.log('Initial load - setting menu open on desktop')
-          setIsMenuOpen(true)
-        }
-        setIsInitialized(true)
-      }
-    }
-
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [isInitialized])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -127,14 +98,6 @@ export default function DashboardLayout({
     window.location.reload()
   }
 
-  const toggleMenu = () => {
-    console.log('Toggle menu called, current state:', isMenuOpen)
-    // Add a small delay to prevent immediate auto-close
-    setTimeout(() => {
-      setIsMenuOpen(!isMenuOpen)
-    }, 50)
-  }
-
   if (isLoading) {
     return <LoadingSpinner />
   }
@@ -144,50 +107,27 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar 
-        user={profile?.user} 
-        resident={profile?.resident}
-        apartment={profile?.apartment}
-        roles={profile?.roles}
-        isOpen={isMenuOpen}
-        onToggle={toggleMenu}
-      />
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <Header 
-          onMenuToggle={toggleMenu}
-          isMenuOpen={isMenuOpen}
-          user={profile?.user} 
-          resident={profile?.resident}
-          apartment={profile?.apartment}
-          roles={profile?.roles}
-        />
-
-        {/* Main content with Suspense for better loading */}
-        <main className="flex-1 overflow-y-auto relative content-stable">
-          <div className="p-4 sm:p-6">
-            <Suspense fallback={
-              <div className="space-y-6">
-                <Skeleton className="h-8 w-64" />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="rounded-lg border bg-card p-6">
-                      <Skeleton className="h-4 w-24 mb-4" />
-                      <Skeleton className="h-8 w-16" />
-                    </div>
-                  ))}
-                </div>
+    <EnhancedLayout
+      user={profile?.user}
+      resident={profile?.resident}
+      apartment={profile?.apartment}
+      roles={profile?.roles}
+    >
+      <Suspense fallback={
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-64" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-lg border bg-card p-6">
+                <Skeleton className="h-4 w-24 mb-4" />
+                <Skeleton className="h-8 w-16" />
               </div>
-            }>
-              {children}
-            </Suspense>
+            ))}
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      }>
+        {children}
+      </Suspense>
+    </EnhancedLayout>
   )
 } 

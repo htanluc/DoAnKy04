@@ -91,6 +91,7 @@ public class AuthController {
                 userDto.setUsername(userDetails.getUsername());
                 userDto.setPhoneNumber(userDetails.getUsername());
                 userDto.setStatus("ACTIVE");
+                userDto.setFullName(userDetails.getFullName()); // Thêm fullName
                 if (userDetails.getRoles() != null) {
                     userDto.setRoles(userDetails.getRoles().stream().map(r -> r.getName()).collect(java.util.stream.Collectors.toSet()));
                 } else {
@@ -377,6 +378,9 @@ public class AuthController {
         userDto.setEmail(user.getEmail());
         userDto.setStatus(user.getStatus() != null ? user.getStatus().name() : "ACTIVE");
         userDto.setAvatarUrl(user.getAvatarUrl()); // Bao gồm avatar URL
+        userDto.setFullName(user.getFullName()); // Thêm fullName
+        userDto.setDateOfBirth(user.getDateOfBirth()); // Thêm dateOfBirth
+        userDto.setIdCardNumber(user.getIdCardNumber()); // Thêm idCardNumber
         userDto.setCreatedAt(user.getCreatedAt());
         userDto.setUpdatedAt(user.getUpdatedAt());
         userDto.setLockReason(user.getLockReason());
