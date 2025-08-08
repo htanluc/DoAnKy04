@@ -644,10 +644,12 @@ public class DataInitializer implements CommandLineRunner {
         aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(7)).question("Làm sao báo cáo sự cố?").aiAnswer("Vào phần yêu cầu dịch vụ để tạo báo cáo sự cố.").askedAt(LocalDateTime.now().minusHours(3)).responseTime(1000).feedback("HELPFUL").build());
         aiQaHistoryRepository.save(AiQaHistory.builder().user(users.get(8)).question("Phí dịch vụ bao nhiêu?").aiAnswer("Phí dịch vụ thay đổi theo loại dịch vụ, vui lòng xem chi tiết trong phần hóa đơn.").askedAt(LocalDateTime.now().minusHours(4)).responseTime(1500).feedback("NOT_HELPFUL").build());
 
-        // 20. Vehicles (Cars) - Tạo ít nhất 1 xe cho mỗi resident user
+        // 20. Vehicles - Tạo 1 xe máy và 1 xe ô tô cho mỗi resident user
         String[] carBrands = {"Toyota", "Honda", "Ford", "Hyundai", "Mazda", "Kia", "Nissan", "Mitsubishi", "Suzuki", "Daihatsu", "Chevrolet", "BMW", "Mercedes", "Audi"};
         String[] carModels = {"Vios", "City", "Ranger", "Accent", "CX-5", "Cerato", "Sunny", "Lancer", "Swift", "Terios", "Spark", "X3", "C-Class", "A4"};
-        String[] carColors = {"Trắng", "Đen", "Bạc", "Xanh", "Đỏ", "Vàng", "Xám", "Nâu"};
+        String[] motoBrands = {"Honda", "Yamaha", "Suzuki", "SYM", "Piaggio", "Kawasaki", "Honda", "Yamaha", "Suzuki", "SYM", "Piaggio", "Kawasaki", "Honda", "Yamaha"};
+        String[] motoModels = {"Wave", "Sirius", "Raider", "Attila", "Vespa", "Z125", "Winner", "Exciter", "Address", "Elegant", "Liberty", "Ninja", "Vision", "NVX"};
+        String[] colors = {"Trắng", "Đen", "Bạc", "Xanh", "Đỏ", "Vàng", "Xám", "Nâu"};
         String[] carImageUrls = {
             "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
             "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
@@ -664,31 +666,70 @@ public class DataInitializer implements CommandLineRunner {
             "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
             "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop"
         };
+        String[] motoImageUrls = {
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&h=300&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop"
+        };
         
         for (int i = 0; i < users.size(); i++) {
             User user = users.get(i);
             // Chỉ tạo vehicle cho các user có role RESIDENT
             if (!user.getRoles().contains(residentRole)) continue;
             
-            String licensePlate = "30A-" + String.format("%05d", 10000 + i);
-            String brand = carBrands[i % carBrands.length];
-            String model = carModels[i % carModels.length];
-            String color = carColors[i % carColors.length];
-            String imageUrl = carImageUrls[i % carImageUrls.length];
-            
-            // Tạo mảng JSON cho imageUrls
-            String imageUrlsArray = "[\"" + imageUrl + "\"]";
+            // 1. Tạo xe máy cho resident
+            String motoLicensePlate = "30A-" + String.format("%05d", 50000 + i);
+            String motoBrand = motoBrands[i % motoBrands.length];
+            String motoModel = motoModels[i % motoModels.length];
+            String motoColor = colors[i % colors.length];
+            String motoImageUrl = motoImageUrls[i % motoImageUrls.length];
+            String motoImageUrlsArray = "[\"" + motoImageUrl + "\"]";
             
             vehicleRepository.save(Vehicle.builder()
-                .licensePlate(licensePlate)
-                .vehicleType(VehicleType.CAR)
-                .brand(brand)
-                .model(model)
-                .color(color)
-                .imageUrls(imageUrlsArray)
+                .licensePlate(motoLicensePlate)
+                .vehicleType(VehicleType.MOTORCYCLE)
+                .brand(motoBrand)
+                .model(motoModel)
+                .color(motoColor)
+                .imageUrls(motoImageUrlsArray)
                 .status(VehicleStatus.APPROVED)
-                .monthlyFee(new BigDecimal("150000"))
-                .user(user) // Changed from resident to user
+                .monthlyFee(new BigDecimal("50000")) // Phí xe máy 50k/tháng
+                .user(user)
+                .build());
+            
+            // 2. Tạo xe ô tô cho resident
+            String carLicensePlate = "30A-" + String.format("%05d", 10000 + i);
+            String carBrand = carBrands[i % carBrands.length];
+            String carModel = carModels[i % carModels.length];
+            String carColor = colors[(i + 1) % colors.length]; // Offset để có màu khác
+            String carImageUrl = carImageUrls[i % carImageUrls.length];
+            String carImageUrlsArray = "[\"" + carImageUrl + "\"]";
+            
+            // Random chọn loại xe ô tô (4 chỗ hoặc 7 chỗ)
+            VehicleType carType = (i % 3 == 0) ? VehicleType.CAR_7_SEATS : VehicleType.CAR_4_SEATS;
+            BigDecimal carFee = (carType == VehicleType.CAR_7_SEATS) ? new BigDecimal("250000") : new BigDecimal("200000");
+            
+            vehicleRepository.save(Vehicle.builder()
+                .licensePlate(carLicensePlate)
+                .vehicleType(carType)
+                .brand(carBrand)
+                .model(carModel)
+                .color(carColor)
+                .imageUrls(carImageUrlsArray)
+                .status(VehicleStatus.APPROVED)
+                .monthlyFee(carFee) // Phí xe ô tô 200k (4 chỗ) hoặc 250k (7 chỗ)/tháng
+                .user(user)
                 .build());
         }
 

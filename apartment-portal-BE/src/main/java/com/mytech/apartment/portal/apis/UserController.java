@@ -3,7 +3,9 @@ package com.mytech.apartment.portal.apis;
 import com.mytech.apartment.portal.dtos.UserCreateRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
 import com.mytech.apartment.portal.dtos.UserUpdateRequest;
+import com.mytech.apartment.portal.dtos.VehicleDto;
 import com.mytech.apartment.portal.services.UserService;
+import com.mytech.apartment.portal.services.VehicleService;
 import com.mytech.apartment.portal.services.FileUploadService;
 import com.mytech.apartment.portal.models.enums.UserStatus;
 import com.mytech.apartment.portal.models.Role;
@@ -25,6 +27,9 @@ public class UserController {
     
     @Autowired
     private FileUploadService fileUploadService;
+    
+    @Autowired
+    private VehicleService vehicleService;
 
     /**
      * [EN] Get all users (Admin only)
@@ -150,5 +155,37 @@ public class UserController {
     @PostMapping("/{id}/roles/remove")
     public void removeRoleFromUser(@PathVariable("id") Long id, @RequestParam Long roleId) {
         userService.removeRoleFromUser(id, roleId);
+    }
+
+    /**
+     * [EN] Get vehicles by user ID
+     * [VI] Lấy danh sách xe của người dùng theo ID
+     */
+    @GetMapping("/users/{id}/vehicles")
+    public ResponseEntity<List<VehicleDto>> getUserVehicles(@PathVariable("id") Long id) {
+        try {
+            List<VehicleDto> vehicles = vehicleService.getVehiclesByUserId(id);
+            return ResponseEntity.ok(vehicles);
+        } catch (Exception e) {
+            System.out.println("[ERROR] Lỗi khi lấy danh sách xe cho user " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    /**
+     * [EN] Get vehicles by user ID (Admin endpoint)
+     * [VI] Lấy danh sách xe của người dùng theo ID (Admin)
+     */
+    @GetMapping("/admin/users/{id}/vehicles")
+    public ResponseEntity<List<VehicleDto>> getAdminUserVehicles(@PathVariable("id") Long id) {
+        try {
+            List<VehicleDto> vehicles = vehicleService.getVehiclesByUserId(id);
+            return ResponseEntity.ok(vehicles);
+        } catch (Exception e) {
+            System.out.println("[ERROR] Lỗi khi lấy danh sách xe cho user " + id + " (admin): " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
     }
 }

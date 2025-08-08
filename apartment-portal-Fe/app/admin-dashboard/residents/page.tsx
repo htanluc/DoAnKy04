@@ -15,42 +15,54 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Plus, 
   Search, 
-  Edit, 
-  Trash2, 
   Eye,
-  Filter
+  Filter,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { residentsApi, Resident } from '@/lib/api';
+import { useResidents, Resident } from '@/hooks/use-residents';
+import { getResidentIdCard, formatIdCard } from '@/lib/resident-utils';
 
 export default function ResidentsPage() {
   const { t } = useLanguage();
+  const { 
+    loading, 
+    error, 
+    success, 
+    getAllResidents, 
+    clearMessages 
+  } = useResidents();
   const [residents, setResidents] = useState<Resident[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
-    setLoading(true);
-    residentsApi.getAll()
-      .then((data) => {
-        setResidents(data);
-      })
-      .catch(() => setResidents([]))
-      .finally(() => setLoading(false));
+    loadResidents();
   }, []);
 
+  const loadResidents = async () => {
+    const data = await getAllResidents();
+    if (data) {
+      setResidents(data);
+    }
+  };
+
   const filteredResidents = residents.filter(resident => {
+    const idCard = getResidentIdCard(resident);
     const matchesSearch = resident.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resident.idCard.includes(searchTerm) ||
+                         idCard.includes(searchTerm) ||
                          resident.phoneNumber.includes(searchTerm) ||
-                         resident.apartmentNumber.toLowerCase().includes(searchTerm.toLowerCase());
+                         resident.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || resident.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
+
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -63,18 +75,16 @@ export default function ResidentsPage() {
     }
   };
 
-  const getRelationBadge = (relation: string) => {
-    switch (relation) {
-      case 'Chủ hộ':
-        return <Badge className="bg-purple-100 text-purple-800">Chủ hộ</Badge>;
-      case 'Vợ':
-        return <Badge className="bg-blue-100 text-blue-800">Vợ</Badge>;
-      case 'Chồng':
-        return <Badge className="bg-blue-100 text-blue-800">Chồng</Badge>;
-      case 'Con':
-        return <Badge className="bg-green-100 text-green-800">Con</Badge>;
+  const getGenderBadge = (gender: string) => {
+    switch (gender) {
+      case 'MALE':
+        return <Badge className="bg-blue-100 text-blue-800">Nam</Badge>;
+      case 'FEMALE':
+        return <Badge className="bg-pink-100 text-pink-800">Nữ</Badge>;
+      case 'OTHER':
+        return <Badge className="bg-gray-100 text-gray-800">Khác</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{relation}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{gender}</Badge>;
     }
   };
 
@@ -94,6 +104,21 @@ export default function ResidentsPage() {
   return (
     <AdminLayout title={t('admin.residents.title')}>
       <div className="space-y-6">
+        {/* Success/Error Messages */}
+        {error && (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">{success}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -119,7 +144,7 @@ export default function ResidentsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Tìm kiếm theo tên, CMND, số điện thoại..."
+                  placeholder="Tìm kiếm theo tên, CMND/CCCD, email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -158,39 +183,29 @@ export default function ResidentsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('admin.residents.fullName')}</TableHead>
-                      <TableHead>{t('admin.residents.idCard')}</TableHead>
-                      <TableHead>{t('admin.residents.phone')}</TableHead>
-                      <TableHead>{t('admin.residents.apartment')}</TableHead>
-                      <TableHead>{t('admin.residents.relationType')}</TableHead>
-                      <TableHead>{t('admin.residents.status')}</TableHead>
-                      <TableHead>{t('admin.users.actions')}</TableHead>
+                      <TableHead>Họ tên</TableHead>
+                      <TableHead>CMND/CCCD</TableHead>
+                      <TableHead>Số điện thoại</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Thao tác</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredResidents.map((resident) => (
                       <TableRow key={resident.id}>
                         <TableCell className="font-medium">{resident.fullName}</TableCell>
-                        <TableCell>{resident.idCard}</TableCell>
+                        <TableCell>{formatIdCard(getResidentIdCard(resident))}</TableCell>
                         <TableCell>{resident.phoneNumber}</TableCell>
-                        <TableCell>{resident.apartmentNumber}</TableCell>
-                        <TableCell>{getRelationBadge(resident.relationType)}</TableCell>
+                        <TableCell>{resident.email}</TableCell>
                         <TableCell>{getStatusBadge(resident.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <Link href={`/admin-dashboard/residents/${resident.id}`}>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" title="Xem chi tiết">
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </Link>
-                            <Link href={`/admin-dashboard/residents/edit/${resident.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

@@ -10,7 +10,7 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
-@RequestMapping("/api/admin/apartment-residents")
+@RequestMapping("/api/apartment-residents")
 public class ApartmentResidentController {
     @Autowired
     private ApartmentResidentService apartmentResidentService;
@@ -20,8 +20,15 @@ public class ApartmentResidentController {
      * Lấy danh sách liên kết cư dân - căn hộ
      */
     @GetMapping
-    public List<ApartmentResidentDto> getAllApartmentResidents() {
-        return apartmentResidentService.getAllApartmentResidents();
+    public ResponseEntity<List<ApartmentResidentDto>> getAllApartmentResidents() {
+        try {
+            List<ApartmentResidentDto> residents = apartmentResidentService.getAllApartmentResidents();
+            return ResponseEntity.ok(residents);
+        } catch (Exception e) {
+            System.out.println("[ERROR] Lỗi khi lấy danh sách apartment residents: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
     }
 
     /**
@@ -65,7 +72,27 @@ public class ApartmentResidentController {
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('APARTMENT_RESIDENT_VIEW')")
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<ApartmentResidentDto>> getApartmentsByUser(@PathVariable("userId") Long userId) {
-        List<ApartmentResidentDto> result = apartmentResidentService.getApartmentResidentsByUserId(userId);
-        return ResponseEntity.ok(result);
+        System.out.println("[DEBUG] Getting apartments for user ID: " + userId);
+        
+        try {
+            List<ApartmentResidentDto> result = apartmentResidentService.getApartmentResidentsByUserId(userId);
+            System.out.println("[DEBUG] Found " + (result != null ? result.size() : 0) + " apartment relations for user " + userId);
+            
+            if (result != null && !result.isEmpty()) {
+                result.forEach(relation -> {
+                    System.out.println("[DEBUG] Relation: Apartment " + relation.getApartmentId() + 
+                                     ", User " + relation.getUserId() + 
+                                     ", Type: " + relation.getRelationType() +
+                                     ", Building: " + relation.getBuildingName() +
+                                     ", Unit: " + relation.getUnitNumber());
+                });
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.out.println("[ERROR] Exception getting apartments for user " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
     }
 } 
