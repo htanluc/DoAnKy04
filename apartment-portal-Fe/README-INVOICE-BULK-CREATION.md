@@ -1,103 +1,92 @@
-# 📋 Hướng dẫn tạo hóa đơn hàng loạt
+# Hướng dẫn tạo hóa đơn đồng loạt theo tháng
 
-## ✅ Vấn đề đã được giải quyết
+## 📍 Vị trí chức năng
 
-**Vấn đề ban đầu:** Khi tạo hóa đơn cho một tháng cụ thể, hệ thống lại tạo hóa đơn cho cả năm.
-
-**Nguyên nhân:** Backend schedulers tự động chạy và tạo hóa đơn cho cả 12 tháng.
-
-**Giải pháp đã áp dụng:** 
-- ✅ Comment tất cả schedulers tự động trong backend
-- ✅ Cập nhật frontend sử dụng API endpoint được khuyến nghị
-- ✅ Loại bỏ code debugging không cần thiết
-
-## 🎯 Cách sử dụng hiện tại
-
-### 1. Tạo hóa đơn theo tháng (Chức năng chính)
-
-1. **Truy cập:** Admin Dashboard → Invoices → Tab "Hóa đơn"
-2. **Chọn chức năng:** "🎯 Tạo hóa đơn theo tháng"
-3. **Nhập thông tin:**
-   - Năm: Chọn năm cần tạo hóa đơn
-   - Tháng: Chọn tháng cần tạo hóa đơn
-4. **Nhấn nút:** "🎯 Tạo hóa đơn tháng X/YYYY (N căn hộ)"
-
-**API Endpoint được sử dụng:**
+Chức năng tạo hóa đơn đồng loạt theo tháng nằm trong trang **Quản lý hóa đơn** tại đường dẫn:
 ```
-POST /api/admin/invoices/generate-all?billingPeriod=YYYY-MM
+http://localhost:3000/admin-dashboard/invoices
 ```
 
-**Kết quả mong đợi:**
-- ✅ Tạo hóa đơn cho tất cả căn hộ trong tháng cụ thể
-- ✅ Chỉ tạo cho tháng được chọn, không tạo cho cả năm
-- ✅ Bao gồm: Phí dịch vụ, phí nước, phí gửi xe
+## 🎯 Cách sử dụng
 
-### 2. Tạo biểu phí cấu hình cho năm
+### Bước 1: Truy cập trang hóa đơn
+- Đăng nhập vào hệ thống với tài khoản admin
+- Truy cập: `http://localhost:3000/admin-dashboard/invoices`
 
-1. **Chọn chức năng:** "Tạo biểu phí cấu hình cho năm"
-2. **Nhập đơn giá phí dịch vụ**
-3. **Nhấn nút:** "Tạo biểu phí năm XXXX"
+### Bước 2: Chuyển đến tab "Tạo biểu phí"
+- Trên trang hóa đơn, bạn sẽ thấy 4 tabs:
+  - **Hóa đơn** (mặc định)
+  - **Tạo biểu phí** ← Chọn tab này
+  - **Cấu hình phí**
+  - **Lịch sử**
 
-**Lưu ý:** Chức năng này chỉ tạo cấu hình phí, không tạo hóa đơn.
+### Bước 3: Chọn chức năng tạo hóa đơn
+- Trong tab "Tạo biểu phí", chọn:
+  - ✅ **"Tạo hóa đơn đồng loạt"** (thay vì "Tạo cấu hình phí dịch vụ")
 
-## 🔧 Cải tiến đã thực hiện
+### Bước 4: Chọn phạm vi tạo hóa đơn
+- Chọn một trong 3 tùy chọn:
+  - **Tạo cho một căn hộ**: Tạo hóa đơn cho một căn hộ cụ thể
+  - **Tạo cho tất cả căn hộ**: Tạo hóa đơn đồng loạt cho tất cả căn hộ
+  - **🎯 Tạo hóa đơn theo tháng**: ← **Đây chính là chức năng bạn cần!**
 
-### Frontend Updates
-- ✅ **API Endpoint:** Chuyển từ `/api/admin/yearly-billing/generate-month/{year}/{month}` sang `/api/admin/invoices/generate-all?billingPeriod={year}-{month}`
-- ✅ **UI/UX:** Cải thiện giao diện với hướng dẫn rõ ràng
-- ✅ **Debugging:** Loại bỏ console.log statements không cần thiết
-- ✅ **Documentation:** Cập nhật thông tin endpoint trong UI
+### Bước 5: Cấu hình thông tin
+- **Năm**: Chọn năm cần tạo hóa đơn (ví dụ: 2024)
+- **Tháng**: Chọn tháng cần tạo hóa đơn (từ 1-12)
 
-### Backend Fixes (đã thực hiện)
-- ✅ **YearlyBillingScheduler:** Comment schedulers tự động
-- ✅ **WaterMeterScheduler:** Comment schedulers tự động  
-- ✅ **BillingJob:** Comment schedulers tự động
+### Bước 6: Tạo hóa đơn
+- Nhấn nút **"Tạo hóa đơn tháng X/YYYY (X căn hộ)"**
+- Hệ thống sẽ tự động tạo hóa đơn cho tất cả căn hộ trong tháng được chọn
 
-## 📊 Kiểm tra kết quả
+## 📋 Thông tin chi tiết
 
-### 1. Xem thống kê hóa đơn
-- Sử dụng nút "Xem thống kê" trong form
-- Kiểm tra số lượng hóa đơn được tạo
+### Chức năng bao gồm:
+- ✅ Tạo hóa đơn cho **tất cả căn hộ** trong tháng được chọn
+- ✅ Tự động tính toán các khoản phí:
+  - Phí dịch vụ (theo m²)
+  - Phí nước (theo m³)
+  - Phí gửi xe (xe máy, xe 4 chỗ, xe 7 chỗ)
+- ✅ Sử dụng cấu hình phí dịch vụ hiện tại
+- ✅ Tạo hóa đơn đồng loạt một lần
 
-### 2. Kiểm tra database
-```sql
--- Xem hóa đơn theo tháng
-SELECT billing_period, COUNT(*) as invoice_count, SUM(total_amount) as total_amount
-FROM invoices 
-WHERE billing_period LIKE '2025-%'
-GROUP BY billing_period
-ORDER BY billing_period;
+### API Endpoint được sử dụng:
+```
+POST /api/admin/yearly-billing/generate-month/{year}/{month}
 ```
 
-### 3. Kiểm tra log
-- Xem console log trong browser
-- Kiểm tra network tab để verify API calls
+### Ví dụ:
+- Tạo hóa đơn tháng 12/2024 cho tất cả căn hộ:
+  - Năm: 2024
+  - Tháng: 12
+  - Kết quả: Tạo hóa đơn cho tất cả căn hộ trong tháng 12/2024
 
 ## ⚠️ Lưu ý quan trọng
 
-### ✅ Đã khắc phục
-- **Vấn đề tạo hóa đơn cho cả năm:** Đã được giải quyết
-- **Schedulers tự động:** Đã được comment
-- **API endpoint:** Đã chuyển sang endpoint được khuyến nghị
+1. **Giới hạn request**: Có giới hạn 100ms giữa các request để tránh spam
+2. **Dữ liệu cần thiết**: Đảm bảo đã có cấu hình phí dịch vụ cho tháng/năm đó
+3. **Số lượng căn hộ**: Hệ thống sẽ tạo hóa đơn cho tất cả căn hộ hiện có
+4. **Thời gian xử lý**: Có thể mất vài giây để tạo hóa đơn cho tất cả căn hộ
 
-### 🔄 Quy trình sử dụng
-1. **Tạo cấu hình phí:** Sử dụng "Tạo biểu phí cấu hình cho năm" (nếu cần)
-2. **Tạo hóa đơn:** Sử dụng "🎯 Tạo hóa đơn theo tháng"
-3. **Kiểm tra:** Xem thống kê và verify kết quả
+## 🔧 Troubleshooting
 
-### 🚨 Lưu ý
-- **Chọn đúng chức năng:** Đảm bảo chọn "Tạo hóa đơn theo tháng" thay vì "Tạo biểu phí cấu hình"
-- **Kiểm tra trước khi tạo:** Verify năm/tháng được chọn
-- **Backup dữ liệu:** Nên backup trước khi tạo hóa đơn hàng loạt
+### Nếu không thấy chức năng:
+1. Đảm bảo đã chuyển sang tab **"Tạo biểu phí"**
+2. Đảm bảo đã chọn **"Tạo hóa đơn đồng loạt"**
+3. Đảm bảo đã chọn **"Tạo hóa đơn theo tháng"**
 
-## 🆘 Troubleshooting
+### Nếu gặp lỗi:
+1. Kiểm tra kết nối mạng
+2. Thử lại sau vài giây
+3. Kiểm tra console để xem lỗi chi tiết
+4. Liên hệ quản trị viên nếu cần
 
-### Nếu vẫn gặp vấn đề:
-1. **Kiểm tra console:** Xem có lỗi JavaScript không
-2. **Kiểm tra network:** Verify API calls thành công
-3. **Kiểm tra backend:** Đảm bảo schedulers đã được comment
-4. **Liên hệ support:** Cung cấp log và thông tin chi tiết
+## 📊 Thống kê sau khi tạo
+
+Sau khi tạo hóa đơn thành công, bạn có thể:
+- Xem thống kê hóa đơn trong tab "Lịch sử"
+- Kiểm tra danh sách hóa đơn trong tab "Hóa đơn"
+- Xem chi tiết từng hóa đơn đã tạo
 
 ---
 
-**📞 Hỗ trợ:** Nếu có vấn đề, hãy kiểm tra log và cung cấp thông tin chi tiết. 
+**Chức năng này đã được tích hợp đầy đủ và sẵn sàng sử dụng!** 🎉 

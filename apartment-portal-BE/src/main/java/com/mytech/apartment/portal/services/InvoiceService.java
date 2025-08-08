@@ -5,23 +5,18 @@ import com.mytech.apartment.portal.dtos.InvoiceDto;
 import com.mytech.apartment.portal.dtos.InvoiceUpdateRequest;
 import com.mytech.apartment.portal.mappers.InvoiceItemMapper;
 import com.mytech.apartment.portal.mappers.InvoiceMapper;
-import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
-import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,7 +30,6 @@ public class InvoiceService {
     @Autowired private InvoiceItemMapper invoiceItemMapper;
     @Autowired private ApartmentResidentRepository apartmentResidentRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private ApartmentRepository apartmentRepository;
 
     // ... (các method CRUD).
 
@@ -43,59 +37,16 @@ public class InvoiceService {
      * Sinh hóa đơn cơ bản cho tất cả căn hộ trong kỳ (chưa gồm phí phát sinh).
      */
     public void generateInvoicesForMonth(String period) {
-        // Lấy tất cả căn hộ từ bảng apartments thay vì chỉ từ invoices
-        List<Long> aptIds = apartmentRepository.findAll().stream()
-            .map(apartment -> apartment.getId())
-            .collect(Collectors.toList());
-            
-        System.out.println("DEBUG: Tìm thấy " + aptIds.size() + " căn hộ để tạo hóa đơn");
-        
+        List<Long> aptIds = invoiceRepository.findDistinctApartmentIds();
         for (Long aptId : aptIds) {
-            // Kiểm tra xem hóa đơn đã tồn tại chưa
-            Optional<Invoice> existingInvoice = invoiceRepository.findByApartmentIdAndBillingPeriod(aptId, period);
-            if (existingInvoice.isPresent()) {
-                System.out.println("DEBUG: Hóa đơn đã tồn tại cho căn hộ " + aptId + " kỳ " + period);
-                continue; // Bỏ qua nếu đã có hóa đơn
-            }
-            
-            // Lấy thông tin căn hộ
-            Optional<Apartment> apartment = apartmentRepository.findById(aptId);
-            if (apartment.isEmpty()) {
-                System.out.println("DEBUG: Không tìm thấy căn hộ " + aptId);
-                continue;
-            }
-            
-            // Tính toán phí dịch vụ cơ bản
-            double serviceFee = apartment.get().getArea() * 5000.0; // 5000 VND/m2
-            
-            // Tạo hóa đơn với chi tiết
-            Invoice invoice = Invoice.builder()
-                .apartmentId(aptId)
-                .billingPeriod(period)
-                .issueDate(LocalDate.now())
-                .dueDate(LocalDate.now().plusDays(15))
-                .status(InvoiceStatus.UNPAID)
-                .totalAmount(serviceFee)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-            
-            // Khởi tạo danh sách items
-            invoice.setItems(new HashSet<>());
-            
-            // Tạo chi tiết hóa đơn cho phí dịch vụ
-            if (serviceFee > 0) {
-                InvoiceItem serviceItem = InvoiceItem.builder()
-                    .invoice(invoice)
-                    .feeType("SERVICE_FEE")
-                    .description("Phí dịch vụ chung (" + apartment.get().getArea() + "m²)")
-                    .amount(serviceFee)
-                    .build();
-                invoice.getItems().add(serviceItem);
-            }
-            
-            invoiceRepository.save(invoice);
-            System.out.println("DEBUG: Tạo hóa đơn cho căn hộ " + aptId + " kỳ " + period + " với tổng tiền " + serviceFee + " và " + invoice.getItems().size() + " chi tiết");
+            Invoice inv = new Invoice();
+            inv.setApartmentId(aptId);
+            inv.setBillingPeriod(period);
+            inv.setIssueDate(LocalDate.now());
+            inv.setDueDate(LocalDate.now().plusDays(15));
+            inv.setStatus(InvoiceStatus.UNPAID);
+            inv.setTotalAmount(0.0);
+            invoiceRepository.save(inv);
         }
     }
 
@@ -107,40 +58,20 @@ public class InvoiceService {
                                String feeType,
                                String description,
                                BigDecimal amount) {
-        try {
-            System.out.println("DEBUG: addInvoiceItem - Tìm hóa đơn cho căn hộ " + apartmentId + " kỳ " + period);
-            
-            Invoice invoice = invoiceRepository
-                .findByApartmentIdAndBillingPeriod(apartmentId, period)
-                .orElseThrow(() -> new RuntimeException(
-                    "Invoice not found for apt=" + apartmentId + ", period=" + period));
+        Invoice invoice = invoiceRepository
+            .findByApartmentIdAndBillingPeriod(apartmentId, period)
+            .orElseThrow(() -> new RuntimeException(
+                "Invoice not found for apt=" + apartmentId + ", period=" + period));
 
-            System.out.println("DEBUG: addInvoiceItem - Tìm thấy hóa đơn ID " + invoice.getId());
+        InvoiceItem item = new InvoiceItem();
+        item.setFeeType(feeType);               // setter đúng field feeType
+        item.setDescription(description);
+        item.setAmount(amount.doubleValue());
+        item.setInvoice(invoice);
 
-            InvoiceItem item = new InvoiceItem();
-            item.setFeeType(feeType);
-            item.setDescription(description);
-            item.setAmount(amount.doubleValue());
-            item.setInvoice(invoice);
-
-            // Khởi tạo items list nếu null
-            if (invoice.getItems() == null) {
-                invoice.setItems(new HashSet<>());
-            }
-
-            invoice.getItems().add(item);
-            invoice.setTotalAmount(invoice.getTotalAmount() + amount.doubleValue());
-            
-            System.out.println("DEBUG: addInvoiceItem - Thêm item: " + feeType + " - " + description + " - " + amount);
-            System.out.println("DEBUG: addInvoiceItem - Tổng tiền mới: " + invoice.getTotalAmount());
-            
-            invoiceRepository.save(invoice);
-            System.out.println("DEBUG: addInvoiceItem - Đã lưu hóa đơn thành công");
-        } catch (Exception e) {
-            System.err.println("DEBUG: addInvoiceItem - Lỗi: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
+        invoice.getItems().add(item);
+        invoice.setTotalAmount(invoice.getTotalAmount() + amount.doubleValue());
+        invoiceRepository.save(invoice);
     }
     public void notifyResidents(String period) {
         // TODO: implement gửi email/SMS
@@ -201,24 +132,5 @@ public class InvoiceService {
     public Optional<InvoiceDto> getInvoiceById(Long id) {
         return invoiceRepository.findById(id)
                 .map(invoiceMapper::toDto);
-    }
-
-    /**
-     * [EN] Get latest invoice by apartment ID
-     * [VI] Lấy hóa đơn mới nhất theo ID căn hộ
-     */
-    public Optional<InvoiceDto> getLatestInvoiceByApartmentId(Long apartmentId) {
-        return invoiceRepository.findTopByApartmentIdOrderByBillingPeriodDesc(apartmentId)
-                .map(invoiceMapper::toDto);
-    }
-
-    /**
-     * [EN] Get invoices by apartment ID
-     * [VI] Lấy tất cả hóa đơn theo ID căn hộ
-     */
-    public List<InvoiceDto> getInvoicesByApartmentId(Long apartmentId) {
-        return invoiceRepository.findByApartmentIdOrderByBillingPeriodDesc(apartmentId).stream()
-                .map(invoiceMapper::toDto)
-                .collect(Collectors.toList());
     }
 }

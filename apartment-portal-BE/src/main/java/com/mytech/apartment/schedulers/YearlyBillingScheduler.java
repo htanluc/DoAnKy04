@@ -16,9 +16,8 @@ public class YearlyBillingScheduler {
     /**
      * Tự động tạo biểu phí 1 năm cho năm tiếp theo
      * Chạy vào 00:00 ngày 1 tháng 12 hàng năm
-     * TẠM THỜI COMMENT ĐỂ TRÁNH CHẠY TỰ ĐỘNG
      */
-    // @Scheduled(cron = "0 0 0 1 12 *")
+    @Scheduled(cron = "0 0 0 1 12 *")
     public void generateNextYearInvoices() {
         int nextYear = LocalDate.now().getYear() + 1;
         
@@ -45,9 +44,8 @@ public class YearlyBillingScheduler {
     /**
      * Tạo biểu phí cho năm hiện tại nếu chưa có
      * Chạy vào 00:00 ngày 1 tháng 1 hàng năm
-     * TẠM THỜI COMMENT ĐỂ TRÁNH CHẠY TỰ ĐỘNG
      */
-    // @Scheduled(cron = "0 0 0 1 1 *")
+    @Scheduled(cron = "0 0 0 1 1 *")
     public void generateCurrentYearInvoices() {
         int currentYear = LocalDate.now().getYear();
         

@@ -11,10 +11,9 @@ import com.mytech.apartment.portal.models.enums.RelationType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
-import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
-import com.mytech.apartment.portal.models.WaterMeterReading;
-import com.mytech.apartment.portal.dtos.WaterMeterReadingDto;
-
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,10 +21,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,26 +45,41 @@ public class ApartmentService {
     @Autowired
     private ApartmentResidentMapper apartmentResidentMapper;
 
-    @Autowired
-    private WaterMeterReadingRepository waterMeterReadingRepository;
+    private final Counter apartmentAccessCounter;
+    private final Counter apartmentUpdateCounter;
 
+    public ApartmentService(MeterRegistry meterRegistry) {
+        this.apartmentAccessCounter = Counter.builder("apartment.access")
+                .description("Number of apartment access operations")
+                .register(meterRegistry);
+        this.apartmentUpdateCounter = Counter.builder("apartment.update")
+                .description("Number of apartment update operations")
+                .register(meterRegistry);
+    }
+
+    @Timed(value = "apartment.get.all", description = "Time taken to get all apartments")
     @Cacheable(value = "apartments", key = "'all'")
     public List<ApartmentDto> getAllApartments() {
+        apartmentAccessCounter.increment();
         return apartmentRepository.findAll().stream()
                 .map(apartmentMapper::toDto)
                 .collect(Collectors.toList());
     }
 
+    @Timed(value = "apartment.get.by.id", description = "Time taken to get apartment by ID")
     @Cacheable(value = "apartments", key = "#id")
     public Optional<ApartmentDto> getApartmentById(Long id) {
+        apartmentAccessCounter.increment();
         return apartmentRepository.findById(id)
                 .map(apartmentMapper::toDto);
     }
 
+    @Timed(value = "apartment.update", description = "Time taken to update apartment")
     @Transactional
     @CachePut(value = "apartments", key = "#id")
     @CacheEvict(value = "apartments", key = "'all'")
     public ApartmentDto updateApartment(Long id, ApartmentUpdateRequest request) {
+        apartmentUpdateCounter.increment();
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Apartment not found with id " + id));
 
@@ -169,104 +180,6 @@ public class ApartmentService {
         return userRepository.findByPhoneNumber(phoneNumber)
             .map(user -> user.getId())
             .orElse(null);
-    }
-
-    /**
-     * Create new apartment with automatic water meter initialization
-     * Tạo căn hộ mới với tự động khởi tạo chỉ số nước
-     */
-    @Transactional
-    @CacheEvict(value = "apartments", key = "'all'")
-    public ApartmentDto createApartment(ApartmentCreateRequest request) {
-        
-        // Tạo apartment entity
-        Apartment apartment = Apartment.builder()
-                .buildingId(request.getBuildingId())
-                .floorNumber(request.getFloorNumber())
-                .unitNumber(request.getUnitNumber())
-                .area(request.getArea())
-                .status(request.getStatus() != null ? 
-                       ApartmentStatus.valueOf(request.getStatus()) : 
-                       ApartmentStatus.VACANT)
-                .build();
-        
-        // Save apartment
-        Apartment savedApartment = apartmentRepository.save(apartment);
-        
-        // Tự động khởi tạo chỉ số nước cho tháng hiện tại
-        initializeWaterMeterForApartment(savedApartment.getId().intValue());
-        
-        return apartmentMapper.toDto(savedApartment);
-    }
-
-    /**
-     * Initialize water meter reading for new apartment
-     * Khởi tạo chỉ số nước cho căn hộ mới
-     */
-    @Transactional
-    public void initializeWaterMeterForApartment(Integer apartmentId) {
-        String currentMonth = YearMonth.now().toString(); // "yyyy-MM"
-        
-        // Kiểm tra xem đã có chỉ số nước cho tháng hiện tại chưa
-        Optional<WaterMeterReading> existing = waterMeterReadingRepository
-                .findByApartmentIdAndReadingMonth(apartmentId, currentMonth);
-        
-        if (existing.isEmpty()) {
-            WaterMeterReading waterMeterReading = new WaterMeterReading();
-            waterMeterReading.setApartmentId(apartmentId);
-            waterMeterReading.setReadingMonth(currentMonth);
-            waterMeterReading.setPreviousReading(BigDecimal.ZERO);
-            waterMeterReading.setCurrentReading(BigDecimal.ZERO);
-            waterMeterReading.setCreatedAt(LocalDateTime.now());
-            // consumption sẽ tự tính qua @PrePersist
-            
-            waterMeterReadingRepository.save(waterMeterReading);
-            System.out.println("DEBUG: Đã khởi tạo chỉ số nước = 0 cho căn hộ " + apartmentId + " tháng " + currentMonth);
-        }
-    }
-
-    /**
-     * Initialize water meter readings for all apartments that don't have current month reading
-     * Khởi tạo chỉ số nước cho tất cả căn hộ chưa có chỉ số tháng hiện tại
-     */
-    @Transactional
-    public void initializeWaterMeterForAllApartments() {
-        String currentMonth = YearMonth.now().toString();
-        List<Apartment> apartments = apartmentRepository.findAll();
-        
-        int initializedCount = 0;
-        for (Apartment apartment : apartments) {
-            Optional<WaterMeterReading> existing = waterMeterReadingRepository
-                    .findByApartmentIdAndReadingMonth(apartment.getId().intValue(), currentMonth);
-            
-            if (existing.isEmpty()) {
-                initializeWaterMeterForApartment(apartment.getId().intValue());
-                initializedCount++;
-            }
-        }
-        
-        System.out.println("DEBUG: Đã khởi tạo chỉ số nước cho " + initializedCount + " căn hộ cho tháng " + currentMonth);
-    }
-
-    /**
-     * Get water meter readings by apartment ID
-     * Lấy danh sách chỉ số nước theo ID căn hộ
-     */
-    public List<WaterMeterReadingDto> getWaterMetersByApartmentId(Long apartmentId) {
-        List<WaterMeterReading> readings = waterMeterReadingRepository
-                .findAllByApartmentIdOrderByReadingMonthDesc(apartmentId.intValue());
-        
-        return readings.stream().map(reading -> {
-            WaterMeterReadingDto dto = new WaterMeterReadingDto();
-            dto.setReadingId(reading.getReadingId());
-            dto.setApartmentId(reading.getApartmentId());
-            dto.setReadingMonth(reading.getReadingMonth());
-            dto.setPreviousReading(reading.getPreviousReading());
-            dto.setCurrentReading(reading.getCurrentReading());
-            dto.setConsumption(reading.getConsumption());
-            dto.setApartmentName(getApartmentName(reading.getApartmentId()));
-            return dto;
-        }).collect(Collectors.toList());
     }
 
     /**

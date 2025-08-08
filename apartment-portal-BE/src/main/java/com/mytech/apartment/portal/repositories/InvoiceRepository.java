@@ -19,9 +19,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     /** Tìm hóa đơn theo apartmentId và kỳ thanh toán */
     Optional<Invoice> findByApartmentIdAndBillingPeriod(Long apartmentId, String billingPeriod);
 
-    /** Lấy danh sách hóa đơn theo billing period */
-    List<Invoice> findByBillingPeriod(String billingPeriod);
-
     /** Lấy danh sách hóa đơn theo nhiều apartmentId */
     List<Invoice> findByApartmentIdIn(List<Long> apartmentIds);
 
@@ -39,10 +36,4 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     /** Tính tổng tiền theo billing period */
     @Query("SELECT SUM(i.totalAmount) FROM Invoice i WHERE i.billingPeriod LIKE :prefix%")
     Double sumTotalAmountByBillingPeriodStartingWith(@Param("prefix") String prefix);
-    
-    /** Lấy hóa đơn mới nhất theo apartmentId */
-    Optional<Invoice> findTopByApartmentIdOrderByBillingPeriodDesc(Long apartmentId);
-    
-    /** Lấy tất cả hóa đơn theo apartmentId sắp xếp theo billing period */
-    List<Invoice> findByApartmentIdOrderByBillingPeriodDesc(Long apartmentId);
 }

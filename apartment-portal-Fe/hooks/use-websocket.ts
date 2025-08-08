@@ -21,7 +21,7 @@ interface UserPresence {
   timestamp: string;
 }
 
-export const useWebSocket = (userId?: number, apartmentId?: number, enabled: boolean = true) => {
+export const useWebSocket = (userId?: number, apartmentId?: number) => {
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -92,36 +92,24 @@ export const useWebSocket = (userId?: number, apartmentId?: number, enabled: boo
             });
           }
         } catch (e) {
-          // Chỉ log lỗi parsing nếu đang trong development mode
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('Error parsing WebSocket message:', e);
-          }
+          console.error('Error parsing WebSocket message:', e);
         }
       };
       
       ws.onerror = (error) => {
-        // Chỉ log lỗi nếu đang trong development mode
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('WebSocket connection error (this is normal if backend is not running):', error);
-        }
         setError('WebSocket connection error');
+        console.error('WebSocket error:', error);
       };
       
       ws.onclose = () => {
         setIsConnected(false);
-        // Chỉ log disconnect nếu đang trong development mode
-        if (process.env.NODE_ENV === 'development') {
-          console.log('WebSocket disconnected (this is normal if backend is not running)');
-        }
+        console.log('WebSocket disconnected');
       };
       
       return ws;
     } catch (e) {
       setError('Failed to connect to WebSocket');
-      // Chỉ log lỗi connection nếu đang trong development mode
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('WebSocket connection failed (this is normal if backend is not running):', e);
-      }
+      console.error('WebSocket connection failed:', e);
       return null;
     }
   }, [userId, apartmentId]);
@@ -151,7 +139,7 @@ export const useWebSocket = (userId?: number, apartmentId?: number, enabled: boo
   }, []);
 
   useEffect(() => {
-    if (enabled && (userId || apartmentId)) {
+    if (userId || apartmentId) {
       const ws = connect();
       return () => {
         if (ws) {
@@ -159,7 +147,7 @@ export const useWebSocket = (userId?: number, apartmentId?: number, enabled: boo
         }
       };
     }
-  }, [userId, apartmentId, connect, enabled]);
+  }, [userId, apartmentId, connect]);
 
   return {
     isConnected,

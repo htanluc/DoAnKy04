@@ -28,7 +28,7 @@ export default function RealTimeNotifications() {
     notifications, 
     error, 
     clearNotifications 
-  } = useWebSocket(userId || undefined, undefined, true); // Enable WebSocket when needed
+  } = useWebSocket(userId || undefined);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {

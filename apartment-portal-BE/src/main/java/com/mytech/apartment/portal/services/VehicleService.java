@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -141,28 +140,5 @@ public class VehicleService {
 
     public List<VehicleType> getVehicleTypes() {
         return List.of(VehicleType.values());
-    }
-
-    /**
-     * [EN] Get vehicles by user ID
-     * [VI] Lấy danh sách xe theo ID người dùng
-     */
-    public List<VehicleDto> getVehiclesByUserId(Long userId) {
-        List<Vehicle> vehicles = vehicleRepository.findByUserId(userId);
-        return vehicles.stream()
-                .map(vehicleMapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * [EN] Get vehicles by apartment ID
-     * [VI] Lấy danh sách xe theo ID căn hộ
-     */
-    public List<VehicleDto> getVehiclesByApartmentId(Long apartmentId) {
-        // Lấy tất cả xe để tạm thời giải quyết vấn đề
-        // TODO: Implement proper apartment-user-vehicle relationship query
-        return vehicleRepository.findAll().stream()
-                .map(vehicleMapper::toDto)
-                .collect(Collectors.toList());
     }
 } 

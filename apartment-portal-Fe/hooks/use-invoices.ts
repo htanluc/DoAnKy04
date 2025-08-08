@@ -88,34 +88,6 @@ export const useInvoices = () => {
     }
   };
 
-  const getLatestInvoice = async (apartmentId: number): Promise<Invoice | null> => {
-    try {
-      const response = await api.get(`/api/admin/apartments/${apartmentId}/latest-invoice`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      } else {
-        // Kiểm tra xem response có nội dung không trước khi parse JSON
-        try {
-          const text = await response.text();
-          if (text) {
-            const errorData = JSON.parse(text);
-            console.log('No latest invoice found:', errorData.message);
-          } else {
-            console.log('No latest invoice found: Empty response');
-          }
-        } catch (parseError) {
-          console.log('No latest invoice found: Invalid JSON response');
-        }
-        return null;
-      }
-    } catch (err) {
-      console.error('Get latest invoice error:', err);
-      return null;
-    }
-  };
-
   // Fetch invoices on mount
   useEffect(() => {
     fetchInvoices();
@@ -129,6 +101,5 @@ export const useInvoices = () => {
     getInvoiceById,
     updateInvoiceStatus,
     deleteInvoice,
-    getLatestInvoice,
   };
 }; 

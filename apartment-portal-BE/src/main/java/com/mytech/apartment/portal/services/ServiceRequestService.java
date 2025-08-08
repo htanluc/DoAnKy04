@@ -196,7 +196,7 @@ public class ServiceRequestService {
         }
 
         // Cập nhật thời gian hoàn thành nếu hoàn thành
-        if (request.getIsCompleted() != null && request.getIsCompleted() && "COMPLETED".equals(request.getStatus())) {
+        if (request.getIsCompleted() && "COMPLETED".equals(request.getStatus())) {
             serviceRequest.setCompletedAt(LocalDateTime.now());
         }
 
