@@ -23,6 +23,7 @@ public class Facility {
 
     private String name;
     private String description;
+    private String location;
     private Integer capacity;
     private String otherDetails;
     private Double usageFee;

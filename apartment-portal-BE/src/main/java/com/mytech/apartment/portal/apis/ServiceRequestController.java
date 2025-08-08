@@ -124,9 +124,15 @@ public class ServiceRequestController {
             ServiceRequestDto dto = serviceRequestService.createServiceRequest(request);
             System.out.println("ServiceRequestController: Service request created successfully with ID: " + dto.getId());
             
-            // Log service request creation
-            activityLogService.logActivityForCurrentUser(ActivityActionType.CREATE_SERVICE_REQUEST, 
-                "Tạo yêu cầu dịch vụ: %s", request.getTitle());
+            // Log service request creation with detailed error handling
+            try {
+                activityLogService.logActivityForCurrentUser(ActivityActionType.CREATE_SERVICE_REQUEST, 
+                    "Tạo yêu cầu dịch vụ: %s", request.getTitle());
+                System.out.println("ServiceRequestController: Activity logged successfully for service request creation");
+            } catch (Exception e) {
+                System.err.println("ServiceRequestController: Error logging activity: " + e.getMessage());
+                e.printStackTrace();
+            }
             
             return ResponseEntity.ok(dto);
         } catch (Exception e) {

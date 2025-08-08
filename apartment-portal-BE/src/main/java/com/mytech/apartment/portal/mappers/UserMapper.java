@@ -8,6 +8,7 @@ import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.enums.UserStatus;
 import org.springframework.stereotype.Component;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 
 
@@ -98,14 +99,21 @@ public class UserMapper {
         
         // Cập nhật emergencyContacts
         if (request.getEmergencyContacts() != null) {
+            // Initialize emergency contacts list if null
+            if (user.getEmergencyContacts() == null) {
+                user.setEmergencyContacts(new ArrayList<>());
+            }
+            
             user.getEmergencyContacts().clear();
             for (EmergencyContactDto dto : request.getEmergencyContacts()) {
-                com.mytech.apartment.portal.models.EmergencyContact contact = new com.mytech.apartment.portal.models.EmergencyContact();
-                contact.setName(dto.getName());
-                contact.setPhone(dto.getPhone());
-                contact.setRelationship(dto.getRelationship());
-                contact.setUser(user);
-                user.getEmergencyContacts().add(contact);
+                if (dto != null && dto.getName() != null && dto.getPhone() != null) {
+                    com.mytech.apartment.portal.models.EmergencyContact contact = new com.mytech.apartment.portal.models.EmergencyContact();
+                    contact.setName(dto.getName());
+                    contact.setPhone(dto.getPhone());
+                    contact.setRelationship(dto.getRelationship());
+                    contact.setUser(user);
+                    user.getEmergencyContacts().add(contact);
+                }
             }
         }
     }

@@ -6,6 +6,8 @@ import com.mytech.apartment.portal.models.enums.VehicleStatus;
 import com.mytech.apartment.portal.models.enums.VehicleType;
 import com.mytech.apartment.portal.services.VehicleService;
 import com.mytech.apartment.portal.services.FileUploadService;
+import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 // import com.mytech.apartment.portal.services.CloudinaryService;  // Uncomment when using Cloudinary
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,14 +27,39 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
     private final FileUploadService fileUploadService;
+    private final ActivityLogService activityLogService;
     // private final CloudinaryService cloudinaryService;  // Uncomment when using Cloudinary
 
     @PostMapping("/vehicles")
     public ResponseEntity<VehicleDto> createVehicle(
             @Valid @RequestBody VehicleCreateRequest request,
             Authentication authentication) {
-        VehicleDto vehicle = vehicleService.createVehicle(request, authentication);
-        return ResponseEntity.ok(vehicle);
+        try {
+            VehicleDto vehicle = vehicleService.createVehicle(request, authentication);
+            
+            // Log activity with detailed error handling
+            try {
+                activityLogService.logActivityForCurrentUser(
+                    ActivityActionType.REGISTER_VEHICLE, 
+                    "Đăng ký xe mới: %s %s (%s), biển số: %s, căn hộ: %s", 
+                    vehicle.getBrand(), 
+                    vehicle.getModel(),
+                    vehicle.getVehicleType(),
+                    vehicle.getLicensePlate(),
+                    vehicle.getApartmentUnitNumber()
+                );
+                System.out.println("VehicleController: Activity logged successfully for vehicle registration");
+            } catch (Exception e) {
+                System.err.println("VehicleController: Error logging activity: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
+            return ResponseEntity.ok(vehicle);
+        } catch (Exception e) {
+            System.err.println("VehicleController: Error creating vehicle: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/vehicles/upload-image")
@@ -86,6 +113,20 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
+    @GetMapping("/vehicles/apartment/{apartmentId}")
+    public ResponseEntity<List<VehicleDto>> getVehiclesByApartment(@PathVariable Long apartmentId) {
+        List<VehicleDto> vehicles = vehicleService.getVehiclesByApartment(apartmentId);
+        return ResponseEntity.ok(vehicles);
+    }
+
+    @GetMapping("/vehicles/user/{userId}/apartment/{apartmentId}")
+    public ResponseEntity<List<VehicleDto>> getVehiclesByUserAndApartment(
+            @PathVariable Long userId, 
+            @PathVariable Long apartmentId) {
+        List<VehicleDto> vehicles = vehicleService.getVehiclesByUserAndApartment(userId, apartmentId);
+        return ResponseEntity.ok(vehicles);
+    }
+
     @GetMapping("/vehicles/types")
     public ResponseEntity<List<Map<String, Object>>> getVehicleTypes() {
         List<VehicleType> types = vehicleService.getVehicleTypes();
@@ -120,6 +161,16 @@ public class VehicleController {
             @RequestBody Map<String, String> request) {
         VehicleStatus status = VehicleStatus.valueOf(request.get("status"));
         VehicleDto vehicle = vehicleService.updateVehicleStatus(id, status);
+
+        // Log activity: Update vehicle status
+        activityLogService.logActivityForCurrentUser(
+            ActivityActionType.UPDATE_VEHICLE, 
+            "Cập nhật trạng thái xe %s (biển số: %s) thành: %s", 
+            vehicle.getBrand() + " " + vehicle.getModel(),
+            vehicle.getLicensePlate(),
+            status.toString()
+        );
+
         return ResponseEntity.ok(vehicle);
     }
 
@@ -144,7 +195,20 @@ public class VehicleController {
 
     @DeleteMapping("/admin/vehicles/{id}")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
+        // Get vehicle info before deletion for logging
+        VehicleDto vehicle = vehicleService.getVehicleById(id);
+
         vehicleService.deleteVehicle(id);
+
+        // Log activity: Delete vehicle (admin action, but still log it)
+        activityLogService.logActivityForCurrentUser(
+            ActivityActionType.DELETE_VEHICLE, 
+            "Xóa đăng ký xe: %s %s, biển số: %s", 
+            vehicle.getBrand(), 
+            vehicle.getModel(),
+            vehicle.getLicensePlate()
+        );
+
         return ResponseEntity.noContent().build();
     }
 
@@ -163,4 +227,4 @@ public class VehicleController {
             return ResponseEntity.status(500).build();
         }
     }
-} 
+}

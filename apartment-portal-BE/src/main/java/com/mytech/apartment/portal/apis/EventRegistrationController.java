@@ -4,6 +4,8 @@ import com.mytech.apartment.portal.dtos.EventRegistrationDto;
 import com.mytech.apartment.portal.dtos.EventRegistrationRequest;
 import com.mytech.apartment.portal.services.EventRegistrationService;
 import com.mytech.apartment.portal.services.UserService;
+import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -37,6 +39,9 @@ public class EventRegistrationController {
 
     @Autowired
     private EventRegistrationRepository registrationRepository;
+    
+    @Autowired
+    private ActivityLogService activityLogService;
 
     // Endpoint for a resident to register for an event
     @PostMapping("/event-registrations/register")
@@ -67,6 +72,23 @@ public class EventRegistrationController {
             
             EventRegistrationDto registration = eventRegistrationService.registerForEvent(request);
             System.out.println("Registration successful: " + registration);
+            
+            // SỬA LỖI: Không dùng registration.getEvent().getTitle() vì EventRegistrationDto không có getEvent()
+            // Lấy title từ eventRepository
+            String eventTitle = "";
+            if (registration.getEventId() != null) {
+                Optional<Event> eventOpt = eventRepository.findById(registration.getEventId());
+                if (eventOpt.isPresent()) {
+                    eventTitle = eventOpt.get().getTitle();
+                }
+            }
+            activityLogService.logActivityForCurrentUser(
+                ActivityActionType.REGISTER_EVENT, 
+                "Đăng ký tham gia sự kiện: %s (#%d)", 
+                eventTitle,
+                registration.getEventId()
+            );
+            
             return ResponseEntity.ok(registration);
         } catch (RuntimeException e) {
             // Log the error for debugging

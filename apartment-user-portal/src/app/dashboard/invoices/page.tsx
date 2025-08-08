@@ -260,7 +260,7 @@ export default function InvoicesPage() {
   }, [])
 
   const handlePayment = async () => {
-    if (!selectedInvoice || !selectedPaymentMethod) return
+    if (!selectedInvoice || !selectedPaymentMethod || paymentLoading) return
 
     setPaymentLoading(true)
     setPaymentError('')

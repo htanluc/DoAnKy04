@@ -7,6 +7,7 @@ import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.models.ApartmentResident;
 import com.mytech.apartment.portal.models.ApartmentResidentId;
 import com.mytech.apartment.portal.models.enums.ApartmentStatus;
+import com.mytech.apartment.portal.models.enums.RelationType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
@@ -26,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -91,7 +93,7 @@ public class ApartmentService {
 
         ApartmentResident apartmentResident = ApartmentResident.builder()
                 .id(id)
-                .relationType(request.getRelationType())
+                .relationType(RelationType.fromValue(request.getRelationType()))
                 .moveInDate(request.getMoveInDate() != null ? request.getMoveInDate() : LocalDate.now())
                 .moveOutDate(request.getMoveOutDate())
                 .build();
@@ -105,7 +107,7 @@ public class ApartmentService {
     }
 
     public List<ApartmentResidentDto> getApartmentLinksOfUser(Long userId) {
-        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId); // Changed from findByIdResidentId to findByIdUserId
+        List<ApartmentResident> links = apartmentResidentRepository.findByUser_Id(userId);
         return links.stream()
             .map(apartmentResidentMapper::toDto)
             .collect(Collectors.toList());
@@ -119,7 +121,7 @@ public class ApartmentService {
         ApartmentResidentId id = new ApartmentResidentId(apartmentId, userId);
         apartmentResidentRepository.deleteById(id);
 
-        List<ApartmentResident> remainingLinks = apartmentResidentRepository.findByIdApartmentId(apartmentId);
+        List<ApartmentResident> remainingLinks = apartmentResidentRepository.findByApartment_Id(apartmentId);
         if (remainingLinks.isEmpty()) {
             apartment.setStatus(ApartmentStatus.VACANT);
             apartmentRepository.save(apartment);
@@ -131,7 +133,7 @@ public class ApartmentService {
             throw new RuntimeException("Căn hộ không tồn tại");
         }
 
-        return apartmentResidentRepository.findByIdApartmentId(apartmentId).stream()
+        return apartmentResidentRepository.findByApartment_Id(apartmentId).stream()
                 .map(apartmentResidentMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -149,11 +151,10 @@ public class ApartmentService {
     }
 
     public List<ApartmentDto> getApartmentsOfResident(Long userId) {
-        List<ApartmentResident> links = apartmentResidentRepository.findByIdUserId(userId); // Changed from findByIdResidentId to findByIdUserId
+        List<ApartmentResident> links = apartmentResidentRepository.findByUser_Id(userId);
         return links.stream()
-            .map(link -> apartmentRepository.findById(link.getId().getApartmentId()))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+            .map(link -> link.getApartment()) // Sử dụng relationship trực tiếp
+            .filter(Objects::nonNull)
             .map(apartmentMapper::toDto)
             .collect(Collectors.toList());
     }

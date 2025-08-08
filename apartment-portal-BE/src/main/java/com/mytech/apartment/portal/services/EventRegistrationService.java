@@ -5,6 +5,7 @@ import com.mytech.apartment.portal.dtos.EventRegistrationRequest;
 import com.mytech.apartment.portal.mappers.EventRegistrationMapper;
 import com.mytech.apartment.portal.models.Event;
 import com.mytech.apartment.portal.models.EventRegistration;
+import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.repositories.EventRepository;
 import com.mytech.apartment.portal.repositories.EventRegistrationRepository;
 import com.mytech.apartment.portal.models.enums.EventRegistrationStatus;
@@ -28,6 +29,9 @@ public class EventRegistrationService {
 
     @Autowired
     private EventRegistrationMapper registrationMapper;
+    
+    @Autowired
+    private UserService userService;
 
     public List<EventRegistrationDto> getRegistrationsForEvent(Long eventId) {
         return registrationRepository.findByEventId(eventId).stream()
@@ -104,8 +108,12 @@ public class EventRegistrationService {
             System.out.println("Service: Creating new registration...");
             registration = new EventRegistration();
             registration.setEvent(event);
-            // We need to set the User entity, not just the ID
-            // This will be handled by the controller/service that calls this method
+            // Set the User entity from the userService
+            User user = userService.getUserEntityById(request.getUserId());
+            if (user == null) {
+                throw new RuntimeException("User not found with id " + request.getUserId());
+            }
+            registration.setUser(user);
             registration.setStatus(EventRegistrationStatus.REGISTERED);
         }
 

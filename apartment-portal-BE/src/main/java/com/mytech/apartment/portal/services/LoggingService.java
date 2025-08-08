@@ -2,6 +2,7 @@ package com.mytech.apartment.portal.services;
 
 import com.mytech.apartment.portal.models.ActivityLog;
 import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.repositories.ActivityLogRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +31,9 @@ public class LoggingService {
 
         ActivityLog activityLog = ActivityLog.builder()
                 .user(userOpt.get())
-                .actionType("FACILITY_BOOKING")
+                .actionType(ActivityActionType.FACILITY_BOOKING)
                 .description("Đặt tiện ích: " + facilityName + " - Thời gian: " + bookingTime)
-                .timestamp(LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         activityLogRepository.save(activityLog);
@@ -41,7 +42,7 @@ public class LoggingService {
     /**
      * Log general activity
      */
-    public void logActivity(Long userId, String actionType, String description) {
+    public void logActivity(Long userId, ActivityActionType actionType, String description) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             return; // Skip logging if user not found
@@ -51,7 +52,7 @@ public class LoggingService {
                 .user(userOpt.get())
                 .actionType(actionType)
                 .description(description)
-                .timestamp(LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         activityLogRepository.save(activityLog);

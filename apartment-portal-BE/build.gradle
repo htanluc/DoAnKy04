@@ -61,6 +61,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'com.cloudinary:cloudinary-http44:1.33.0'
     implementation 'com.cloudinary:cloudinary-taglib:1.33.0'
+    
+    // Stripe Payment Gateway
+    implementation 'com.stripe:stripe-java:25.9.0'
 }
 
 tasks.named('test') {

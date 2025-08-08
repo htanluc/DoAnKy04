@@ -1,5 +1,15 @@
 package com.mytech.apartment.portal.services;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.mytech.apartment.portal.dtos.ApartmentResidentCreateRequest;
 import com.mytech.apartment.portal.dtos.ApartmentResidentDto;
 import com.mytech.apartment.portal.mappers.ApartmentResidentMapper;
 import com.mytech.apartment.portal.models.Apartment;
@@ -7,33 +17,30 @@ import com.mytech.apartment.portal.models.ApartmentResident;
 import com.mytech.apartment.portal.models.ApartmentResidentId;
 import com.mytech.apartment.portal.models.Building;
 import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.models.enums.RelationType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.BuildingRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.mytech.apartment.portal.repositories.UserRepository;
 
 @Service
+@Transactional
 public class ApartmentResidentService {
 
     @Autowired
     private ApartmentResidentRepository apartmentResidentRepository;
 
     @Autowired
-    private ApartmentResidentMapper apartmentResidentMapper;
-
-    @Autowired
     private ApartmentRepository apartmentRepository;
+
     @Autowired
     private BuildingRepository buildingRepository;
     
     @Autowired
     private com.mytech.apartment.portal.repositories.UserRepository userRepository;
+
+    @Autowired
+    private ApartmentResidentMapper apartmentResidentMapper;
 
     public List<ApartmentResidentDto> getAllApartmentResidents() {
         return apartmentResidentRepository.findAll().stream()
@@ -77,6 +84,92 @@ public class ApartmentResidentService {
             throw new RuntimeException("Apartment-Resident relationship not found");
         }
         apartmentResidentRepository.deleteById(id);
+    }
+
+    // Tạo mối quan hệ mới giữa user và apartment
+    public ApartmentResidentDto createApartmentResident(ApartmentResidentCreateRequest request) {
+        // Kiểm tra apartment và user có tồn tại không
+        Apartment apartment = apartmentRepository.findById(request.getApartmentId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy căn hộ"));
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        // Kiểm tra mối quan hệ đã tồn tại chưa
+        if (apartmentResidentRepository.existsByUser_IdAndApartment_Id(request.getUserId(), request.getApartmentId())) {
+            throw new RuntimeException("Mối quan hệ này đã tồn tại");
+        }
+
+        // Tạo mối quan hệ mới
+        ApartmentResident apartmentResident = ApartmentResident.builder()
+                .apartment(apartment)
+                .user(user)
+                .relationType(request.getRelationType())
+                .moveInDate(request.getMoveInDate())
+                .moveOutDate(request.getMoveOutDate())
+                .isPrimaryResident(request.getIsPrimaryResident())
+                .build();
+
+        ApartmentResident saved = apartmentResidentRepository.save(apartmentResident);
+        return apartmentResidentMapper.toDto(saved);
+    }
+
+    // Lấy tất cả cư dân của một căn hộ
+    public List<ApartmentResidentDto> getResidentsByApartment(Long apartmentId) {
+        return apartmentResidentRepository.findByApartment_Id(apartmentId).stream()
+                .map(apartmentResidentMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // Lấy tất cả căn hộ của một user
+    public List<ApartmentResidentDto> getApartmentsByUser(Long userId) {
+        return apartmentResidentRepository.findByUser_Id(userId).stream()
+                .map(apartmentResidentMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // Lấy căn hộ theo loại quan hệ
+    public List<ApartmentResidentDto> getApartmentsByUserAndRelationType(Long userId, RelationType relationType) {
+        return apartmentResidentRepository.findByUser_IdAndRelationType(userId, relationType).stream()
+                .map(apartmentResidentMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // Lấy chủ sở hữu của căn hộ
+    public List<ApartmentResidentDto> getOwnersByApartment(Long apartmentId) {
+        return apartmentResidentRepository.findByApartment_IdAndRelationType(apartmentId, RelationType.OWNER).stream()
+                .map(apartmentResidentMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // Lấy cư dân chính của căn hộ
+    public Optional<ApartmentResidentDto> getPrimaryResidentByApartment(Long apartmentId) {
+        return apartmentResidentRepository.findByApartment_IdAndIsPrimaryResidentTrue(apartmentId)
+                .map(apartmentResidentMapper::toDto);
+    }
+
+    // Kiểm tra user có quyền với apartment không
+    public boolean hasAccessToApartment(Long userId, Long apartmentId) {
+        return apartmentResidentRepository.existsByUser_IdAndApartment_Id(userId, apartmentId);
+    }
+
+    // Cập nhật mối quan hệ
+    public ApartmentResidentDto updateApartmentResident(Long apartmentId, Long userId, ApartmentResidentCreateRequest request) {
+        ApartmentResident existing = apartmentResidentRepository.findByApartment_IdAndUser_Id(apartmentId, userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mối quan hệ"));
+
+        existing.setRelationType(request.getRelationType());
+        existing.setMoveInDate(request.getMoveInDate());
+        existing.setMoveOutDate(request.getMoveOutDate());
+        existing.setIsPrimaryResident(request.getIsPrimaryResident());
+
+        ApartmentResident saved = apartmentResidentRepository.save(existing);
+        return apartmentResidentMapper.toDto(saved);
+    }
+
+    // Xóa mối quan hệ
+    public void deleteApartmentResident(Long apartmentId, Long userId) {
+        apartmentResidentRepository.deleteByApartment_IdAndUser_Id(apartmentId, userId);
     }
 
     /**
@@ -123,5 +216,15 @@ public class ApartmentResidentService {
                 dto.setBuildingName(building.getBuildingName());
             }
         }
+    }
+
+    // Đếm số cư dân của căn hộ
+    public long countResidentsByApartment(Long apartmentId) {
+        return apartmentResidentRepository.countByApartment_Id(apartmentId);
+    }
+
+    // Đếm số căn hộ của user
+    public long countApartmentsByUser(Long userId) {
+        return apartmentResidentRepository.countByUser_Id(userId);
     }
 } 

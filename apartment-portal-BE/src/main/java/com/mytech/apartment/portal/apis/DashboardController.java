@@ -17,13 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mytech.apartment.portal.models.Invoice;
-import com.mytech.apartment.portal.models.WaterMeterReading;
+// import com.mytech.apartment.portal.models.WaterMeterReading;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
-import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
+// import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
 import com.mytech.apartment.portal.security.UserDetailsImpl;
-import com.mytech.apartment.portal.services.WaterMeterService;
+// import com.mytech.apartment.portal.services.WaterMeterService;
 import com.mytech.apartment.portal.services.ActivityLogService;
 import com.mytech.apartment.portal.dtos.ActivityLogDto;
 
@@ -37,12 +37,12 @@ public class DashboardController {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
-    @Autowired
-    private WaterMeterReadingRepository waterReadingRepository;
+    // @Autowired
+    // private WaterMeterReadingRepository waterReadingRepository;
 
     // nếu bạn có service cung cấp đơn giá nước
-    @Autowired
-    private WaterMeterService waterMeterService;
+    // @Autowired
+    // private WaterMeterService waterMeterService;
 
     @Autowired
     private ActivityLogService activityLogService;
@@ -53,9 +53,9 @@ public class DashboardController {
 
         // 1) Danh sách apartmentId liên kết với user
         List<Long> apartmentIds = apartmentResidentRepository
-            .findByIdUserId(userId) // Changed from findByIdResidentId to findByIdUserId
+            .findByUser_Id(userId)
             .stream()
-            .map(link -> link.getId().getApartmentId())
+            .map(link -> link.getApartmentId())
             .collect(Collectors.toList());
 
         // 2) Thống kê hóa đơn
@@ -73,7 +73,8 @@ public class DashboardController {
                                     .mapToDouble(Invoice::getTotalAmount)
                                     .sum();
 
-        // 3) Thống kê nước tháng trước
+        // 3) Thống kê nước tháng trước - Tạm thời comment out
+        /*
         String lastMonth = LocalDate.now()
             .minusMonths(1)
             .format(DateTimeFormatter.ofPattern("yyyy-MM"));
@@ -90,6 +91,14 @@ public class DashboardController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal unitPrice = new BigDecimal("5000");  // hoặc lấy từ config
         BigDecimal totalWaterFee = totalConsumption.multiply(unitPrice);
+        */
+        
+        // Tạm thời set giá trị mặc định
+        BigDecimal totalConsumption = BigDecimal.ZERO;
+        BigDecimal totalWaterFee = BigDecimal.ZERO;
+        String lastMonth = LocalDate.now()
+            .minusMonths(1)
+            .format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
         // 4) Kết hợp trả về
         Map<String, Object> stats = new HashMap<>();
@@ -112,7 +121,8 @@ public class DashboardController {
     public ResponseEntity<List<ActivityLogDto>> getRecentActivities(Authentication authentication) {
         try {
             Long userId = ((UserDetailsImpl) authentication.getPrincipal()).getId();
-            List<ActivityLogDto> activities = activityLogService.getRecentActivityLogsByUserId(userId, 10);
+            // SỬA LỖI: Đổi sang phương thức đúng của ActivityLogService
+            List<ActivityLogDto> activities = activityLogService.getRecentActivitiesForUser(userId, 10);
             return ResponseEntity.ok(activities);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

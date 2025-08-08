@@ -91,9 +91,7 @@ public class SecurityConfiguration {
         http
           .cors(cors -> cors.configurationSource(corsConfigurationSource()))
           .csrf(csrf -> csrf.disable())
-          .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-          .and()
+          .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .authorizeHttpRequests(auth -> auth
               .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
               .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
@@ -104,13 +102,13 @@ public class SecurityConfiguration {
               .requestMatchers("/fix-**").permitAll()  // Fix endpoints không cần auth
               .requestMatchers("/health").permitAll()  // Health check không cần auth
               .requestMatchers("/uploads/**", "/api/files/**").permitAll()  // Static files không cần auth
+              .requestMatchers("/stripe-checkout.html", "/api/payments/stripe/success", "/api/payments/stripe/cancel", "/api/payments/stripe/webhook").permitAll()  // Stripe checkout pages cần thiết
               .requestMatchers("/api/admin/**").hasRole("ADMIN")
-              .requestMatchers("/api/invoices/**","/api/facility-bookings/**","/api/residents/**", "/api/announcements/**", "/api/events/**", "/api/facilities/**", "/api/feedback/**", "/api/support-requests/**", "/api/upload/**", "/api/event-registrations/**", "/api/activity-logs/**", "/api/vehicles/**")
+              .requestMatchers("/api/invoices/**","/api/facility-bookings/**","/api/residents/**", "/api/announcements/**", "/api/events/**", "/api/facilities/**", "/api/feedback/**", "/api/support-requests/**", "/api/upload/**", "/api/event-registrations/**", "/api/activity-logs/**", "/api/vehicles/**","/api/apartments/**")
                   .hasRole("RESIDENT")
               .anyRequest().authenticated()
           )
-          .exceptionHandling().authenticationEntryPoint(customAuthenticationEntryPoint())
-          .and()
+          .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint()))
           .addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -118,10 +116,12 @@ public class SecurityConfiguration {
 
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        return http.getSharedObject(AuthenticationManagerBuilder.class)
-                   .userDetailsService(userDetailsService)
-                   .passwordEncoder(passwordEncoder())
-                   .and().build();
+        AuthenticationManagerBuilder authenticationManagerBuilder = 
+            http.getSharedObject(AuthenticationManagerBuilder.class);
+        authenticationManagerBuilder
+            .userDetailsService(userDetailsService)
+            .passwordEncoder(passwordEncoder());
+        return authenticationManagerBuilder.build();
     }
 
     @Bean

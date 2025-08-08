@@ -23,6 +23,14 @@ interface VehicleType {
   monthlyFee: number;
 }
 
+interface Apartment {
+  id: number;
+  unitNumber: string;
+  buildingId: number;
+  floorNumber?: number;
+  area?: number;
+}
+
 interface Vehicle {
   id: number;
   licensePlate: string;
@@ -35,17 +43,21 @@ interface Vehicle {
   status: string;
   statusDisplayName: string;
   monthlyFee: number;
+  apartmentId: number;
+  apartmentUnitNumber: string;
   createdAt: string;
 }
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
+  const [apartments, setApartments] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     licensePlate: '',
     vehicleType: '',
+    apartmentId: '',
     brand: '',
     model: '',
     color: '',
@@ -79,6 +91,33 @@ export default function VehiclesPage() {
     };
 
     fetchVehicleTypes();
+  }, []);
+
+  // Fetch user's apartments
+  useEffect(() => {
+    const fetchApartments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/apartments/my`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch apartments');
+        }
+
+        const data = await response.json();
+        setApartments(data);
+      } catch (error) {
+        console.error('Error fetching apartments:', error);
+        showToast("Lỗi", "Không thể tải danh sách căn hộ", "error");
+      }
+    };
+
+    fetchApartments();
   }, []);
 
   // Fetch user's vehicles
@@ -136,16 +175,16 @@ export default function VehiclesPage() {
   };
 
   const uploadImages = async (files: File[]): Promise<string[]> => {
-    const token = localStorage.getItem('token');
+    if (files.length === 0) return [];
+
     const formData = new FormData();
-    
     files.forEach(file => {
       formData.append('files', file);
     });
 
-    // Upload images to backend
     try {
-      const response = await fetch(`http://localhost:8080/api/vehicles/upload-images`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/vehicles/upload-images`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -154,29 +193,29 @@ export default function VehiclesPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Upload hình ảnh thất bại`);
+        throw new Error('Failed to upload images');
       }
 
       return await response.json();
     } catch (error) {
-      throw new Error('Không thể kết nối đến server upload');
+      console.error('Error uploading images:', error);
+      throw error;
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.licensePlate || !formData.vehicleType) {
+    if (!formData.licensePlate || !formData.vehicleType || !formData.apartmentId) {
       showToast("Lỗi", "Vui lòng điền đầy đủ thông tin bắt buộc", "error");
       return;
     }
 
-    setSubmitting(true);
-    
     try {
-      let imageUrls: string[] = [];
+      setSubmitting(true);
       
-      // Upload images if any
+      // Upload images first
+      let imageUrls: string[] = [];
       if (selectedFiles.length > 0) {
         imageUrls = await uploadImages(selectedFiles);
       }
@@ -190,54 +229,51 @@ export default function VehiclesPage() {
         },
         body: JSON.stringify({
           ...formData,
-          imageUrls
+          imageUrls: imageUrls,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Đăng ký xe thất bại');
+        throw new Error(errorData.message || 'Failed to create vehicle');
       }
 
       const newVehicle = await response.json();
-      setVehicles(prev => [newVehicle, ...prev]);
+      setVehicles(prev => [...prev, newVehicle]);
       
       // Reset form
       setFormData({
         licensePlate: '',
         vehicleType: '',
+        apartmentId: '',
         brand: '',
         model: '',
         color: '',
         imageUrls: []
       });
-      setSelectedFiles([]);
-      setImagePreviews([]);
+      clearAllImages();
       
-      showToast("Thành công", "Đăng ký xe thành công!", "success");
+      showToast("Thành công", "Đăng ký xe thành công", "success");
     } catch (error) {
-      console.error('Error registering vehicle:', error);
-      showToast("Lỗi", error instanceof Error ? error.message : "Đăng ký xe thất bại", "error");
+      console.error('Error creating vehicle:', error);
+      showToast("Lỗi", error instanceof Error ? error.message : "Không thể đăng ký xe", "error");
     } finally {
       setSubmitting(false);
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' },
-      'APPROVED': { label: 'Đã duyệt', className: 'bg-green-100 text-green-800 hover:bg-green-200' },
-      'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800 hover:bg-red-200' },
-      'CANCELLED': { label: 'Đã hủy', className: 'bg-gray-100 text-gray-800 hover:bg-gray-200' }
+    const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", text: string }> = {
+      'PENDING': { variant: 'secondary', text: 'Chờ duyệt' },
+      'APPROVED': { variant: 'default', text: 'Đã duyệt' },
+      'REJECTED': { variant: 'destructive', text: 'Từ chối' },
+      'ACTIVE': { variant: 'default', text: 'Đang hoạt động' },
+      'INACTIVE': { variant: 'outline', text: 'Không hoạt động' },
+      'EXPIRED': { variant: 'destructive', text: 'Hết hạn' },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['PENDING'];
-    
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
+    const config = statusConfig[status] || { variant: 'outline', text: status };
+    return <Badge variant={config.variant}>{config.text}</Badge>;
   };
 
   const formatCurrency = (amount: number) => {
@@ -247,311 +283,211 @@ export default function VehiclesPage() {
     }).format(amount);
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center">Đang tải...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Quản lý phương tiện</h1>
-              <p className="text-gray-600 mt-1">Đăng ký và theo dõi phương tiện của bạn</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-gray-600">Hệ thống hoạt động</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Form đăng ký */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center space-x-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Đăng ký xe mới</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="licensePlate" className="text-sm font-medium text-gray-700">
-                      Biển số xe <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="licensePlate"
-                      value={formData.licensePlate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, licensePlate: e.target.value.toUpperCase() }))}
-                      placeholder="VD: 30A-12345"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="vehicleType" className="text-sm font-medium text-gray-700">
-                      Loại phương tiện <span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      value={formData.vehicleType}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, vehicleType: value }))}
-                    >
-                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                        <SelectValue placeholder="Chọn loại phương tiện" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vehicleTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            <div className="flex justify-between items-center w-full">
-                              <span>{type.displayName}</span>
-                              <span className="text-sm text-gray-500 ml-2">
-                                {formatCurrency(type.monthlyFee)}/tháng
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+    <div className="container mx-auto p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Đăng ký xe mới</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="licensePlate">Biển số xe *</Label>
+                  <Input
+                    id="licensePlate"
+                    value={formData.licensePlate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, licensePlate: e.target.value }))}
+                    placeholder="Ví dụ: 30A-12345"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="vehicleType">Loại phương tiện *</Label>
+                  <Select
+                    value={formData.vehicleType}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, vehicleType: value }))}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại phương tiện" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicleTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.displayName} - {formatCurrency(type.monthlyFee)}/tháng
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="brand" className="text-sm font-medium text-gray-700">Hãng xe</Label>
-                    <Input
-                      id="brand"
-                      value={formData.brand}
-                      onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
-                      placeholder="VD: Honda, Toyota"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="model" className="text-sm font-medium text-gray-700">Dòng xe</Label>
-                    <Input
-                      id="model"
-                      value={formData.model}
-                      onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
-                      placeholder="VD: Wave Alpha, Vios"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="apartmentId">Căn hộ *</Label>
+                  <Select
+                    value={formData.apartmentId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, apartmentId: value }))}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn căn hộ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {apartments.map((apartment) => (
+                        <SelectItem key={apartment.id} value={apartment.id.toString()}>
+                          {apartment.unitNumber} - Tòa {apartment.buildingId}
+                          {apartment.floorNumber && ` - Tầng ${apartment.floorNumber}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="color" className="text-sm font-medium text-gray-700">Màu sắc</Label>
+                <div>
+                  <Label htmlFor="brand">Hãng xe</Label>
+                  <Input
+                    id="brand"
+                    value={formData.brand}
+                    onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
+                    placeholder="Ví dụ: Honda, Toyota"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="model">Dòng xe</Label>
+                  <Input
+                    id="model"
+                    value={formData.model}
+                    onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
+                    placeholder="Ví dụ: Wave Alpha, Vios"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="color">Màu sắc</Label>
                   <Input
                     id="color"
                     value={formData.color}
                     onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                    placeholder="VD: Đen, Trắng, Đỏ"
-                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Ví dụ: Đen, Trắng"
                   />
                 </div>
+              </div>
 
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-gray-700">Hình ảnh xe</Label>
-                  <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Chọn ảnh để thêm vào danh sách (có thể chọn nhiều ảnh cùng lúc)</span>
-                    </div>
-                  </div>
-                  
-                  <div className="relative">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileChange}
-                      className="cursor-pointer border-gray-300 focus:border-blue-500 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                  </div>
-                  
+              <div>
+                <Label>Hình ảnh xe</Label>
+                <div className="mt-2">
+                  <Input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="mb-2"
+                  />
                   {imagePreviews.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="text-sm text-gray-600 font-medium">
-                          Đã chọn {imagePreviews.length} ảnh:
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-20 h-20 object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                          >
+                            ×
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={clearAllImages}
-                          className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center space-x-1"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          <span>Xóa tất cả</span>
-                        </button>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllImages}
+                        className="h-20"
+                      >
+                        Xóa tất cả
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Button type="submit" disabled={submitting} className="w-full">
+                {submitting ? 'Đang đăng ký...' : 'Đăng ký xe'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Vehicle List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Danh sách xe của tôi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {vehicles.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                Bạn chưa có xe nào được đăng ký
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {vehicles.map((vehicle) => (
+                  <div key={vehicle.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-semibold">{vehicle.licensePlate}</h3>
+                        <p className="text-sm text-gray-600">
+                          {vehicle.brand} {vehicle.model} - {vehicle.color}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Căn hộ: {vehicle.apartmentUnitNumber}
+                        </p>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {imagePreviews.map((preview, index) => (
-                          <div key={index} className="relative group">
-                            <img 
-                              src={preview} 
-                              alt={`Preview ${index + 1}`} 
-                              className="w-full h-24 object-cover rounded-lg border-2 border-gray-200 group-hover:border-blue-300 transition-colors"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors shadow-lg"
-                            >
-                              ×
-                            </button>
-                          </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {getStatusBadge(vehicle.status)}
+                        <span className="text-sm font-medium">
+                          {formatCurrency(vehicle.monthlyFee)}/tháng
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {vehicle.imageUrls && vehicle.imageUrls.length > 0 && (
+                      <div className="flex gap-2 mt-2 overflow-x-auto">
+                        {vehicle.imageUrls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Vehicle ${index + 1}`}
+                            className="w-16 h-16 object-cover rounded"
+                          />
                         ))}
                       </div>
+                    )}
+                    
+                    <div className="mt-2 text-xs text-gray-500">
+                      Đăng ký: {new Date(vehicle.createdAt).toLocaleDateString('vi-VN')}
                     </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl" 
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Đang đăng ký...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>Đăng ký xe</span>
-                    </div>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Danh sách xe đã đăng ký */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center space-x-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <span>Xe đã đăng ký ({vehicles.length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Đang tải danh sách xe...</p>
                   </div>
-                </div>
-              ) : vehicles.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có xe nào được đăng ký</h3>
-                  <p className="text-gray-600">Hãy đăng ký xe đầu tiên của bạn ở form bên trái</p>
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {vehicles.map((vehicle) => (
-                    <div key={vehicle.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-start space-x-3 flex-1">
-                          {vehicle.imageUrls && vehicle.imageUrls.length > 0 && (
-                            <div className="flex space-x-1">
-                              {vehicle.imageUrls.slice(0, 2).map((imageUrl, index) => (
-                                <img 
-                                  key={index}
-                                  src={imageUrl} 
-                                  alt={`${vehicle.licensePlate} ${index + 1}`}
-                                  className="w-12 h-12 object-cover rounded-lg border border-gray-200"
-                                  onError={(e) => {
-                                    console.error('Failed to load image:', imageUrl);
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                              ))}
-                              {vehicle.imageUrls.length > 2 && (
-                                <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center text-xs text-gray-500 font-medium">
-                                  +{vehicle.imageUrls.length - 2}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <h3 className="font-bold text-lg text-gray-900">{vehicle.licensePlate}</h3>
-                            <p className="text-sm text-gray-600">{vehicle.vehicleTypeDisplayName}</p>
-                          </div>
-                        </div>
-                        <div className="ml-2">
-                          {getStatusBadge(vehicle.status)}
-                        </div>
-                      </div>
-                      
-                      {(vehicle.brand || vehicle.model || vehicle.color) && (
-                        <div className="text-sm text-gray-600 mb-3 space-y-1">
-                          {vehicle.brand && (
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium">Hãng:</span>
-                              <span>{vehicle.brand}</span>
-                            </div>
-                          )}
-                          {vehicle.model && (
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium">Dòng:</span>
-                              <span>{vehicle.model}</span>
-                            </div>
-                          )}
-                          {vehicle.color && (
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium">Màu:</span>
-                              <span>{vehicle.color}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      <Separator className="my-3" />
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <div className="flex items-center space-x-2">
-                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                          </svg>
-                          <span className="font-semibold text-green-700">
-                            {formatCurrency(vehicle.monthlyFee)}/tháng
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-gray-500">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span>{new Date(vehicle.createdAt).toLocaleDateString('vi-VN')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

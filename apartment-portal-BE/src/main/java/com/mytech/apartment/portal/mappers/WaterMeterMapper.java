@@ -19,7 +19,7 @@ public interface WaterMeterMapper {
     /**
      * Cập nhật entity từ DTO (dùng cho PUT)
      */
-    @Mapping(target = "readingId", ignore = true)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "consumption", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     void updateEntityFromDto(WaterMeterReadingDto dto, @MappingTarget WaterMeterReading entity);

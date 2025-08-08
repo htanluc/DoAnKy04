@@ -42,6 +42,10 @@ public class UserService {
         return userRepository.findById(id).map(userMapper::toDto).orElse(null)  ;
     }
 
+    public User getUserEntityById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
     @Transactional
     public UserDto createUser(UserCreateRequest userCreateRequest) {
         User user = userMapper.toEntity(userCreateRequest);

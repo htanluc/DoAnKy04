@@ -3,6 +3,7 @@ package com.mytech.apartment.portal.dtos;
 public class FacilityCreateRequest {
     private String name;
     private String description;
+    private String location;
     private Integer capacity;
     private String otherDetails;
     private Double usageFee;
@@ -10,9 +11,10 @@ public class FacilityCreateRequest {
     // Constructors
     public FacilityCreateRequest() {}
 
-    public FacilityCreateRequest(String name, String description, Integer capacity, String otherDetails) {
+    public FacilityCreateRequest(String name, String description, String location, Integer capacity, String otherDetails) {
         this.name = name;
         this.description = description;
+        this.location = location;
         this.capacity = capacity;
         this.otherDetails = otherDetails;
     }
@@ -23,6 +25,9 @@ public class FacilityCreateRequest {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }

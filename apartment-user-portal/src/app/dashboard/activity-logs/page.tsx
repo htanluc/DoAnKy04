@@ -1,278 +1,395 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Activity, Clock, User } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CalendarIcon, Download, Filter, Search } from 'lucide-react'
+import { format } from 'date-fns'
+import { vi } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 interface ActivityLog {
-  logId: number;
-  userId: number;
-  actionType: string;
-  description: string;
-  timestamp: string;
-  user?: {
-    username: string;
-    fullName?: string;
-  };
+  logId: number
+  userId: number
+  actionType: string
+  actionTypeDisplayName: string
+  description: string
+  timestamp: string
+  username: string
+  userFullName: string
 }
 
-export default function ActivityLogsPage() {
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface ActivityLogResponse {
+  success: boolean
+  message: string
+  data: {
+    content: ActivityLog[]
+    totalElements: number
+    totalPages: number
+    currentPage: number
+    size: number
+  }
+}
 
-  useEffect(() => {
-    fetchActivityLogs();
-  }, []);
+const actionTypeOptions = [
+  { value: 'LOGIN', label: 'Đăng nhập' },
+  { value: 'LOGOUT', label: 'Đăng xuất' },
+  { value: 'PASSWORD_CHANGE', label: 'Đổi mật khẩu' },
+  { value: 'VIEW_INVOICE', label: 'Xem hóa đơn' },
+  { value: 'DOWNLOAD_INVOICE', label: 'Tải hóa đơn' },
+  { value: 'PAY_INVOICE', label: 'Thanh toán hóa đơn' },
+  { value: 'REGISTER_VEHICLE', label: 'Đăng ký xe' },
+  { value: 'UPDATE_VEHICLE', label: 'Cập nhật thông tin xe' },
+  { value: 'DELETE_VEHICLE', label: 'Xóa thông tin xe' },
+  { value: 'CREATE_FACILITY_BOOKING', label: 'Đặt tiện ích' },
+  { value: 'UPDATE_FACILITY_BOOKING', label: 'Cập nhật đặt tiện ích' },
+  { value: 'CANCEL_FACILITY_BOOKING', label: 'Hủy đặt tiện ích' },
+  { value: 'VIEW_ANNOUNCEMENT', label: 'Xem thông báo' },
+  { value: 'VIEW_EVENT', label: 'Xem sự kiện' },
+  { value: 'CREATE_SUPPORT_REQUEST', label: 'Tạo yêu cầu hỗ trợ' },
+  { value: 'UPDATE_SUPPORT_REQUEST', label: 'Cập nhật yêu cầu hỗ trợ' },
+  { value: 'SUBMIT_FEEDBACK', label: 'Gửi phản hồi' }
+]
+
+export default function ActivityLogsPage() {
+  const [logs, setLogs] = useState<ActivityLog[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [pageSize, setPageSize] = useState(20)
+  
+  // Filters
+  const [selectedActionType, setSelectedActionType] = useState<string>('all')
+  const [startDate, setStartDate] = useState<Date | undefined>()
+  const [endDate, setEndDate] = useState<Date | undefined>()
+  const [searchTerm, setSearchTerm] = useState('')
 
   const fetchActivityLogs = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      const token = localStorage.getItem('token');
+      setLoading(true)
+      setError('')
+
+      const token = localStorage.getItem('token')
       if (!token) {
-        throw new Error('Chưa đăng nhập - không tìm thấy token');
+        setError('Vui lòng đăng nhập')
+        return
       }
-      
-      console.log('Fetching activity logs with token:', token.substring(0, 20) + '...');
-      
-      const response = await fetch('http://localhost:8080/api/activity-logs', {
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        size: pageSize.toString()
+      })
+
+      if (selectedActionType && selectedActionType !== 'all') {
+        params.append('actionType', selectedActionType)
+      }
+      if (startDate) {
+        params.append('startDate', startDate.toISOString())
+      }
+      if (endDate) {
+        params.append('endDate', endDate.toISOString())
+      }
+
+      const response = await fetch(`/api/activity-logs/my?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+          'Content-Type': 'application/json'
+        }
+      })
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        
-        if (response.status === 401) {
-          throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        } else if (response.status === 403) {
-          throw new Error('Không có quyền truy cập vào lịch sử hoạt động.');
-        } else {
-          throw new Error(`Lỗi server: ${response.status} - ${errorText}`);
-        }
+        throw new Error('Không thể tải dữ liệu')
       }
 
-      const data = await response.json();
-      console.log('Activity logs data:', data);
-      setActivityLogs(data);
-    } catch (err) {
-      console.error('Error fetching activity logs:', err);
-      setError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải lịch sử hoạt động');
+      const data: ActivityLogResponse = await response.json()
+      
+      if (data.success) {
+        setLogs(data.data.content)
+        setTotalPages(data.data.totalPages)
+        setTotalElements(data.data.totalElements)
+      } else {
+        setError(data.message || 'Có lỗi xảy ra')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  const getActionTypeColor = (actionType: string) => {
-    switch (actionType.toUpperCase()) {
-      case 'LOGIN':
-        return 'bg-green-100 text-green-800';
-      case 'LOGOUT':
-        return 'bg-gray-100 text-gray-800';
-      case 'PAYMENT':
-        return 'bg-blue-100 text-blue-800';
-      case 'REGISTER':
-        return 'bg-purple-100 text-purple-800';
-      case 'UPDATE':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'DELETE':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getActionTypeLabel = (actionType: string) => {
-    switch (actionType.toUpperCase()) {
-      case 'LOGIN':
-        return 'Đăng nhập';
-      case 'LOGOUT':
-        return 'Đăng xuất';
-      case 'PAYMENT':
-        return 'Thanh toán';
-      case 'REGISTER':
-        return 'Đăng ký';
-      case 'UPDATE':
-        return 'Cập nhật';
-      case 'DELETE':
-        return 'Xóa';
-      case 'CREATE':
-        return 'Tạo mới';
-      case 'BOOK':
-        return 'Đặt chỗ';
-      case 'CANCEL':
-        return 'Hủy';
-      default:
-        return actionType;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Đang tải lịch sử hoạt động...</p>
-          </div>
-        </div>
-      </div>
-    );
   }
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="text-red-500 mb-2">
-              <Activity className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Không thể tải dữ liệu</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={fetchActivityLogs}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Thử lại
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  const exportLogs = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Vui lòng đăng nhập')
+        return
+      }
+
+      // Build query parameters for export
+      const params = new URLSearchParams()
+      if (selectedActionType && selectedActionType !== 'all') {
+        params.append('actionType', selectedActionType)
+      }
+      if (startDate) {
+        params.append('startDate', startDate.toISOString())
+      }
+      if (endDate) {
+        params.append('endDate', endDate.toISOString())
+      }
+
+      const response = await fetch(`/api/activity-logs/my/export?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Không thể xuất dữ liệu')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `activity-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err: any) {
+      setError(err.message || 'Có lỗi xảy ra khi xuất dữ liệu')
+    }
   }
+
+  const clearFilters = () => {
+    setSelectedActionType('all')
+    setStartDate(undefined)
+    setEndDate(undefined)
+    setSearchTerm('')
+    setCurrentPage(0)
+  }
+
+  const getStatusBadge = (actionType: string) => {
+    const action = actionTypeOptions.find(option => option.value === actionType)
+    if (!action) return <Badge variant="secondary">{actionType}</Badge>
+
+    // Color coding based on action type
+    if (actionType.includes('PAY') || actionType.includes('SUCCESS')) {
+      return <Badge variant="default" className="bg-green-500">{action.label}</Badge>
+    } else if (actionType.includes('CREATE') || actionType.includes('REGISTER')) {
+      return <Badge variant="default" className="bg-blue-500">{action.label}</Badge>
+    } else if (actionType.includes('UPDATE')) {
+      return <Badge variant="default" className="bg-yellow-500">{action.label}</Badge>
+    } else if (actionType.includes('DELETE') || actionType.includes('CANCEL')) {
+      return <Badge variant="destructive">{action.label}</Badge>
+    } else if (actionType.includes('VIEW') || actionType.includes('LOGIN')) {
+      return <Badge variant="secondary">{action.label}</Badge>
+    } else {
+      return <Badge variant="outline">{action.label}</Badge>
+    }
+  }
+
+  useEffect(() => {
+    fetchActivityLogs()
+  }, [currentPage, pageSize, selectedActionType, startDate, endDate])
+
+  const filteredLogs = logs.filter(log =>
+    searchTerm === '' || 
+    log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.actionTypeDisplayName.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Lịch sử hoạt động</h1>
-        <p className="text-gray-600">
-          Theo dõi các hoạt động và thao tác của bạn trong hệ thống
-        </p>
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Nhật ký hoạt động</h1>
+          <p className="text-muted-foreground">
+            Theo dõi các hoạt động của bạn trong hệ thống
+          </p>
+        </div>
+        <Button onClick={exportLogs} className="flex items-center gap-2">
+          <Download className="h-4 w-4" />
+          Xuất CSV
+        </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Activity className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <p className="text-sm text-gray-600">Tổng hoạt động</p>
-                <p className="text-2xl font-bold text-gray-900">{activityLogs.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-green-600 mr-3" />
-              <div>
-                <p className="text-sm text-gray-600">Hoạt động hôm nay</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {activityLogs.filter(log => {
-                    const today = new Date().toDateString();
-                    const logDate = new Date(log.timestamp).toDateString();
-                    return today === logDate;
-                  }).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-purple-600 mr-3" />
-              <div>
-                <p className="text-sm text-gray-600">Hoạt động gần nhất</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {activityLogs.length > 0 ? formatDate(activityLogs[0].timestamp) : 'Chưa có'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Activity Logs List */}
-      <Card>
+      {/* Filters */}
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Activity className="h-5 w-5 mr-2" />
-            Danh sách hoạt động
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Bộ lọc
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {activityLogs.length === 0 ? (
-            <div className="text-center py-8">
-              <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Chưa có hoạt động nào</h3>
-              <p className="text-gray-600">Các hoạt động của bạn sẽ xuất hiện ở đây</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Tìm kiếm</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm kiếm theo mô tả..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Loại hoạt động</label>
+              <Select value={selectedActionType} onValueChange={setSelectedActionType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả loại hoạt động" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả loại hoạt động</SelectItem>
+                  {actionTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Từ ngày</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : "Chọn ngày"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    locale={vi}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Đến ngày</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "dd/MM/yyyy") : "Chọn ngày"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    initialFocus
+                    locale={vi}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <Button onClick={clearFilters} variant="outline">
+              Xóa bộ lọc
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Activity Logs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Hoạt động ({totalElements} bản ghi)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">{error}</div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Không có hoạt động nào được tìm thấy
             </div>
           ) : (
             <div className="space-y-4">
-              {activityLogs.map((log, index) => (
-                <div key={log.logId}>
-                  <div className="flex items-start space-x-4 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Activity className="h-5 w-5 text-blue-600" />
-                      </div>
+              {filteredLogs.map((log) => (
+                <div
+                  key={log.logId}
+                  className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getStatusBadge(log.actionType)}
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                      </span>
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Badge className={getActionTypeColor(log.actionType)}>
-                            {getActionTypeLabel(log.actionType)}
-                          </Badge>
-                          <span className="text-sm text-gray-500">
-                            {log.user?.fullName || log.user?.username || 'Người dùng'}
-                          </span>
-                        </div>
-                        <span className="text-sm text-gray-500 flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {formatDate(log.timestamp)}
-                        </span>
-                      </div>
-                      
-                      <p className="text-gray-900">{log.description}</p>
-                    </div>
+                    <p className="text-sm">{log.description}</p>
                   </div>
-                  
-                  {index < activityLogs.length - 1 && <Separator className="my-4" />}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+              >
+                Trước
+              </Button>
+              
+              <span className="text-sm">
+                Trang {currentPage + 1} / {totalPages}
+              </span>
+              
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage === totalPages - 1}
+              >
+                Sau
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  );
+  )
 } 

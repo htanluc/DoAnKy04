@@ -293,8 +293,8 @@ export default function UpdateInfoPage() {
         setFormData({
           fullName: data.resident?.fullName || data.user?.username || '',
           phoneNumber: data.user?.phoneNumber || '',
-          emergencyContacts: data.resident?.emergencyContacts && data.resident.emergencyContacts.length > 0
-            ? data.resident.emergencyContacts
+          emergencyContacts: data.user?.emergencyContacts && data.user.emergencyContacts.length > 0
+            ? data.user.emergencyContacts
             : [{ name: '', phone: '', relationship: '' }],
         });
       } catch (error) {

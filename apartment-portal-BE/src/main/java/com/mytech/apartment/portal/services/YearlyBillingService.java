@@ -264,7 +264,7 @@ public class YearlyBillingService {
      */
     private double calculateParkingFee(Long apartmentId, int month, int year, Optional<ServiceFeeConfig> feeConfig) {
         // Lấy danh sách xe của tất cả cư dân trong căn hộ
-        List<ApartmentResident> residents = apartmentResidentRepository.findByIdApartmentId(apartmentId);
+        List<ApartmentResident> residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
         double totalParkingFee = 0.0;
         
         for (ApartmentResident resident : residents) {
@@ -309,25 +309,24 @@ public class YearlyBillingService {
         String currentMonth = String.format("%04d-%02d", year, month);
         System.out.println("DEBUG: Tìm chỉ số nước cho căn hộ " + apartmentId + " tháng " + currentMonth);
         
-        Optional<WaterMeterReading> reading = waterMeterReadingRepository.findByApartmentIdAndReadingMonth(
-            apartmentId.intValue(), currentMonth);
+        // Lấy giá nước từ config hoặc dùng giá mặc định
+        double waterFeePerM3 = feeConfig.isPresent() ? feeConfig.get().getWaterFeePerM3() : 15000.0;
+        
+        Optional<com.mytech.apartment.portal.models.WaterMeterReading> reading = 
+            waterMeterReadingRepository.findByApartmentIdAndReadingMonth(apartmentId.intValue(), currentMonth);
         
         if (reading.isPresent()) {
-            WaterMeterReading waterReading = reading.get();
-            double consumption = waterReading.getConsumption().doubleValue();
-            double waterRate = feeConfig.isPresent() ? feeConfig.get().getWaterFeePerM3() : 15000.0;
-            double waterFee = consumption * waterRate;
+            com.mytech.apartment.portal.models.WaterMeterReading r = reading.get();
+            double consumption = r.getConsumption();
+            System.out.println("DEBUG: Tìm thấy chỉ số nước: " + consumption + " m³");
             
-            System.out.println("DEBUG: Tìm thấy chỉ số nước cho căn hộ " + apartmentId + ":");
-            System.out.println("  - Chỉ số trước: " + waterReading.getPreviousReading());
-            System.out.println("  - Chỉ số hiện tại: " + waterReading.getCurrentReading());
-            System.out.println("  - Tiêu thụ: " + consumption + " m³");
-            System.out.println("  - Giá nước: " + waterRate + " VND/m³");
-            System.out.println("  - Phí nước: " + waterFee + " VND");
+            // Tính phí nước
+            double waterFee = consumption * waterFeePerM3;
+            System.out.println("DEBUG: Phí nước: " + waterFee + " VND");
             
             return waterFee;
         } else {
-            System.out.println("DEBUG: KHÔNG TÌM THẤY chỉ số nước cho căn hộ " + apartmentId + " tháng " + currentMonth);
+            System.out.println("DEBUG: Không tìm thấy chỉ số nước cho căn hộ " + apartmentId + " tháng " + currentMonth);
             return 0.0;
         }
     }
