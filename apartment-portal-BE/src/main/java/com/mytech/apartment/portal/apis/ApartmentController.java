@@ -53,22 +53,9 @@ public class ApartmentController {
     }
 
     /**
-     * Create new apartment with automatic water meter initialization
-     * Tạo căn hộ mới với tự động khởi tạo chỉ số nước
-     */
-    @PostMapping
-    public ResponseEntity<ApiResponse<ApartmentDto>> createApartment(@Valid @RequestBody ApartmentCreateRequest request) {
-        try {
-            ApartmentDto newApartment = apartmentService.createApartment(request);
-            return ResponseEntity.ok(ApiResponse.success("Tạo căn hộ mới thành công! Chỉ số nước đã được khởi tạo = 0.", newApartment));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi khi tạo căn hộ: " + e.getMessage()));
-        }
-    }
-
-    /**
      * Update apartment by ID
      * Cập nhật thông tin căn hộ theo ID
+     * Lưu ý: Không thể thêm/xóa căn hộ sau khi triển khai
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApartmentDto> updateApartment(@PathVariable("id") Long id, @RequestBody ApartmentUpdateRequest request) {
@@ -212,38 +199,5 @@ public class ApartmentController {
         // Lấy căn hộ đầu tiên (nếu có nhiều)
         ApartmentDto apt = apartments.get(0);
         return ResponseEntity.ok(apt);
-    }
-
-    /**
-     * Get water meter readings for apartment (resident can access their own)
-     * Lấy danh sách chỉ số nước của căn hộ (resident có thể xem căn hộ của mình)
-     */
-    @GetMapping("/{id}/water-readings")
-    @Operation(summary = "Get water readings for apartment", description = "Lấy danh sách chỉ số nước của căn hộ")
-    public ResponseEntity<List<WaterMeterReadingDto>> getApartmentWaterReadings(@PathVariable Long id) {
-        try {
-            // TODO: Add security check to ensure user can only access their own apartment
-            List<WaterMeterReadingDto> waterReadings = apartmentService.getWaterMetersByApartmentId(id);
-            return ResponseEntity.ok(waterReadings);
-        } catch (Exception e) {
-            System.out.println("[ERROR] Lỗi khi lấy chỉ số nước cho apartment " + id + ": " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
-        }
-    }
-
-    /**
-     * Initialize water meter readings for all apartments
-     * Khởi tạo chỉ số nước cho tất cả căn hộ (admin only)
-     */
-    @PostMapping("/admin/init-water-meters")
-    @Operation(summary = "Initialize water meters for all apartments", description = "Khởi tạo chỉ số nước = 0 cho tất cả căn hộ chưa có chỉ số tháng hiện tại")
-    public ResponseEntity<ApiResponse<String>> initializeWaterMeters() {
-        try {
-            apartmentService.initializeWaterMeterForAllApartments();
-            return ResponseEntity.ok(ApiResponse.success("Đã khởi tạo chỉ số nước cho tất cả căn hộ thành công!"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi khi khởi tạo chỉ số nước: " + e.getMessage()));
-        }
     }
 }

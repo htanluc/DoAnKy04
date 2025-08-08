@@ -219,14 +219,4 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         
         return BigDecimal.ZERO; // Trả về 0 nếu không tìm thấy chỉ số thực tế nào
     }
-
-    /**
-     * Get water meter readings by apartment ID
-     * Lấy danh sách chỉ số nước theo ID căn hộ
-     */
-    public List<WaterMeterReadingDto> getWaterMetersByApartmentId(Long apartmentId) {
-        return waterMeterReadingRepository.findAllByApartmentIdOrderByReadingMonthDesc(apartmentId.intValue()).stream()
-                .map(waterMeterMapper::toDto)
-                .collect(Collectors.toList());
-    }
 } 
