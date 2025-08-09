@@ -17,6 +17,9 @@ public interface WaterMeterService {
     // Lấy chỉ số nước theo tháng cụ thể
     List<WaterMeterReadingDto> getReadingsByMonth(String month);
 
+    // Lấy chỉ số nước theo ID căn hộ
+    List<WaterMeterReadingDto> getWaterMetersByApartmentId(Long apartmentId);
+
     // nếu scheduler cần:
     void generateHistory(String period);
 }

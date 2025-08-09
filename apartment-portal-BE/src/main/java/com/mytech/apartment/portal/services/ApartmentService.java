@@ -11,11 +11,15 @@ import com.mytech.apartment.portal.models.enums.RelationType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
+import com.mytech.apartment.portal.models.WaterMeterReading;
+import com.mytech.apartment.portal.mappers.WaterMeterMapper;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
@@ -44,6 +48,16 @@ public class ApartmentService {
 
     @Autowired
     private ApartmentResidentMapper apartmentResidentMapper;
+
+    @Autowired
+    private WaterMeterReadingRepository waterMeterReadingRepository;
+
+    @Autowired
+    private WaterMeterMapper waterMeterMapper;
+
+    @Autowired
+    @Lazy
+    private WaterMeterService waterMeterService;
 
     private final Counter apartmentAccessCounter;
     private final Counter apartmentUpdateCounter;
@@ -189,5 +203,15 @@ public class ApartmentService {
         return apartmentRepository.findById(apartmentId.longValue())
                 .map(Apartment::getUnitNumber)
                 .orElse("Unknown apartment");
+    }
+
+    /**
+     * Get water meter readings by apartment ID
+     * Lấy danh sách chỉ số nước theo ID căn hộ
+     */
+    public List<WaterMeterReadingDto> getWaterMetersByApartmentId(Long apartmentId) {
+        return waterMeterReadingRepository.findAllByApartmentIdOrderByReadingDateDesc(apartmentId).stream()
+                .map(waterMeterMapper::toDto)
+                .collect(Collectors.toList());
     }
 }

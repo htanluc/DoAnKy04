@@ -21,50 +21,57 @@ import {
   Edit, 
   Eye,
   Filter,
-  Users
+  Users,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { API_BASE_URL, getToken } from '@/lib/auth';
-import ApartmentResidentManager from '@/components/admin/ApartmentResidentManager';
-import ApartmentUserLinkModal from '@/components/admin/ApartmentUserLinkModal';
-import { Apartment } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
+
+interface Apartment {
+  id: number;
+  unitNumber: string;
+  building: string;
+  floor: number;
+  area: number;
+  status: string;
+  type: string;
+  price: number;
+}
 
 export default function ApartmentsPage() {
   const { t } = useLanguage();
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
-    setLoading(true);
-    const token = getToken();
-    fetch(`${API_BASE_URL}/api/apartments`, {
-      headers: {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Failed to fetch');
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setApartments(data);
-        } else if (data && Array.isArray(data.data)) {
-          setApartments(data.data);
-        } else {
-          setApartments([]);
-        }
-      })
-      .catch(() => {
-        setApartments([]);
-      })
-      .finally(() => setLoading(false));
+    loadApartments();
   }, []);
 
+  const loadApartments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiFetch('/api/admin/apartments');
+      if (response.ok) {
+        const data = await response.json();
+        setApartments(data);
+      } else {
+        throw new Error('Failed to fetch apartments');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch apartments');
+      setApartments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredApartments = apartments.filter(apartment => {
-    const matchesSearch = apartment.unitNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = apartment.unitNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         apartment.building.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || apartment.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -84,11 +91,32 @@ export default function ApartmentsPage() {
 
   if (loading) {
     return (
-      <AdminLayout title={t('admin.apartments.title')}>
+      <AdminLayout title="Quản Lý Căn Hộ">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
+            <p className="mt-2 text-gray-600">Đang tải...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Quản Lý Căn Hộ">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 font-medium">Lỗi tải dữ liệu</p>
+            <p className="text-gray-600 mt-2">{error}</p>
+            <Button 
+              onClick={loadApartments} 
+              className="mt-4"
+              variant="outline"
+            >
+              Thử lại
+            </Button>
           </div>
         </div>
       </AdminLayout>
@@ -96,45 +124,50 @@ export default function ApartmentsPage() {
   }
 
   return (
-    <AdminLayout title={t('admin.apartments.title')}>
+    <AdminLayout title="Quản Lý Căn Hộ">
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {t('admin.apartments.list', 'Danh sách căn hộ')}
+              Quản Lý Căn Hộ
             </h2>
-            <p className="text-gray-600">
-              {t('admin.apartments.listDesc', 'Quản lý tất cả căn hộ trong hệ thống')}
+            <p className="text-gray-600 mt-1">
+              Quản lý thông tin căn hộ trong hệ thống
             </p>
           </div>
           <Link href="/admin-dashboard/apartments/create">
-            <Button className="flex items-center space-x-2">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              <span>{t('admin.action.create', 'Tạo mới')}</span>
+              Thêm Căn Hộ
             </Button>
           </Link>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search and filters */}
         <Card>
-          <CardContent className="p-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Tìm Kiếm & Lọc
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <div className="flex-1">
                 <Input
-                  placeholder="Tìm kiếm theo số căn hộ, chủ hộ..."
+                  placeholder="Tìm theo mã căn hộ, tòa nhà..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="w-full"
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+              <div className="sm:w-48">
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Lọc theo trạng thái"
                 >
                   <option value="all">Tất cả trạng thái</option>
                   <option value="OCCUPIED">Có người ở</option>
@@ -146,55 +179,63 @@ export default function ApartmentsPage() {
           </CardContent>
         </Card>
 
-        {/* Apartments Table */}
+        {/* Apartments table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Danh sách căn hộ ({filteredApartments.length})</span>
+              <span>Danh Sách Căn Hộ ({filteredApartments.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredApartments.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">{t('admin.noData')}</p>
+                <p className="text-gray-500">Không tìm thấy căn hộ nào</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Mã căn hộ</TableHead>
-                      <TableHead>Tòa nhà</TableHead>
-                      <TableHead>Tầng</TableHead>
-                      <TableHead>Diện tích (m²)</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>{t('admin.users.actions')}</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Mã Căn Hộ</TableHead>
+                    <TableHead>Tòa Nhà</TableHead>
+                    <TableHead>Tầng</TableHead>
+                    <TableHead>Diện Tích (m²)</TableHead>
+                    <TableHead>Trạng Thái</TableHead>
+                    <TableHead>Thao Tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredApartments.map((apartment) => (
+                    <TableRow key={apartment.id}>
+                      <TableCell>{apartment.id}</TableCell>
+                      <TableCell className="font-medium">{apartment.unitNumber}</TableCell>
+                      <TableCell>{apartment.building}</TableCell>
+                      <TableCell>{apartment.floor}</TableCell>
+                      <TableCell>{apartment.area}</TableCell>
+                      <TableCell>{getStatusBadge(apartment.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/admin-dashboard/apartments/${apartment.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/admin-dashboard/apartments/${apartment.id}/edit`}>
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/admin-dashboard/apartments/${apartment.id}/residents`}>
+                            <Button variant="outline" size="sm">
+                              <Users className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredApartments.map((apartment) => (
-                      <TableRow key={apartment.id}>
-                        <TableCell>{apartment.unitNumber}</TableCell>
-                        <TableCell>{apartment.buildingId}</TableCell>
-                        <TableCell>{apartment.floorNumber}</TableCell>
-                        <TableCell>{apartment.area}</TableCell>
-                        <TableCell>{apartment.status}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            {/* Mở modal gán user khi nhấn icon con mắt */}
-                            <ApartmentUserLinkModal apartmentId={apartment.id} />
-                            <Link href={`/admin-dashboard/apartments/edit/${apartment.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

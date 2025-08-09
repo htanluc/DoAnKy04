@@ -21,33 +21,23 @@ import {
   Edit, 
   Trash2, 
   Eye,
-  Filter
+  Filter,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { residentsApi, Resident } from '@/lib/api';
+import { useResidents, Resident } from '@/hooks/use-residents';
 
 export default function ResidentsPage() {
   const { t } = useLanguage();
-  const [residents, setResidents] = useState<Resident[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { residents, loading, error, getAllResidents, deleteResident } = useResidents();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    setLoading(true);
-    residentsApi.getAll()
-      .then((data) => {
-        setResidents(data);
-      })
-      .catch(() => setResidents([]))
-      .finally(() => setLoading(false));
-  }, []);
-
   const filteredResidents = residents.filter(resident => {
     const matchesSearch = resident.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resident.idCard.includes(searchTerm) ||
+                         (resident.identityNumber && resident.identityNumber.includes(searchTerm)) ||
                          resident.phoneNumber.includes(searchTerm) ||
-                         resident.apartmentNumber.toLowerCase().includes(searchTerm.toLowerCase());
+                         resident.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || resident.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -63,28 +53,44 @@ export default function ResidentsPage() {
     }
   };
 
-  const getRelationBadge = (relation: string) => {
-    switch (relation) {
-      case 'Chủ hộ':
-        return <Badge className="bg-purple-100 text-purple-800">Chủ hộ</Badge>;
-      case 'Vợ':
-        return <Badge className="bg-blue-100 text-blue-800">Vợ</Badge>;
-      case 'Chồng':
-        return <Badge className="bg-blue-100 text-blue-800">Chồng</Badge>;
-      case 'Con':
-        return <Badge className="bg-green-100 text-green-800">Con</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{relation}</Badge>;
+  const handleDeleteResident = async (id: number) => {
+    if (confirm('Bạn có chắc chắn muốn xóa cư dân này?')) {
+      const success = await deleteResident(id);
+      if (success) {
+        // Refresh the list
+        getAllResidents();
+      }
     }
   };
 
   if (loading) {
     return (
-      <AdminLayout title={t('admin.residents.title')}>
+      <AdminLayout title="Quản Lý Cư Dân">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
+            <p className="mt-2 text-gray-600">Đang tải...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Quản Lý Cư Dân">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 font-medium">Lỗi tải dữ liệu</p>
+            <p className="text-gray-600 mt-2">{error}</p>
+            <Button 
+              onClick={() => getAllResidents()} 
+              className="mt-4"
+              variant="outline"
+            >
+              Thử lại
+            </Button>
           </div>
         </div>
       </AdminLayout>
@@ -92,45 +98,50 @@ export default function ResidentsPage() {
   }
 
   return (
-    <AdminLayout title={t('admin.residents.title')}>
+    <AdminLayout title="Quản Lý Cư Dân">
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {t('admin.residents.list', 'Danh sách cư dân')}
+              Quản Lý Cư Dân
             </h2>
-            <p className="text-gray-600">
-              {t('admin.residents.listDesc', 'Quản lý tất cả cư dân trong chung cư')}
+            <p className="text-gray-600 mt-1">
+              Quản lý thông tin cư dân trong hệ thống
             </p>
           </div>
           <Link href="/admin-dashboard/residents/create">
-            <Button className="flex items-center space-x-2">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              <span>{t('admin.action.create', 'Tạo mới')}</span>
+              Thêm Cư Dân
             </Button>
           </Link>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search and filters */}
         <Card>
-          <CardContent className="p-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Tìm Kiếm & Lọc
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <div className="flex-1">
                 <Input
-                  placeholder="Tìm kiếm theo tên, CMND, số điện thoại..."
+                  placeholder="Tìm theo tên, CMND, SĐT, email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="w-full"
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+              <div className="sm:w-48">
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Lọc theo trạng thái"
                 >
                   <option value="all">Tất cả trạng thái</option>
                   <option value="ACTIVE">Hoạt động</option>
@@ -141,63 +152,66 @@ export default function ResidentsPage() {
           </CardContent>
         </Card>
 
-        {/* Residents Table */}
+        {/* Residents table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Danh sách cư dân ({filteredResidents.length})</span>
+              <span>Danh Sách Cư Dân ({filteredResidents.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredResidents.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">{t('admin.noData')}</p>
+                <p className="text-gray-500">Không tìm thấy cư dân nào</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('admin.residents.fullName')}</TableHead>
-                      <TableHead>{t('admin.residents.idCard')}</TableHead>
-                      <TableHead>{t('admin.residents.phone')}</TableHead>
-                      <TableHead>{t('admin.residents.apartment')}</TableHead>
-                      <TableHead>{t('admin.residents.relationType')}</TableHead>
-                      <TableHead>{t('admin.residents.status')}</TableHead>
-                      <TableHead>{t('admin.users.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredResidents.map((resident) => (
-                      <TableRow key={resident.id}>
-                        <TableCell className="font-medium">{resident.fullName}</TableCell>
-                        <TableCell>{resident.idCard}</TableCell>
-                        <TableCell>{resident.phoneNumber}</TableCell>
-                        <TableCell>{resident.apartmentNumber}</TableCell>
-                        <TableCell>{getRelationBadge(resident.relationType)}</TableCell>
-                        <TableCell>{getStatusBadge(resident.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Link href={`/admin-dashboard/residents/${resident.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Link href={`/admin-dashboard/residents/edit/${resident.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="h-4 w-4" />
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Họ Tên</TableHead>
+                    <TableHead>Số Điện Thoại</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>CMND/CCCD</TableHead>
+                    <TableHead>Trạng Thái</TableHead>
+                    <TableHead>Thao Tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredResidents.map((resident) => (
+                    <TableRow key={resident.id}>
+                      <TableCell>{resident.id}</TableCell>
+                      <TableCell className="font-medium">{resident.fullName}</TableCell>
+                      <TableCell>{resident.phoneNumber}</TableCell>
+                      <TableCell>{resident.email}</TableCell>
+                      <TableCell>{resident.identityNumber || 'N/A'}</TableCell>
+                      <TableCell>{getStatusBadge(resident.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/admin-dashboard/residents/${resident.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                          </Link>
+                          <Link href={`/admin-dashboard/residents/${resident.id}/edit`}>
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteResident(resident.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

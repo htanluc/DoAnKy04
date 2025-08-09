@@ -17,9 +17,16 @@ public class WaterMeterReadingDto {
     @NotNull
     private LocalDate readingDate;
 
+    // Thêm trường readingMonth để tương thích với frontend
+    private String readingMonth;
+
     @NotNull
     @DecimalMin("0.00")
     private BigDecimal meterReading;
+
+    // Thêm trường previousReading và currentReading để tương thích với frontend
+    private BigDecimal previousReading;
+    private BigDecimal currentReading;
 
     private BigDecimal consumption;
 

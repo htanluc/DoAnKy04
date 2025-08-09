@@ -30,9 +30,10 @@ export default function LiveChat() {
     isConnected, 
     chatMessages, 
     onlineUsers, 
+    error,
     sendChatMessage, 
     clearChatMessages 
-  } = useWebSocket(userId || undefined);
+  } = useWebSocket(userId || undefined, undefined, true); // Enable WebSocket when needed
 
   const handleSendMessage = () => {
     if (message.trim() && isConnected) {
@@ -56,54 +57,80 @@ export default function LiveChat() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {/* Chat Toggle Button */}
+    <div className="relative">
       <Button
+        variant="outline"
+        size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="rounded-full w-12 h-12 shadow-lg"
-        variant={isOpen ? "default" : "outline"}
+        className="relative"
       >
-        <MessageSquare className="h-5 w-5" />
+        <MessageSquare className="h-4 w-4" />
+        {chatMessages.length > 0 && (
+          <Badge 
+            variant="destructive" 
+            className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs"
+          >
+            {chatMessages.length}
+          </Badge>
+        )}
       </Button>
 
-      {/* Chat Window */}
       {isOpen && (
-        <Card className="absolute bottom-16 right-0 w-80 h-96 shadow-xl">
+        <Card className="absolute right-0 top-12 w-80 h-96 z-50 shadow-lg">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Live Chat</CardTitle>
               <div className="flex items-center gap-2">
-                <CardTitle className="text-sm">Live Chat</CardTitle>
-                <Badge variant={isConnected ? "default" : "secondary"} className="text-xs">
-                  {isConnected ? "🟢 Online" : "🔴 Offline"}
-                </Badge>
+                {error && (
+                  <Badge variant="destructive" className="text-xs">
+                    Offline
+                  </Badge>
+                )}
+                {isConnected && (
+                  <Badge variant="default" className="text-xs">
+                    Online
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
-            
+          </CardHeader>
+          <CardContent className="pt-0 h-full flex flex-col">
             {/* Online Users */}
             {onlineUsers.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Users className="h-3 w-3" />
-                <span>{onlineUsers.length} online</span>
+              <div className="mb-3 p-2 bg-gray-50 rounded">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="h-3 w-3" />
+                  <span className="text-xs font-medium">Online ({onlineUsers.length})</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {onlineUsers.slice(0, 5).map((user, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {user.username}
+                    </Badge>
+                  ))}
+                  {onlineUsers.length > 5 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{onlineUsers.length - 5}
+                    </Badge>
+                  )}
+                </div>
               </div>
             )}
-          </CardHeader>
 
-          <CardContent className="pt-0 flex flex-col h-80">
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-3 p-2 bg-gray-50 rounded">
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3">
               {chatMessages.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center py-8 text-gray-500">
                   <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">Chưa có tin nhắn</p>
-                  <p className="text-xs">Bắt đầu cuộc trò chuyện!</p>
                 </div>
               ) : (
                 chatMessages.map((msg, index) => (
@@ -115,49 +142,40 @@ export default function LiveChat() {
                       className={`max-w-[80%] p-2 rounded-lg ${
                         msg.sender === username
                           ? 'bg-blue-500 text-white'
-                          : 'bg-white border'
+                          : 'bg-gray-100 text-gray-900'
                       }`}
                     >
-                      <div className="text-xs opacity-75 mb-1">
-                        {msg.sender} • {formatTime(msg.timestamp)}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium">{msg.sender}</span>
+                        <span className="text-xs opacity-70">
+                          {formatTime(msg.timestamp)}
+                        </span>
                       </div>
-                      <div className="text-sm">{msg.content}</div>
+                      <p className="text-sm">{msg.content}</p>
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* Input Area */}
+            {/* Message Input */}
             <div className="flex gap-2">
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Nhập tin nhắn..."
-                disabled={!isConnected}
                 className="flex-1"
+                disabled={!isConnected}
               />
               <Button
                 onClick={handleSendMessage}
                 disabled={!isConnected || !message.trim()}
                 size="sm"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-3 w-3" />
               </Button>
             </div>
-
-            {/* Clear Messages Button */}
-            {chatMessages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearChatMessages}
-                className="mt-2 text-xs"
-              >
-                Xóa tin nhắn
-              </Button>
-            )}
           </CardContent>
         </Card>
       )}

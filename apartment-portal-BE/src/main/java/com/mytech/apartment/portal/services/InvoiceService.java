@@ -133,4 +133,23 @@ public class InvoiceService {
         return invoiceRepository.findById(id)
                 .map(invoiceMapper::toDto);
     }
+
+    /**
+     * [EN] Get latest invoice by apartment ID
+     * [VI] Lấy hóa đơn mới nhất theo ID căn hộ
+     */
+    public Optional<InvoiceDto> getLatestInvoiceByApartmentId(Long apartmentId) {
+        return invoiceRepository.findTopByApartmentIdOrderByBillingPeriodDesc(apartmentId)
+                .map(invoiceMapper::toDto);
+    }
+
+    /**
+     * [EN] Get invoices by apartment ID
+     * [VI] Lấy tất cả hóa đơn theo ID căn hộ
+     */
+    public List<InvoiceDto> getInvoicesByApartmentId(Long apartmentId) {
+        return invoiceRepository.findByApartmentIdOrderByBillingPeriodDesc(apartmentId).stream()
+                .map(invoiceMapper::toDto)
+                .collect(Collectors.toList());
+    }
 }

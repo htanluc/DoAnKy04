@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { getCurrentUser, isAdmin } from "@/lib/auth";
 
 export interface Apartment {
   id: number | string;
@@ -21,7 +22,11 @@ export function useApartments() {
       setError(null);
       
       try {
-        const response = await api.get("/api/apartments");
+        // Kiểm tra xem user có phải là admin không
+        const user = getCurrentUser();
+        const endpoint = isAdmin(user) ? "/api/apartments/admin" : "/api/apartments";
+        
+        const response = await api.get(endpoint);
         
         if (response.ok) {
           const data = await response.json();

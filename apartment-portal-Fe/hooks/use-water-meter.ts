@@ -130,6 +130,7 @@ export function useWaterMeter() {
         body: JSON.stringify(patch),
       });
       if (!res.ok) throw new Error('Cập nhật nhanh chỉ số thất bại');
+      // Reload current data instead of all readings
       await fetchReadings();
     } catch (err: any) {
       setError(err.message);

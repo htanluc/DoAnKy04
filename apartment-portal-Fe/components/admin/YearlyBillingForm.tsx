@@ -189,6 +189,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <input
+                  title="Tạo biểu phí cấu hình cho năm"
                   type="radio"
                   id="modeYearly"
                   name="billingMode"
@@ -200,6 +201,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
               </div>
               <div className="flex items-center space-x-2">
                 <input
+                  title="Tạo hóa đơn theo tháng"
                   type="radio"
                   id="modeMonthly"
                   name="billingMode"

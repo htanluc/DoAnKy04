@@ -42,6 +42,38 @@ public class ApartmentController {
     }
 
     /**
+     * Get all apartments (Admin only)
+     * Lấy danh sách tất cả căn hộ (Chỉ admin)
+     */
+    @GetMapping("/admin")
+    public List<ApartmentDto> getAllApartmentsForAdmin() {
+        try {
+            List<ApartmentDto> apartments = apartmentService.getAllApartments();
+            if (apartments == null || apartments.isEmpty()) {
+                System.out.println("[WARN] Danh sách apartment trả về rỗng cho admin!");
+            } else {
+                System.out.println("[INFO] Số lượng apartment trả về cho admin: " + apartments.size());
+            }
+            return apartments;
+        } catch (Exception e) {
+            System.out.println("[ERROR] Lỗi khi lấy danh sách apartment cho admin: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    /**
+     * Get apartment by ID (Admin only)
+     * Lấy thông tin căn hộ theo ID (Chỉ admin)
+     */
+    @GetMapping("/admin/{id}")
+    public ResponseEntity<ApartmentDto> getApartmentByIdForAdmin(@PathVariable("id") Long id) {
+        return apartmentService.getApartmentById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
      * Get apartment by ID
      * Lấy thông tin căn hộ theo ID
      */

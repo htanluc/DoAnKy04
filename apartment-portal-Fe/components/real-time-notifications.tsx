@@ -28,7 +28,7 @@ export default function RealTimeNotifications() {
     notifications, 
     error, 
     clearNotifications 
-  } = useWebSocket(userId || undefined);
+  } = useWebSocket(userId || undefined, undefined, true); // Enable WebSocket when needed
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -66,29 +66,21 @@ export default function RealTimeNotifications() {
   return (
     <div className="relative">
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
         className="relative"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-4 w-4" />
         {notifications.length > 0 && (
           <Badge 
             variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs"
+            className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs"
           >
             {notifications.length}
           </Badge>
         )}
       </Button>
-
-      <div className="absolute -bottom-6 right-0 text-xs">
-        {isConnected ? (
-          <span className="text-green-600">🟢 Connected</span>
-        ) : (
-          <span className="text-red-600">🔴 Disconnected</span>
-        )}
-      </div>
 
       {isOpen && (
         <Card className="absolute right-0 top-12 w-80 z-50 shadow-lg">
@@ -96,39 +88,32 @@ export default function RealTimeNotifications() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm">Thông báo</CardTitle>
               <div className="flex items-center gap-2">
-                {notifications.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearNotifications}
-                    className="h-6 px-2 text-xs"
-                  >
-                    Xóa tất cả
-                  </Button>
+                {error && (
+                  <Badge variant="destructive" className="text-xs">
+                    Offline
+                  </Badge>
+                )}
+                {isConnected && (
+                  <Badge variant="default" className="text-xs">
+                    Online
+                  </Badge>
                 )}
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsOpen(false)}
+                  onClick={clearNotifications}
                   className="h-6 w-6 p-0"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
             </div>
           </CardHeader>
-          
           <CardContent className="pt-0">
-            {error && (
-              <div className="text-red-600 text-sm mb-3 p-2 bg-red-50 rounded">
-                {error}
-              </div>
-            )}
-            
             {notifications.length === 0 ? (
-              <div className="text-center text-gray-500 py-4">
+              <div className="text-center py-4 text-gray-500">
                 <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Chưa có thông báo mới</p>
+                <p className="text-sm">Không có thông báo mới</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -146,11 +131,6 @@ export default function RealTimeNotifications() {
                         <p className="text-xs text-gray-500 mt-1">
                           {formatTime(notification.timestamp)}
                         </p>
-                        {notification.status && (
-                          <Badge variant="outline" className="mt-1 text-xs">
-                            {notification.status}
-                          </Badge>
-                        )}
                       </div>
                     </div>
                   </div>

@@ -171,4 +171,16 @@ public class UserService {
             .map(User::getId)
             .orElse(null);
     }
+
+    /**
+     * [EN] Get all residents (users with RESIDENT role)
+     * [VI] Lấy tất cả cư dân (users có role RESIDENT)
+     */
+    public List<UserDto> getAllResidents() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRoles().stream()
+                        .anyMatch(role -> "RESIDENT".equals(role.getName())))
+                .map(userMapper::toDto)
+                .collect(Collectors.toList());
+    }
 }
