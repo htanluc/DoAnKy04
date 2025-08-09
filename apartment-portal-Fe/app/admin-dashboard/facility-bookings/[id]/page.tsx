@@ -7,6 +7,26 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { facilityBookingsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { BookingStatus } from "@/lib/api";
+
+// Hàm cập nhật trạng thái thay thế do facilityBookingsApi chưa có updateStatus
+// Sửa lại để PATCH trực tiếp endpoint với body { status }
+async function updateBookingStatus(id: number, status: BookingStatus) {
+  // Gửi PATCH trực tiếp, không dùng facilityBookingsApi.update vì nó không nhận thuộc tính 'status'
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const res = await fetch(`http://localhost:8080/api/admin/facility-bookings/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    throw new Error("Cập nhật trạng thái thất bại");
+  }
+  return res.json();
+}
 
 export default function FacilityBookingDetailPage() {
   const params = useParams();
@@ -19,30 +39,44 @@ export default function FacilityBookingDetailPage() {
 
   const fetchData = () => {
     setLoading(true);
-    facilityBookingsApi.getById(id)
+    facilityBookingsApi
+      .getById(id)
       .then(setData)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleUpdateStatus = async (status: string) => {
     setUpdating(true);
     try {
-      await facilityBookingsApi.updateStatus(id, status); // Cần có API này ở backend
-      toast({ title: "Thành công", description: `Đã cập nhật trạng thái: ${status}` });
+      await updateBookingStatus(id, status as BookingStatus);
+      toast({
+        title: "Thành công",
+        description: `Đã cập nhật trạng thái: ${status}`,
+      });
       fetchData();
     } catch (e) {
-      toast({ title: "Lỗi", description: "Không thể cập nhật trạng thái", variant: "destructive" });
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật trạng thái",
+        variant: "destructive",
+      });
     } finally {
       setUpdating(false);
     }
   };
 
   if (loading) return <div className="p-8">Đang tải...</div>;
-  if (!data) return <div className="p-8 text-red-500">Không tìm thấy yêu cầu đặt dịch vụ!</div>;
+  if (!data)
+    return (
+      <div className="p-8 text-red-500">
+        Không tìm thấy yêu cầu đặt dịch vụ!
+      </div>
+    );
 
   return (
     <AdminLayout title="Chi tiết yêu cầu đặt dịch vụ">
@@ -52,24 +86,65 @@ export default function FacilityBookingDetailPage() {
             <CardTitle>Chi tiết đặt tiện ích #{data.id}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div><b>Cư dân:</b> {data.residentName || data.user?.username || data.user?.email || data.user?.phoneNumber || 'Ẩn danh'}</div>
-            <div><b>Tiện ích:</b> {data.facilityName || data.facility?.name}</div>
-            <div><b>Thời gian đặt:</b> {(data.startTime ? new Date(data.startTime).toLocaleString('vi-VN') : (data.bookingTime ? new Date(data.bookingTime).toLocaleString('vi-VN') : '-')) + (data.endTime ? ' - ' + new Date(data.endTime).toLocaleString('vi-VN') : '')}</div>
-            <div><b>Số người:</b> {data.numberOfPeople}</div>
-            <div><b>Trạng thái:</b> {data.status}</div>
-            <div><b>Ngày tạo:</b> {data.createdAt ? new Date(data.createdAt).toLocaleString('vi-VN') : '-'}</div>
+            <div>
+              <b>Cư dân:</b>{" "}
+              {data.residentName ||
+                data.user?.username ||
+                data.user?.email ||
+                data.user?.phoneNumber ||
+                "Ẩn danh"}
+            </div>
+            <div>
+              <b>Tiện ích:</b> {data.facilityName || data.facility?.name}
+            </div>
+            <div>
+              <b>Thời gian đặt:</b>{" "}
+              {(data.startTime
+                ? new Date(data.startTime).toLocaleString("vi-VN")
+                : data.bookingTime
+                ? new Date(data.bookingTime).toLocaleString("vi-VN")
+                : "-") +
+                (data.endTime
+                  ? " - " + new Date(data.endTime).toLocaleString("vi-VN")
+                  : "")}
+            </div>
+            <div>
+              <b>Số người:</b> {data.numberOfPeople}
+            </div>
+            <div>
+              <b>Trạng thái:</b> {data.status}
+            </div>
+            <div>
+              <b>Ngày tạo:</b>{" "}
+              {data.createdAt
+                ? new Date(data.createdAt).toLocaleString("vi-VN")
+                : "-"}
+            </div>
             <div className="flex gap-4 mt-6">
-              <Button disabled={updating || data.status === 'APPROVED' || data.status === 'CONFIRMED'} onClick={() => handleUpdateStatus('CONFIRMED')}>
+              <Button
+                disabled={
+                  updating ||
+                  data.status === "APPROVED" ||
+                  data.status === "CONFIRMED"
+                }
+                onClick={() => handleUpdateStatus("CONFIRMED")}
+              >
                 Phê duyệt
               </Button>
-              <Button variant="destructive" disabled={updating || data.status === 'REJECTED'} onClick={() => handleUpdateStatus('REJECTED')}>
+              <Button
+                variant="destructive"
+                disabled={updating || data.status === "REJECTED"}
+                onClick={() => handleUpdateStatus("REJECTED")}
+              >
                 Từ chối
               </Button>
-              <Button variant="outline" onClick={() => router.back()}>Quay lại</Button>
+              <Button variant="outline" onClick={() => router.back()}>
+                Quay lại
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
     </AdminLayout>
   );
-} 
+}

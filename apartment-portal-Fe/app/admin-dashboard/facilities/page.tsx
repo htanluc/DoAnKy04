@@ -152,6 +152,7 @@ export default function FacilitiesPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
+                  title="Sức chứa tiện ích"
                   value={filterCapacity}
                   onChange={(e) => setFilterCapacity(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"

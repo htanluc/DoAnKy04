@@ -11,6 +11,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mytech.apartment.portal.models.*;
 import com.mytech.apartment.portal.models.enums.*;
@@ -384,23 +385,25 @@ public class DataInitializer implements CommandLineRunner {
     /**
      * PART 3: Initialize Apartment Residents with many-to-many relationships
      */
+    @Transactional
     private void initializeApartmentResidents() {
         System.out.println("🏠 Initializing Apartment Residents...");
         
-        // Get all users and apartments
-        List<User> allUsers = userRepository.findAll();
-        List<Apartment> allApartments = apartmentRepository.findAll();
-        List<Role> allRoles = roleRepository.findAll();
+        // Get all users with roles using JOIN FETCH
+        List<User> allUsers = userRepository.findAllWithRoles();
+        Role residentRole = roleRepository.findByName("RESIDENT");
         
-        // Find resident role
-        Role residentRole = allRoles.stream()
-            .filter(role -> "RESIDENT".equals(role.getName()))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("RESIDENT role not found"));
+        if (residentRole == null) {
+            System.out.println("⚠️ RESIDENT role not found, skipping apartment residents initialization");
+            return;
+        }
+        
+        // Get all apartments
+        List<Apartment> allApartments = apartmentRepository.findAll();
         
         // Get resident users only
         List<User> residentUsers = allUsers.stream()
-            .filter(user -> user.getRoles().contains(residentRole))
+            .filter(user -> user.getRoles() != null && user.getRoles().contains(residentRole))
             .collect(Collectors.toList());
         
         // Get occupied apartments only
@@ -861,8 +864,8 @@ public class DataInitializer implements CommandLineRunner {
         
         // Get all facilities and resident users
         List<Facility> facilities = facilityRepository.findAll();
-        List<User> residentUsers = userRepository.findAll().stream()
-            .filter(user -> user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
+        List<User> residentUsers = userRepository.findAllWithRoles().stream()
+            .filter(user -> user.getRoles() != null && user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
             .collect(Collectors.toList());
         
         if (facilities.isEmpty() || residentUsers.isEmpty()) {
@@ -1101,7 +1104,7 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("🔧 Initializing Service Requests and Feedback...");
         
         // Get all users and service categories
-        List<User> allUsers = userRepository.findAll();
+        List<User> allUsers = userRepository.findAllWithRoles();
         List<ServiceCategory> serviceCategories = serviceCategoryRepository.findAll();
         
         if (serviceCategories.isEmpty()) {
@@ -1114,12 +1117,12 @@ public class DataInitializer implements CommandLineRunner {
         
         // Get resident users
         List<User> residentUsers = allUsers.stream()
-            .filter(user -> user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
+            .filter(user -> user.getRoles() != null && user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
             .collect(Collectors.toList());
         
         // Get staff users for assignment
         List<User> staffUsers = allUsers.stream()
-            .filter(user -> user.getRoles().stream().anyMatch(role -> "STAFF".equals(role.getName()) || "TECHNICIAN".equals(role.getName())))
+            .filter(user -> user.getRoles() != null && user.getRoles().stream().anyMatch(role -> "STAFF".equals(role.getName()) || "TECHNICIAN".equals(role.getName())))
             .collect(Collectors.toList());
         
         String[] requestTitles = {
@@ -1284,7 +1287,7 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("📝 Initializing Activity Logs and AI QA...");
         
         // Get all users
-        List<User> allUsers = userRepository.findAll();
+        List<User> allUsers = userRepository.findAllWithRoles();
         
         // 9.1 Create Activity Logs
         List<ActivityLog> activityLogs = new ArrayList<>();
@@ -1395,8 +1398,8 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("🚗 Initializing Vehicles...");
         
         // Get resident users
-        List<User> residentUsers = userRepository.findAll().stream()
-            .filter(user -> user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
+        List<User> residentUsers = userRepository.findAllWithRoles().stream()
+            .filter(user -> user.getRoles() != null && user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
             .collect(Collectors.toList());
         
         List<Apartment> apartments = apartmentRepository.findAll();
@@ -1459,8 +1462,8 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("📞 Initializing Emergency Contacts and Additional Data...");
         
         // Get resident users
-        List<User> residentUsers = userRepository.findAll().stream()
-            .filter(user -> user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
+        List<User> residentUsers = userRepository.findAllWithRoles().stream()
+            .filter(user -> user.getRoles() != null && user.getRoles().stream().anyMatch(role -> "RESIDENT".equals(role.getName())))
             .collect(Collectors.toList());
         
         if (residentUsers.isEmpty()) {

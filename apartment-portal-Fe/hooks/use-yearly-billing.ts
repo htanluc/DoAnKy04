@@ -46,12 +46,19 @@ export interface InvoiceItem {
 export interface Invoice {
   id: number;
   apartmentId: number;
+  apartmentNumber?: string;
+  residentName?: string;
+  buildingId?: number;
+  floorNumber?: number;
+  unitNumber?: string;
   billingPeriod: string;
   issueDate: string;
   dueDate: string;
   totalAmount: number;
   status: string;
   items: InvoiceItem[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface GenerateInvoiceRequest {

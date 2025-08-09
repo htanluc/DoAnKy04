@@ -36,4 +36,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     /** Tính tổng tiền theo billing period */
     @Query("SELECT SUM(i.totalAmount) FROM Invoice i WHERE i.billingPeriod LIKE :prefix%")
     Double sumTotalAmountByBillingPeriodStartingWith(@Param("prefix") String prefix);
+    
+    /** Lấy hóa đơn mới nhất theo apartmentId */
+    Optional<Invoice> findTopByApartmentIdOrderByBillingPeriodDesc(Long apartmentId);
+    
+    /** Lấy tất cả hóa đơn theo apartmentId sắp xếp theo billing period */
+    List<Invoice> findByApartmentIdOrderByBillingPeriodDesc(Long apartmentId);
 }

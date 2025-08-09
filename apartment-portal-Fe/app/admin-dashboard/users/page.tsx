@@ -6,28 +6,31 @@ import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
+import {
+  Plus,
+  Search,
   Eye,
-  MoreHorizontal,
   Filter,
-  Lock,
-  Unlock
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/auth';
-import { User } from '@/lib/api';
+import { User, Role } from '@/lib/api';
+
+// Hàm kiểm tra role có phải là ADMIN không (fix lỗi typescript)
+function hasAdminRole(roles?: Role[]): boolean {
+  if (!roles) return false;
+  // Sửa lỗi: ép kiểu role về string trước khi so sánh
+  return roles.some(role => String(role) === 'ADMIN');
+}
 
 export default function UsersPage() {
   const { t } = useLanguage();
@@ -35,7 +38,8 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
+  // filterRole là string để phù hợp với value của <select>
+  const [filterRole, setFilterRole] = useState<string>('all');
 
   useEffect(() => {
     setLoading(true);
@@ -60,14 +64,19 @@ export default function UsersPage() {
         setUsers([]);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
+  // Sửa lỗi: so sánh đúng kiểu Role (so sánh string, không truyền string vào mảng Role)
   const filteredUsers = users.filter(user => {
-    if ((user.roles && user.roles.includes('ADMIN')) || user.username === 'admin') return false;
-    const matchesSearch = user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phoneNumber?.includes(searchTerm);
-    const matchesRole = filterRole === 'all' || (user.roles && user.roles[0] === filterRole);
+    // Loại bỏ user admin (username === 'admin') và user có role ADMIN
+    if ((user.roles && hasAdminRole(user.roles)) || user.username === 'admin') return false;
+    const matchesSearch =
+      (user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (user.phoneNumber?.includes(searchTerm) ?? false);
+    const matchesRole =
+      filterRole === 'all' ||
+      (user.roles && user.roles[0] && String(user.roles[0]) === filterRole);
     return matchesSearch && matchesRole;
   });
 
@@ -82,14 +91,19 @@ export default function UsersPage() {
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    const roleKey = role ? `admin.users.role.${role.toLowerCase()}` : '';
+  // Sửa lỗi: truyền đúng kiểu cho role
+  const getRoleBadge = (role?: Role | string) => {
+    if (!role || role === '-') {
+      return <Badge className="bg-gray-100 text-gray-800">-</Badge>;
+    }
+    const roleStr = String(role);
+    const roleKey = `admin.users.role.${roleStr.toLowerCase()}`;
     return <Badge className={
-      role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
-      role === 'STAFF' ? 'bg-blue-100 text-blue-800' :
-      role === 'RESIDENT' ? 'bg-green-100 text-green-800' :
-      'bg-gray-100 text-gray-800'
-    }>{t(roleKey, role) || '-'}</Badge>;
+      roleStr === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+        roleStr === 'STAFF' ? 'bg-blue-100 text-blue-800' :
+          roleStr === 'RESIDENT' ? 'bg-green-100 text-green-800' :
+            'bg-gray-100 text-gray-800'
+    }>{t(roleKey, roleStr) || '-'}</Badge>;
   };
 
   const handleToggleStatus = async (user: User) => {
@@ -171,6 +185,7 @@ export default function UsersPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
+                  title="Lọc vai trò"
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
@@ -215,7 +230,9 @@ export default function UsersPage() {
                       <TableCell className="font-medium truncate max-w-[110px]" title={user.username}>{user.username}</TableCell>
                       <TableCell className="truncate max-w-[130px] whitespace-normal break-words" title={user.email}>{user.email}</TableCell>
                       <TableCell className="truncate max-w-[110px]" title={user.phoneNumber}>{user.phoneNumber}</TableCell>
-                      <TableCell>{getRoleBadge(user.roles && user.roles.length > 0 ? user.roles[0] : '-')}</TableCell>
+                      <TableCell>
+                        {getRoleBadge(user.roles && user.roles.length > 0 ? user.roles[0] : '-')}
+                      </TableCell>
                       <TableCell>{getStatusBadge(user.status)}</TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
@@ -236,4 +253,4 @@ export default function UsersPage() {
       </div>
     </AdminLayout>
   );
-} 
+}

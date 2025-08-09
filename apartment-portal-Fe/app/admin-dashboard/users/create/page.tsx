@@ -103,8 +103,18 @@ export default function CreateUserPage() {
                 <Input name="password" type="password" value={form.password} onChange={handleChange} required />
               </div>
               <div>
-                <label className="block mb-1 font-medium">Vai trò</label>
-                <select name="role" value={form.role} onChange={handleChange} className="w-full border rounded px-3 py-2" disabled={rolesLoading || !!rolesError} required>
+                <label className="block mb-1 font-medium" htmlFor="role-select">Vai trò</label>
+                <select
+                  id="role-select"
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2"
+                  disabled={rolesLoading || !!rolesError}
+                  required
+                  title="Chọn vai trò"
+                  aria-label="Chọn vai trò"
+                >
                   {roles.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
                   ))}

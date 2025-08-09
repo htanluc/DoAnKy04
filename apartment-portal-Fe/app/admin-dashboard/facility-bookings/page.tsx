@@ -18,7 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
   Edit, 
-  Trash2, 
   Eye,
   Filter,
   Calendar,
@@ -28,19 +27,56 @@ import Link from 'next/link';
 import { facilityBookingsApi, FacilityBooking, BookingStatus } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
+// Giả định lại kiểu FacilityBooking cho đúng với dữ liệu thực tế
+// Nếu cần, hãy sửa lại import FacilityBooking từ API cho đúng
+type Resident = {
+  id: string;
+  name: string;
+};
+
+type Facility = {
+  id: string;
+  name: string;
+};
+
+type FacilityBookingFixed = {
+  id: string;
+  resident: Resident;
+  facility: Facility;
+  start_time: string;
+  end_time: string;
+  purpose: string;
+  status: BookingStatus;
+};
+
 export default function FacilityBookingsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [bookings, setBookings] = useState<FacilityBooking[]>([]);
+  const [bookings, setBookings] = useState<FacilityBookingFixed[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // Sửa lỗi: Map lại dữ liệu trả về từ API sang FacilityBookingFixed
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const data = await facilityBookingsApi.getAll();
-      setBookings(data);
+      const data: FacilityBooking[] = await facilityBookingsApi.getAll();
+      // Map dữ liệu sang FacilityBookingFixed
+      const mapped: FacilityBookingFixed[] = data.map((item: any) => ({
+        id: item.id,
+        resident: item.resident
+          ? { id: item.resident.id, name: item.resident.name }
+          : { id: '', name: '' },
+        facility: item.facility
+          ? { id: item.facility.id, name: item.facility.name }
+          : { id: '', name: '' },
+        start_time: item.start_time,
+        end_time: item.end_time,
+        purpose: item.purpose,
+        status: item.status,
+      }));
+      setBookings(mapped);
     } catch (error) {
       toast({
         title: "Lỗi",
@@ -57,9 +93,10 @@ export default function FacilityBookingsPage() {
   }, []);
 
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = booking.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.facilityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.purpose.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      booking.resident?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.facility?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.purpose?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || booking.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -80,6 +117,7 @@ export default function FacilityBookingsPage() {
   };
 
   const formatDateTime = (dateTime: string) => {
+    if (!dateTime) return '';
     return new Date(dateTime).toLocaleString('vi-VN', {
       year: 'numeric',
       month: '2-digit',
@@ -133,6 +171,7 @@ export default function FacilityBookingsPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
+                  title="Trạng thái đặt tiện ích"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
@@ -178,21 +217,21 @@ export default function FacilityBookingsPage() {
                     {filteredBookings.map((booking) => (
                       <TableRow key={booking.id}>
                         <TableCell className="font-medium">
-                          {booking.residentName}
+                          {booking.resident?.name}
                         </TableCell>
                         <TableCell>
-                          {booking.facilityName}
+                          {booking.facility?.name}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-1">
                             <Calendar className="h-3 w-3 text-gray-500" />
-                            <span>{formatDateTime(booking.startTime)}</span>
+                            <span>{formatDateTime(booking.start_time)}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-1">
                             <Clock className="h-3 w-3 text-gray-500" />
-                            <span>{formatDateTime(booking.endTime)}</span>
+                            <span>{formatDateTime(booking.end_time)}</span>
                           </div>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">

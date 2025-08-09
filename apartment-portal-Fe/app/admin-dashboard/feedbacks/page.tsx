@@ -130,6 +130,7 @@ export default function FeedbacksPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
+                  title="Lọc đánh giá"
                   value={filterRating}
                   onChange={(e) => setFilterRating(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"

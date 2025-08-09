@@ -2,16 +2,20 @@ package com.mytech.apartment.portal.security;
 
 import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.Role;
-import lombok.Data;
+
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Data
+@Getter
+@Setter
 public class UserDetailsImpl implements UserDetails {
 	private Long id;
 	private String username; // giữ tên biến "username" cho interface
@@ -28,9 +32,10 @@ public class UserDetailsImpl implements UserDetails {
 		this.status = user.getStatus() != null ? user.getStatus().name() : null;
 		this.roles = user.getRoles();
 		this.fullName = user.getFullName(); // Thêm fullName
-		this.authorities = user.getRoles().stream()
+		// Xử lý LAZY loading cho roles
+		this.authorities = user.getRoles() != null ? user.getRoles().stream()
 			.map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-			.collect(Collectors.toList());
+			.collect(Collectors.toList()) : new ArrayList<>();
 	}
 
 	@Override
