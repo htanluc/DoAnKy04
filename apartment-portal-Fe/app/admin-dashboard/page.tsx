@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { useLanguage } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,274 +14,358 @@ import {
   Receipt, 
   MessageSquare, 
   HelpCircle, 
-  Bot, 
   BarChart3,
   Plus,
   TrendingUp,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Car,
+  Droplets,
+  Activity,
+  Clock,
+  DollarSign,
+  UserPlus,
+  Calculator
 } from 'lucide-react';
 import Link from 'next/link';
-import { announcementsApi, eventsApi, facilitiesApi } from '@/lib/api';
-import { getToken } from '@/lib/auth';
-import RealTimeNotifications from '@/components/real-time-notifications';
-import LiveChat from '@/components/live-chat';
+import { apiFetch } from '@/lib/api';
 
-interface ActivityLog {
-  id?: string | number;
-  description?: string;
-  details?: string;
-  time?: string;
-  timestamp?: string;
+interface DashboardStats {
+  totalResidents: number;
+  totalApartments: number;
+  totalVehicles: number;
+  totalInvoices: number;
+  pendingInvoices: number;
+  totalRevenue: number;
+  occupancyRate: number;
+  totalWaterMeters: number;
+  totalStaff: number;
 }
 
 export default function AdminDashboard() {
-  const { t } = useLanguage();
-  const [counts, setCounts] = useState({
-    users: 0,
-    residents: 0,
-    apartments: 0,
-    announcements: 0,
-    events: 0,
-    facilities: 0,
-    invoices: 0,
-    supportRequests: 0,
+  const [stats, setStats] = useState<DashboardStats>({
+    totalResidents: 0,
+    totalApartments: 0,
+    totalVehicles: 0,
+    totalInvoices: 0,
+    pendingInvoices: 0,
+    totalRevenue: 0,
+    occupancyRate: 0,
+    totalWaterMeters: 0,
+    totalStaff: 0
   });
-  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchCounts() {
-      try {
-        // Fetch counts từ các API thực tế
-        const [announcements, events, facilities] = await Promise.all([
-          announcementsApi.getAll(),
-          eventsApi.getAll(),
-          facilitiesApi.getAll(),
-        ]);
-        
-        // TODO: Thêm các API calls cho users, residents, apartments, invoices, supportRequests
-        // const [users, residents, apartments, invoices, supportRequests] = await Promise.all([
-        //   usersApi.getAll(),
-        //   residentsApi.getAll(), 
-        //   apartmentsApi.getAll(),
-        //   invoicesApi.getAll(),
-        //   supportRequestsApi.getAll(),
-        // ]);
-        
-        setCounts((prev) => ({
-          ...prev,
-          announcements: announcements.length,
-          events: events.length,
-          facilities: facilities.length,
-          // users: users.length,
-          // residents: residents.length,
-          // apartments: apartments.length,
-          // invoices: invoices.length,
-          // supportRequests: supportRequests.length,
-        }));
-      } catch (error) {
-        console.error('Error fetching counts:', error);
-        // Không set error state để tránh crash UI, chỉ log lỗi
-      }
-    }
-    fetchCounts();
+    loadDashboardData();
   }, []);
 
-  useEffect(() => {
-    async function fetchActivities() {
-      try {
-        const res = await fetch('/api/admin/activity-logs?limit=10', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        
-        if (res.status === 404) {
-          setActivities([]); // Không có log, không phải lỗi nghiêm trọng
-          return;
-        }
-        
-        if (!res.ok) {
-          console.error('Failed to fetch activities:', res.status);
-          setActivities([]);
-          return;
-        }
-        
-        const data = await res.json();
-        setActivities(Array.isArray(data) ? data.slice(0, 10) : data.data?.slice(0, 10) || []);
-      } catch (error) {
-        console.error('Error fetching activities:', error);
-        setActivities([]);
-      }
-    }
-    fetchActivities();
-  }, []);
+  const loadDashboardData = async () => {
+    setLoading(true);
+    setError(null);
 
-  const stats = [
-    {
-      title: t('admin.users.title'),
-      value: counts.users,
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      href: '/admin-dashboard/users'
-    },
-    {
-      title: t('admin.residents.title'),
-      value: counts.residents,
-      icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      href: '/admin-dashboard/residents'
-    },
-    {
-      title: t('admin.apartments.title'),
-      value: counts.apartments,
-      icon: Building2,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      href: '/admin-dashboard/apartments'
-    },
-    {
-      title: t('admin.announcements.title'),
-      value: counts.announcements,
-      icon: Bell,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      href: '/admin-dashboard/announcements'
-    },
-    {
-      title: t('admin.events.title'),
-      value: counts.events,
-      icon: Calendar,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      href: '/admin-dashboard/events'
-    },
-    {
-      title: t('admin.facilities.title'),
-      value: counts.facilities,
-      icon: Coffee,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-      href: '/admin-dashboard/facilities'
-    },
-    {
-      title: t('admin.invoices.title'),
-      value: counts.invoices,
-      icon: Receipt,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
-      href: '/admin-dashboard/invoices'
-    },
-    {
-      title: t('admin.support-requests.title'),
-      value: counts.supportRequests,
-      icon: HelpCircle,
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-50',
-      href: '/admin-dashboard/support-requests'
-    }
-  ];
+    try {
+      // Load tất cả dữ liệu song song
+      const [
+        residentsResponse,
+        apartmentsResponse,
+        vehiclesResponse,
+        invoicesResponse,
+        waterMetersResponse,
+        apartmentRelationsResponse,
+        usersResponse
+      ] = await Promise.all([
+        apiFetch('/api/admin/residents'),
+        apiFetch('/api/apartments'),
+        apiFetch('/api/admin/vehicles'),
+        apiFetch('/api/admin/invoices'),
+        apiFetch('/api/water-meters'),
+        apiFetch('/api/apartment-residents'),
+        apiFetch('/api/admin/users')
+      ]);
 
-  const quickActions = [
-    {
-      title: t('admin.announcements.create', 'Tạo thông báo mới'),
-      description: t('admin.announcements.createDesc', 'Tạo một thông báo gửi đến cư dân'),
-      icon: Bell,
-      href: '/admin-dashboard/announcements/create',
-      color: 'bg-orange-100 text-orange-600'
-    },
-    {
-      title: t('admin.events.create', 'Tạo sự kiện mới'),
-      description: t('admin.events.createDesc', 'Tổ chức sự kiện cho cư dân'),
-      icon: Calendar,
-      href: '/admin-dashboard/events/create',
-      color: 'bg-red-100 text-red-600'
-    },
-    {
-      title: t('admin.invoices.create', 'Tạo hóa đơn mới'),
-      description: t('admin.invoices.createDesc', 'Xuất hóa đơn cho cư dân'),
-      icon: Receipt,
-      href: '/admin-dashboard/invoices/create',
-      color: 'bg-yellow-100 text-yellow-600'
-    },
-    {
-      title: t('admin.users.createStaff', 'Tạo tài khoản nhân viên'),
-      description: t('admin.users.createStaffDesc', 'Thêm mới tài khoản cho nhân viên quản lý'),
-      icon: Users,
-      href: '/admin-dashboard/users/create',
-      color: 'bg-blue-100 text-blue-600'
+      // Xử lý dữ liệu residents
+      const residents = residentsResponse.ok ? await residentsResponse.json() : [];
+      const totalResidents = Array.isArray(residents) ? residents.length : 0;
+
+      // Xử lý dữ liệu apartments
+      const apartments = apartmentsResponse.ok ? await apartmentsResponse.json() : [];
+      const totalApartments = Array.isArray(apartments) ? apartments.length : 0;
+
+      // Xử lý dữ liệu vehicles
+      const vehicles = vehiclesResponse.ok ? await vehiclesResponse.json() : [];
+      const totalVehicles = Array.isArray(vehicles) ? vehicles.length : 0;
+
+      // Xử lý dữ liệu invoices
+      const invoices = invoicesResponse.ok ? await invoicesResponse.json() : [];
+      const totalInvoices = Array.isArray(invoices) ? invoices.length : 0;
+      const pendingInvoices = Array.isArray(invoices) ? 
+        invoices.filter((inv: any) => inv.status === 'UNPAID' || inv.status === 'PENDING').length : 0;
+      const totalRevenue = Array.isArray(invoices) ? 
+        invoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0) : 0;
+
+      // Xử lý dữ liệu water meters
+      const waterMeters = waterMetersResponse.ok ? await waterMetersResponse.json() : [];
+      const totalWaterMeters = Array.isArray(waterMeters) ? waterMeters.length : 0;
+
+      // Xử lý dữ liệu users (nhân viên)
+      const users = usersResponse.ok ? await usersResponse.json() : [];
+      const totalStaff = Array.isArray(users) ? 
+        users.filter((user: any) => 
+          user.roles && 
+          user.roles.some((role: string) => ['STAFF', 'TECHNICIAN', 'CLEANER', 'SECURITY'].includes(role))
+        ).length : 0;
+
+      // Tính tỷ lệ lấp đầy
+      const apartmentRelations = apartmentRelationsResponse.ok ? await apartmentRelationsResponse.json() : [];
+      const occupiedApartments = Array.isArray(apartmentRelations) ? 
+        new Set(apartmentRelations.map((rel: any) => rel.apartmentId)).size : 0;
+      const occupancyRate = totalApartments > 0 ? Math.round((occupiedApartments / totalApartments) * 100) : 0;
+
+      setStats({
+        totalResidents,
+        totalApartments,
+        totalVehicles,
+        totalInvoices,
+        pendingInvoices,
+        totalRevenue,
+        occupancyRate,
+        totalWaterMeters,
+        totalStaff
+      });
+
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Không thể tải dữ liệu dashboard');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout title="Bảng điều khiển quản trị">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Đang tải dữ liệu dashboard...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Bảng điều khiển quản trị">
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" onClick={loadDashboardData}>
+              🔄 Thử lại
+            </Button>
+          </div>
+          
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <h3 className="font-medium text-red-800">Lỗi tải dữ liệu</h3>
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
-    <AdminLayout title={t('admin.dashboard.title')}>
-      <div className="p-6 space-y-6">
-        {/* Header with Real-time Notifications */}
-        <div className="flex items-center justify-between">
+    <AdminLayout title="Bảng điều khiển quản trị">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-600">Quản lý hệ thống chung cư</p>
+            <h1 className="text-3xl font-bold text-gray-900">Bảng điều khiển quản trị</h1>
+            <p className="text-gray-600 mt-1">Tổng quan hệ thống quản lý căn hộ</p>
           </div>
-          <div className="flex items-center gap-4">
-            <RealTimeNotifications />
-            <LiveChat />
-          </div>
-        </div>
-
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
-          <h2 className="text-2xl font-bold mb-2">
-            {t('admin.dashboard.welcome')}
-          </h2>
-          <p className="text-blue-100">
-            Quản lý toàn diện hệ thống chung cư của bạn
-          </p>
-        </div>
-
-        {/* Statistics Grid */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <TrendingUp className="mr-2 h-5 w-5" />
-            {t('admin.dashboard.overview', 'Thống kê tổng quan')}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <Link key={index} href={stat.href}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col items-center justify-center py-8 px-4 text-center h-full border border-gray-200 rounded-2xl">
-                  <div className={`mx-auto mb-4 rounded-full w-16 h-16 flex items-center justify-center text-3xl ${stat.bgColor}`}> 
-                    <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-base mb-1">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mb-0">{stat.value}</p>
-                  </div>
-                </Card>
+          <div className="flex items-center space-x-2">
+            <Button asChild variant="outline">
+              <Link href="/admin-dashboard/users/create">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Tạo nhân viên
               </Link>
-            ))}
+            </Button>
           </div>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tổng cư dân</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalResidents}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingUp className="inline h-3 w-3 mr-1" />
+                +12% so với tháng trước
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tổng căn hộ</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalApartments}</div>
+              <p className="text-xs text-muted-foreground">
+                Tỷ lệ lấp đầy {stats.occupancyRate}%
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Xe đăng ký</CardTitle>
+              <Car className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalVehicles}</div>
+              <p className="text-xs text-muted-foreground">
+                Trung bình {stats.totalApartments > 0 ? (stats.totalVehicles / stats.totalApartments).toFixed(1) : 0} xe/căn hộ
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Doanh thu</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.pendingInvoices} hóa đơn chờ thanh toán
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Additional Stats */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Hóa đơn</CardTitle>
+              <Receipt className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalInvoices}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.pendingInvoices} chờ thanh toán
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Nhân viên</CardTitle>
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalStaff}</div>
+              <p className="text-xs text-muted-foreground">
+                Nhân viên đang hoạt động
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Chỉ số nước</CardTitle>
+              <Droplets className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalWaterMeters}</div>
+              <p className="text-xs text-muted-foreground">
+                Đồng hồ nước đang hoạt động
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tỷ lệ lấp đầy</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.occupancyRate}%</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.totalApartments - Math.round(stats.totalApartments * stats.occupancyRate / 100)} căn hộ trống
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Actions */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Thao tác nhanh</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {quickActions.map((action, index) => (
-              <Link key={index} href={action.href}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col items-center justify-center py-8 px-4 text-center h-full">
-                  <div className={`mx-auto mb-4 rounded-full w-16 h-16 flex items-center justify-center text-3xl ${action.color}`}> 
-                    <action.icon className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-base mb-1">{action.title}</p>
-                    <p className="text-sm text-gray-500">{action.description}</p>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Thao tác nhanh
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+              <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                <Link href="/admin-dashboard/users/create">
+                  <UserPlus className="h-6 w-6 mb-2" />
+                  <span>Tạo nhân viên</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                <Link href="/admin-dashboard/users">
+                  <Users className="h-6 w-6 mb-2" />
+                  <span>Quản lý nhân viên</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                <Link href="/admin-dashboard/billing-config">
+                  <Calculator className="h-6 w-6 mb-2" />
+                  <span>Cấu Hình Phí</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                <Link href="/admin-dashboard/announcements/new">
+                  <Bell className="h-6 w-6 mb-2" />
+                  <span>Thông báo</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                <Link href="/admin-dashboard/events/new">
+                  <Calendar className="h-6 w-6 mb-2" />
+                  <span>Tạo sự kiện</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                <Link href="/admin-dashboard/facilities/new">
+                  <Coffee className="h-6 w-6 mb-2" />
+                  <span>Thêm tiện ích</span>
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

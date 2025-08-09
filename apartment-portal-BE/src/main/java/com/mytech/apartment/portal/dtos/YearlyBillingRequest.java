@@ -6,6 +6,7 @@ import java.time.LocalDate;
 @Data
 public class YearlyBillingRequest {
     private int year = LocalDate.now().getYear(); // Mặc định là năm hiện tại
+    private int month = LocalDate.now().getMonthValue(); // Mặc định là tháng hiện tại
     private Long apartmentId; // Optional, nếu null thì tạo cho tất cả căn hộ
     
     // Phí dịch vụ và nước

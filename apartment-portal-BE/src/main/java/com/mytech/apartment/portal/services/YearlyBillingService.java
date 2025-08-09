@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,11 +36,18 @@ public class YearlyBillingService {
     @Autowired
     private VehicleRepository vehicleRepository;
 
-    // @Autowired
-    // private WaterMeterReadingRepository waterMeterReadingRepository;
+    @Autowired
+    private WaterMeterReadingRepository waterMeterReadingRepository;
 
     @Autowired
     private ApartmentResidentRepository apartmentResidentRepository;
+
+    @Autowired
+    private InvoiceItemRepository invoiceItemRepository;
+    
+    // Inject tất cả MonthlyFeeService
+    @Autowired
+    private List<MonthlyFeeService> feeServices;
     
     // Cache for fee configs to reduce database queries
     private final ConcurrentHashMap<String, ServiceFeeConfig> configCache = new ConcurrentHashMap<>();
@@ -115,33 +123,72 @@ public class YearlyBillingService {
     }
 
     /**
+     * Tạo hóa đơn đồng loạt cho tất cả căn hộ trong một tháng cụ thể
+     * @param year Năm
+     * @param month Tháng (1-12)
+     */
+    @Transactional
+    public void generateMonthlyInvoicesForAllApartments(int year, int month) {
+        System.out.println("DEBUG: Bắt đầu tạo hóa đơn đồng loạt cho tháng " + month + "/" + year);
+        
+        // 1. Lấy danh sách tất cả căn hộ hiện có
+        List<Apartment> allApartments = apartmentRepository.findAll();
+        System.out.println("DEBUG: Tìm thấy " + allApartments.size() + " căn hộ");
+        
+        // 2. Lấy cấu hình phí cho tháng (cache để tối ưu)
+        Optional<ServiceFeeConfig> feeConfig = getFeeConfig(month, year);
+        System.out.println("DEBUG: Cấu hình phí tháng " + month + "/" + year + ": " + (feeConfig.isPresent() ? "Có" : "Không có"));
+        
+        // 3. Tạo hóa đơn cho tất cả căn hộ trong tháng này
+        String billingPeriod = String.format("%04d-%02d", year, month);
+        System.out.println("DEBUG: Đang tạo hóa đơn cho kỳ " + billingPeriod);
+        
+        int successCount = 0;
+        int skipCount = 0;
+        int errorCount = 0;
+        
+        for (Apartment apartment : allApartments) {
+            try {
+                // Kiểm tra xem hóa đơn đã tồn tại chưa
+                Optional<Invoice> existingInvoice = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), billingPeriod);
+                if (existingInvoice.isPresent()) {
+                    System.out.println("DEBUG: Bỏ qua căn hộ " + apartment.getId() + " - hóa đơn đã tồn tại cho kỳ " + billingPeriod);
+                    skipCount++;
+                    continue;
+                }
+                
+                // Tạo hóa đơn cho căn hộ này
+                createInvoiceForApartment(apartment.getId(), billingPeriod, year, month);
+                successCount++;
+                
+            } catch (Exception e) {
+                System.err.println("ERROR: Lỗi khi tạo hóa đơn cho căn hộ " + apartment.getId() + ": " + e.getMessage());
+                errorCount++;
+            }
+        }
+        
+        System.out.println("DEBUG: Hoàn thành tạo hóa đơn cho tháng " + month + "/" + year);
+        System.out.println("DEBUG: Thống kê - Thành công: " + successCount + ", Bỏ qua: " + skipCount + ", Lỗi: " + errorCount);
+    }
+
+    /**
      * Tạo hóa đơn cho tất cả căn hộ trong một tháng cụ thể
      * @param year Năm
      * @param month Tháng (1-12)
      */
     @Transactional
     public void generateInvoicesForMonth(int year, int month) {
-        System.out.println("DEBUG: Bắt đầu tạo hóa đơn cho tháng " + month + "/" + year);
-        
-        // 1. Lấy danh sách tất cả căn hộ hiện có
-        List<Apartment> allApartments = apartmentRepository.findAll();
-        System.out.println("DEBUG: Tìm thấy " + allApartments.size() + " căn hộ");
-        
-        // 2. Tạo hóa đơn cho tất cả căn hộ trong tháng này
-        String billingPeriod = String.format("%04d-%02d", year, month);
-        System.out.println("DEBUG: Đang tạo hóa đơn cho kỳ " + billingPeriod);
-        
-        for (Apartment apartment : allApartments) {
-            createInvoiceForApartment(apartment.getId(), billingPeriod, year, month);
-        }
-        
-        System.out.println("DEBUG: Hoàn thành tạo hóa đơn cho tháng " + month + "/" + year);
+        // Gọi phương thức mới với tên rõ ràng hơn
+        generateMonthlyInvoicesForAllApartments(year, month);
     }
 
     /**
      * Tạo hóa đơn cho một căn hộ cụ thể trong một kỳ thanh toán
+     * SỬA LẠI: Sử dụng các MonthlyFeeService để tạo đầy đủ các loại phí
      */
-    private void createInvoiceForApartment(Long apartmentId, String billingPeriod, int year, int month) {
+    public void createInvoiceForApartment(Long apartmentId, String billingPeriod, int year, int month) {
+        System.out.println("DEBUG: Bắt đầu tạo hóa đơn cho căn hộ " + apartmentId + " kỳ " + billingPeriod);
+        
         // Kiểm tra xem hóa đơn đã tồn tại chưa
         Optional<Invoice> existingInvoice = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, billingPeriod);
         if (existingInvoice.isPresent()) {
@@ -158,43 +205,62 @@ public class YearlyBillingService {
         
         // Lấy cấu hình phí cho tháng
         Optional<ServiceFeeConfig> feeConfig = getFeeConfig(month, year);
+        System.out.println("DEBUG: Cấu hình phí tháng " + month + "/" + year + ": " + (feeConfig.isPresent() ? "Có" : "Không có"));
         
-        // Tính toán phí dịch vụ
-        double serviceFee = 0.0;
-        if (feeConfig.isPresent()) {
-            serviceFee = apartment.get().getArea() * feeConfig.get().getServiceFeePerM2();
-        } else {
-            // Sử dụng giá mặc định
-            serviceFee = apartment.get().getArea() * 5000.0; // 5000 VND/m2
-        }
-        
-        // Tính phí gửi xe
-        double parkingFee = calculateParkingFee(apartmentId, month, year, feeConfig);
-        
-        // Tính phí nước (nếu có)
-        double waterFee = calculateWaterFee(apartmentId, month, year, feeConfig);
-        
-        // Tổng tiền
-        double totalAmount = serviceFee + parkingFee + waterFee;
-        
-        // Tạo hóa đơn
+        // Tạo hóa đơn cơ bản với totalAmount = 0.01 (sẽ được tính lại sau)
         Invoice invoice = Invoice.builder()
             .apartmentId(apartmentId)
             .billingPeriod(billingPeriod)
             .issueDate(LocalDate.of(year, month, 1))
             .dueDate(LocalDate.of(year, month, 15))
             .status(InvoiceStatus.UNPAID)
-            .totalAmount(totalAmount)
+            .totalAmount(0.01) // Đặt giá trị nhỏ > 0 để tránh vi phạm constraint
             .createdAt(LocalDateTime.now())
             .updatedAt(LocalDateTime.now())
             .build();
         
+        // Khởi tạo danh sách items
+        invoice.setItems(new HashSet<>());
+        
+        // Lưu hóa đơn trước
         invoiceRepository.save(invoice);
-        System.out.println("DEBUG: Đã tạo hóa đơn cho căn hộ " + apartmentId + " kỳ " + billingPeriod + " với tổng tiền " + totalAmount);
+        System.out.println("DEBUG: Đã tạo hóa đơn cơ bản cho căn hộ " + apartmentId + " kỳ " + billingPeriod);
+        
+        // SỬA LẠI: Sử dụng các MonthlyFeeService để tạo đầy đủ các loại phí
+        System.out.println("DEBUG: Chạy các MonthlyFeeService để thêm chi tiết phí cho căn hộ " + apartmentId);
+        feeServices.forEach(svc -> {
+            try {
+                System.out.println("DEBUG: Đang chạy " + svc.getClass().getSimpleName() + " cho căn hộ " + apartmentId);
+                svc.generateFeeForMonth(billingPeriod, apartmentId);
+                System.out.println("DEBUG: Hoàn thành " + svc.getClass().getSimpleName() + " cho căn hộ " + apartmentId);
+            } catch (Exception e) {
+                System.err.println("ERROR: Lỗi khi chạy " + svc.getClass().getSimpleName() + " cho căn hộ " + apartmentId + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+        
+        // Cập nhật tổng tiền từ các items
+        updateInvoiceTotalFromItems(invoice.getId());
+        
+        // Debug: Kiểm tra số lượng chi tiết sau khi lưu
+        Optional<Invoice> updatedInvoice = invoiceRepository.findById(invoice.getId());
+        if (updatedInvoice.isPresent()) {
+            Invoice finalInvoice = updatedInvoice.get();
+            System.out.println("DEBUG: Hoàn thành tạo hóa đơn cho căn hộ " + apartmentId + " kỳ " + billingPeriod + 
+                " với tổng tiền " + finalInvoice.getTotalAmount() + " và " + 
+                (finalInvoice.getItems() != null ? finalInvoice.getItems().size() : 0) + " chi tiết");
+            
+            // Debug: In ra từng chi tiết
+            if (finalInvoice.getItems() != null) {
+                for (InvoiceItem item : finalInvoice.getItems()) {
+                    System.out.println("DEBUG: Chi tiết - " + item.getFeeType() + ": " + item.getAmount() + " - " + item.getDescription());
+                }
+            }
+        }
     }
     
     /**
-     * Tính phí gửi xe
+     * Tính phí gửi xe (giữ lại để tham khảo, không sử dụng trong logic mới)
      */
     private double calculateParkingFee(Long apartmentId, int month, int year, Optional<ServiceFeeConfig> feeConfig) {
         // Lấy danh sách xe của tất cả cư dân trong căn hộ
@@ -202,7 +268,7 @@ public class YearlyBillingService {
         double totalParkingFee = 0.0;
         
         for (ApartmentResident resident : residents) {
-            List<Vehicle> vehicles = vehicleRepository.findByResidentUserId(resident.getId().getUserId());
+            List<Vehicle> vehicles = vehicleRepository.findByUserId(resident.getId().getUserId());
             
             for (Vehicle vehicle : vehicles) {
                 double vehicleFee = 0.0;
@@ -236,24 +302,33 @@ public class YearlyBillingService {
     }
     
     /**
-     * Tính phí nước
+     * Tính phí nước (giữ lại để tham khảo, không sử dụng trong logic mới)
      */
     private double calculateWaterFee(Long apartmentId, int month, int year, Optional<ServiceFeeConfig> feeConfig) {
-        // Tạm thời comment out water meter reading functionality
-        /*
-        // Tìm chỉ số nước của tháng trước
-        String previousMonth = String.format("%04d-%02d", year, month);
-        Optional<WaterMeterReading> reading = waterMeterReadingRepository.findByApartmentIdAndReadingMonth(
-            apartmentId.intValue(), previousMonth);
+        // Tìm chỉ số nước của tháng hiện tại
+        String currentMonth = String.format("%04d-%02d", year, month);
+        System.out.println("DEBUG: Tìm chỉ số nước cho căn hộ " + apartmentId + " tháng " + currentMonth);
+        
+        // Lấy giá nước từ config hoặc dùng giá mặc định
+        double waterFeePerM3 = feeConfig.isPresent() ? feeConfig.get().getWaterFeePerM3() : 15000.0;
+        
+        Optional<com.mytech.apartment.portal.models.WaterMeterReading> reading = 
+            waterMeterReadingRepository.findByApartmentIdAndReadingMonth(apartmentId.intValue(), currentMonth);
         
         if (reading.isPresent()) {
-            double consumption = reading.get().getConsumption().doubleValue();
-            double waterRate = feeConfig.isPresent() ? feeConfig.get().getWaterFeePerM3() : 15000.0;
-            return consumption * waterRate;
+            com.mytech.apartment.portal.models.WaterMeterReading r = reading.get();
+            double consumption = r.getConsumption();
+            System.out.println("DEBUG: Tìm thấy chỉ số nước: " + consumption + " m³");
+            
+            // Tính phí nước
+            double waterFee = consumption * waterFeePerM3;
+            System.out.println("DEBUG: Phí nước: " + waterFee + " VND");
+            
+            return waterFee;
+        } else {
+            System.out.println("DEBUG: Không tìm thấy chỉ số nước cho căn hộ " + apartmentId + " tháng " + currentMonth);
+            return 0.0;
         }
-        */
-        
-        return 0.0;
     }
 
     /**
@@ -392,5 +467,104 @@ public class YearlyBillingService {
         configCache.clear();
         cacheTimestamps.clear();
         System.out.println("DEBUG: Cache cleared");
+    }
+    
+    /**
+     * Tính lại tổng tiền hóa đơn từ các items
+     * @param invoice Hóa đơn cần tính lại
+     * @return Tổng tiền mới
+     */
+    public double recalculateInvoiceTotal(Invoice invoice) {
+        if (invoice.getItems() == null || invoice.getItems().isEmpty()) {
+            return 0.0;
+        }
+        
+        double totalAmount = invoice.getItems().stream()
+            .mapToDouble(InvoiceItem::getAmount)
+            .sum();
+        
+        System.out.println("DEBUG: Tính lại tổng tiền hóa đơn " + invoice.getId() + ": " + totalAmount);
+        return totalAmount;
+    }
+    
+    /**
+     * Cập nhật tổng tiền hóa đơn từ các items
+     * @param invoiceId ID hóa đơn cần cập nhật
+     */
+    @Transactional
+    public void updateInvoiceTotalFromItems(Long invoiceId) {
+        Optional<Invoice> invoiceOpt = invoiceRepository.findById(invoiceId);
+        if (invoiceOpt.isEmpty()) {
+            System.out.println("DEBUG: Không tìm thấy hóa đơn " + invoiceId);
+            return;
+        }
+        
+        Invoice invoice = invoiceOpt.get();
+        double newTotal = recalculateInvoiceTotal(invoice);
+        
+        // Cập nhật tổng tiền
+        invoice.setTotalAmount(newTotal);
+        invoice.setUpdatedAt(LocalDateTime.now());
+        invoiceRepository.save(invoice);
+        
+        System.out.println("DEBUG: Đã cập nhật tổng tiền hóa đơn " + invoiceId + " thành " + newTotal);
+    }
+    
+    /**
+     * Cập nhật tổng tiền cho tất cả hóa đơn trong một kỳ thanh toán
+     * @param billingPeriod Kỳ thanh toán (format: YYYY-MM)
+     */
+    @Transactional
+    public void updateAllInvoiceTotalsForPeriod(String billingPeriod) {
+        List<Invoice> invoices = invoiceRepository.findByBillingPeriod(billingPeriod);
+        System.out.println("DEBUG: Tìm thấy " + invoices.size() + " hóa đơn cho kỳ " + billingPeriod);
+        
+        int updatedCount = 0;
+        for (Invoice invoice : invoices) {
+            double newTotal = recalculateInvoiceTotal(invoice);
+            if (Math.abs(newTotal - invoice.getTotalAmount()) > 0.01) { // Cho phép sai số nhỏ do floating point
+                invoice.setTotalAmount(newTotal);
+                invoice.setUpdatedAt(LocalDateTime.now());
+                invoiceRepository.save(invoice);
+                updatedCount++;
+                System.out.println("DEBUG: Cập nhật hóa đơn " + invoice.getId() + " từ " + invoice.getTotalAmount() + " thành " + newTotal);
+            }
+        }
+        
+        System.out.println("DEBUG: Đã cập nhật " + updatedCount + " hóa đơn cho kỳ " + billingPeriod);
+    }
+    
+    /**
+     * Kiểm tra và sửa lỗi tổng tiền hóa đơn cho một tháng
+     * @param year Năm
+     * @param month Tháng (1-12)
+     */
+    @Transactional
+    public void validateAndFixInvoiceTotals(int year, int month) {
+        String billingPeriod = String.format("%04d-%02d", year, month);
+        System.out.println("DEBUG: Kiểm tra và sửa lỗi tổng tiền hóa đơn cho kỳ " + billingPeriod);
+        
+        List<Invoice> invoices = invoiceRepository.findByBillingPeriod(billingPeriod);
+        int fixedCount = 0;
+        int correctCount = 0;
+        
+        for (Invoice invoice : invoices) {
+            double calculatedTotal = recalculateInvoiceTotal(invoice);
+            double storedTotal = invoice.getTotalAmount();
+            
+            if (Math.abs(calculatedTotal - storedTotal) > 0.01) { // Cho phép sai số nhỏ do floating point
+                System.out.println("DEBUG: Phát hiện lỗi tổng tiền hóa đơn " + invoice.getId() + 
+                    " - Lưu trữ: " + storedTotal + ", Tính toán: " + calculatedTotal);
+                
+                invoice.setTotalAmount(calculatedTotal);
+                invoice.setUpdatedAt(LocalDateTime.now());
+                invoiceRepository.save(invoice);
+                fixedCount++;
+            } else {
+                correctCount++;
+            }
+        }
+        
+        System.out.println("DEBUG: Kết quả kiểm tra - Đúng: " + correctCount + ", Đã sửa: " + fixedCount);
     }
 } 

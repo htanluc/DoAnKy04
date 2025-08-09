@@ -27,7 +27,10 @@ public class ServiceRequestMapper {
         return new ServiceRequestDto(
             serviceRequest.getId(),
             serviceRequest.getUser() != null ? serviceRequest.getUser().getId() : null,
-            serviceRequest.getUser() != null ? serviceRequest.getUser().getFullName() : null,
+            serviceRequest.getUser() != null ? 
+                (serviceRequest.getUser().getFullName() != null ? 
+                    serviceRequest.getUser().getFullName() : 
+                    serviceRequest.getUser().getUsername()) : null,
             serviceRequest.getCategory() != null ? serviceRequest.getCategory().getCategoryCode() : null,
             serviceRequest.getCategory() != null ? serviceRequest.getCategory().getCategoryName() : null,
             serviceRequest.getTitle(),
