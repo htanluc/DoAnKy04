@@ -77,16 +77,30 @@ export function useWaterMeter() {
     setError(null);
     try {
       const token = getToken();
+      // Backend yêu cầu readingDate (YYYY-MM-01) thay vì readingMonth
+      const readingDate = `${reading.readingMonth}-01`;
+      const payload = {
+        apartmentId: reading.apartmentId,
+        readingDate,
+        previousReading: reading.previousReading ?? 0,
+        currentReading: reading.currentReading,
+        recordedBy: 0,
+      };
       const res = await fetch(`${API_BASE_URL}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(reading),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Thêm/sửa chỉ số thất bại');
-      await fetchReadings();
+      const created = await res.json();
+      setReadings(prev => prev.map(r => (
+        r.apartmentId === reading.apartmentId && r.readingMonth === reading.readingMonth
+          ? { ...r, ...created }
+          : r
+      )));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -130,8 +144,9 @@ export function useWaterMeter() {
         body: JSON.stringify(patch),
       });
       if (!res.ok) throw new Error('Cập nhật nhanh chỉ số thất bại');
-      // Reload current data instead of all readings
-      await fetchReadings();
+      // Cập nhật tại chỗ để tránh reset toàn bộ và làm chớp row khác
+      const updated = await res.json();
+      setReadings(prev => prev.map(r => (r.readingId === id ? { ...r, ...updated } : r)));
     } catch (err: any) {
       setError(err.message);
     } finally {

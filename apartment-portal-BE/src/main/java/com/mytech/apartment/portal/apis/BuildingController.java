@@ -30,7 +30,7 @@ public class BuildingController {
      * Lấy thông tin tòa nhà theo ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<BuildingDto> getBuildingById(@PathVariable Long id) {
+    public ResponseEntity<BuildingDto> getBuildingById(@PathVariable("id") Long id) {
         return buildingService.getBuildingById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -50,7 +50,7 @@ public class BuildingController {
      * Cập nhật thông tin tòa nhà theo ID
      */
     @PutMapping("/{id}")
-    public ResponseEntity<BuildingDto> updateBuilding(@PathVariable Long id, @RequestBody BuildingUpdateRequest request) {
+    public ResponseEntity<BuildingDto> updateBuilding(@PathVariable("id") Long id, @RequestBody BuildingUpdateRequest request) {
         try {
             BuildingDto updatedBuilding = buildingService.updateBuilding(id, request);
             return ResponseEntity.ok(updatedBuilding);
@@ -64,7 +64,7 @@ public class BuildingController {
      * Xóa tòa nhà theo ID
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBuilding(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBuilding(@PathVariable("id") Long id) {
         buildingService.deleteBuilding(id);
         return ResponseEntity.noContent().build();
     }

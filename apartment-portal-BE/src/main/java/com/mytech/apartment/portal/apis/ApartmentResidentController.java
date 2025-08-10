@@ -41,14 +41,14 @@ public class ApartmentResidentController {
 
     // Lấy tất cả cư dân của một căn hộ
     @GetMapping("/apartment/{apartmentId}")
-    public ResponseEntity<List<ApartmentResidentDto>> getResidentsByApartment(@PathVariable Long apartmentId) {
+    public ResponseEntity<List<ApartmentResidentDto>> getResidentsByApartment(@PathVariable("apartmentId") Long apartmentId) {
         List<ApartmentResidentDto> residents = apartmentResidentService.getResidentsByApartment(apartmentId);
         return ResponseEntity.ok(residents);
     }
 
     // Lấy tất cả căn hộ của một user
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<ApartmentResidentDto>> getApartmentsByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<ApartmentResidentDto>> getApartmentsByUser(@PathVariable("userId") Long userId) {
         List<ApartmentResidentDto> apartments = apartmentResidentService.getApartmentsByUser(userId);
         return ResponseEntity.ok(apartments);
     }
@@ -56,7 +56,7 @@ public class ApartmentResidentController {
     // Lấy căn hộ theo loại quan hệ
     @GetMapping("/user/{userId}/relation-type")
     public ResponseEntity<List<ApartmentResidentDto>> getApartmentsByUserAndRelationType(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @RequestParam RelationType relationType) {
         List<ApartmentResidentDto> apartments = apartmentResidentService.getApartmentsByUserAndRelationType(userId, relationType);
         return ResponseEntity.ok(apartments);
@@ -64,14 +64,14 @@ public class ApartmentResidentController {
 
     // Lấy chủ sở hữu của căn hộ
     @GetMapping("/apartment/{apartmentId}/owners")
-    public ResponseEntity<List<ApartmentResidentDto>> getOwnersByApartment(@PathVariable Long apartmentId) {
+    public ResponseEntity<List<ApartmentResidentDto>> getOwnersByApartment(@PathVariable("apartmentId") Long apartmentId) {
         List<ApartmentResidentDto> owners = apartmentResidentService.getOwnersByApartment(apartmentId);
         return ResponseEntity.ok(owners);
     }
 
     // Lấy cư dân chính của căn hộ
     @GetMapping("/apartment/{apartmentId}/primary")
-    public ResponseEntity<ApartmentResidentDto> getPrimaryResidentByApartment(@PathVariable Long apartmentId) {
+    public ResponseEntity<ApartmentResidentDto> getPrimaryResidentByApartment(@PathVariable("apartmentId") Long apartmentId) {
         return apartmentResidentService.getPrimaryResidentByApartment(apartmentId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -89,8 +89,8 @@ public class ApartmentResidentController {
     // Cập nhật mối quan hệ
     @PutMapping("/apartment/{apartmentId}/user/{userId}")
     public ResponseEntity<ApartmentResidentDto> updateApartmentResident(
-            @PathVariable Long apartmentId,
-            @PathVariable Long userId,
+            @PathVariable("apartmentId") Long apartmentId,
+            @PathVariable("userId") Long userId,
             @RequestBody ApartmentResidentCreateRequest request) {
         ApartmentResidentDto updated = apartmentResidentService.updateApartmentResident(apartmentId, userId, request);
         return ResponseEntity.ok(updated);
@@ -99,22 +99,22 @@ public class ApartmentResidentController {
     // Xóa mối quan hệ
     @DeleteMapping("/apartment/{apartmentId}/user/{userId}")
     public ResponseEntity<Void> deleteApartmentResident(
-            @PathVariable Long apartmentId,
-            @PathVariable Long userId) {
+            @PathVariable("apartmentId") Long apartmentId,
+            @PathVariable("userId") Long userId) {
         apartmentResidentService.deleteApartmentResident(apartmentId, userId);
         return ResponseEntity.ok().build();
     }
 
     // Đếm số cư dân của căn hộ
     @GetMapping("/apartment/{apartmentId}/count")
-    public ResponseEntity<Long> countResidentsByApartment(@PathVariable Long apartmentId) {
+    public ResponseEntity<Long> countResidentsByApartment(@PathVariable("apartmentId") Long apartmentId) {
         long count = apartmentResidentService.countResidentsByApartment(apartmentId);
         return ResponseEntity.ok(count);
     }
 
     // Đếm số căn hộ của user
     @GetMapping("/user/{userId}/count")
-    public ResponseEntity<Long> countApartmentsByUser(@PathVariable Long userId) {
+    public ResponseEntity<Long> countApartmentsByUser(@PathVariable("userId") Long userId) {
         long count = apartmentResidentService.countApartmentsByUser(userId);
         return ResponseEntity.ok(count);
     }

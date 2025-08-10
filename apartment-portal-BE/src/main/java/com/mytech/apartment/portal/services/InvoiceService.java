@@ -1,25 +1,28 @@
 package com.mytech.apartment.portal.services;
 
-import com.mytech.apartment.portal.dtos.InvoiceCreateRequest;
+// import com.mytech.apartment.portal.dtos.InvoiceCreateRequest;
 import com.mytech.apartment.portal.dtos.InvoiceDto;
-import com.mytech.apartment.portal.dtos.InvoiceUpdateRequest;
+// import com.mytech.apartment.portal.dtos.InvoiceUpdateRequest;
 import com.mytech.apartment.portal.mappers.InvoiceItemMapper;
 import com.mytech.apartment.portal.mappers.InvoiceMapper;
 import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
+import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
+import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
-import jakarta.transaction.Transactional;
+// import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
+// import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +33,7 @@ public class InvoiceService {
     @Autowired private InvoiceItemMapper invoiceItemMapper;
     @Autowired private ApartmentResidentRepository apartmentResidentRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private ApartmentRepository apartmentRepository;
 
     // ... (các method CRUD).
 
@@ -37,16 +41,30 @@ public class InvoiceService {
      * Sinh hóa đơn cơ bản cho tất cả căn hộ trong kỳ (chưa gồm phí phát sinh).
      */
     public void generateInvoicesForMonth(String period) {
-        List<Long> aptIds = invoiceRepository.findDistinctApartmentIds();
-        for (Long aptId : aptIds) {
-            Invoice inv = new Invoice();
-            inv.setApartmentId(aptId);
-            inv.setBillingPeriod(period);
-            inv.setIssueDate(LocalDate.now());
-            inv.setDueDate(LocalDate.now().plusDays(15));
-            inv.setStatus(InvoiceStatus.UNPAID);
-            inv.setTotalAmount(0.0);
-            invoiceRepository.save(inv);
+        YearMonth targetMonth = YearMonth.parse(period);
+
+        // Lấy tất cả căn hộ để đảm bảo căn hộ mới cũng có hóa đơn
+        List<Long> apartmentIds = apartmentRepository.findAll()
+            .stream()
+            .map(Apartment::getId)
+            .collect(Collectors.toList());
+
+        for (Long apartmentId : apartmentIds) {
+            // Tránh tạo trùng hóa đơn cho cùng kỳ
+            Optional<Invoice> existing = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, period);
+            if (existing.isPresent()) {
+                continue;
+            }
+
+            Invoice invoice = new Invoice();
+            invoice.setApartmentId(apartmentId);
+            invoice.setBillingPeriod(period);
+            invoice.setIssueDate(targetMonth.atDay(1));
+            invoice.setDueDate(targetMonth.atDay(15));
+            invoice.setStatus(InvoiceStatus.UNPAID);
+            invoice.setTotalAmount(0.0);
+
+            invoiceRepository.save(invoice);
         }
     }
 
@@ -62,6 +80,14 @@ public class InvoiceService {
             .findByApartmentIdAndBillingPeriod(apartmentId, period)
             .orElseThrow(() -> new RuntimeException(
                 "Invoice not found for apt=" + apartmentId + ", period=" + period));
+
+        // Đảm bảo tập items không null và kiểm tra idempotent
+        if (invoice.getItems() == null) {
+            invoice.setItems(new HashSet<>());
+        } else if (invoice.getItems().stream().anyMatch(
+                it -> feeType.equals(it.getFeeType()) && description.equals(it.getDescription()))) {
+            return;
+        }
 
         InvoiceItem item = new InvoiceItem();
         item.setFeeType(feeType);               // setter đúng field feeType

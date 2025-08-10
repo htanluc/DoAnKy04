@@ -48,7 +48,7 @@ public class WaterMeterController {
 
     // 3. Read one by ID
     @GetMapping("/{id}")
-    public ResponseEntity<WaterMeterReadingDto> getById(@PathVariable Long id) {
+    public ResponseEntity<WaterMeterReadingDto> getById(@PathVariable("id") Long id) {
         return waterMeterService.getReadingById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -57,7 +57,7 @@ public class WaterMeterController {
     // 4. Full replace via PUT
     @PutMapping("/{id}")
     public ResponseEntity<WaterMeterReadingDto> replaceReading(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody WaterMeterReadingDto dto
     ) {
         WaterMeterReadingDto updated = waterMeterService.updateReading(id, dto);

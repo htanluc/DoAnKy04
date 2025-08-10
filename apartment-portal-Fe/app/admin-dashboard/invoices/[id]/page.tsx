@@ -26,6 +26,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { useYearlyBilling } from '@/hooks/use-yearly-billing';
+import { useApartments } from '@/hooks/use-apartments';
 
 interface InvoiceItem {
   id: number;
@@ -58,8 +59,10 @@ export default function InvoiceDetailPage() {
   const invoiceId = parseInt(params.id as string);
   
   const { getInvoiceById, loading, error } = useYearlyBilling();
+  const { apartments, getApartmentById } = useApartments();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [debugInfo, setDebugInfo] = useState(false);
+  const [apartmentCode, setApartmentCode] = useState<string>('');
 
   useEffect(() => {
     if (invoiceId) {
@@ -72,11 +75,30 @@ export default function InvoiceDetailPage() {
       const result = await getInvoiceById(invoiceId);
       if (result) {
         setInvoice(result);
+        // If unit code is not present in invoice payload, try apartments list then fetch details
+        if (!result.unitNumber && !(result as any).apartmentUnitNumber && !result.apartmentNumber) {
+          const fromList = apartments.find((a: any) => Number(a.id) === Number(result.apartmentId));
+          if (fromList?.unitNumber) {
+            setApartmentCode(fromList.unitNumber);
+          } else {
+            const details = await getApartmentById(result.apartmentId);
+            if ((details as any)?.unitNumber) setApartmentCode((details as any).unitNumber);
+            else if (details?.number) setApartmentCode(details.number);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading invoice:', error);
     }
   };
+
+  // Also react to apartments list becoming available
+  useEffect(() => {
+    if (invoice && !apartmentCode) {
+      const fromList = apartments.find((a: any) => Number(a.id) === Number(invoice.apartmentId));
+      if (fromList?.unitNumber) setApartmentCode(fromList.unitNumber);
+    }
+  }, [apartments, invoice]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -239,14 +261,14 @@ export default function InvoiceDetailPage() {
                   <div className="flex items-center gap-3">
                     <Building className="h-5 w-5 text-blue-600" />
                     <div>
-                      <p className="text-sm text-gray-600">Căn hộ</p>
+                      <p className="text-sm text-gray-600">Mã căn hộ</p>
                       <p className="font-semibold">
-                        {invoice.apartmentNumber || 
-                          (invoice.buildingId && invoice.floorNumber && invoice.unitNumber 
-                            ? `Tòa ${invoice.buildingId} - Tầng ${invoice.floorNumber} - ${invoice.unitNumber}`
-                            : `Căn hộ ${invoice.apartmentId}`
-                          )
-                        }
+                        {apartmentCode 
+                          || invoice.unitNumber 
+                          || (invoice as any).apartmentUnitNumber 
+                          || invoice.apartmentNumber 
+                          || (invoice as any).unit 
+                          || `Căn hộ ${invoice.apartmentId}`}
                       </p>
                       {invoice.buildingId && (
                         <p className="text-xs text-gray-500">

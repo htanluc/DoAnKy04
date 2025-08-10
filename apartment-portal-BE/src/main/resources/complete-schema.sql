@@ -393,6 +393,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
     color VARCHAR(50),
     image_urls TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    rejection_reason TEXT,
     monthly_fee DECIMAL(10,2),
     user_id BIGINT NOT NULL,
     apartment_id BIGINT NOT NULL,

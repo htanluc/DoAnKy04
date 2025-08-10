@@ -17,6 +17,19 @@ public class ServiceFeeConfigService {
     }
 
     public ServiceFeeConfig save(ServiceFeeConfig config) {
+        // Upsert theo (month, year) để tránh trùng cấu hình
+        int month = config.getMonth();
+        int year = config.getYear();
+        Optional<ServiceFeeConfig> existing = repository.findByMonthAndYear(month, year);
+        if (existing.isPresent()) {
+            ServiceFeeConfig entity = existing.get();
+            entity.setServiceFeePerM2(config.getServiceFeePerM2());
+            entity.setWaterFeePerM3(config.getWaterFeePerM3());
+            entity.setMotorcycleFee(config.getMotorcycleFee());
+            entity.setCar4SeatsFee(config.getCar4SeatsFee());
+            entity.setCar7SeatsFee(config.getCar7SeatsFee());
+            return repository.save(entity);
+        }
         return repository.save(config);
     }
 

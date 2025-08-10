@@ -11,7 +11,6 @@ import com.mytech.apartment.portal.models.enums.VehicleType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.repositories.VehicleRepository;
-import com.mytech.apartment.portal.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -31,6 +30,7 @@ public class VehicleService {
     private final ApartmentRepository apartmentRepository;
     private final UserService userService;
     private final ApartmentResidentService apartmentResidentService;
+    private final EmailService emailService;
 
     public VehicleDto createVehicle(VehicleCreateRequest request, Authentication authentication) {
         // Kiểm tra biển số xe đã tồn tại chưa
@@ -112,11 +112,67 @@ public class VehicleService {
         return vehicleMapper.toDto(vehicle);
     }
 
-    public VehicleDto updateVehicleStatus(Long id, VehicleStatus status) {
+    public VehicleDto updateVehicleStatus(Long id, VehicleStatus status, String rejectionReason) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy xe"));
         vehicle.setStatus(status);
+        if (status == VehicleStatus.REJECTED) {
+            vehicle.setRejectionReason(rejectionReason);
+        }
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
+
+        // Gửi email thông báo cho chủ xe nếu có email
+        try {
+            User owner = updatedVehicle.getUser();
+            if (owner != null && owner.getEmail() != null && !owner.getEmail().isBlank()) {
+                String email = owner.getEmail();
+                String subject;
+                String content;
+                switch (status) {
+                    case APPROVED:
+                        subject = "Xác nhận đăng ký xe đã được duyệt";
+                        content = String.format(
+                                "<p>Chào %s,</p>" +
+                                "<p>Đăng ký xe của bạn đã được <b>DUYỆT</b>.</p>" +
+                                "<ul>" +
+                                "<li>Biển số: <b>%s</b></li>" +
+                                "<li>Loại xe: <b>%s</b></li>" +
+                                "<li>Căn hộ: <b>%s</b></li>" +
+                                "</ul>" +
+                                "<p>Xin cảm ơn!</p>",
+                                owner.getFullName() != null ? owner.getFullName() : owner.getUsername(),
+                                updatedVehicle.getLicensePlate(),
+                                updatedVehicle.getVehicleType(),
+                                updatedVehicle.getApartment() != null ? updatedVehicle.getApartment().getUnitNumber() : "-");
+                        break;
+                    case REJECTED:
+                        subject = "Đăng ký xe bị từ chối";
+                        content = String.format(
+                                "<p>Chào %s,</p>" +
+                                "<p>Rất tiếc, đăng ký xe của bạn đã bị <b>TỪ CHỐI</b>.</p>" +
+                                "<ul>" +
+                                "<li>Biển số: <b>%s</b></li>" +
+                                "<li>Loại xe: <b>%s</b></li>" +
+                                "</ul>" +
+                                (rejectionReason != null && !rejectionReason.isBlank() ? ("<p>Lý do: " + rejectionReason + "</p>") : "") +
+                                "<p>Vui lòng liên hệ ban quản lý để biết thêm chi tiết.</p>",
+                                owner.getFullName() != null ? owner.getFullName() : owner.getUsername(),
+                                updatedVehicle.getLicensePlate(),
+                                updatedVehicle.getVehicleType());
+                        break;
+                    default:
+                        subject = null;
+                        content = null;
+                }
+
+                if (subject != null && content != null) {
+                    emailService.sendHtmlEmail(email, subject, content);
+                }
+            }
+        } catch (Exception ignored) {
+            // Không chặn luồng nếu gửi mail lỗi
+        }
+
         return vehicleMapper.toDto(updatedVehicle);
     }
 

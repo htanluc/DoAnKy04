@@ -23,8 +23,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { announcementsApi, eventsApi, facilitiesApi } from '@/lib/api';
-import { getToken } from '@/lib/auth';
+import { announcementsApi, eventsApi, facilitiesApi, api, supportRequestsApi } from '@/lib/api';
 import RealTimeNotifications from '@/components/real-time-notifications';
 import LiveChat from '@/components/live-chat';
 
@@ -60,25 +59,53 @@ export default function AdminDashboard() {
           facilitiesApi.getAll(),
         ]);
         
-        // TODO: Thêm các API calls cho users, residents, apartments, invoices, supportRequests
-        // const [users, residents, apartments, invoices, supportRequests] = await Promise.all([
-        //   usersApi.getAll(),
-        //   residentsApi.getAll(), 
-        //   apartmentsApi.getAll(),
-        //   invoicesApi.getAll(),
-        //   supportRequestsApi.getAll(),
-        // ]);
+        // Lấy số lượng hóa đơn
+        let invoicesCount = 0;
+        try {
+          const res = await api.get('/api/admin/invoices');
+          if (res.ok) {
+            const data = await res.json();
+            invoicesCount = Array.isArray(data) ? data.length : (data?.data?.length ?? 0);
+          }
+        } catch {}
+
+        // Lấy số lượng users, residents, apartments, support requests
+        let usersCount = 0;
+        let residentsCount = 0;
+        let apartmentsCount = 0;
+        let supportRequestsCount = 0;
+        try {
+          const [usersRes, residentsRes, apartmentsRes, supportReqs] = await Promise.all([
+            api.get('/api/admin/users'),
+            api.get('/api/admin/residents'),
+            api.get('/api/admin/apartments'),
+            supportRequestsApi.getAll().catch(() => [] as any[]),
+          ]);
+          if (usersRes && 'ok' in usersRes && usersRes.ok) {
+            const users = await usersRes.json();
+            usersCount = Array.isArray(users) ? users.length : (users?.data?.length ?? 0);
+          }
+          if (residentsRes && 'ok' in residentsRes && residentsRes.ok) {
+            const residents = await residentsRes.json();
+            residentsCount = Array.isArray(residents) ? residents.length : (residents?.data?.length ?? 0);
+          }
+          if (apartmentsRes && 'ok' in apartmentsRes && apartmentsRes.ok) {
+            const apartments = await apartmentsRes.json();
+            apartmentsCount = Array.isArray(apartments) ? apartments.length : (apartments?.data?.length ?? 0);
+          }
+          supportRequestsCount = Array.isArray(supportReqs) ? supportReqs.length : 0;
+        } catch {}
         
         setCounts((prev) => ({
           ...prev,
           announcements: announcements.length,
           events: events.length,
           facilities: facilities.length,
-          // users: users.length,
-          // residents: residents.length,
-          // apartments: apartments.length,
-          // invoices: invoices.length,
-          // supportRequests: supportRequests.length,
+          invoices: invoicesCount,
+          users: usersCount,
+          residents: residentsCount,
+          apartments: apartmentsCount,
+          supportRequests: supportRequestsCount,
         }));
       } catch (error) {
         console.error('Error fetching counts:', error);
@@ -91,25 +118,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchActivities() {
       try {
-        const res = await fetch('/api/admin/activity-logs?limit=10', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        
-        if (res.status === 404) {
-          setActivities([]); // Không có log, không phải lỗi nghiêm trọng
-          return;
-        }
-        
-        if (!res.ok) {
+        const res = await api.get('/api/dashboard/recent-activities');
+        if (res.ok) {
+          const data = await res.json();
+          setActivities(Array.isArray(data) ? data.slice(0, 10) : (data?.data ?? []).slice(0, 10));
+        } else if (res.status === 404) {
+          setActivities([]);
+        } else {
           console.error('Failed to fetch activities:', res.status);
           setActivities([]);
-          return;
         }
-        
-        const data = await res.json();
-        setActivities(Array.isArray(data) ? data.slice(0, 10) : data.data?.slice(0, 10) || []);
       } catch (error) {
         console.error('Error fetching activities:', error);
         setActivities([]);

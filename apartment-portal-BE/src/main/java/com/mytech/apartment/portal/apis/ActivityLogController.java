@@ -159,7 +159,7 @@ public class ActivityLogController {
      */
     @Operation(summary = "Get activity logs by user ID", description = "Get activity logs for a specific user (admin only)")
     @GetMapping("/admin/user/{userId}")
-    public ResponseEntity<ApiResponse<List<ActivityLogDto>>> getActivityLogsByUserId(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<List<ActivityLogDto>>> getActivityLogsByUserId(@PathVariable("userId") Long userId) {
         
         try {
             List<ActivityLogDto> logs = activityLogService.getActivityLogsByUserId(userId);

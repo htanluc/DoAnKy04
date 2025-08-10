@@ -5,7 +5,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "service_fee_config")
+@Table(
+    name = "service_fee_config",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"month", "year"})
+    }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

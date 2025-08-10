@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,14 +31,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestHeader;
-import java.util.HashMap;
 import java.time.LocalDateTime;
 
 @RestController
@@ -47,7 +42,7 @@ import java.time.LocalDateTime;
 @Tag(name = "Payment", description = "Payment management endpoints")
 @RequiredArgsConstructor
 public class PaymentController {
-    private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
+    private static final Logger log = LoggerFactory.getLogger(PaymentController.class); // kept for future debug logs
 
     private final PaymentService paymentService;
     private final PaymentGatewayService paymentGatewayService;
@@ -97,7 +92,7 @@ public class PaymentController {
      * Lấy thông tin thanh toán theo ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentDto> getPaymentById(@PathVariable Long id) {
+    public ResponseEntity<PaymentDto> getPaymentById(@PathVariable("id") Long id) {
         return paymentService.getPaymentById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -400,7 +395,7 @@ public class PaymentController {
             boolean isValid = paymentGatewayService.verifyPaymentCallback("momo", params);
             if (isValid) {
                 // Xử lý thanh toán thành công
-                String orderId = params.get("orderId");
+                String orderId = params.get("orderId"); // kept for potential auditing
                 String resultCode = params.get("resultCode");
                 if ("0".equals(resultCode)) {
                     // Thanh toán thành công
@@ -541,7 +536,7 @@ public class PaymentController {
                         paymentRequest.setReferenceCode(session.getId());
 
                         // Lưu payment vào database
-                        com.mytech.apartment.portal.dtos.PaymentDto savedPayment = paymentService.recordManualPayment(paymentRequest);
+                        paymentService.recordManualPayment(paymentRequest);
                         System.out.println("✅ Webhook: Payment recorded successfully");
                         
                         // Log successful payment activity (smart logging)
@@ -922,7 +917,7 @@ public class PaymentController {
      * Kiểm tra trạng thái thanh toán
      */
     @GetMapping("/gateway/status/{transactionId}")
-    public ResponseEntity<PaymentGatewayResponse> checkPaymentStatus(@PathVariable String transactionId) {
+    public ResponseEntity<PaymentGatewayResponse> checkPaymentStatus(@PathVariable("transactionId") String transactionId) {
         try {
             PaymentGatewayResponse response = paymentGatewayService.checkPaymentStatus(transactionId);
             return ResponseEntity.ok(response);
@@ -995,7 +990,7 @@ public class PaymentController {
      * Lấy thanh toán theo hóa đơn
      */
     @GetMapping("/invoice/{invoiceId}")
-    public ResponseEntity<List<PaymentDto>> getPaymentsByInvoice(@PathVariable Long invoiceId) {
+    public ResponseEntity<List<PaymentDto>> getPaymentsByInvoice(@PathVariable("invoiceId") Long invoiceId) {
         try {
             List<PaymentDto> payments = paymentService.getPaymentsByInvoice(invoiceId);
             return ResponseEntity.ok(payments);
@@ -1009,7 +1004,7 @@ public class PaymentController {
      * Lấy thanh toán theo trạng thái
      */
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<PaymentDto>> getPaymentsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<PaymentDto>> getPaymentsByStatus(@PathVariable("status") String status) {
         try {
             List<PaymentDto> payments = paymentService.getPaymentsByStatus(status);
             return ResponseEntity.ok(payments);
@@ -1023,7 +1018,7 @@ public class PaymentController {
      * Xóa thanh toán
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePayment(@PathVariable("id") Long id) {
         try {
             paymentService.deletePayment(id);
             return ResponseEntity.noContent().build();

@@ -9,8 +9,6 @@ import com.mytech.apartment.portal.services.InvoiceService;
 import com.mytech.apartment.portal.services.MonthlyFeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping
@@ -63,7 +60,7 @@ public class InvoiceController {
      * [VI] Lấy hóa đơn theo ID (chỉ admin)
      */
     @GetMapping("/api/admin/invoices/{id}")
-    public ResponseEntity<InvoiceDto> getInvoiceById(@PathVariable Long id) {
+    public ResponseEntity<InvoiceDto> getInvoiceById(@PathVariable("id") Long id) {
         try {
             return invoiceService.getInvoiceById(id)
                     .map(invoice -> {
@@ -101,7 +98,7 @@ public class InvoiceController {
      * [VI] Cập nhật hóa đơn (chỉ admin)
      */
     @PutMapping("/api/admin/invoices/{id}")
-    public ResponseEntity<InvoiceDto> updateInvoice(@PathVariable Long id, @RequestBody InvoiceUpdateRequest request) {
+    public ResponseEntity<InvoiceDto> updateInvoice(@PathVariable("id") Long id, @RequestBody InvoiceUpdateRequest request) {
         try {
             // TODO: Implement update invoice logic
             // Log admin activity (smart logging)
@@ -119,7 +116,7 @@ public class InvoiceController {
      * [VI] Xóa hóa đơn (chỉ admin)
      */
     @DeleteMapping("/api/admin/invoices/{id}")
-    public ResponseEntity<Void> deleteInvoice(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteInvoice(@PathVariable("id") Long id) {
         try {
             // TODO: Implement delete invoice logic
             // Log admin activity (smart logging)

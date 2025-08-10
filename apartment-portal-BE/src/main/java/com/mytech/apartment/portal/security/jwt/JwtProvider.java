@@ -5,6 +5,8 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -27,6 +29,7 @@ public class JwtProvider {
     private int jwtExpirationMs;
 
     private SecretKey jwtSecretKey;
+    private static final Logger logger = LoggerFactory.getLogger(JwtProvider.class);
 
     @PostConstruct
     public void init() {
@@ -57,35 +60,45 @@ public class JwtProvider {
 
     public String getUsernameFromJwt(String token) {
         try {
-            System.out.println("JwtProvider: Getting username from token: " + token.substring(0, Math.min(50, token.length())) + "...");
+            if (logger.isDebugEnabled()) {
+                String masked = token == null ? "null" : (token.length() <= 12 ? "***" : (token.substring(0, 8) + "..."));
+                logger.debug("Getting username from token: {}", masked);
+            }
             String username = Jwts.parserBuilder()
                     .setSigningKey(jwtSecretKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
-            System.out.println("JwtProvider: Extracted username: " + username);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Extracted username: {}", username);
+            }
             return username;
         } catch (JwtException e) {
-            System.err.println("JwtProvider: JWT Exception when getting username: " + e.getMessage());
+            logger.warn("JWT Exception when getting username: {}", e.getMessage());
             throw new RuntimeException("Token JWT không hợp lệ hoặc đã hết hạn: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("JwtProvider: General Exception when getting username: " + e.getMessage());
+            logger.error("General Exception when getting username: {}", e.getMessage(), e);
             throw new RuntimeException("Lỗi khi lấy username từ JWT: " + e.getMessage(), e);
         }
     }
 
     public boolean validateToken(String token) {
         try {
-            System.out.println("JwtProvider: Validating token: " + token.substring(0, Math.min(50, token.length())) + "...");
+            if (logger.isDebugEnabled()) {
+                String masked = token == null ? "null" : (token.length() <= 12 ? "***" : (token.substring(0, 8) + "..."));
+                logger.debug("Validating token: {}", masked);
+            }
             Jwts.parserBuilder().setSigningKey(jwtSecretKey).build().parseClaimsJws(token);
-            System.out.println("JwtProvider: Token is valid");
+            if (logger.isDebugEnabled()) {
+                logger.debug("Token is valid");
+            }
             return true;
         } catch (JwtException e) {
-            System.err.println("JwtProvider: JWT Exception when validating token: " + e.getMessage());
+            logger.warn("JWT Exception when validating token: {}", e.getMessage());
             return false;
         } catch (Exception e) {
-            System.err.println("JwtProvider: General Exception when validating token: " + e.getMessage());
+            logger.error("General Exception when validating token: {}", e.getMessage(), e);
             return false;
         }
     }

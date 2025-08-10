@@ -22,8 +22,9 @@ import {
   Filter,
 } from 'lucide-react';
 import Link from 'next/link';
-import { API_BASE_URL } from '@/lib/auth';
 import { User, Role } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
+import { getRoleNames } from '@/lib/auth';
 
 // Hàm kiểm tra role có phải là ADMIN không (fix lỗi typescript)
 function hasAdminRole(roles?: Role[]): boolean {
@@ -44,39 +45,41 @@ export default function UsersPage() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    const token = localStorage.getItem('token');
-    fetch(`${API_BASE_URL}/api/admin/users`, {
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
-      },
-    })
+    // Guard để tránh gọi API lặp khi dev StrictMode
+    if ((window as any).__USERS_LOADING__) {
+      setLoading(false);
+      return;
+    }
+    (window as any).__USERS_LOADING__ = true;
+    apiFetch(`/api/admin/users`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Failed to fetch');
         return res.json();
       })
       .then((data) => {
-        setUsers(data);
+        setUsers(Array.isArray(data) ? data : data?.data ?? []);
         setError('');
       })
       .catch(() => {
         setError(t('admin.error.load'));
         setUsers([]);
       })
-      .finally(() => setLoading(false));
-  }, [t]);
+      .finally(() => {
+        setLoading(false);
+        (window as any).__USERS_LOADING__ = false;
+      });
+  }, []);
 
   // Sửa lỗi: so sánh đúng kiểu Role (so sánh string, không truyền string vào mảng Role)
   const filteredUsers = users.filter(user => {
+    const roleNames = getRoleNames(user);
     // Loại bỏ user admin (username === 'admin') và user có role ADMIN
-    if ((user.roles && hasAdminRole(user.roles)) || user.username === 'admin') return false;
+    if (roleNames.includes('ADMIN') || user.username === 'admin') return false;
     const matchesSearch =
       (user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       (user.phoneNumber?.includes(searchTerm) ?? false);
-    const matchesRole =
-      filterRole === 'all' ||
-      (user.roles && user.roles[0] && String(user.roles[0]) === filterRole);
+    const matchesRole = filterRole === 'all' || roleNames.includes(filterRole);
     return matchesSearch && matchesRole;
   });
 
@@ -107,17 +110,9 @@ export default function UsersPage() {
   };
 
   const handleToggleStatus = async (user: User) => {
-    const token = localStorage.getItem('token');
     const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/users/${user.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const res = await apiFetch(`/api/${user.id}/status?status=${newStatus}`, { method: 'PUT' });
       if (!res.ok) throw new Error('Failed to update status');
       setUsers((prev) => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
     } catch {
@@ -231,7 +226,7 @@ export default function UsersPage() {
                       <TableCell className="truncate max-w-[130px] whitespace-normal break-words" title={user.email}>{user.email}</TableCell>
                       <TableCell className="truncate max-w-[110px]" title={user.phoneNumber}>{user.phoneNumber}</TableCell>
                       <TableCell>
-                        {getRoleBadge(user.roles && user.roles.length > 0 ? user.roles[0] : '-')}
+                        {getRoleBadge(getRoleNames(user)[0])}
                       </TableCell>
                       <TableCell>{getStatusBadge(user.status)}</TableCell>
                       <TableCell>

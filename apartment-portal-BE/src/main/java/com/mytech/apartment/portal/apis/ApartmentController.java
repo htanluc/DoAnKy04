@@ -115,7 +115,7 @@ public class ApartmentController {
         }
     }
     @GetMapping("/admin/apartment-residents/user/{userId}")
-    public ResponseEntity<List<ApartmentResidentDto>> getApartmentLinksOfUser(@PathVariable Long userId) {
+    public ResponseEntity<List<ApartmentResidentDto>> getApartmentLinksOfUser(@PathVariable("userId") Long userId) {
         List<ApartmentResidentDto> links = apartmentService.getApartmentLinksOfUser(userId);
         return ResponseEntity.ok(links);
     }

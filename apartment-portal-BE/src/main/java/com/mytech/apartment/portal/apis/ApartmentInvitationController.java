@@ -60,7 +60,7 @@ public class ApartmentInvitationController {
      * Cập nhật lời mời theo id
      */
     @PutMapping("/by-code/{code}/use")
-    public ResponseEntity<ApartmentInvitationDto> useInvitation(@PathVariable String code, @RequestParam Long userId) {
+    public ResponseEntity<ApartmentInvitationDto> useInvitation(@PathVariable("code") String code, @RequestParam Long userId) {
         try {
             ApartmentInvitationDto usedInvitation = invitationService.markAsUsed(code, userId);
             return ResponseEntity.ok(usedInvitation);
@@ -74,7 +74,7 @@ public class ApartmentInvitationController {
      * Xóa lời mời theo id
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteInvitation(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteInvitation(@PathVariable("id") Long id) {
         invitationService.deleteInvitation(id);
         return ResponseEntity.noContent().build();
     }
