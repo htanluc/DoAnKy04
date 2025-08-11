@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestHeader;
 import java.time.LocalDateTime;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -200,6 +201,7 @@ public class PaymentController {
      * Create VNPay payment
      * Tạo thanh toán VNPay
      */
+    /*
     @PostMapping("/vnpay")
     @Operation(summary = "Create VNPay payment", description = "Create payment via VNPay")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createVNPayPayment(
@@ -215,6 +217,43 @@ public class PaymentController {
             return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán VNPay thành công", data));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    */
+
+    /**
+     * Xử lý thanh toán VNPay
+     */
+    @PostMapping("/vnpay")
+    public ResponseEntity<?> processVNPayPayment(@RequestBody Map<String, Object> request) {
+        log.info("Nhận yêu cầu thanh toán VNPay: {}", request);
+        
+        try {
+            String orderId = (String) request.get("orderId");
+            Object amountObj = request.get("amount");
+            String orderInfo = (String) request.get("orderInfo");
+            
+            // Validate và convert amount
+            Long amount = null;
+            if (amountObj instanceof Number) {
+                amount = ((Number) amountObj).longValue();
+            } else if (amountObj instanceof String) {
+                try {
+                    amount = Long.parseLong((String) amountObj);
+                } catch (NumberFormatException e) {
+                    log.error("Không thể parse amount: {}", amountObj);
+                    return ResponseEntity.badRequest().body(Map.of("error", "amount không hợp lệ"));
+                }
+            }
+            
+            log.info("Đã parse request - orderId: {}, amount: {}, orderInfo: {}", orderId, amount, orderInfo);
+            
+            return paymentGatewayService.processVNPayPayment(orderId, amount, orderInfo);
+            
+        } catch (Exception e) {
+            log.error("Lỗi khi xử lý request thanh toán VNPay: {}", request, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Lỗi nội bộ: " + e.getMessage()));
         }
     }
 
@@ -420,18 +459,66 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<String>> vnpayCallback(@RequestParam Map<String, String> params) {
         try {
             boolean isValid = paymentGatewayService.verifyPaymentCallback("vnpay", params);
-            if (isValid) {
+            if (!isValid) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+            }
+
+            // Đồng bộ cập nhật trạng thái giao dịch
+            Map<String, Object> sync = paymentGatewayService.processVNPayReturn(params);
+            if (Boolean.TRUE.equals(sync.get("success"))) {
                 String vnp_ResponseCode = params.get("vnp_ResponseCode");
                 if ("00".equals(vnp_ResponseCode)) {
                     return ResponseEntity.ok(ApiResponse.success("Thanh toán VNPay thành công"));
-                } else {
-                    return ResponseEntity.ok(ApiResponse.error("Thanh toán VNPay thất bại"));
                 }
-            } else {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+                return ResponseEntity.ok(ApiResponse.error("Thanh toán VNPay thất bại"));
             }
+            return ResponseEntity.badRequest().body(ApiResponse.error(String.valueOf(sync.get("message"))));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Return URL (FE redirect) từ VNPay: map về API để FE lấy trạng thái chuẩn
+     */
+    @GetMapping("/vnpay/return")
+    @Operation(summary = "VNPay return", description = "Handle user return from VNPay and return normalized status")
+    public ResponseEntity<String> vnpayReturn(@RequestParam Map<String, String> params) {
+        try {
+            Map<String, Object> result = paymentGatewayService.processVNPayReturn(params);
+            // Tự động redirect về FE sau 3s
+            String target = "http://localhost:3001/dashboard/invoices";
+            String html = "<!DOCTYPE html>" +
+                    "<html lang=\"vi\"><head><meta charset=\"UTF-8\"/>" +
+                    "<meta http-equiv=\"refresh\" content=\"3;url=" + target + "\"/>" +
+                    "<title>Kết quả thanh toán VNPay</title>" +
+                    "<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;color:#111827}</style>" +
+                    "</head><body>" +
+                    "<div><h2>Kết quả thanh toán VNPay</h2>" +
+                    "<p>" + (Boolean.TRUE.equals(result.get("success")) && "SUCCESS".equals(String.valueOf(result.get("status")))
+                        ? "Thanh toán thành công!" : "Thanh toán thất bại!") + "</p>" +
+                    "<p>Đang chuyển về trang hóa đơn trong 3 giây...</p>" +
+                    "<p><a href=\"" + target + "\">Nhấn vào đây nếu không được chuyển</a></p>" +
+                    "</div></body></html>";
+            return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                .body(html);
+        } catch (Exception e) {
+            String target = "http://localhost:3001/dashboard/invoices";
+            String errorHtml = "<!DOCTYPE html>" +
+                    "<html lang=\"vi\"><head><meta charset=\"UTF-8\"/>" +
+                    "<meta http-equiv=\"refresh\" content=\"3;url=" + target + "\"/>" +
+                    "<title>Lỗi xử lý thanh toán</title>" +
+                    "<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff5f5;color:#7f1d1d}</style>" +
+                    "</head><body>" +
+                    "<div><h2>Lỗi xử lý thanh toán</h2>" +
+                    "<p>" + org.springframework.web.util.HtmlUtils.htmlEscape(e.getMessage() == null ? "Lỗi không xác định" : e.getMessage()) + "</p>" +
+                    "<p>Đang chuyển về trang hóa đơn trong 3 giây...</p>" +
+                    "<p><a href=\"" + target + "\">Nhấn vào đây nếu không được chuyển</a></p>" +
+                    "</div></body></html>";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                .body(errorHtml);
         }
     }
 

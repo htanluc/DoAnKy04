@@ -26,7 +26,18 @@ public class StripeConfig {
     
     @PostConstruct
     public void initStripe() {
-        Stripe.apiKey = secretKey;
+        try {
+            if (secretKey == null || secretKey.isBlank()) {
+                System.out.println("StripeConfig: secret key is empty, skip Stripe initialization.");
+                return;
+            }
+            // Tránh thực hiện bất kỳ call mạng nào ở startup. Chỉ set apiKey cục bộ.
+            Stripe.apiKey = secretKey;
+            System.out.println("StripeConfig: Stripe API key set. Initialization completed safely.");
+        } catch (Throwable t) {
+            // Không fail app nếu môi trường DEV/offline
+            System.err.println("StripeConfig: skip initialization due to: " + t.getMessage());
+        }
     }
     
     public String getSecretKey() {

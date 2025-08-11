@@ -1,16 +1,21 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 
 const inter = Inter({ subsets: ['latin'] })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
+
 export const metadata: Metadata = {
+  metadataBase: new URL('http://localhost:3001'),
   title: 'Trải Nghiệm Căn Hộ FPT',
   description: 'Hệ thống quản lý căn hộ thông minh - Trải nghiệm sống tiện nghi và hiện đại',
   keywords: 'căn hộ, quản lý, thông minh, FPT, cư dân',
   authors: [{ name: 'FPT Apartment Management' }],
-  viewport: 'width=device-width, initial-scale=1',
   robots: 'index, follow',
   openGraph: {
     title: 'Trải Nghiệm Căn Hộ FPT',

@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Loại bỏ experimental.appDir vì đã deprecated
   async rewrites() {
     return [
       {
