@@ -71,7 +71,7 @@ public class AiQaHistoryController {
      * [VI] Lấy lịch sử hỏi đáp AI theo ID
      */
     @GetMapping("/admin/history/{qaId}")
-    public ResponseEntity<AiQaHistoryDto> getAiQaHistoryById(@PathVariable Long qaId) {
+    public ResponseEntity<AiQaHistoryDto> getAiQaHistoryById(@PathVariable("qaId") Long qaId) {
         AiQaHistoryDto history = aiQaHistoryService.getHistoryById(qaId);
         return ResponseEntity.ok(history);
     }
@@ -81,7 +81,7 @@ public class AiQaHistoryController {
      * [VI] Lấy lịch sử hỏi đáp AI theo ID người dùng
      */
     @GetMapping("/history/user/{userId}")
-    public ResponseEntity<List<AiQaHistoryDto>> getAiQaHistoryByUserId(@PathVariable Long userId) {
+    public ResponseEntity<List<AiQaHistoryDto>> getAiQaHistoryByUserId(@PathVariable("userId") Long userId) {
         List<AiQaHistoryDto> history = aiQaHistoryService.getHistoryByUserId(userId);
         return ResponseEntity.ok(history);
     }
@@ -91,7 +91,7 @@ public class AiQaHistoryController {
      * [VI] Lấy lịch sử hỏi đáp AI theo phản hồi
      */
     @GetMapping("/admin/history/feedback/{feedback}")
-    public ResponseEntity<List<AiQaHistoryDto>> getAiQaHistoryByFeedback(@PathVariable String feedback) {
+    public ResponseEntity<List<AiQaHistoryDto>> getAiQaHistoryByFeedback(@PathVariable("feedback") String feedback) {
         List<AiQaHistoryDto> history = aiQaHistoryService.getHistoryByFeedback(feedback);
         return ResponseEntity.ok(history);
     }
@@ -118,7 +118,7 @@ public class AiQaHistoryController {
      */
     @PostMapping("/history/{qaId}/feedback")
     public ResponseEntity<ApiResponse<String>> provideFeedback(
-            @PathVariable Long qaId,
+            @PathVariable("qaId") Long qaId,
             @RequestParam String feedback) {
         try {
             aiQaHistoryService.updateFeedback(qaId, feedback);

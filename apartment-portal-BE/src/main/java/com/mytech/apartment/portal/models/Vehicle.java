@@ -48,6 +48,9 @@ public class Vehicle {
     @Builder.Default
     private VehicleStatus status = VehicleStatus.PENDING;
 
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
     @Column(name = "monthly_fee", precision = 10, scale = 2)
     private BigDecimal monthlyFee;
 

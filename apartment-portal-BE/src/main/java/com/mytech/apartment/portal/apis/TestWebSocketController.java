@@ -23,7 +23,7 @@ public class TestWebSocketController {
 
     @PostMapping("/notifications/user/{userId}")
     public ResponseEntity<ApiResponse<String>> sendUserNotification(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @RequestParam String message) {
         notificationService.sendUserNotification(userId, message);
         return ResponseEntity.ok(ApiResponse.success("User notification sent", message));
@@ -31,7 +31,7 @@ public class TestWebSocketController {
 
     @PostMapping("/notifications/apartment/{apartmentId}")
     public ResponseEntity<ApiResponse<String>> sendApartmentNotification(
-            @PathVariable Long apartmentId,
+            @PathVariable("apartmentId") Long apartmentId,
             @RequestParam String message) {
         notificationService.sendApartmentNotification(apartmentId, message);
         return ResponseEntity.ok(ApiResponse.success("Apartment notification sent", message));
@@ -39,7 +39,7 @@ public class TestWebSocketController {
 
     @PostMapping("/notifications/payment/{userId}")
     public ResponseEntity<ApiResponse<String>> sendPaymentNotification(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @RequestParam String message,
             @RequestParam String status) {
         notificationService.sendPaymentNotification(userId, message, status);

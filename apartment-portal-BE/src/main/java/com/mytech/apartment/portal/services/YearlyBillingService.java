@@ -3,15 +3,15 @@ package com.mytech.apartment.portal.services;
 import com.mytech.apartment.portal.models.*;
 import com.mytech.apartment.portal.repositories.*;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
-import com.mytech.apartment.portal.models.enums.VehicleType;
+// import com.mytech.apartment.portal.models.enums.VehicleType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+// import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
+// import java.time.YearMonth;
+// import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,8 +20,8 @@ import java.time.LocalDateTime;
 @Service
 public class YearlyBillingService {
 
-    @Autowired
-    private InvoiceService invoiceService;
+    // @Autowired
+    // private InvoiceService invoiceService;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -34,6 +34,10 @@ public class YearlyBillingService {
 
     @Autowired
     private VehicleRepository vehicleRepository;
+
+    // Chạy các dịch vụ tính phí theo item (dịch vụ, nước, gửi xe...)
+    @Autowired
+    private List<MonthlyFeeService> feeServices;
 
     // @Autowired
     // private WaterMeterReadingRepository waterMeterReadingRepository;
@@ -121,21 +125,48 @@ public class YearlyBillingService {
      */
     @Transactional
     public void generateInvoicesForMonth(int year, int month) {
-        System.out.println("DEBUG: Bắt đầu tạo hóa đơn cho tháng " + month + "/" + year);
-        
-        // 1. Lấy danh sách tất cả căn hộ hiện có
+        System.out.println("DEBUG: Bắt đầu tạo hóa đơn (base + items) cho tháng " + month + "/" + year);
+
+        // 1) Tạo hóa đơn cơ bản (total=0, chưa có item) cho tất cả căn hộ nếu chưa có
         List<Apartment> allApartments = apartmentRepository.findAll();
-        System.out.println("DEBUG: Tìm thấy " + allApartments.size() + " căn hộ");
-        
-        // 2. Tạo hóa đơn cho tất cả căn hộ trong tháng này
         String billingPeriod = String.format("%04d-%02d", year, month);
-        System.out.println("DEBUG: Đang tạo hóa đơn cho kỳ " + billingPeriod);
-        
+        System.out.println("DEBUG: Số căn hộ: " + allApartments.size() + ", kỳ: " + billingPeriod);
+
         for (Apartment apartment : allApartments) {
-            createInvoiceForApartment(apartment.getId(), billingPeriod, year, month);
+            // Chỉ tạo mới nếu chưa tồn tại hóa đơn của kỳ này
+            Optional<Invoice> existing = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), billingPeriod);
+            if (existing.isPresent()) {
+                continue;
+            }
+
+            Invoice invoice = Invoice.builder()
+                .apartmentId(apartment.getId())
+                .billingPeriod(billingPeriod)
+                .issueDate(LocalDate.of(year, month, 1))
+                .dueDate(LocalDate.of(year, month, 15))
+                .status(InvoiceStatus.UNPAID)
+                .totalAmount(0.0)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+            invoiceRepository.save(invoice);
         }
-        
-        System.out.println("DEBUG: Hoàn thành tạo hóa đơn cho tháng " + month + "/" + year);
+
+        // 2) Gọi lần lượt các dịch vụ tính phí để thêm item vào từng hóa đơn (idempotent)
+        if (feeServices != null && !feeServices.isEmpty()) {
+            feeServices.forEach(svc -> svc.generateFeeForMonth(billingPeriod));
+        }
+
+        System.out.println("DEBUG: Hoàn thành tạo hóa đơn base và thêm các items cho tháng " + month + "/" + year);
+    }
+
+    /**
+     * Tạo hóa đơn đồng loạt cho tất cả căn hộ trong một tháng (phiên bản phục vụ controller mới)
+     */
+    @Transactional
+    public void generateMonthlyInvoicesForAllApartments(int year, int month) {
+        generateInvoicesForMonth(year, month);
     }
 
     /**
@@ -383,6 +414,16 @@ public class YearlyBillingService {
      */
     private String getCacheKey(int month, int year) {
         return month + "-" + year;
+    }
+    
+    /**
+     * Clear cache entry for a specific month/year (exposed for other services after config update)
+     */
+    public void clearCacheFor(int month, int year) {
+        String cacheKey = getCacheKey(month, year);
+        configCache.remove(cacheKey);
+        cacheTimestamps.remove(cacheKey);
+        System.out.println("DEBUG: Cleared cache for " + month + "/" + year);
     }
     
     /**

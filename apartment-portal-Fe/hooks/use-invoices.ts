@@ -48,6 +48,21 @@ export const useInvoices = () => {
     }
   };
 
+  const getLatestInvoice = async (apartmentId: number): Promise<Invoice | null> => {
+    try {
+      const response = await api.get(`/api/admin/apartments/${apartmentId}/latest-invoice`);
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      } else {
+        return null;
+      }
+    } catch (err) {
+      console.error('Get latest invoice error:', err);
+      return null;
+    }
+  };
+
   const updateInvoiceStatus = async (id: number, status: string): Promise<boolean> => {
     try {
       const response = await api.patch(`/api/admin/invoices/${id}/status`, { status });
@@ -99,6 +114,7 @@ export const useInvoices = () => {
     error,
     fetchInvoices,
     getInvoiceById,
+    getLatestInvoice,
     updateInvoiceStatus,
     deleteInvoice,
   };

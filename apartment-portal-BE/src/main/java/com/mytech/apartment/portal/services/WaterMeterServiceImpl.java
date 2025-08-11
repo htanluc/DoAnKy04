@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,19 +25,23 @@ public class WaterMeterServiceImpl implements WaterMeterService {
     private final WaterMeterReadingRepository waterMeterReadingRepository;
     private final WaterMeterMapper waterMeterMapper;
     private final ApartmentService apartmentService;
+    private final UserService userService;
 
     @Autowired
     public WaterMeterServiceImpl(WaterMeterReadingRepository waterMeterReadingRepository,
                                  WaterMeterMapper waterMeterMapper,
-                                 @Lazy ApartmentService apartmentService) {
+                                 @Lazy ApartmentService apartmentService,
+                                 UserService userService) {
         this.waterMeterReadingRepository = waterMeterReadingRepository;
         this.waterMeterMapper = waterMeterMapper;
         this.apartmentService = apartmentService;
+        this.userService = userService;
     }
 
     @Override
     @Transactional
     public WaterMeterReadingDto addReading(WaterMeterReadingDto dto) {
+        normalizeIncomingDto(dto);
         validateReading(dto);
         // Kiểm tra đã có reading cho apartment + month chưa
         Optional<WaterMeterReading> existing = waterMeterReadingRepository.findByApartmentIdAndReadingDate(
@@ -46,6 +52,9 @@ public class WaterMeterServiceImpl implements WaterMeterService {
             entity.setId(existing.get().getId());
         }
         WaterMeterReading saved = waterMeterReadingRepository.save(entity);
+        // Sau khi lưu, tính và cập nhật consumption dựa trên tháng trước
+        updateConsumption(saved);
+        saved = waterMeterReadingRepository.save(saved);
         WaterMeterReadingDto result = waterMeterMapper.toDto(saved);
         result.setApartmentName(apartmentService.getApartmentName(saved.getApartmentId().intValue()));
         // Set previousReading và currentReading cho frontend
@@ -216,20 +225,26 @@ public class WaterMeterServiceImpl implements WaterMeterService {
 
     // Hàm tự động cập nhật consumption
     private void updateConsumption(WaterMeterReading reading) {
-        // Tìm chỉ số của tháng trước
+        // Tìm chỉ số của tháng trước (nếu không có, mặc định 0)
         Optional<WaterMeterReading> previousReading = waterMeterReadingRepository
             .findTopByApartmentIdAndReadingDateLessThanOrderByReadingDateDesc(
                 reading.getApartmentId(), reading.getReadingDate()
             );
-        
-        if (previousReading.isPresent()) {
-            BigDecimal previousMeterReading = previousReading.get().getMeterReading();
-            BigDecimal currentMeterReading = reading.getMeterReading();
-            BigDecimal consumption = currentMeterReading.subtract(previousMeterReading);
-            if (consumption.compareTo(BigDecimal.ZERO) >= 0) {
-                reading.setConsumption(consumption);
-            }
+
+        BigDecimal previousMeterReading = previousReading
+            .map(WaterMeterReading::getMeterReading)
+            .orElse(BigDecimal.ZERO);
+
+        BigDecimal currentMeterReading = reading.getMeterReading() != null
+            ? reading.getMeterReading()
+            : BigDecimal.ZERO;
+
+        BigDecimal consumption = currentMeterReading.subtract(previousMeterReading);
+        if (consumption.compareTo(BigDecimal.ZERO) < 0) {
+            // Bảo vệ dữ liệu: không để tiêu thụ âm
+            consumption = BigDecimal.ZERO;
         }
+        reading.setConsumption(consumption);
     }
 
     // Hàm tiện ích lấy tháng sau theo định dạng YYYY-MM
@@ -257,6 +272,31 @@ public class WaterMeterServiceImpl implements WaterMeterService {
     private void validateReading(WaterMeterReadingDto dto) {
         if (dto.getCurrentReading() != null && dto.getCurrentReading().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Chỉ số nước không được âm");
+        }
+    }
+
+    private void normalizeIncomingDto(WaterMeterReadingDto dto) {
+        // Nếu frontend gửi readingMonth (yyyy-MM) mà thiếu readingDate thì suy ra ngày 01 của tháng
+        if (dto.getReadingDate() == null && dto.getReadingMonth() != null && !dto.getReadingMonth().isBlank()) {
+            dto.setReadingDate(LocalDate.parse(dto.getReadingMonth() + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        }
+        // Nếu thiếu meterReading thì lấy từ currentReading
+        if (dto.getMeterReading() == null && dto.getCurrentReading() != null) {
+            dto.setMeterReading(dto.getCurrentReading());
+        }
+        // Đồng bộ currentReading với meterReading để mapper không bị null
+        if (dto.getCurrentReading() == null && dto.getMeterReading() != null) {
+            dto.setCurrentReading(dto.getMeterReading());
+        }
+        // Tự động set recordedBy từ người dùng hiện tại nếu thiếu
+        if (dto.getRecordedBy() == null) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+                Long uid = userService.getUserIdByPhoneNumber(auth.getName());
+                if (uid != null) {
+                    dto.setRecordedBy(uid);
+                }
+            }
         }
     }
 

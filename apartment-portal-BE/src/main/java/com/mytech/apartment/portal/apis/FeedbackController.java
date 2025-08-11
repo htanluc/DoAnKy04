@@ -42,21 +42,21 @@ public class FeedbackController {
 
     // Admin xem chi tiết phản hồi
     @GetMapping("/admin/feedbacks/{id}")
-    public ResponseEntity<FeedbackDto> getFeedbackById(@PathVariable Long id) {
+    public ResponseEntity<FeedbackDto> getFeedbackById(@PathVariable("id") Long id) {
         FeedbackDto feedback = feedbackService.getFeedbackById(id);
         return ResponseEntity.ok(feedback);
     }
 
     // Admin cập nhật trạng thái phản hồi
     @PutMapping("/admin/feedbacks/{id}/status")
-    public ResponseEntity<FeedbackDto> updateFeedbackStatus(@PathVariable Long id, @RequestParam FeedbackStatus status) {
+    public ResponseEntity<FeedbackDto> updateFeedbackStatus(@PathVariable("id") Long id, @RequestParam FeedbackStatus status) {
         FeedbackDto feedback = feedbackService.updateFeedbackStatus(id, status);
         return ResponseEntity.ok(feedback);
     }
 
     // Admin trả lời phản hồi
     @PutMapping("/admin/feedbacks/{id}/response")
-    public ResponseEntity<FeedbackDto> respondFeedback(@PathVariable Long id, @RequestParam String response) {
+    public ResponseEntity<FeedbackDto> respondFeedback(@PathVariable("id") Long id, @RequestParam String response) {
         FeedbackDto feedback = feedbackService.respondFeedback(id, response);
         return ResponseEntity.ok(feedback);
     }

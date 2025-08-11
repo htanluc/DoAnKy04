@@ -269,7 +269,8 @@ export default function InvoicesPage() {
       let data, payUrl;
       if (selectedPaymentMethod === 'vnpay') {
         data = await createVNPayPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
-        payUrl = data.data?.payUrl || data.data?.payurl;
+        // Backend mới trả về trực tiếp payUrl ở root level
+        payUrl = data.payUrl || data.data?.payUrl || data.data?.payurl;
       } else if (selectedPaymentMethod === 'momo') {
         data = await createMoMoPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
         payUrl = data.data?.payUrl || data.data?.payurl;
@@ -285,11 +286,8 @@ export default function InvoicesPage() {
         return;
       }
       if (payUrl) {
-        if (selectedPaymentMethod === 'vnpay') {
-          window.location.href = payUrl;
-        } else {
-          window.open(payUrl, '_blank');
-        }
+        // Mở ngay trên tab hiện tại cho mọi cổng để tránh user quay lại/đúp giao dịch
+        window.location.href = payUrl;
       } else {
         setPaymentError('Không nhận được đường dẫn thanh toán');
       }

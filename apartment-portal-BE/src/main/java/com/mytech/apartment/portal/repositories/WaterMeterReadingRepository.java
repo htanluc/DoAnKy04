@@ -28,5 +28,7 @@ public interface WaterMeterReadingRepository extends JpaRepository<WaterMeterRea
 
     List<WaterMeterReading> findAllByReadingDate(LocalDate readingDate);
 
+    List<WaterMeterReading> findAllByReadingDateBetween(LocalDate start, LocalDate end);
+
     List<WaterMeterReading> findAllByApartmentIdOrderByReadingDateDesc(Long apartmentId);
 }

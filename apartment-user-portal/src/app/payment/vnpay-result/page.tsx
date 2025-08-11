@@ -4,43 +4,31 @@ import { useSearchParams } from "next/navigation";
 
 export default function VNPayResultPage() {
   const params = useSearchParams();
-  const [status, setStatus] = useState<"pending" | "success" | "failed">("pending");
-  const [message, setMessage] = useState("Đang kiểm tra trạng thái giao dịch...");
+  const [message, setMessage] = useState("Đang chuyển đến trang xác nhận thanh toán...");
 
   useEffect(() => {
-    // VNPay sẽ redirect về với các query params, trong đó có vnp_TxnRef (transactionId)
-    const transactionId = params.get("vnp_TxnRef");
-    if (!transactionId) {
-      setStatus("failed");
-      setMessage("Không tìm thấy mã giao dịch!");
+    // Chuyển hướng trực tiếp sang BE để hiển thị HTML và auto-redirect về dashboard sau 3s
+    const search = params.toString();
+    if (!search) {
+      setMessage("Thiếu tham số thanh toán!");
       return;
     }
-    fetch(`http://localhost:8080/api/payments/gateway/status/${transactionId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === "SUCCESS") {
-          setStatus("success");
-          setMessage("Thanh toán thành công!");
-        } else if (data.status === "PENDING") {
-          setStatus("pending");
-          setMessage("Giao dịch đang chờ xử lý...");
-        } else {
-          setStatus("failed");
-          setMessage("Thanh toán thất bại!");
-        }
-      })
-      .catch(() => {
-        setStatus("failed");
-        setMessage("Không kiểm tra được trạng thái giao dịch!");
-      });
+    const target = `http://localhost:8080/api/payments/vnpay/return?${search}`;
+    // Điều hướng toàn trang để tránh CORS và nhận đúng HTML từ backend
+    window.location.replace(target);
   }, [params]);
 
   return (
     <div style={{ textAlign: "center", marginTop: 40 }}>
       <h2>Kết quả thanh toán VNPay</h2>
       <p>{message}</p>
-      {status === "success" && <span style={{ color: "green" }}>✔</span>}
-      {status === "failed" && <span style={{ color: "red" }}>✖</span>}
+      <p>Nếu không được chuyển tự động, vui lòng bấm vào liên kết dưới:</p>
+      <a
+        href={`http://localhost:8080/api/payments/vnpay/return?${params.toString()}`}
+        style={{ color: "#2563eb", textDecoration: "underline" }}
+      >
+        Mở trang xác nhận thanh toán
+      </a>
     </div>
   );
 } 

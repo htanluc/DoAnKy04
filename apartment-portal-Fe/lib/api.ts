@@ -680,8 +680,16 @@ export const supportRequestsApi = {
     return response.json();
   },
     // cập nhạt trạng thái (admin)
-  updateStatus: async (id: number, data: { status: string; resolutionNotes?: string }) => {
-  const response = await api.put(`/api/staff/support-requests/${id}/status`, data);
+  updateStatus: async (
+    id: number,
+    data: { status: string; resolutionNotes?: string; isCompleted?: boolean; rating?: number }
+  ) => {
+    // Bổ sung trường isCompleted theo yêu cầu BE
+    const payload = {
+      ...data,
+      isCompleted: typeof data.isCompleted === 'boolean' ? data.isCompleted : data.status === 'COMPLETED'
+    };
+    const response = await api.put(`/api/staff/support-requests/${id}/status`, payload);
   if (!response.ok) throw new Error('Cập nhật trạng thái thất bại');
   return response.json();
 },
@@ -692,6 +700,61 @@ export const supportRequestsApi = {
     return response.json();
   },
 }; 
+
+// VEHICLES API (Admin)
+export interface Vehicle {
+  id: number;
+  licensePlate: string;
+  vehicleType: string;
+  vehicleTypeDisplayName?: string;
+  brand?: string;
+  model?: string;
+  color?: string;
+  status: string;
+  statusDisplayName?: string;
+  monthlyFee?: number;
+  userFullName?: string;
+  apartmentId?: number;
+  apartmentUnitNumber?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const vehiclesApi = {
+  getAll: async (): Promise<Vehicle[]> => {
+    const response = await api.get('/api/admin/vehicles');
+    if (!response.ok) throw new Error('Lấy danh sách xe thất bại');
+    return response.json();
+  },
+  getPending: async (): Promise<Vehicle[]> => {
+    const response = await api.get('/api/admin/vehicles/pending');
+    if (!response.ok) throw new Error('Lấy xe chờ duyệt thất bại');
+    return response.json();
+  },
+  getByStatus: async (status: string): Promise<Vehicle[]> => {
+    const response = await api.get(`/api/admin/vehicles/status/${status}`);
+    if (!response.ok) throw new Error('Lấy xe theo trạng thái thất bại');
+    return response.json();
+  },
+  getById: async (id: number): Promise<Vehicle> => {
+    const response = await api.get(`/api/admin/vehicles/${id}`);
+    if (!response.ok) throw new Error('Lấy chi tiết xe thất bại');
+    return response.json();
+  },
+  updateStatus: async (id: number, status: string, rejectionReason?: string): Promise<Vehicle> => {
+    const body: any = { status };
+    if (rejectionReason && rejectionReason.trim()) {
+      body.rejectionReason = rejectionReason.trim();
+    }
+    const response = await api.put(`/api/admin/vehicles/${id}/status`, body);
+    if (!response.ok) throw new Error('Cập nhật trạng thái xe thất bại');
+    return response.json();
+  },
+  delete: async (id: number): Promise<void> => {
+    const response = await api.delete(`/api/admin/vehicles/${id}`);
+    if (!response.ok) throw new Error('Xóa xe thất bại');
+  },
+};
 
 export interface ServiceFeeConfig {
   id: number;

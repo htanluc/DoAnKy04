@@ -159,7 +159,10 @@ export default function SupportRequestDetailPage() {
     }
     setStatusError("");
     try {
-      await supportRequestsApi.updateStatus(Number(id), { status: normalizeStatus(data.status) });
+      await supportRequestsApi.updateStatus(Number(id), {
+        status: normalizeStatus(data.status),
+        isCompleted: normalizeStatus(data.status) === 'COMPLETED',
+      });
       setData((d) => ({ ...d!, status: normalizeStatus(data.status) }));
       alert("Cập nhật trạng thái thành công!");
     } catch {

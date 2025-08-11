@@ -14,13 +14,13 @@ public class WaterMeterReadingDto {
     @NotNull
     private Long apartmentId;
 
-    @NotNull
+    // Không bắt buộc: sẽ suy ra từ readingMonth nếu không truyền
     private LocalDate readingDate;
 
     // Thêm trường readingMonth để tương thích với frontend
     private String readingMonth;
 
-    @NotNull
+    // Không bắt buộc: sẽ lấy từ currentReading nếu không truyền
     @DecimalMin("0.00")
     private BigDecimal meterReading;
 
@@ -34,7 +34,7 @@ public class WaterMeterReadingDto {
 
     private BigDecimal totalAmount;
 
-    @NotNull
+    // Không bắt buộc: backend sẽ tự điền từ người dùng hiện tại nếu thiếu
     private Long recordedBy;
 
     // Mới: tên căn hộ

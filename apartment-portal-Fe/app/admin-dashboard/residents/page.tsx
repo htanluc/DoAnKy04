@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useResidents, Resident } from '@/hooks/use-residents';
+import { getResidentIdCard, formatIdCard } from '@/lib/resident-utils';
 
 export default function ResidentsPage() {
   const { t } = useLanguage();
@@ -34,8 +35,9 @@ export default function ResidentsPage() {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const filteredResidents = residents.filter(resident => {
+    const idCard = getResidentIdCard(resident);
     const matchesSearch = resident.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (resident.identityNumber && resident.identityNumber.includes(searchTerm)) ||
+                         (idCard && idCard.includes(searchTerm)) ||
                          resident.phoneNumber.includes(searchTerm) ||
                          resident.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || resident.status === filterStatus;
@@ -168,7 +170,6 @@ export default function ResidentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
                     <TableHead>Họ Tên</TableHead>
                     <TableHead>Số Điện Thoại</TableHead>
                     <TableHead>Email</TableHead>
@@ -180,11 +181,10 @@ export default function ResidentsPage() {
                 <TableBody>
                   {filteredResidents.map((resident) => (
                     <TableRow key={resident.id}>
-                      <TableCell>{resident.id}</TableCell>
                       <TableCell className="font-medium">{resident.fullName}</TableCell>
                       <TableCell>{resident.phoneNumber}</TableCell>
                       <TableCell>{resident.email}</TableCell>
-                      <TableCell>{resident.identityNumber || 'N/A'}</TableCell>
+                      <TableCell>{formatIdCard(getResidentIdCard(resident))}</TableCell>
                       <TableCell>{getStatusBadge(resident.status)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -193,19 +193,6 @@ export default function ResidentsPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Link href={`/admin-dashboard/residents/${resident.id}/edit`}>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDeleteResident(resident.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

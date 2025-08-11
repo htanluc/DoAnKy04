@@ -96,6 +96,10 @@ public class SecurityConfiguration {
               .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
               .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
               .requestMatchers("/api/auth/**").permitAll()
+              // Cho phép public các endpoint callback/return từ cổng thanh toán
+              .requestMatchers("/api/payments/vnpay/return", "/api/payments/vnpay/callback",
+                               "/api/payments/momo/callback", "/api/payments/zalopay/callback",
+                               "/api/payments/paypal/callback", "/api/payments/gateway/callback").permitAll()
               .requestMatchers("/uploads/**", "/api/files/**").permitAll()  // Static files không cần auth
               .requestMatchers("/stripe-checkout.html", "/api/payments/stripe/success", "/api/payments/stripe/cancel", "/api/payments/stripe/webhook").permitAll()  // Stripe checkout pages cần thiết
               .requestMatchers("/api/admin/**").hasRole("ADMIN")

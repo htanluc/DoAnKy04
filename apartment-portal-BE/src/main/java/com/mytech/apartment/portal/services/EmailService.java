@@ -50,4 +50,23 @@ public class EmailService {
             throw new RuntimeException("Không gửi được email OTP: " + e.getMessage());
         }
     }
+
+    /**
+     * Gửi email HTML tổng quát
+     */
+    public void sendHtmlEmail(String to, String subject, String htmlContent) {
+        try {
+            logger.info("[EmailService] Gửi email tới: {} | Subject: {}", to, subject);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            logger.info("[EmailService] Gửi email thành công tới: {}", to);
+        } catch (MessagingException e) {
+            logger.error("[EmailService] Lỗi khi gửi email tới {}: {}", to, e.getMessage(), e);
+            throw new RuntimeException("Không gửi được email: " + e.getMessage());
+        }
+    }
 } 

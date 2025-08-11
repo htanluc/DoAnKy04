@@ -15,68 +15,40 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Plus, 
   Search, 
   Edit, 
   Trash2, 
   Eye,
   Filter,
   Calculator,
-  Settings,
-  History,
   AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { Invoice } from '@/lib/api';
 import { api } from '@/lib/api';
-import YearlyBillingForm from '@/components/admin/YearlyBillingForm';
-import CurrentBillingConfig from '@/components/admin/CurrentBillingConfig';
-import BillingHistoryComponent from '@/components/admin/BillingHistory';
 import { useApartments } from '@/hooks/use-apartments';
-import { useYearlyBilling, YearlyBillingConfig } from '@/hooks/use-yearly-billing';
 import { useInvoices } from '@/hooks/use-invoices';
+import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { Apartment as ApiApartment } from '@/lib/api';
 
 export default function InvoicesPage() {
   const { t } = useLanguage();
   const { apartments, loading: apartmentsLoading, error: apartmentsError } = useApartments();
   const { invoices, loading: invoicesLoading, error: invoicesError, fetchInvoices } = useInvoices();
+  const { generateMonthlyInvoices, clearMessages } = useYearlyBilling();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [serviceFeeConfig, setServiceFeeConfig] = useState<YearlyBillingConfig | null>(null);
-  const [feeLoading, setFeeLoading] = useState(true);
+  const [genYear, setGenYear] = useState(new Date().getFullYear());
+  const [genMonth, setGenMonth] = useState(new Date().getMonth() + 1);
+  const [genLoading, setGenLoading] = useState(false);
+  const [genMessage, setGenMessage] = useState<string | null>(null);
 
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-
-  const { getMonthlyConfig } = useYearlyBilling();
-
-  // Lấy đơn giá phí dịch vụ tháng/năm hiện tại
-  useEffect(() => {
-    const loadCurrentConfig = async () => {
-      const now = new Date();
-      const result = await getMonthlyConfig(now.getFullYear(), now.getMonth() + 1);
-      if (result?.success && result.config) {
-        setServiceFeeConfig(result.config);
-      } else {
-        // Sử dụng giá trị mặc định nếu không có config
-        setServiceFeeConfig({
-          month: now.getMonth() + 1,
-          year: now.getFullYear(),
-          serviceFeePerM2: 5000,
-          waterFeePerM3: 15000,
-          motorcycleFee: 50000,
-          car4SeatsFee: 200000,
-          car7SeatsFee: 250000,
-        });
-      }
-      setFeeLoading(false);
-    };
-    
-    loadCurrentConfig();
-  }, []); // Chỉ gọi một lần khi component mount
+  // Determine if invoices already exist for the selected period
+  const selectedPeriodKey = `${genYear}-${String(genMonth).padStart(2, '0')}`;
+  const invoicesInSelectedPeriod = invoices.filter(inv => (inv.billingPeriod || '').startsWith(selectedPeriodKey));
+  const blockBatchCreate = invoicesInSelectedPeriod.length > 0;
+  
 
   const filteredInvoices = invoices.filter(invoice => {
     const apartment = apartments.find(apt => apt.id === invoice.apartmentId) as ApiApartment | undefined;
@@ -114,6 +86,25 @@ export default function InvoicesPage() {
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return '0';
     return value.toLocaleString('vi-VN');
+  };
+
+  const handleGenerateMonthly = async () => {
+    clearMessages();
+    setGenMessage(null);
+    setGenLoading(true);
+    if (blockBatchCreate) {
+      setGenMessage(`Đã phát hiện ${invoicesInSelectedPeriod.length} hóa đơn trong kỳ ${selectedPeriodKey}. Không cho phép tạo đồng loạt.`);
+      setGenLoading(false);
+      return;
+    }
+    const res = await generateMonthlyInvoices(genYear, genMonth);
+    if (res?.success) {
+      setGenMessage(res.message || 'Đã tạo hóa đơn tháng thành công');
+      await fetchInvoices();
+    } else {
+      setGenMessage('Tạo hóa đơn thất bại');
+    }
+    setGenLoading(false);
   };
 
   if (invoicesLoading || apartmentsLoading) {
@@ -163,76 +154,57 @@ export default function InvoicesPage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Calculator className="h-6 w-6" />
-              Quản lý hóa đơn & Biểu phí
+              Quản lý hóa đơn
             </h2>
             <p className="text-gray-600">
-              Quản lý hóa đơn và tạo biểu phí cấu hình cho cư dân
+              Danh sách và trạng thái hóa đơn của cư dân
             </p>
           </div>
         </div>
 
-        {/* Main Content with Tabs */}
-        <Tabs defaultValue="invoices" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="invoices">Hóa đơn</TabsTrigger>
-            <TabsTrigger value="config">Cấu hình phí</TabsTrigger>
-            <TabsTrigger value="history">Lịch sử</TabsTrigger>
-          </TabsList>
-
-          {/* Invoices Tab */}
-          <TabsContent value="invoices" className="space-y-6">
-            {/* Fee Config Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Đơn giá phí dịch vụ tháng {currentMonth}/{currentYear}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {feeLoading ? (
-                  <span>Đang tải...</span>
-                ) : serviceFeeConfig ? (
-                  <div className="space-y-2 mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="font-medium text-gray-700">Phí gửi xe:</div>
-                        <div className="pl-4 space-y-1 text-sm">
-                          <div>• Xe máy: <b className="text-green-600">{formatNumber(serviceFeeConfig.motorcycleFee)} đ/xe/tháng</b></div>
-                          <div>• Xe 4 chỗ: <b className="text-blue-600">{formatNumber(serviceFeeConfig.car4SeatsFee)} đ/xe/tháng</b></div>
-                          <div>• Xe 7 chỗ: <b className="text-purple-600">{formatNumber(serviceFeeConfig.car7SeatsFee)} đ/xe/tháng</b></div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="font-medium text-gray-700">Phí dịch vụ khác:</div>
-                        <div className="pl-4 space-y-1 text-sm">
-                          <div>• Phí dịch vụ: <b className="text-blue-600">{formatNumber(serviceFeeConfig.serviceFeePerM2)} đ/m²</b></div>
-                          <div>• Phí nước: <b className="text-blue-600">{formatNumber(serviceFeeConfig.waterFeePerM3)} đ/m³</b></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-red-600 mb-4 block">Chưa cấu hình đơn giá tháng này</span>
+        {/* Generate monthly invoices */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Tạo hóa đơn theo tháng
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
+              <div>
+                <label className="text-sm text-gray-600">Năm</label>
+                <select value={genYear} onChange={e=>setGenYear(parseInt(e.target.value))} className="border rounded px-3 py-2">
+                  {Array.from({length:11},(_,i)=>new Date().getFullYear()-5+i).map(y=> (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600">Tháng</label>
+                <select value={genMonth} onChange={e=>setGenMonth(parseInt(e.target.value))} className="border rounded px-3 py-2">
+                  {Array.from({length:12},(_,i)=>i+1).map(m=> (
+                    <option key={m} value={m}>Tháng {m}</option>
+                  ))}
+                </select>
+              </div>
+              <Button onClick={handleGenerateMonthly} disabled={genLoading || blockBatchCreate}>
+                {genLoading ? 'Đang tạo...' : blockBatchCreate ? 'Đã có hóa đơn tháng này' : `Tạo hóa đơn tháng ${genMonth}/${genYear}`}
+              </Button>
+              <div className="text-sm text-gray-700">
+                {blockBatchCreate && (
+                  <span className="text-red-600">Tháng {genMonth}/{genYear} đã có {invoicesInSelectedPeriod.length} hóa đơn. Không thể tạo đồng loạt.</span>
                 )}
-              </CardContent>
-            </Card>
+                {genMessage && !blockBatchCreate && (
+                  <span>{genMessage}</span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Create Invoice Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Tạo hóa đơn theo tháng
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <YearlyBillingForm apartments={apartments} />
-              </CardContent>
-            </Card>
-
-            {/* Invoices List */}
-            <div className="space-y-4">
+        {/* Invoices List */}
+        <div className="space-y-4">
               {/* Header with actions */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -417,21 +389,7 @@ export default function InvoicesPage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
-
-
-
-          {/* Config Tab */}
-          <TabsContent value="config" className="space-y-4">
-            <CurrentBillingConfig year={currentYear} month={currentMonth} />
-          </TabsContent>
-
-          {/* History Tab */}
-          <TabsContent value="history" className="space-y-4">
-            <BillingHistoryComponent />
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </AdminLayout>
   );

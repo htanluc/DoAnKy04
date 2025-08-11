@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,27 +26,25 @@ import com.mytech.apartment.portal.services.SmartActivityLogService;
 import com.mytech.apartment.portal.services.AutoPaymentService;
 import com.mytech.apartment.portal.services.PaymentGatewayService;
 import com.mytech.apartment.portal.services.PaymentService;
+import com.mytech.apartment.portal.services.PaymentTransactionService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestHeader;
-import java.util.HashMap;
 import java.time.LocalDateTime;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/payments")
 @Tag(name = "Payment", description = "Payment management endpoints")
 @RequiredArgsConstructor
 public class PaymentController {
-    private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
+    private static final Logger log = LoggerFactory.getLogger(PaymentController.class); // kept for future debug logs
 
     private final PaymentService paymentService;
     private final PaymentGatewayService paymentGatewayService;
@@ -55,6 +52,7 @@ public class PaymentController {
     private final SmartActivityLogService smartActivityLogService;
     private final com.mytech.apartment.portal.services.UserService userService;
     private final com.mytech.apartment.portal.config.StripeConfig stripeConfig;
+    private final PaymentTransactionService paymentTransactionService;
 
     // Cooldown mechanism to prevent rapid repeated payment attempts
     private final Map<String, LocalDateTime> paymentCooldowns = new ConcurrentHashMap<>();
@@ -97,7 +95,7 @@ public class PaymentController {
      * Lấy thông tin thanh toán theo ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentDto> getPaymentById(@PathVariable Long id) {
+    public ResponseEntity<PaymentDto> getPaymentById(@PathVariable("id") Long id) {
         return paymentService.getPaymentById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -144,6 +142,43 @@ public class PaymentController {
                 .getAuthentication().getName();
             Long userId = userService.getUserIdByPhoneNumber(username);
             
+            // HARD LOCK: không cho tạo thanh toán mới nếu hóa đơn đã PAID hoặc đang có giao dịch PENDING/PROCESSING gần đây
+            try {
+                // 1) Nếu hóa đơn đã PAID → chặn
+                var invOpt = paymentService.getInvoiceRepository().findById(request.getInvoiceId());
+                if (invOpt.isPresent()) {
+                    var inv = invOpt.get();
+                    if (inv.getStatus() == com.mytech.apartment.portal.models.enums.InvoiceStatus.PAID) {
+                        return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                            null, null, "FAILED", "Hóa đơn đã được thanh toán", null
+                        ));
+                    }
+                }
+                // 2) Nếu có Payment SUCCESS/PENDING gần đây với cùng invoice → chặn tạo mới
+                var recent = paymentService.getPaymentsByInvoice(request.getInvoiceId());
+                boolean hasPendingOrSuccess = recent.stream()
+                    .anyMatch(p -> "SUCCESS".equalsIgnoreCase(p.getStatus()) || "PENDING".equalsIgnoreCase(p.getStatus()));
+                if (hasPendingOrSuccess) {
+                    return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                        null, null, "FAILED", "Hóa đơn đang có giao dịch hoặc đã thanh toán. Vui lòng tải lại trang.", null
+                    ));
+                }
+                // 3) Nếu có transaction PENDING/PROCESSING trong 3 phút gần đây → chặn tạo mới
+                var txList = paymentTransactionService.findByInvoiceId(request.getInvoiceId());
+                java.time.LocalDateTime threeMinAgo = java.time.LocalDateTime.now().minusMinutes(3);
+                boolean hasRecentTx = txList.stream().anyMatch(tx -> {
+                    String st = tx.getStatus();
+                    java.time.LocalDateTime ct = tx.getCreatedAt();
+                    return ("PENDING".equalsIgnoreCase(st) || "PROCESSING".equalsIgnoreCase(st))
+                           && ct != null && ct.isAfter(threeMinAgo);
+                });
+                if (hasRecentTx) {
+                    return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                        null, null, "FAILED", "Hóa đơn đang có giao dịch đang xử lý. Vui lòng đợi hoặc tải lại trang.", null
+                    ));
+                }
+            } catch (Exception ignore) {}
+
             if (userId != null && isPaymentInCooldown(userId, request.getInvoiceId())) {
                 return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
                     null, null, "FAILED", "Vui lòng đợi 5 giây trước khi thử lại", null
@@ -205,6 +240,7 @@ public class PaymentController {
      * Create VNPay payment
      * Tạo thanh toán VNPay
      */
+    /*
     @PostMapping("/vnpay")
     @Operation(summary = "Create VNPay payment", description = "Create payment via VNPay")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createVNPayPayment(
@@ -220,6 +256,43 @@ public class PaymentController {
             return ResponseEntity.ok(ApiResponse.success("Tạo thanh toán VNPay thành công", data));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    */
+
+    /**
+     * Xử lý thanh toán VNPay
+     */
+    @PostMapping("/vnpay")
+    public ResponseEntity<?> processVNPayPayment(@RequestBody Map<String, Object> request) {
+        log.info("Nhận yêu cầu thanh toán VNPay: {}", request);
+        
+        try {
+            String orderId = (String) request.get("orderId");
+            Object amountObj = request.get("amount");
+            String orderInfo = (String) request.get("orderInfo");
+            
+            // Validate và convert amount
+            Long amount = null;
+            if (amountObj instanceof Number) {
+                amount = ((Number) amountObj).longValue();
+            } else if (amountObj instanceof String) {
+                try {
+                    amount = Long.parseLong((String) amountObj);
+                } catch (NumberFormatException e) {
+                    log.error("Không thể parse amount: {}", amountObj);
+                    return ResponseEntity.badRequest().body(Map.of("error", "amount không hợp lệ"));
+                }
+            }
+            
+            log.info("Đã parse request - orderId: {}, amount: {}, orderInfo: {}", orderId, amount, orderInfo);
+            
+            return paymentGatewayService.processVNPayPayment(orderId, amount, orderInfo);
+            
+        } catch (Exception e) {
+            log.error("Lỗi khi xử lý request thanh toán VNPay: {}", request, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Lỗi nội bộ: " + e.getMessage()));
         }
     }
 
@@ -347,6 +420,36 @@ public class PaymentController {
                 .getAuthentication().getName();
             Long userId = userService.getUserIdByPhoneNumber(username);
             
+            // Hard-lock duplicate attempts for the same invoice
+            try {
+                var invOpt = paymentService.getInvoiceRepository().findById(invoiceId);
+                if (invOpt.isPresent()) {
+                    var inv = invOpt.get();
+                    if (inv.getStatus() == com.mytech.apartment.portal.models.enums.InvoiceStatus.PAID) {
+                        return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn đã được thanh toán"));
+                    }
+                }
+                // Block if there is any SUCCESS or PENDING payment for this invoice
+                var recent = paymentService.getPaymentsByInvoice(invoiceId);
+                boolean hasPendingOrSuccess = recent.stream()
+                    .anyMatch(p -> "SUCCESS".equalsIgnoreCase(p.getStatus()) || "PENDING".equalsIgnoreCase(p.getStatus()));
+                if (hasPendingOrSuccess) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn đang có giao dịch hoặc đã thanh toán. Vui lòng tải lại trang."));
+                }
+                // Block if recent transaction exists within 3 minutes
+                var txList = paymentTransactionService.findByInvoiceId(invoiceId);
+                java.time.LocalDateTime threeMinAgo = java.time.LocalDateTime.now().minusMinutes(3);
+                boolean hasRecentTx = txList.stream().anyMatch(tx -> {
+                    String st = tx.getStatus();
+                    java.time.LocalDateTime ct = tx.getCreatedAt();
+                    return ("PENDING".equalsIgnoreCase(st) || "PROCESSING".equalsIgnoreCase(st))
+                           && ct != null && ct.isAfter(threeMinAgo);
+                });
+                if (hasRecentTx) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn đang có giao dịch đang xử lý. Vui lòng đợi hoặc tải lại trang."));
+                }
+            } catch (Exception ignore) {}
+
             if (userId != null && isPaymentInCooldown(userId, invoiceId)) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng đợi 5 giây trước khi thử lại"));
             }
@@ -400,7 +503,7 @@ public class PaymentController {
             boolean isValid = paymentGatewayService.verifyPaymentCallback("momo", params);
             if (isValid) {
                 // Xử lý thanh toán thành công
-                String orderId = params.get("orderId");
+                String orderId = params.get("orderId"); // kept for potential auditing
                 String resultCode = params.get("resultCode");
                 if ("0".equals(resultCode)) {
                     // Thanh toán thành công
@@ -425,18 +528,66 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<String>> vnpayCallback(@RequestParam Map<String, String> params) {
         try {
             boolean isValid = paymentGatewayService.verifyPaymentCallback("vnpay", params);
-            if (isValid) {
+            if (!isValid) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+            }
+
+            // Đồng bộ cập nhật trạng thái giao dịch
+            Map<String, Object> sync = paymentGatewayService.processVNPayReturn(params);
+            if (Boolean.TRUE.equals(sync.get("success"))) {
                 String vnp_ResponseCode = params.get("vnp_ResponseCode");
                 if ("00".equals(vnp_ResponseCode)) {
                     return ResponseEntity.ok(ApiResponse.success("Thanh toán VNPay thành công"));
-                } else {
-                    return ResponseEntity.ok(ApiResponse.error("Thanh toán VNPay thất bại"));
                 }
-            } else {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Callback không hợp lệ"));
+                return ResponseEntity.ok(ApiResponse.error("Thanh toán VNPay thất bại"));
             }
+            return ResponseEntity.badRequest().body(ApiResponse.error(String.valueOf(sync.get("message"))));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Return URL (FE redirect) từ VNPay: map về API để FE lấy trạng thái chuẩn
+     */
+    @GetMapping("/vnpay/return")
+    @Operation(summary = "VNPay return", description = "Handle user return from VNPay and return normalized status")
+    public ResponseEntity<String> vnpayReturn(@RequestParam Map<String, String> params) {
+        try {
+            Map<String, Object> result = paymentGatewayService.processVNPayReturn(params);
+            // Tự động redirect về FE sau 3s
+            String target = "http://localhost:3001/dashboard/invoices";
+            String html = "<!DOCTYPE html>" +
+                    "<html lang=\"vi\"><head><meta charset=\"UTF-8\"/>" +
+                    "<meta http-equiv=\"refresh\" content=\"3;url=" + target + "\"/>" +
+                    "<title>Kết quả thanh toán VNPay</title>" +
+                    "<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;color:#111827}</style>" +
+                    "</head><body>" +
+                    "<div><h2>Kết quả thanh toán VNPay</h2>" +
+                    "<p>" + (Boolean.TRUE.equals(result.get("success")) && "SUCCESS".equals(String.valueOf(result.get("status")))
+                        ? "Thanh toán thành công!" : "Thanh toán thất bại!") + "</p>" +
+                    "<p>Đang chuyển về trang hóa đơn trong 3 giây...</p>" +
+                    "<p><a href=\"" + target + "\">Nhấn vào đây nếu không được chuyển</a></p>" +
+                    "</div></body></html>";
+            return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                .body(html);
+        } catch (Exception e) {
+            String target = "http://localhost:3001/dashboard/invoices";
+            String errorHtml = "<!DOCTYPE html>" +
+                    "<html lang=\"vi\"><head><meta charset=\"UTF-8\"/>" +
+                    "<meta http-equiv=\"refresh\" content=\"3;url=" + target + "\"/>" +
+                    "<title>Lỗi xử lý thanh toán</title>" +
+                    "<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff5f5;color:#7f1d1d}</style>" +
+                    "</head><body>" +
+                    "<div><h2>Lỗi xử lý thanh toán</h2>" +
+                    "<p>" + org.springframework.web.util.HtmlUtils.htmlEscape(e.getMessage() == null ? "Lỗi không xác định" : e.getMessage()) + "</p>" +
+                    "<p>Đang chuyển về trang hóa đơn trong 3 giây...</p>" +
+                    "<p><a href=\"" + target + "\">Nhấn vào đây nếu không được chuyển</a></p>" +
+                    "</div></body></html>";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                .body(errorHtml);
         }
     }
 
@@ -541,7 +692,7 @@ public class PaymentController {
                         paymentRequest.setReferenceCode(session.getId());
 
                         // Lưu payment vào database
-                        com.mytech.apartment.portal.dtos.PaymentDto savedPayment = paymentService.recordManualPayment(paymentRequest);
+                        paymentService.recordManualPayment(paymentRequest);
                         System.out.println("✅ Webhook: Payment recorded successfully");
                         
                         // Log successful payment activity (smart logging)
@@ -581,10 +732,23 @@ public class PaymentController {
     @GetMapping("/stripe/cancel")
     @Operation(summary = "Stripe cancel callback", description = "Handle cancelled payment from Stripe checkout page")
     public ResponseEntity<String> stripeCancelCallback(
-            @RequestParam String orderId) {
+            @RequestParam String orderId,
+            @RequestParam(name = "session_id", required = false) String sessionId) {
         try {
             System.out.println("=== STRIPE CANCEL CALLBACK ===");
             System.out.println("OrderId: " + orderId);
+            if (sessionId != null) {
+                try {
+                    var txOpt = paymentTransactionService.findByTransactionRef(sessionId);
+                    txOpt.ifPresent(tx -> {
+                        tx.setStatus(com.mytech.apartment.portal.entities.PaymentTransaction.STATUS_FAILED);
+                        tx.setUpdatedAt(java.time.LocalDateTime.now());
+                        paymentTransactionService.saveTransaction(tx);
+                    });
+                } catch (Exception e) {
+                    System.err.println("Error updating Stripe tx to FAILED: " + e.getMessage());
+                }
+            }
 
             String htmlResponse = String.format("""
                 <!DOCTYPE html>
@@ -783,6 +947,18 @@ public class PaymentController {
                             System.out.println("✅ Payment recorded successfully");
                             System.out.println("Payment ID: " + savedPayment.getId());
                             System.out.println("Payment Status: " + savedPayment.getStatus());
+                        // Mark audit transaction SUCCESS
+                        try {
+                            var txOpt = paymentTransactionService.findByTransactionRef(session_id);
+                            txOpt.ifPresent(tx -> {
+                                tx.setStatus(com.mytech.apartment.portal.entities.PaymentTransaction.STATUS_SUCCESS);
+                                tx.setUpdatedAt(java.time.LocalDateTime.now());
+                                tx.setCompletedAt(java.time.LocalDateTime.now());
+                                paymentTransactionService.saveTransaction(tx);
+                            });
+                        } catch (Exception ex) {
+                            System.err.println("Warn: cannot update Stripe tx to SUCCESS: " + ex.getMessage());
+                        }
                             
                             // Log successful payment activity (smart logging)
                             try {
@@ -813,6 +989,17 @@ public class PaymentController {
                     System.out.println("Payment Status: " + session.getPaymentStatus());
                     System.out.println("InvoiceId: '" + invoiceIdStr + "' (null: " + (invoiceIdStr == null) + ", empty: " + (invoiceIdStr != null && invoiceIdStr.trim().isEmpty()) + ")");
                     System.out.println("UserId: '" + userIdStr + "' (null: " + (userIdStr == null) + ", empty: " + (userIdStr != null && userIdStr.trim().isEmpty()) + ")");
+                    // Đánh dấu transaction thất bại nếu có
+                    try {
+                        var txOpt = paymentTransactionService.findByTransactionRef(session_id);
+                        txOpt.ifPresent(tx -> {
+                            tx.setStatus(com.mytech.apartment.portal.entities.PaymentTransaction.STATUS_FAILED);
+                            tx.setUpdatedAt(java.time.LocalDateTime.now());
+                            paymentTransactionService.saveTransaction(tx);
+                        });
+                    } catch (Exception e) {
+                        System.err.println("Error updating Stripe tx to FAILED (not completed): " + e.getMessage());
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("❌ Lỗi khi verify payment với Stripe: " + e.getMessage());
@@ -922,7 +1109,7 @@ public class PaymentController {
      * Kiểm tra trạng thái thanh toán
      */
     @GetMapping("/gateway/status/{transactionId}")
-    public ResponseEntity<PaymentGatewayResponse> checkPaymentStatus(@PathVariable String transactionId) {
+    public ResponseEntity<PaymentGatewayResponse> checkPaymentStatus(@PathVariable("transactionId") String transactionId) {
         try {
             PaymentGatewayResponse response = paymentGatewayService.checkPaymentStatus(transactionId);
             return ResponseEntity.ok(response);
@@ -995,7 +1182,7 @@ public class PaymentController {
      * Lấy thanh toán theo hóa đơn
      */
     @GetMapping("/invoice/{invoiceId}")
-    public ResponseEntity<List<PaymentDto>> getPaymentsByInvoice(@PathVariable Long invoiceId) {
+    public ResponseEntity<List<PaymentDto>> getPaymentsByInvoice(@PathVariable("invoiceId") Long invoiceId) {
         try {
             List<PaymentDto> payments = paymentService.getPaymentsByInvoice(invoiceId);
             return ResponseEntity.ok(payments);
@@ -1009,7 +1196,7 @@ public class PaymentController {
      * Lấy thanh toán theo trạng thái
      */
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<PaymentDto>> getPaymentsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<PaymentDto>> getPaymentsByStatus(@PathVariable("status") String status) {
         try {
             List<PaymentDto> payments = paymentService.getPaymentsByStatus(status);
             return ResponseEntity.ok(payments);
@@ -1023,7 +1210,7 @@ public class PaymentController {
      * Xóa thanh toán
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePayment(@PathVariable("id") Long id) {
         try {
             paymentService.deletePayment(id);
             return ResponseEntity.noContent().build();

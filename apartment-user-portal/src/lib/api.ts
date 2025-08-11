@@ -385,36 +385,21 @@ export async function createMoMoPayment(invoiceId: number, amount: number, order
 export async function createVNPayPayment(invoiceId: number, amount: number, orderInfo: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const vnp_TmnCode = 'XHXOSV1S';
-  const vnp_Amount = (amount * 100).toString();
-  const vnp_Command = 'pay';
-  const vnp_CreateDate = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14); // yyyyMMddHHmmss
-  const vnp_CurrCode = 'VND';
-  const vnp_IpAddr = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const vnp_Locale = 'vn';
-  const vnp_OrderInfo = orderInfo;
-  const vnp_OrderType = 'other';
-  const vnp_ReturnUrl = 'http://localhost:3001/payment/vnpay-result';
-  const vnp_TxnRef = invoiceId.toString() + '-' + Date.now();
-  const formData = new URLSearchParams();
-  formData.append('vnp_TmnCode', vnp_TmnCode);
-  formData.append('vnp_Amount', vnp_Amount);
-  formData.append('vnp_Command', vnp_Command);
-  formData.append('vnp_CreateDate', vnp_CreateDate);
-  formData.append('vnp_CurrCode', vnp_CurrCode);
-  formData.append('vnp_IpAddr', vnp_IpAddr);
-  formData.append('vnp_Locale', vnp_Locale);
-  formData.append('vnp_OrderInfo', vnp_OrderInfo);
-  formData.append('vnp_OrderType', vnp_OrderType);
-  formData.append('vnp_ReturnUrl', vnp_ReturnUrl);
-  formData.append('vnp_TxnRef', vnp_TxnRef);
+  
+  // Tạo request body theo format mà backend mới mong đợi
+  const requestBody = {
+    orderId: invoiceId.toString(),
+    amount: amount,
+    orderInfo: orderInfo
+  };
+  
   const res = await fetch('http://localhost:8080/api/payments/vnpay', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: formData.toString(),
+    body: JSON.stringify(requestBody),
   });
   if (!res.ok) throw new Error('Tạo thanh toán VNPay thất bại');
   return res.json();

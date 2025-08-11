@@ -25,7 +25,7 @@ public class RoleController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Role> getRoleById(@PathVariable Long id) {
+    public ResponseEntity<Role> getRoleById(@PathVariable("id") Long id) {
         return roleService.getRoleById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -37,12 +37,12 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
-    public Role updateRole(@PathVariable Long id, @RequestBody Role role) {
+    public Role updateRole(@PathVariable("id") Long id, @RequestBody Role role) {
         return roleService.updateRole(id, role);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteRole(@PathVariable Long id) {
+    public void deleteRole(@PathVariable("id") Long id) {
         roleService.deleteRole(id);
     }
 
@@ -57,7 +57,7 @@ public class RoleController {
     }
 
     @GetMapping("/user/{userId}")
-    public List<Role> getRolesOfUser(@PathVariable Long userId) {
+    public List<Role> getRolesOfUser(@PathVariable("userId") Long userId) {
         return roleService.getRolesOfUser(userId);
     }
 } 

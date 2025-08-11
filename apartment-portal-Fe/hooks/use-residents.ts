@@ -9,6 +9,7 @@ export interface Resident {
   dateOfBirth?: string;
   gender?: 'MALE' | 'FEMALE' | 'OTHER';
   identityNumber?: string;
+  idCardNumber?: string;
   address?: string;
   status: 'ACTIVE' | 'INACTIVE';
   roles?: string[];

@@ -114,15 +114,15 @@ public class VehicleController {
     }
 
     @GetMapping("/vehicles/apartment/{apartmentId}")
-    public ResponseEntity<List<VehicleDto>> getVehiclesByApartment(@PathVariable Long apartmentId) {
+    public ResponseEntity<List<VehicleDto>> getVehiclesByApartment(@PathVariable("apartmentId") Long apartmentId) {
         List<VehicleDto> vehicles = vehicleService.getVehiclesByApartment(apartmentId);
         return ResponseEntity.ok(vehicles);
     }
 
     @GetMapping("/vehicles/user/{userId}/apartment/{apartmentId}")
     public ResponseEntity<List<VehicleDto>> getVehiclesByUserAndApartment(
-            @PathVariable Long userId, 
-            @PathVariable Long apartmentId) {
+            @PathVariable("userId") Long userId, 
+            @PathVariable("apartmentId") Long apartmentId) {
         List<VehicleDto> vehicles = vehicleService.getVehiclesByUserAndApartment(userId, apartmentId);
         return ResponseEntity.ok(vehicles);
     }
@@ -150,7 +150,7 @@ public class VehicleController {
     }
 
     @GetMapping("/admin/vehicles/{id}")
-    public ResponseEntity<VehicleDto> getVehicleById(@PathVariable Long id) {
+    public ResponseEntity<VehicleDto> getVehicleById(@PathVariable("id") Long id) {
         VehicleDto vehicle = vehicleService.getVehicleById(id);
         return ResponseEntity.ok(vehicle);
     }
@@ -160,7 +160,8 @@ public class VehicleController {
             @PathVariable Long id,
             @RequestBody Map<String, String> request) {
         VehicleStatus status = VehicleStatus.valueOf(request.get("status"));
-        VehicleDto vehicle = vehicleService.updateVehicleStatus(id, status);
+        String rejectionReason = request.get("rejectionReason");
+        VehicleDto vehicle = vehicleService.updateVehicleStatus(id, status, rejectionReason);
 
         // Log activity: Update vehicle status
         activityLogService.logActivityForCurrentUser(
@@ -194,7 +195,7 @@ public class VehicleController {
     }
 
     @DeleteMapping("/admin/vehicles/{id}")
-    public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteVehicle(@PathVariable("id") Long id) {
         // Get vehicle info before deletion for logging
         VehicleDto vehicle = vehicleService.getVehicleById(id);
 

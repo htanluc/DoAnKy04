@@ -10,11 +10,15 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService userDetailsService;
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     public JwtAuthenticationFilter(JwtProvider jwtProvider,
                                    CustomUserDetailsService userDetailsService) {
@@ -23,16 +27,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
-            System.out.println("JwtAuthenticationFilter: Processing request to " + request.getRequestURI());
-            System.out.println("JwtAuthenticationFilter: JWT token: " + (jwt != null ? jwt.substring(0, Math.min(50, jwt.length())) + "..." : "null"));
+            if (logger.isDebugEnabled()) {
+                String masked = jwt == null ? "null" : (jwt.length() <= 12 ? "***" : (jwt.substring(0, 8) + "..."));
+                logger.debug("Processing request to {} | Authorization: {}", request.getRequestURI(), masked);
+            }
             
             if (jwt != null && jwtProvider.validateToken(jwt)) {
                 String username = jwtProvider.getUsernameFromJwt(jwt);
-                System.out.println("JwtAuthenticationFilter: Valid JWT, username: " + username);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Valid JWT, username: {}", username);
+                }
                 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -40,13 +48,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                System.out.println("JwtAuthenticationFilter: Authentication set successfully for user: " + username);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Authentication set successfully for user: {}", username);
+                }
             } else {
-                System.out.println("JwtAuthenticationFilter: Invalid or missing JWT token");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Invalid or missing JWT token");
+                }
             }
         } catch (Exception e) {
-            System.err.println("JwtAuthenticationFilter: Error processing JWT: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error processing JWT: {}", e.getMessage(), e);
         }
         
         filterChain.doFilter(request, response);

@@ -24,7 +24,7 @@ import {
   Star
 } from 'lucide-react';
 import Link from 'next/link';
-import { feedbacksApi, Feedback } from '@/lib/api';
+import { feedbacksApi, Feedback, FeedbackStatus } from '@/lib/api';
 
 export default function FeedbacksPage() {
   const { t } = useLanguage();
@@ -33,6 +33,7 @@ export default function FeedbacksPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRating, setFilterRating] = useState('all');
   const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +58,18 @@ export default function FeedbacksPage() {
     const matchesRating = filterRating === 'all' || feedback.rating === parseInt(filterRating);
     return matchesSearch && matchesRating;
   });
+
+  const updateStatus = async (id: number, status: FeedbackStatus) => {
+    try {
+      setUpdatingId(id);
+      const updated = await feedbacksApi.updateStatus(id, status);
+      setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: updated.status, updatedAt: updated.updatedAt } : f));
+    } catch (e) {
+      setError((e as any)?.message || 'Cập nhật trạng thái thất bại');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -170,12 +183,15 @@ export default function FeedbacksPage() {
                       <TableHead>{t('admin.feedbacks.subject')}</TableHead>
                       <TableHead>{t('admin.feedbacks.createdAt')}</TableHead>
                       <TableHead>Loại</TableHead>
+                      <TableHead>Trạng thái</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredFeedbacks.map((fb) => (
                       <TableRow key={fb.id}>
-                        <TableCell>{fb.residentName}</TableCell>
+                        <TableCell>
+                          {fb.residentName || (fb as any).resident_name || fb.username || (fb as any).userName || (fb.userId ? `User #${fb.userId}` : 'Ẩn danh')}
+                        </TableCell>
                         <TableCell>{fb.content || <span className="italic text-gray-400">(Không có)</span>}</TableCell>
                         <TableCell>{new Date(fb.createdAt).toLocaleString('vi-VN')}</TableCell>
                         <TableCell>
@@ -187,6 +203,20 @@ export default function FeedbacksPage() {
                             <Badge style={{ background: '#fee2e2', color: '#b91c1c' }}>{fb.categoryName}</Badge>
                           ) : (
                             <Badge style={{ background: '#f3f4f6', color: '#374151' }}>{fb.categoryName}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {fb.status === 'RESPONDED' ? (
+                            <Badge className="bg-green-100 text-green-800 select-none">Đã xem</Badge>
+                          ) : (
+                            <Badge
+                              role="button"
+                              title="Nhấn để đánh dấu đã xem"
+                              onClick={() => (updatingId ? null : updateStatus(fb.id, 'RESPONDED'))}
+                              className={`bg-yellow-100 text-yellow-800 ${updatingId===fb.id ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:opacity-80'}`}
+                            >
+                              {updatingId===fb.id ? 'Đang cập nhật...' : 'Chưa xem'}
+                            </Badge>
                           )}
                         </TableCell>
                       </TableRow>

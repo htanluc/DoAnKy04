@@ -12,7 +12,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.LocalDateTime;
-import java.util.List;
+// import java.util.List;
+// import java.util.Optional;
+// import java.util.ArrayList;
+// import com.mytech.apartment.portal.models.Invoice;
+// import com.mytech.apartment.portal.models.InvoiceItem;
+// import com.mytech.apartment.portal.models.WaterMeterReading;
+// import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
 
 @RestController
 @RequestMapping("/api/admin/yearly-billing")
@@ -23,6 +29,9 @@ public class YearlyBillingController {
     
     @Autowired
     private InvoiceRepository invoiceRepository;
+    
+    // @Autowired
+    // private WaterMeterReadingRepository waterMeterReadingRepository;
     
     // Rate limiting map - track last request time per endpoint
     private final Map<String, LocalDateTime> lastRequestTime = new ConcurrentHashMap<>();
@@ -43,7 +52,7 @@ public class YearlyBillingController {
         }
         
         try {
-            // Tạo cấu hình phí dịch vụ cho năm
+            // Chỉ tạo cấu hình phí dịch vụ cho năm (KHÔNG tạo hóa đơn)
             yearlyBillingService.createYearlyFeeConfig(
                 request.getYear(),
                 request.getServiceFeePerM2(),
@@ -52,30 +61,18 @@ public class YearlyBillingController {
                 request.getCar4SeatsFee(),
                 request.getCar7SeatsFee()
             );
-            
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
             if (request.getApartmentId() != null) {
-                // Tạo cho một căn hộ cụ thể
-                yearlyBillingService.generateYearlyInvoiceForApartment(request.getApartmentId(), request.getYear());
-                
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
                 response.put("message", String.format("Đã tạo biểu phí cấu hình năm %d cho căn hộ %d", 
                     request.getYear(), request.getApartmentId()));
-                response.put("year", request.getYear());
                 response.put("apartmentId", request.getApartmentId());
-                
-                return ResponseEntity.ok(response);
             } else {
-                // Tạo cho tất cả căn hộ
-                yearlyBillingService.generateYearlyInvoices(request.getYear());
-                
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
                 response.put("message", String.format("Đã tạo biểu phí cấu hình năm %d cho tất cả căn hộ", request.getYear()));
-                response.put("year", request.getYear());
-                
-                return ResponseEntity.ok(response);
             }
+            response.put("year", request.getYear());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
@@ -86,46 +83,44 @@ public class YearlyBillingController {
     }
 
     /**
-     * Tạo hóa đơn đồng loạt cho tất cả căn hộ một lần duy nhất
+     * Tạo hóa đơn đồng loạt cho tất cả căn hộ trong một tháng (cải tiến)
      */
-    @PostMapping("/generate-once")
-    public ResponseEntity<Map<String, Object>> generateInvoicesOnce(@RequestBody YearlyBillingRequest request) {
+    @PostMapping("/generate-monthly-invoices")
+    public ResponseEntity<Map<String, Object>> generateMonthlyInvoicesForAllApartments(
+            @RequestBody YearlyBillingRequest request) {
+        
         // Rate limiting check
-        String endpoint = "generate-once";
+        String endpoint = "generate-monthly-invoices";
         if (!checkRateLimit(endpoint)) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Quá nhiều request. Vui lòng thử lại sau 100ms.");
+            response.put("message", "Quá nhiều request. Vui lòng thử lại sau 500ms.");
             return ResponseEntity.status(429).body(response);
         }
         
         try {
-            System.out.println("DEBUG: Bắt đầu tạo hóa đơn một lần cho năm " + request.getYear());
+            int year = request.getYear();
+            int month = request.getMonth();
             
-            // Tạo cấu hình phí trước
-            yearlyBillingService.createYearlyFeeConfig(
-                request.getYear(),
-                request.getServiceFeePerM2(),
-                request.getWaterFeePerM3(),
-                request.getMotorcycleFee(),
-                request.getCar4SeatsFee(),
-                request.getCar7SeatsFee()
-            );
-            
-            // Tạo hóa đơn cho tất cả căn hộ
-            yearlyBillingService.generateYearlyInvoices(request.getYear());
+            System.out.println("DEBUG: Bắt đầu tạo hóa đơn đồng loạt cho tháng " + month + "/" + year);
+            // Ghi chú: Không còn tự động cập nhật biểu phí khi tạo hóa đơn
+            // Biểu phí cần được cập nhật qua endpoint riêng trước đó nếu muốn thay đổi
+
+            // Tạo hóa đơn đồng loạt cho tất cả căn hộ trong tháng này
+            yearlyBillingService.generateMonthlyInvoicesForAllApartments(year, month);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", String.format("Đã tạo hóa đơn đồng loạt cho tất cả căn hộ năm %d", request.getYear()));
-            response.put("year", request.getYear());
-            response.put("note", "Hóa đơn đã được tạo cho 12 tháng trong năm");
+            response.put("message", String.format("Đã tạo hóa đơn đồng loạt cho tất cả căn hộ tháng %d/%d", month, year));
+            response.put("year", year);
+            response.put("month", month);
+            response.put("note", "Hóa đơn đã được tạo với tính toán tổng tiền chính xác từ các items");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Lỗi khi tạo hóa đơn: " + e.getMessage());
+            response.put("message", "Lỗi khi tạo hóa đơn đồng loạt: " + e.getMessage());
             
             return ResponseEntity.badRequest().body(response);
         }
@@ -136,8 +131,8 @@ public class YearlyBillingController {
      */
     @PostMapping("/generate-month/{year}/{month}")
     public ResponseEntity<Map<String, Object>> generateInvoicesForMonth(
-            @PathVariable int year,
-            @PathVariable int month,
+            @PathVariable("year") int year,
+            @PathVariable("month") int month,
             @RequestBody YearlyBillingRequest request) {
         
         // Rate limiting check
@@ -151,15 +146,9 @@ public class YearlyBillingController {
         
         try {
             System.out.println("DEBUG: Bắt đầu tạo hóa đơn cho tháng " + month + "/" + year);
-            
-            // Tạo cấu hình phí cho tháng này nếu chưa có
-            yearlyBillingService.updateFeeConfig(month, year, 
-                request.getServiceFeePerM2(), 
-                request.getWaterFeePerM3(), 
-                request.getMotorcycleFee(),
-                request.getCar4SeatsFee(), 
-                request.getCar7SeatsFee());
-            
+            // Ghi chú: Không tự động cập nhật biểu phí khi tạo hóa đơn
+            // Nếu cần thay đổi, hãy gọi endpoint cập nhật cấu hình trước khi tạo hóa đơn
+
             // Tạo hóa đơn cho tất cả căn hộ trong tháng này
             yearlyBillingService.generateInvoicesForMonth(year, month);
             
@@ -195,7 +184,7 @@ public class YearlyBillingController {
         }
         
         try {
-            // Tạo cấu hình phí dịch vụ cho năm hiện tại
+            // Chỉ tạo cấu hình phí dịch vụ cho năm hiện tại (KHÔNG tạo hóa đơn)
             yearlyBillingService.createYearlyFeeConfig(
                 request.getYear(),
                 request.getServiceFeePerM2(),
@@ -204,30 +193,18 @@ public class YearlyBillingController {
                 request.getCar4SeatsFee(),
                 request.getCar7SeatsFee()
             );
-            
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
             if (request.getApartmentId() != null) {
-                // Tạo cho một căn hộ cụ thể
-                yearlyBillingService.generateCurrentYearInvoiceForApartment(request.getApartmentId());
-                
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
                 response.put("message", String.format("Đã tạo biểu phí cấu hình năm %d cho căn hộ %d", 
                     request.getYear(), request.getApartmentId()));
-                response.put("year", request.getYear());
                 response.put("apartmentId", request.getApartmentId());
-                
-                return ResponseEntity.ok(response);
             } else {
-                // Tạo cho tất cả căn hộ
-                yearlyBillingService.generateCurrentYearInvoices();
-                
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
                 response.put("message", String.format("Đã tạo biểu phí cấu hình năm %d cho tất cả căn hộ", request.getYear()));
-                response.put("year", request.getYear());
-                
-                return ResponseEntity.ok(response);
             }
+            response.put("year", request.getYear());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
@@ -285,8 +262,8 @@ public class YearlyBillingController {
      */
     @PutMapping("/config/{year}/{month}")
     public ResponseEntity<Map<String, Object>> updateFeeConfig(
-            @PathVariable int year,
-            @PathVariable int month,
+            @PathVariable("year") int year,
+            @PathVariable("month") int month,
             @RequestParam double serviceFeePerM2,
             @RequestParam double waterFeePerM3,
             @RequestParam double motorcycleFee,
@@ -330,8 +307,8 @@ public class YearlyBillingController {
      */
     @GetMapping("/config/{year}/{month}")
     public ResponseEntity<Map<String, Object>> getFeeConfig(
-            @PathVariable int year,
-            @PathVariable int month) {
+            @PathVariable("year") int year,
+            @PathVariable("month") int month) {
         
         // Rate limiting check
         String endpoint = "get-config-" + year + "-" + month;
@@ -371,7 +348,7 @@ public class YearlyBillingController {
      * Lấy tất cả cấu hình phí cho một năm
      */
     @GetMapping("/config/{year}")
-    public ResponseEntity<Map<String, Object>> getYearlyFeeConfig(@PathVariable int year) {
+    public ResponseEntity<Map<String, Object>> getYearlyFeeConfig(@PathVariable("year") int year) {
         // Rate limiting check
         String endpoint = "get-yearly-config-" + year;
         if (!checkRateLimit(endpoint)) {
