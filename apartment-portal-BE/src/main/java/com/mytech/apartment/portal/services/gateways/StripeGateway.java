@@ -112,7 +112,7 @@ public class StripeGateway implements PaymentGateway {
             SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(stripeConfig.getSuccessUrl() + "?session_id={CHECKOUT_SESSION_ID}&orderId=" + orderId)
-                .setCancelUrl(stripeConfig.getCancelUrl() + "?orderId=" + orderId)
+                .setCancelUrl(stripeConfig.getCancelUrl() + "?session_id={CHECKOUT_SESSION_ID}&orderId=" + orderId)
                 .addLineItem(SessionCreateParams.LineItem.builder()
                     .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
                         .setCurrency(currency)

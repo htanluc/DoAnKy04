@@ -26,6 +26,7 @@ import com.mytech.apartment.portal.services.SmartActivityLogService;
 import com.mytech.apartment.portal.services.AutoPaymentService;
 import com.mytech.apartment.portal.services.PaymentGatewayService;
 import com.mytech.apartment.portal.services.PaymentService;
+import com.mytech.apartment.portal.services.PaymentTransactionService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,6 +52,7 @@ public class PaymentController {
     private final SmartActivityLogService smartActivityLogService;
     private final com.mytech.apartment.portal.services.UserService userService;
     private final com.mytech.apartment.portal.config.StripeConfig stripeConfig;
+    private final PaymentTransactionService paymentTransactionService;
 
     // Cooldown mechanism to prevent rapid repeated payment attempts
     private final Map<String, LocalDateTime> paymentCooldowns = new ConcurrentHashMap<>();
@@ -140,6 +142,43 @@ public class PaymentController {
                 .getAuthentication().getName();
             Long userId = userService.getUserIdByPhoneNumber(username);
             
+            // HARD LOCK: không cho tạo thanh toán mới nếu hóa đơn đã PAID hoặc đang có giao dịch PENDING/PROCESSING gần đây
+            try {
+                // 1) Nếu hóa đơn đã PAID → chặn
+                var invOpt = paymentService.getInvoiceRepository().findById(request.getInvoiceId());
+                if (invOpt.isPresent()) {
+                    var inv = invOpt.get();
+                    if (inv.getStatus() == com.mytech.apartment.portal.models.enums.InvoiceStatus.PAID) {
+                        return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                            null, null, "FAILED", "Hóa đơn đã được thanh toán", null
+                        ));
+                    }
+                }
+                // 2) Nếu có Payment SUCCESS/PENDING gần đây với cùng invoice → chặn tạo mới
+                var recent = paymentService.getPaymentsByInvoice(request.getInvoiceId());
+                boolean hasPendingOrSuccess = recent.stream()
+                    .anyMatch(p -> "SUCCESS".equalsIgnoreCase(p.getStatus()) || "PENDING".equalsIgnoreCase(p.getStatus()));
+                if (hasPendingOrSuccess) {
+                    return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                        null, null, "FAILED", "Hóa đơn đang có giao dịch hoặc đã thanh toán. Vui lòng tải lại trang.", null
+                    ));
+                }
+                // 3) Nếu có transaction PENDING/PROCESSING trong 3 phút gần đây → chặn tạo mới
+                var txList = paymentTransactionService.findByInvoiceId(request.getInvoiceId());
+                java.time.LocalDateTime threeMinAgo = java.time.LocalDateTime.now().minusMinutes(3);
+                boolean hasRecentTx = txList.stream().anyMatch(tx -> {
+                    String st = tx.getStatus();
+                    java.time.LocalDateTime ct = tx.getCreatedAt();
+                    return ("PENDING".equalsIgnoreCase(st) || "PROCESSING".equalsIgnoreCase(st))
+                           && ct != null && ct.isAfter(threeMinAgo);
+                });
+                if (hasRecentTx) {
+                    return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                        null, null, "FAILED", "Hóa đơn đang có giao dịch đang xử lý. Vui lòng đợi hoặc tải lại trang.", null
+                    ));
+                }
+            } catch (Exception ignore) {}
+
             if (userId != null && isPaymentInCooldown(userId, request.getInvoiceId())) {
                 return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
                     null, null, "FAILED", "Vui lòng đợi 5 giây trước khi thử lại", null
@@ -381,6 +420,36 @@ public class PaymentController {
                 .getAuthentication().getName();
             Long userId = userService.getUserIdByPhoneNumber(username);
             
+            // Hard-lock duplicate attempts for the same invoice
+            try {
+                var invOpt = paymentService.getInvoiceRepository().findById(invoiceId);
+                if (invOpt.isPresent()) {
+                    var inv = invOpt.get();
+                    if (inv.getStatus() == com.mytech.apartment.portal.models.enums.InvoiceStatus.PAID) {
+                        return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn đã được thanh toán"));
+                    }
+                }
+                // Block if there is any SUCCESS or PENDING payment for this invoice
+                var recent = paymentService.getPaymentsByInvoice(invoiceId);
+                boolean hasPendingOrSuccess = recent.stream()
+                    .anyMatch(p -> "SUCCESS".equalsIgnoreCase(p.getStatus()) || "PENDING".equalsIgnoreCase(p.getStatus()));
+                if (hasPendingOrSuccess) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn đang có giao dịch hoặc đã thanh toán. Vui lòng tải lại trang."));
+                }
+                // Block if recent transaction exists within 3 minutes
+                var txList = paymentTransactionService.findByInvoiceId(invoiceId);
+                java.time.LocalDateTime threeMinAgo = java.time.LocalDateTime.now().minusMinutes(3);
+                boolean hasRecentTx = txList.stream().anyMatch(tx -> {
+                    String st = tx.getStatus();
+                    java.time.LocalDateTime ct = tx.getCreatedAt();
+                    return ("PENDING".equalsIgnoreCase(st) || "PROCESSING".equalsIgnoreCase(st))
+                           && ct != null && ct.isAfter(threeMinAgo);
+                });
+                if (hasRecentTx) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn đang có giao dịch đang xử lý. Vui lòng đợi hoặc tải lại trang."));
+                }
+            } catch (Exception ignore) {}
+
             if (userId != null && isPaymentInCooldown(userId, invoiceId)) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng đợi 5 giây trước khi thử lại"));
             }
@@ -663,10 +732,23 @@ public class PaymentController {
     @GetMapping("/stripe/cancel")
     @Operation(summary = "Stripe cancel callback", description = "Handle cancelled payment from Stripe checkout page")
     public ResponseEntity<String> stripeCancelCallback(
-            @RequestParam String orderId) {
+            @RequestParam String orderId,
+            @RequestParam(name = "session_id", required = false) String sessionId) {
         try {
             System.out.println("=== STRIPE CANCEL CALLBACK ===");
             System.out.println("OrderId: " + orderId);
+            if (sessionId != null) {
+                try {
+                    var txOpt = paymentTransactionService.findByTransactionRef(sessionId);
+                    txOpt.ifPresent(tx -> {
+                        tx.setStatus(com.mytech.apartment.portal.entities.PaymentTransaction.STATUS_FAILED);
+                        tx.setUpdatedAt(java.time.LocalDateTime.now());
+                        paymentTransactionService.saveTransaction(tx);
+                    });
+                } catch (Exception e) {
+                    System.err.println("Error updating Stripe tx to FAILED: " + e.getMessage());
+                }
+            }
 
             String htmlResponse = String.format("""
                 <!DOCTYPE html>
@@ -865,6 +947,18 @@ public class PaymentController {
                             System.out.println("✅ Payment recorded successfully");
                             System.out.println("Payment ID: " + savedPayment.getId());
                             System.out.println("Payment Status: " + savedPayment.getStatus());
+                        // Mark audit transaction SUCCESS
+                        try {
+                            var txOpt = paymentTransactionService.findByTransactionRef(session_id);
+                            txOpt.ifPresent(tx -> {
+                                tx.setStatus(com.mytech.apartment.portal.entities.PaymentTransaction.STATUS_SUCCESS);
+                                tx.setUpdatedAt(java.time.LocalDateTime.now());
+                                tx.setCompletedAt(java.time.LocalDateTime.now());
+                                paymentTransactionService.saveTransaction(tx);
+                            });
+                        } catch (Exception ex) {
+                            System.err.println("Warn: cannot update Stripe tx to SUCCESS: " + ex.getMessage());
+                        }
                             
                             // Log successful payment activity (smart logging)
                             try {
@@ -895,6 +989,17 @@ public class PaymentController {
                     System.out.println("Payment Status: " + session.getPaymentStatus());
                     System.out.println("InvoiceId: '" + invoiceIdStr + "' (null: " + (invoiceIdStr == null) + ", empty: " + (invoiceIdStr != null && invoiceIdStr.trim().isEmpty()) + ")");
                     System.out.println("UserId: '" + userIdStr + "' (null: " + (userIdStr == null) + ", empty: " + (userIdStr != null && userIdStr.trim().isEmpty()) + ")");
+                    // Đánh dấu transaction thất bại nếu có
+                    try {
+                        var txOpt = paymentTransactionService.findByTransactionRef(session_id);
+                        txOpt.ifPresent(tx -> {
+                            tx.setStatus(com.mytech.apartment.portal.entities.PaymentTransaction.STATUS_FAILED);
+                            tx.setUpdatedAt(java.time.LocalDateTime.now());
+                            paymentTransactionService.saveTransaction(tx);
+                        });
+                    } catch (Exception e) {
+                        System.err.println("Error updating Stripe tx to FAILED (not completed): " + e.getMessage());
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("❌ Lỗi khi verify payment với Stripe: " + e.getMessage());

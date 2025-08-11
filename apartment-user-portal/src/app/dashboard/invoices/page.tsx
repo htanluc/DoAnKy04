@@ -286,11 +286,8 @@ export default function InvoicesPage() {
         return;
       }
       if (payUrl) {
-        if (selectedPaymentMethod === 'vnpay') {
-          window.location.href = payUrl;
-        } else {
-          window.open(payUrl, '_blank');
-        }
+        // Mở ngay trên tab hiện tại cho mọi cổng để tránh user quay lại/đúp giao dịch
+        window.location.href = payUrl;
       } else {
         setPaymentError('Không nhận được đường dẫn thanh toán');
       }

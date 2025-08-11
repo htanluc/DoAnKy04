@@ -22,10 +22,7 @@ import com.mytech.apartment.portal.models.enums.PaymentStatus;
 import com.mytech.apartment.portal.models.enums.PaymentMethod;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
