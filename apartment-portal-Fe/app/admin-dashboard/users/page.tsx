@@ -152,9 +152,7 @@ export default function UsersPage() {
             <h2 className="text-2xl font-bold text-gray-900">
               {t('admin.users.list')}
             </h2>
-            <p className="text-gray-600">
-              Quản lý tất cả người dùng trong hệ thống
-            </p>
+            <p className="text-gray-600">{t('admin.users.listDesc')}</p>
           </div>
           <Link href="/admin-dashboard/users/create">
             <Button className="flex items-center space-x-2">
@@ -180,15 +178,15 @@ export default function UsersPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
-                  title="Lọc vai trò"
+                  title={t('admin.users.filterRole')}
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                 >
-                  <option value="all">Tất cả vai trò</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="STAFF">Nhân viên</option>
-                  <option value="RESIDENT">Cư dân</option>
+                  <option value="all">{t('admin.users.filter.all')}</option>
+                  <option value="ADMIN">{t('admin.users.role.admin')}</option>
+                  <option value="STAFF">{t('admin.users.role.staff')}</option>
+                  <option value="RESIDENT">{t('admin.users.role.resident')}</option>
                 </select>
               </div>
             </div>
@@ -199,7 +197,7 @@ export default function UsersPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Danh sách người dùng ({filteredUsers.length})</span>
+              <span>{t('admin.users.list')} ({filteredUsers.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>

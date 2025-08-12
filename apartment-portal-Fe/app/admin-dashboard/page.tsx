@@ -240,8 +240,8 @@ export default function AdminDashboard() {
         {/* Header with Real-time Notifications */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-600">Quản lý hệ thống chung cư</p>
+            <h1 className="text-3xl font-bold">{t('admin.dashboard.title')}</h1>
+            <p className="text-gray-600">{t('admin.dashboard.welcome')}</p>
           </div>
           <div className="flex items-center gap-4">
             <RealTimeNotifications />
@@ -261,21 +261,22 @@ export default function AdminDashboard() {
 
         {/* Statistics Grid */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
+          <h3 className="text-lg font-semibold mb-4 flex items-center text-[hsl(var(--brand-blue))]">
             <TrendingUp className="mr-2 h-5 w-5" />
             {t('admin.dashboard.overview', 'Thống kê tổng quan')}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {stats.map((stat, index) => (
               <Link key={index} href={stat.href}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col items-center justify-center py-8 px-4 text-center h-full border border-gray-200 rounded-2xl">
+                <Card className="relative overflow-hidden hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center py-8 px-4 text-center h-full border border-transparent rounded-2xl hover:border-primary/30">
                   <div className={`mx-auto mb-4 rounded-full w-16 h-16 flex items-center justify-center text-3xl ${stat.bgColor}`}> 
                     <stat.icon className={`w-8 h-8 ${stat.color}`} />
                   </div>
                   <div>
                     <p className="font-semibold text-base mb-1">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mb-0">{stat.value}</p>
+                    <p className="text-3xl font-bold text-foreground mb-0">{stat.value}</p>
                   </div>
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[hsl(var(--brand-green))]/40 to-transparent" />
                 </Card>
               </Link>
             ))}
@@ -284,7 +285,7 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Thao tác nhanh</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('admin.quickActions','Thao tác nhanh')}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {quickActions.map((action, index) => (
               <Link key={index} href={action.href}>

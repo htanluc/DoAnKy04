@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Be_Vietnam_Pro } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/hooks/use-auth"
@@ -7,6 +7,7 @@ import { LanguageProvider } from "../components/language-context"
 import ClientLayout from "./client-layout"
 
 const inter = Inter({ subsets: ["latin"] })
+const beVietnam = Be_Vietnam_Pro({ subsets: ["vietnamese"], weight: ["300","400","500","600","700","800"] })
 
 export const metadata: Metadata = {
   title: "Apartment Portal",
@@ -26,7 +27,7 @@ export default async function RootLayout({
   }
   return (
     <html lang={initialLanguage} suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={beVietnam.className}>
         <ClientLayout initialLanguage={initialLanguage}>
           <ThemeProvider
             attribute="class"
