@@ -226,7 +226,32 @@ CREATE TABLE IF NOT EXISTS payment_history (
     FOREIGN KEY (performed_by) REFERENCES users(id)
 );
 
--- 18. SERVICE_REQUESTS (Yêu cầu dịch vụ)
+-- 18. PAYMENT_TRANSACTIONS (Giao dịch thanh toán) - BẢNG MỚI
+CREATE TABLE IF NOT EXISTS payment_transactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    transaction_ref VARCHAR(255) NOT NULL UNIQUE,
+    invoice_id BIGINT,
+    amount BIGINT NOT NULL,
+    gateway VARCHAR(50) NOT NULL,
+    order_info TEXT,
+    status VARCHAR(50) NOT NULL,
+    gateway_response TEXT,
+    gateway_transaction_id VARCHAR(255),
+    bank_code VARCHAR(50),
+    response_code VARCHAR(50),
+    transaction_time VARCHAR(50),
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    completed_at DATETIME,
+    
+    INDEX idx_transaction_ref (transaction_ref),
+    INDEX idx_invoice_id (invoice_id),
+    INDEX idx_status (status),
+    INDEX idx_gateway (gateway),
+    INDEX idx_created_at (created_at)
+);
+
+-- 19. SERVICE_REQUESTS (Yêu cầu dịch vụ)
 CREATE TABLE IF NOT EXISTS service_requests (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -516,6 +541,13 @@ CREATE INDEX idx_payments_payment_date ON payments(payment_date);
 CREATE INDEX idx_payments_reference_code ON payments(reference_code);
 CREATE INDEX idx_payments_transaction_id ON payments(transaction_id);
 CREATE INDEX idx_payments_created_at ON payments(created_at);
+
+-- Payment transactions indexes
+CREATE INDEX idx_payment_transactions_transaction_ref ON payment_transactions(transaction_ref);
+CREATE INDEX idx_payment_transactions_invoice_id ON payment_transactions(invoice_id);
+CREATE INDEX idx_payment_transactions_status ON payment_transactions(status);
+CREATE INDEX idx_payment_transactions_gateway ON payment_transactions(gateway);
+CREATE INDEX idx_payment_transactions_created_at ON payment_transactions(created_at);
 
 -- Payment history indexes
 CREATE INDEX idx_payment_history_payment_id ON payment_history(payment_id);

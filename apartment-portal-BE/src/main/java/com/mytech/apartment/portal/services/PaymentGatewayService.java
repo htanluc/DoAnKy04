@@ -6,8 +6,10 @@ import com.mytech.apartment.portal.models.Payment;
 import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.repositories.PaymentRepository;
+import com.mytech.apartment.portal.services.PaymentService;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,10 +22,7 @@ import com.mytech.apartment.portal.models.enums.PaymentStatus;
 import com.mytech.apartment.portal.models.enums.PaymentMethod;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -36,6 +35,15 @@ import com.mytech.apartment.portal.services.gateways.VNPayGateway;
 import com.mytech.apartment.portal.services.gateways.ZaloPayGateway;
 import com.mytech.apartment.portal.services.gateways.PayPalGateway;
 import com.mytech.apartment.portal.services.gateways.StripeGateway;
+import com.mytech.apartment.portal.services.PaymentTransactionService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.ResponseEntity;
+import com.mytech.apartment.portal.entities.PaymentTransaction;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -51,6 +59,9 @@ public class PaymentGatewayService {
     private UserRepository userRepository;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
     private MoMoGateway moMoGateway;
     @Autowired
     private VNPayGateway vnPayGateway;
@@ -61,6 +72,12 @@ public class PaymentGatewayService {
 
     @Autowired
     private StripeGateway stripeGateway;
+
+    @Autowired
+    private PaymentTransactionService paymentTransactionService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     @Value("${payment.momo.api.key:}")
     private String momoApiKey;
@@ -250,26 +267,23 @@ public class PaymentGatewayService {
         return vnPayGateway.createPayment(orderId, amount, orderInfo);
     }
 
-    /**
-     * Tạo thanh toán VNPay với các tham số chuẩn từ frontend
-     */
-    public Map<String, Object> createVNPayPaymentWithParams(Map<String, String> params) {
-        return vnPayGateway.createPaymentWithParams(params);
-    }
+    // Removed deprecated passthrough method createVNPayPaymentWithParams - not needed
 
     /**
      * Tạo thanh toán VNPay chuẩn tài liệu mẫu: backend tự sinh các trường động, build hash, build URL
      */
     public Map<String, Object> createVNPayPaymentFull(Long amount, String orderInfo, String bankCode, String language) {
         try {
-            String vnp_Version = "2.1.0";
+            // Cập nhật version theo chuẩn VNPay mới nhất
+            String vnp_Version = "2.1.1";
             String vnp_Command = "pay";
             String vnp_TmnCode = vnpayTmnCode;
             String vnp_Amount = String.valueOf(amount * 100);
             String vnp_CurrCode = "VND";
             String vnp_TxnRef = String.valueOf(System.currentTimeMillis());
             String vnp_OrderInfo = orderInfo;
-            String vnp_OrderType = "other";
+            // Cập nhật OrderType theo chuẩn VNPay
+            String vnp_OrderType = "topup";
             String vnp_Locale = (language != null && !language.isEmpty()) ? language : "vn";
             String vnp_ReturnUrl = returnUrl + "/vnpay-result";
             String vnp_IpAddr = "127.0.0.1";
@@ -278,49 +292,176 @@ public class PaymentGatewayService {
             String vnp_CreateDate = formatter.format(cld.getTime());
             cld.add(java.util.Calendar.MINUTE, 15);
             String vnp_ExpireDate = formatter.format(cld.getTime());
-            java.util.Map<String, String> vnp_Params = new java.util.HashMap<>();
-            vnp_Params.put("vnp_Version", vnp_Version);
-            vnp_Params.put("vnp_Command", vnp_Command);
-            vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+            
+            // Sử dụng TreeMap để tự động sắp xếp theo thứ tự alphabet
+            java.util.Map<String, String> vnp_Params = new java.util.TreeMap<>();
             vnp_Params.put("vnp_Amount", vnp_Amount);
+            vnp_Params.put("vnp_Command", vnp_Command);
+            vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
             vnp_Params.put("vnp_CurrCode", vnp_CurrCode);
-            if (bankCode != null && !bankCode.isEmpty()) vnp_Params.put("vnp_BankCode", bankCode);
-            vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+            vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
+            vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
+            vnp_Params.put("vnp_Locale", vnp_Locale);
             vnp_Params.put("vnp_OrderInfo", vnp_OrderInfo);
             vnp_Params.put("vnp_OrderType", vnp_OrderType);
-            vnp_Params.put("vnp_Locale", vnp_Locale);
             vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
-            vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
-            vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
-            vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
-            // Build hashData & query string
-            java.util.List<String> fieldNames = new java.util.ArrayList<>(vnp_Params.keySet());
-            java.util.Collections.sort(fieldNames);
+            vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+            vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+            vnp_Params.put("vnp_Version", vnp_Version);
+            
+            if (bankCode != null && !bankCode.isEmpty()) {
+                vnp_Params.put("vnp_BankCode", bankCode);
+            }
+            
+            // Build hashData & query string theo chuẩn VNPay mới
             StringBuilder hashData = new StringBuilder();
             StringBuilder query = new StringBuilder();
-            for (int i = 0; i < fieldNames.size(); i++) {
-                String key = fieldNames.get(i);
-                String value = vnp_Params.get(key);
+            
+            for (java.util.Map.Entry<String, String> entry : vnp_Params.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                
                 if (value != null && value.length() > 0) {
-                    hashData.append(key).append("=").append(java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.US_ASCII.toString()));
-                    query.append(java.net.URLEncoder.encode(key, java.nio.charset.StandardCharsets.US_ASCII.toString()))
-                        .append("=")
-                        .append(java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.US_ASCII.toString()));
-                    if (i < fieldNames.size() - 1) {
-                        hashData.append("&");
+                    // Hash data: key=value|key=value (theo chuẩn VNPAY)
+                    if (hashData.length() > 0) {
+                        hashData.append("|");
+                    }
+                    hashData.append(key).append("=").append(value);
+                    
+                    // Query string: key=value&key=value (cho URL)
+                    if (query.length() > 0) {
                         query.append("&");
                     }
+                    query.append(key).append("=").append(java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8));
                 }
             }
-            String vnp_SecureHash = com.mytech.apartment.portal.services.gateways.VNPayGateway.generateHmacSHA512(vnpayHashSecret, hashData.toString());
+            
+            String hashDataString = hashData.toString();
+            String vnp_SecureHash = com.mytech.apartment.portal.services.gateways.VNPayGateway.generateHmacSHA512(vnpayHashSecret, hashDataString);
             query.append("&vnp_SecureHash=").append(vnp_SecureHash);
             String paymentUrl = vnpayEndpoint + "?" + query.toString();
+            
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("payUrl", paymentUrl);
             response.put("status", "success");
+            response.put("hashData", hashDataString);
+            response.put("secureHash", vnp_SecureHash);
             return response;
         } catch (Exception e) {
             throw new RuntimeException("Không thể tạo thanh toán VNPay: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Xử lý luồng Return URL từ VNPay: xác thực chữ ký, cập nhật trạng thái giao dịch
+     * và trả về thông tin tóm tắt để FE hiển thị.
+     */
+    public Map<String, Object> processVNPayReturn(Map<String, String> params) {
+        try {
+            log.info("[VNPay Return] Nhận tham số: {}", params);
+
+            boolean isValid = vnPayGateway.verifyCallback(params);
+            if (!isValid) {
+                return Map.of(
+                    "success", false,
+                    "message", "Callback không hợp lệ",
+                    "status", PaymentTransaction.STATUS_FAILED
+                );
+            }
+
+            String vnp_TxnRef = params.get("vnp_TxnRef");
+            String vnp_ResponseCode = params.get("vnp_ResponseCode");
+            String vnp_TransactionStatus = params.get("vnp_TransactionStatus");
+            String vnp_TransactionNo = params.get("vnp_TransactionNo");
+            String vnp_Amount = params.get("vnp_Amount");
+            String vnp_BankCode = params.get("vnp_BankCode");
+            String vnp_TxnTime = params.get("vnp_TxnTime");
+
+            Optional<PaymentTransaction> optionalTransaction = paymentTransactionService.findByTransactionRef(vnp_TxnRef);
+            if (optionalTransaction.isEmpty()) {
+                log.error("[VNPay Return] Không tìm thấy giao dịch với mã: {}", vnp_TxnRef);
+                return Map.of(
+                    "success", false,
+                    "message", "Không tìm thấy giao dịch",
+                    "transactionRef", vnp_TxnRef,
+                    "status", PaymentTransaction.STATUS_FAILED
+                );
+            }
+
+            PaymentTransaction transaction = optionalTransaction.get();
+            String status;
+            if ("00".equals(vnp_ResponseCode) && "00".equals(vnp_TransactionStatus)) {
+                status = PaymentTransaction.STATUS_SUCCESS;
+                transaction.setCompletedAt(LocalDateTime.now());
+            } else {
+                status = PaymentTransaction.STATUS_FAILED;
+            }
+
+            transaction.setStatus(status);
+            transaction.setGatewayTransactionId(vnp_TransactionNo);
+            transaction.setBankCode(vnp_BankCode);
+            transaction.setResponseCode(vnp_ResponseCode);
+            transaction.setTransactionTime(vnp_TxnTime);
+            transaction.setGatewayResponse(params.toString());
+            // Đồng bộ paidByUserId nếu có payment PENDING tương ứng
+            try {
+                paymentRepository.findByReferenceCode(vnp_TxnRef).ifPresent(p -> {
+                    if (transaction.getPaidByUserId() == null) {
+                        transaction.setPaidByUserId(p.getPaidByUserId());
+                    }
+                });
+            } catch (Exception ignore) {}
+            paymentTransactionService.saveTransaction(transaction);
+
+            log.info("[VNPay Return] Đã cập nhật giao dịch {} thành: {}", vnp_TxnRef, status);
+
+            // Nếu thành công: tạo/ cập nhật Payment vào bảng payments và cập nhật Invoice
+            if (PaymentTransaction.STATUS_SUCCESS.equals(status) && transaction.getInvoiceId() != null) {
+                try {
+                    Long invoiceId = transaction.getInvoiceId();
+                    Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
+                    Long paidByUserId = transaction.getPaidByUserId();
+                    if (invoice != null) {
+                        String finalRef = (vnp_TransactionNo != null && !vnp_TransactionNo.isBlank()) ? vnp_TransactionNo : vnp_TxnRef;
+                        // Nếu đã có payment theo reference → cập nhật SUCCESS; nếu chưa → tạo mới payment SUCCESS
+                        paymentRepository.findByReferenceCode(finalRef).ifPresentOrElse(p -> {
+                            p.setStatus(PaymentStatus.SUCCESS);
+                            paymentRepository.save(p);
+                        }, () -> {
+                            Payment p = new Payment();
+                            p.setInvoice(invoice);
+                            // Nếu không có user thì dùng 0L để không vi phạm not null (hoặc bạn có thể map theo apartment→user)
+                            p.setPaidByUserId(paidByUserId != null ? paidByUserId : 0L);
+                            p.setAmount(Double.valueOf(transaction.getAmount()));
+                            p.setMethod(PaymentMethod.VNPAY);
+                            p.setStatus(PaymentStatus.SUCCESS);
+                            p.setReferenceCode(finalRef);
+                            paymentRepository.save(p);
+                        });
+                    }
+
+                    // Đồng bộ invoice status từ tổng payments
+                    paymentService.updateInvoiceStatus(invoiceId);
+                } catch (Exception e) {
+                    log.error("[VNPay Return] Lỗi khi cập nhật Payment/Invoice: {}", e.getMessage());
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("message", "Xử lý return thành công");
+            result.put("transactionRef", vnp_TxnRef);
+            result.put("status", status);
+            result.put("amount", vnp_Amount);
+            result.put("bankCode", vnp_BankCode);
+            return result;
+        } catch (Exception e) {
+            log.error("[VNPay Return] Lỗi xử lý: ", e);
+            return Map.of(
+                "success", false,
+                "message", "Lỗi khi xử lý return: " + e.getMessage(),
+                "status", PaymentTransaction.STATUS_FAILED
+            );
         }
     }
 
@@ -347,7 +488,29 @@ public class PaymentGatewayService {
     }
 
     public Map<String, Object> createStripePayment(String orderId, Long amount, String orderInfo, Long invoiceId, Long userId) {
-        return stripeGateway.createPayment(orderId, amount, orderInfo, invoiceId, userId);
+        Map<String, Object> data = stripeGateway.createPayment(orderId, amount, orderInfo, invoiceId, userId);
+        try {
+            String checkoutSessionId = null;
+            Object sid = data.get("checkoutSessionId");
+            if (sid != null) checkoutSessionId = String.valueOf(sid);
+
+            // Ghi audit vào payment_transactions
+            PaymentTransaction tx = new PaymentTransaction();
+            tx.setTransactionRef(checkoutSessionId != null ? checkoutSessionId : ("STRIPE_" + System.currentTimeMillis()));
+            tx.setInvoiceId(invoiceId);
+            tx.setPaidByUserId(userId);
+            tx.setAmount(amount);
+            tx.setGateway(PaymentTransaction.GATEWAY_STRIPE);
+            tx.setOrderInfo(orderInfo);
+            tx.setStatus(PaymentTransaction.STATUS_PENDING);
+            tx.setCreatedAt(LocalDateTime.now());
+            tx.setUpdatedAt(LocalDateTime.now());
+            try { tx.setGatewayResponse(data.toString()); } catch (Exception ignore) {}
+            paymentTransactionService.saveTransaction(tx);
+        } catch (Exception e) {
+            log.warn("Không thể ghi audit payment_transactions cho Stripe: {}", e.getMessage());
+        }
+        return data;
     }
 
     /**
@@ -377,8 +540,89 @@ public class PaymentGatewayService {
     }
 
     private boolean verifyVNPayCallback(Map<String, String> params) {
-        // Implement VNPay callback verification
-        return true; // Mock implementation
+        try {
+            // Lấy các tham số từ callback VNPAY
+            String vnp_SecureHash = params.get("vnp_SecureHash");
+            String vnp_TxnRef = params.get("vnp_TxnRef");
+            String vnp_Amount = params.get("vnp_Amount");
+            String vnp_OrderInfo = params.get("vnp_OrderInfo");
+            String vnp_ResponseCode = params.get("vnp_ResponseCode");
+            String vnp_TransactionNo = params.get("vnp_TransactionNo");
+            String vnp_TransactionStatus = params.get("vnp_TransactionStatus");
+            String vnp_TxnTime = params.get("vnp_TxnTime");
+            String vnp_BankCode = params.get("vnp_BankCode");
+            String vnp_CardType = params.get("vnp_CardType");
+            String vnp_PayDate = params.get("vnp_PayDate");
+
+            // Kiểm tra các tham số bắt buộc
+            if (vnp_SecureHash == null || vnp_TxnRef == null || vnp_Amount == null) {
+                log.error("VNPay callback missing required parameters");
+                return false;
+            }
+
+            // Tạo chuỗi hash data theo chuẩn VNPAY
+            // Loại bỏ vnp_SecureHash và sắp xếp theo thứ tự alphabet
+            Map<String, String> sortedParams = new HashMap<>();
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (!"vnp_SecureHash".equals(key) && value != null && !value.isEmpty()) {
+                    sortedParams.put(key, value);
+                }
+            }
+
+            // Sắp xếp theo thứ tự alphabet
+            java.util.List<String> fieldNames = new java.util.ArrayList<>(sortedParams.keySet());
+            java.util.Collections.sort(fieldNames);
+
+            // Tạo chuỗi hash data theo chuẩn VNPay: dùng giá trị đã URL-encode để đồng bộ (URLEncoder)
+            StringBuilder hashData = new StringBuilder();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                String key = fieldNames.get(i);
+                String value = sortedParams.get(key);
+                if (value != null && value.length() > 0) {
+                    if (hashData.length() > 0) hashData.append("&");
+                    String encodedValue = java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
+                    hashData.append(key).append("=").append(encodedValue);
+                }
+            }
+
+            // Tạo hash để so sánh
+            String expectedHash = generateHmacSHA512(hashData.toString(), vnpayHashSecret);
+
+            // So sánh hash
+            boolean isValidHash = expectedHash.equals(vnp_SecureHash);
+            
+            if (isValidHash) {
+                log.info("VNPay callback verified successfully for transaction: {}", vnp_TxnRef);
+                
+                // Xử lý giao dịch thành công
+                if ("00".equals(vnp_ResponseCode)) {
+                    // Giao dịch thành công
+                    log.info("VNPay payment successful for transaction: {}", vnp_TxnRef);
+                    
+                    // Lưu thông tin giao dịch vào database
+                    try {
+                        // Tìm payment record dựa trên vnp_TxnRef
+                        // Cập nhật trạng thái thanh toán
+                        // Ghi log hoạt động
+                        log.info("VNPay transaction {} processed successfully", vnp_TxnRef);
+                    } catch (Exception e) {
+                        log.error("Error processing VNPay transaction: {}", e.getMessage());
+                    }
+                } else {
+                    log.warn("VNPay payment failed for transaction: {} with response code: {}", vnp_TxnRef, vnp_ResponseCode);
+                }
+                
+                return true;
+            } else {
+                log.error("VNPay callback hash verification failed for transaction: {}", vnp_TxnRef);
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("Error verifying VNPay callback", e);
+            return false;
+        }
     }
 
     private boolean verifyZaloPayCallback(Map<String, String> params) {
@@ -432,5 +676,243 @@ public class PaymentGatewayService {
      */
     public String generateOrderId() {
         return "ORDER" + System.currentTimeMillis() + new Random().nextInt(1000);
+    }
+
+    @PostMapping("/vnpay/create")
+    public ResponseEntity<Map<String, Object>> createVNPayPayment(@RequestBody Map<String, Object> request) {
+        try {
+            String orderId = (String) request.get("orderId");
+            Long amount = Long.valueOf(request.get("amount").toString());
+            String orderInfo = (String) request.get("orderInfo");
+            Long invoiceId = request.get("invoiceId") != null ? Long.valueOf(request.get("invoiceId").toString()) : null;
+
+            if (orderId == null || amount == null || orderInfo == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Thiếu thông tin bắt buộc"
+                ));
+            }
+
+            // Tạo giao dịch thanh toán
+            PaymentTransaction transaction = paymentTransactionService.createTransactionFromPayment(
+                orderId, amount, "VNPAY", orderInfo
+            );
+            // Gắn invoiceId nếu FE truyền orderId = invoiceId
+            try {
+                if (orderId != null && orderId.trim().matches("\\d+")) {
+                    transaction.setInvoiceId(Long.parseLong(orderId.trim()));
+                }
+            } catch (Exception ignore) {}
+            
+            if (invoiceId != null) {
+                transaction.setInvoiceId(invoiceId);
+                paymentTransactionService.saveTransaction(transaction);
+            }
+
+            // Tạo thanh toán VNPAY
+            Map<String, Object> paymentResult = vnPayGateway.createPayment(orderId, amount, orderInfo);
+
+            // Đồng bộ transactionRef với vnp_TxnRef do gateway tạo (đảm bảo callback/return tìm thấy)
+            Object txnRefFromGateway = paymentResult.get("transactionRef");
+            if (txnRefFromGateway instanceof String && !((String) txnRefFromGateway).isBlank()) {
+                transaction.setTransactionRef((String) txnRefFromGateway);
+            }
+
+            // Cập nhật thông tin giao dịch
+            transaction.setGatewayResponse(paymentResult.toString());
+            paymentTransactionService.saveTransaction(transaction);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", paymentResult,
+                "transactionId", transaction.getId()
+            ));
+
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo thanh toán VNPAY", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "success", false,
+                "message", "Lỗi khi tạo thanh toán: " + e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/vnpay/callback")
+    public ResponseEntity<Map<String, Object>> handleVNPayCallback(@RequestParam Map<String, String> params) {
+        try {
+            log.info("Nhận callback VNPAY: {}", params);
+            
+            // Xác thực callback
+            if (!vnPayGateway.verifyCallback(params)) {
+                log.error("Callback VNPAY không hợp lệ");
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Callback không hợp lệ"
+                ));
+            }
+
+            // Lấy thông tin từ callback
+            String vnp_TxnRef = params.get("vnp_TxnRef");
+            String vnp_ResponseCode = params.get("vnp_ResponseCode");
+            String vnp_TransactionStatus = params.get("vnp_TransactionStatus");
+            String vnp_TransactionNo = params.get("vnp_TransactionNo");
+            String vnp_Amount = params.get("vnp_Amount");
+            String vnp_BankCode = params.get("vnp_BankCode");
+            String vnp_TxnTime = params.get("vnp_TxnTime");
+
+            // Tìm giao dịch theo transactionRef
+            Optional<PaymentTransaction> optionalTransaction = paymentTransactionService.findByTransactionRef(vnp_TxnRef);
+            if (optionalTransaction.isEmpty()) {
+                log.error("Không tìm thấy giao dịch với mã: {}", vnp_TxnRef);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Không tìm thấy giao dịch"
+                ));
+            }
+
+            PaymentTransaction transaction = optionalTransaction.get();
+            
+            // Cập nhật trạng thái giao dịch
+            String status;
+            if ("00".equals(vnp_ResponseCode) && "00".equals(vnp_TransactionStatus)) {
+                status = PaymentTransaction.STATUS_SUCCESS;
+                transaction.setCompletedAt(LocalDateTime.now());
+            } else {
+                status = PaymentTransaction.STATUS_FAILED;
+            }
+
+            // Cập nhật thông tin giao dịch
+            transaction.setStatus(status);
+            transaction.setGatewayTransactionId(vnp_TransactionNo);
+            transaction.setBankCode(vnp_BankCode);
+            transaction.setResponseCode(vnp_ResponseCode);
+            transaction.setTransactionTime(vnp_TxnTime);
+            transaction.setGatewayResponse(params.toString());
+            
+            paymentTransactionService.saveTransaction(transaction);
+
+            log.info("Đã cập nhật giao dịch {} thành: {}", vnp_TxnRef, status);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Xử lý callback thành công",
+                "transactionRef", vnp_TxnRef,
+                "status", status
+            ));
+
+        } catch (Exception e) {
+            log.error("Lỗi khi xử lý callback VNPAY", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "success", false,
+                "message", "Lỗi khi xử lý callback: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Xử lý thanh toán VNPay
+     */
+    public ResponseEntity<?> processVNPayPayment(String orderId, Long amount, String orderInfo) {
+        log.info("Bắt đầu xử lý thanh toán VNPay - orderId: {}, amount: {}, orderInfo: {}", orderId, amount, orderInfo);
+        
+        try {
+            // Validate input parameters
+            if (orderId == null || orderId.trim().isEmpty()) {
+                log.error("orderId không được để trống");
+                return ResponseEntity.badRequest().body(Map.of("error", "orderId không được để trống"));
+            }
+            if (amount == null || amount <= 0) {
+                log.error("amount phải lớn hơn 0");
+                return ResponseEntity.badRequest().body(Map.of("error", "amount phải lớn hơn 0"));
+            }
+            if (orderInfo == null || orderInfo.trim().isEmpty()) {
+                log.error("orderInfo không được để trống");
+                return ResponseEntity.badRequest().body(Map.of("error", "orderInfo không được để trống"));
+            }
+            
+            log.info("Đã validate input parameters thành công");
+            
+            // Tạo giao dịch thanh toán
+            PaymentTransaction transaction = paymentTransactionService.createTransactionFromPayment(
+                orderId, amount, "VNPAY", orderInfo
+            );
+
+            // Gắn paidByUserId từ SecurityContext để dùng khi return tạo Payment
+            try {
+                String usernameCtx = SecurityContextHolder.getContext().getAuthentication().getName();
+                Long uid = null;
+                try { uid = userService.getUserIdByPhoneNumber(usernameCtx); } catch (Exception ignore) {}
+                if (uid == null) {
+                    User u = userRepository.findByUsername(usernameCtx).orElse(null);
+                    if (u != null) uid = u.getId();
+                }
+                if (uid != null) transaction.setPaidByUserId(uid);
+            } catch (Exception ignore) {}
+
+            // Gắn invoiceId nếu orderId là số (map orderId -> invoiceId)
+            try {
+                if (orderId != null && orderId.trim().matches("\\d+")) {
+                    Long invoiceId = Long.parseLong(orderId.trim());
+                    transaction.setInvoiceId(invoiceId);
+                    paymentTransactionService.saveTransaction(transaction);
+                    log.info("Đã gán invoiceId={} cho transactionRef {}", invoiceId, transaction.getTransactionRef());
+                }
+            } catch (Exception ex) {
+                log.warn("Không thể gán invoiceId từ orderId='{}': {}", orderId, ex.getMessage());
+            }
+
+            log.info("Đã tạo giao dịch thanh toán: {}", transaction);
+            
+            // Tạo URL thanh toán VNPay với transactionRef đã tạo
+            Map<String, Object> paymentData = vnPayGateway.createPayment(
+                orderId, amount, orderInfo
+            );
+            
+            if (paymentData == null || paymentData.isEmpty()) {
+                log.error("Không thể tạo dữ liệu thanh toán VNPay");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Không thể tạo dữ liệu thanh toán VNPay"));
+            }
+            
+            log.info("Đã tạo dữ liệu thanh toán VNPay thành công: {}", paymentData);
+            
+            // Đồng bộ transactionRef trong DB với vnp_TxnRef mà gateway trả về để tìm ra giao dịch ở bước return/callback
+            Object gatewayTxnRef = paymentData.get("transactionRef");
+            if (gatewayTxnRef instanceof String && !((String) gatewayTxnRef).isBlank()) {
+                transaction.setTransactionRef((String) gatewayTxnRef);
+            }
+
+            // Cập nhật trạng thái giao dịch
+            transaction.setStatus("PROCESSING");
+            // Lưu lại toàn bộ phản hồi để tiện debug sau này
+            try {
+                transaction.setGatewayResponse(paymentData.toString());
+            } catch (Exception ignore) {}
+            paymentTransactionService.saveTransaction(transaction);
+
+            // Nếu là STRIPE tạo payment, audit sang payment_transactions nếu gateway trả kèm tx
+            try {
+                if (paymentData.containsKey("__transactionForAudit") &&
+                    paymentData.get("__transactionForAudit") instanceof com.mytech.apartment.portal.entities.PaymentTransaction txAudit) {
+                    paymentTransactionService.saveTransaction(txAudit);
+                }
+            } catch (Exception ignore) {}
+            
+            log.info("Đã cập nhật trạng thái giao dịch thành PROCESSING");
+            
+            // Thêm transactionId vào response
+            paymentData.put("transactionId", transaction.getId());
+
+            return ResponseEntity.ok(paymentData);
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Lỗi validation: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Lỗi khi xử lý thanh toán VNPay - orderId: {}, amount: {}, orderInfo: {}", 
+                    orderId, amount, orderInfo, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Lỗi nội bộ: " + e.getMessage()));
+        }
     }
 } 

@@ -112,7 +112,7 @@ public class StripeGateway implements PaymentGateway {
             SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(stripeConfig.getSuccessUrl() + "?session_id={CHECKOUT_SESSION_ID}&orderId=" + orderId)
-                .setCancelUrl(stripeConfig.getCancelUrl() + "?orderId=" + orderId)
+                .setCancelUrl(stripeConfig.getCancelUrl() + "?session_id={CHECKOUT_SESSION_ID}&orderId=" + orderId)
                 .addLineItem(SessionCreateParams.LineItem.builder()
                     .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
                         .setCurrency(currency)
@@ -164,6 +164,22 @@ public class StripeGateway implements PaymentGateway {
             response.put("invoiceId", parsedInvoiceId);
             response.put("userId", parsedUserId);
             response.put("metadata", session.getMetadata());
+
+            // Ghi audit vào payment_transactions (PENDING) để thống nhất tracking
+            try {
+                com.mytech.apartment.portal.entities.PaymentTransaction tx = new com.mytech.apartment.portal.entities.PaymentTransaction();
+                tx.setTransactionRef(session.getId());
+                tx.setInvoiceId(parsedInvoiceId);
+                tx.setPaidByUserId(parsedUserId);
+                tx.setAmount(amount);
+                tx.setGateway("STRIPE");
+                tx.setOrderInfo(orderInfo);
+                tx.setStatus(com.mytech.apartment.portal.entities.PaymentTransaction.STATUS_PENDING);
+                tx.setCreatedAt(java.time.LocalDateTime.now());
+                tx.setUpdatedAt(java.time.LocalDateTime.now());
+                // Lưu qua service tĩnh đơn giản bằng Spring context là phức tạp; ở đây trả kèm để BE caller lưu
+                response.put("__transactionForAudit", tx);
+            } catch (Exception ignore) {}
             
             return response;
             
