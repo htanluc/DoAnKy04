@@ -150,7 +150,7 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-[hsl(var(--brand-blue))]">
               {t('admin.reports.activity-logs')}
             </h2>
             <p className="text-gray-600">

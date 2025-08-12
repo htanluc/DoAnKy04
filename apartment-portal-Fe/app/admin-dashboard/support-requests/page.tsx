@@ -178,11 +178,11 @@ export default function SupportRequestsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {t('admin.supportRequests.list', 'Danh sách yêu cầu hỗ trợ')}
+            <h2 className="text-2xl font-bold text-[hsl(var(--brand-blue))]">
+              {t('admin.support-requests.list', 'Danh sách yêu cầu hỗ trợ')}
             </h2>
             <p className="text-gray-600">
-              {t('admin.supportRequests.listDesc', 'Quản lý tất cả yêu cầu hỗ trợ của cư dân')}
+              {t('admin.support-requests.listDesc', 'Quản lý tất cả yêu cầu hỗ trợ của cư dân')}
             </p>
           </div>
           <div>
@@ -216,7 +216,7 @@ export default function SupportRequestsPage() {
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Tìm kiếm theo cư dân, tiêu đề, mô tả..."
+                    placeholder={t('admin.support-requests.searchPlaceholder','Tìm kiếm theo cư dân, tiêu đề, mô tả...')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -230,7 +230,7 @@ export default function SupportRequestsPage() {
                     onChange={(e) => setFilterStatus(e.target.value)}
                     className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                   >
-                    <option value="all">Tất cả trạng thái</option>
+                    <option value="all">{t('admin.status.all','Tất cả trạng thái')}</option>
                     <option value="PENDING">Chờ xử lý</option>
                     <option value="ASSIGNED">Đã giao</option>
                     <option value="IN_PROGRESS">Đang xử lý</option>

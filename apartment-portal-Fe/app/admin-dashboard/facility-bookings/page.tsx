@@ -146,12 +146,8 @@ export default function FacilityBookingsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {t('admin.facility-bookings.list')}
-            </h2>
-            <p className="text-gray-600">
-              Quản lý tất cả đặt tiện ích trong chung cư
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('admin.facility-bookings.list')}</h2>
+            <p className="text-gray-600">{t('admin.facility-bookings.listDesc')}</p>
           </div>
         </div>
 
@@ -162,7 +158,7 @@ export default function FacilityBookingsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Tìm kiếm theo cư dân, tiện ích, mục đích..."
+                  placeholder={t('admin.facility-bookings.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -176,11 +172,11 @@ export default function FacilityBookingsPage() {
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                 >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="PENDING">Chờ xác nhận</option>
-                  <option value="APPROVED">Đã xác nhận</option>
-                  <option value="REJECTED">Từ chối</option>
-                  <option value="CANCELLED">Đã hủy</option>
+                  <option value="all">{t('admin.facility-bookings.status.all')}</option>
+                  <option value="PENDING">{t('admin.facility-bookings.status.PENDING')}</option>
+                  <option value="APPROVED">{t('admin.facility-bookings.status.APPROVED')}</option>
+                  <option value="REJECTED">{t('admin.facility-bookings.status.REJECTED')}</option>
+                  <option value="CANCELLED">{t('admin.facility-bookings.status.CANCELLED')}</option>
                 </select>
               </div>
             </div>
@@ -191,7 +187,7 @@ export default function FacilityBookingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Danh sách đặt tiện ích ({filteredBookings.length})</span>
+              <span>{t('admin.facility-bookings.list')} ({filteredBookings.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -204,13 +200,13 @@ export default function FacilityBookingsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Cư dân</TableHead>
-                      <TableHead>Tiện ích</TableHead>
-                      <TableHead>Thời gian bắt đầu</TableHead>
-                      <TableHead>Thời gian kết thúc</TableHead>
-                      <TableHead>Mục đích</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead className="text-right">Thao tác</TableHead>
+                      <TableHead>{t('admin.facility-bookings.columns.resident')}</TableHead>
+                      <TableHead>{t('admin.facility-bookings.columns.facility')}</TableHead>
+                      <TableHead>{t('admin.facility-bookings.columns.startTime')}</TableHead>
+                      <TableHead>{t('admin.facility-bookings.columns.endTime')}</TableHead>
+                      <TableHead>{t('admin.facility-bookings.columns.purpose')}</TableHead>
+                      <TableHead>{t('admin.facility-bookings.columns.status')}</TableHead>
+                      <TableHead className="text-right">{t('admin.facility-bookings.columns.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

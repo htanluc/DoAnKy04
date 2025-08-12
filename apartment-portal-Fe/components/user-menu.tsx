@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +18,20 @@ import { getCurrentUser, logout, getRoleNames } from "@/lib/auth"
 export default function UserMenu() {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const user = getCurrentUser()
+
+  // Tránh lỗi hydration: chỉ render sau khi client đã mount
+  // để đảm bảo markup giữa server và client khớp nhau
+  if (!mounted) {
+    // useEffect không chạy trong SSR, vì vậy SSR sẽ render null
+    // Client lần đầu cũng render null, tránh mismatch
+  }
+  
+  // useEffect để set mounted sau khi khách đã mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -35,7 +48,7 @@ export default function UserMenu() {
       .slice(0, 2);
   }
 
-  if (!user) {
+  if (!mounted || !user) {
     return null
   }
 

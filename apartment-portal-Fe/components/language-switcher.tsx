@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,12 +13,17 @@ import { t, Language, useLanguage } from "../lib/i18n"
 
 export default function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   const handleLanguageChange = (lang: Language) => {
     setLanguage(lang)
     // Reload page to apply changes
     window.location.reload()
   }
+
+  if (!mounted) return null
 
   return (
     <DropdownMenu>
