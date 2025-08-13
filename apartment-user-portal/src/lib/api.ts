@@ -98,10 +98,17 @@ export async function registerUser(data: any) {
 }
 
 export async function resendVerification(emailOrPhone: string) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
   const res = await fetch('http://localhost:8080/api/auth/resend-verification', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ emailOrPhone }),
+    headers: { 
+      'Content-Type': 'application/json',
+      // Hint for backend to build correct verification link for User Portal
+      'X-Frontend-Origin': origin,
+      'X-Client-App': 'resident-portal'
+    },
+    // Prefer an explicit base URL field in the request body for backend to use
+    body: JSON.stringify({ emailOrPhone, callbackBaseUrl: origin }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Gửi lại email xác thực thất bại');
@@ -330,6 +337,29 @@ export async function fetchMyInvoices() {
   // Nếu backend trả về trực tiếp mảng thì return await res.json();
   const data = await res.json();
   return Array.isArray(data) ? data : data.data;
+}
+
+// Lấy chi tiết một hóa đơn (bao gồm các khoản phí/items)
+export async function fetchInvoiceDetail(invoiceId: string | number) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) throw new Error('Chưa đăng nhập');
+  try {
+    const res = await fetch(`http://localhost:8080/api/invoices/${invoiceId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data?.data || data;
+  } catch (e) {
+    // Fallback: nhiều API trả 500/404. Thử lấy từ /api/invoices/my rồi tìm theo id
+    try {
+      const list = await fetchMyInvoices();
+      const normalizedId = Number(invoiceId);
+      const found = (list || []).find((iv: any) => Number(iv.id) === normalizedId);
+      if (found) return found;
+    } catch {}
+    throw new Error('Không lấy được chi tiết hóa đơn');
+  }
 }
 
 // Lấy thanh toán theo hóa đơn

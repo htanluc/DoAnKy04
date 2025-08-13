@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Be_Vietnam_Pro } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 
-const inter = Inter({ subsets: ['latin'] })
+const beVietnam = Be_Vietnam_Pro({ subsets: ['latin'], variable: '--font-be-vietnam', weight: ["300","400","500","600","700"] })
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -37,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className="h-full">
-      <body className={`${inter.className} h-full antialiased`}>
+      <body className={`${beVietnam.variable} ${beVietnam.className} h-full antialiased`}>
         {children}
         <Toaster />
       </body>

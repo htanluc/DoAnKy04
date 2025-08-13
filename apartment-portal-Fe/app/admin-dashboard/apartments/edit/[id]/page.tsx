@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/auth";
 import { ArrowLeft, Save } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/lib/i18n";
 
 const STATUS_OPTIONS = [
   { value: "AVAILABLE", label: "Còn trống" },
@@ -30,7 +30,7 @@ export default function EditApartmentPage() {
     area: "",
     status: "AVAILABLE",
   });
-  const { t } = useTranslation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!id) return;

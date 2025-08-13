@@ -102,38 +102,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen page-background auth-background flex items-center justify-center p-4 relative">
+    <div className="page-background auth-background min-h-[calc(100vh-var(--app-header-h,0px))] pt-[var(--app-header-h,0px)] grid place-items-center p-4 relative">
       {/* Decorative Elements */}
       <div className="absolute top-10 left-10">
-        <Sparkles className="h-8 w-8 text-blue-400 animate-pulse" />
+        <Sparkles className="h-8 w-8 text-brand-accent animate-pulse" />
       </div>
       <div className="absolute top-20 right-20">
         <Star className="h-6 w-6 text-yellow-400 animate-ping" />
       </div>
       <div className="absolute bottom-20 left-20">
-        <Star className="h-4 w-4 text-purple-400 animate-bounce" />
+        <Star className="h-4 w-4 text-brand-primary animate-bounce" />
       </div>
       
       <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-2 sm:space-y-1 p-6 sm:p-8">
           <div className="flex items-center justify-center mb-6">
             <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-brand-gradient-br rounded-xl flex items-center justify-center shadow-lg">
                 <Building2 className="h-8 w-8 text-white" />
               </div>
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ml-3">
+            <h1 className="text-2xl font-bold bg-brand-gradient-via bg-clip-text text-transparent ml-3">
               Trải Nghiệm Căn Hộ FPT
             </h1>
           </div>
-          <CardTitle className="text-2xl text-center text-gray-900">Đăng nhập</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl text-center text-gray-900">Đăng nhập</CardTitle>
           <CardDescription className="text-center text-gray-600">
             Đăng nhập vào tài khoản của bạn để truy cập portal<br/>
             <span className="text-xs text-gray-500">(Dùng số điện thoại & mật khẩu đã đăng ký)</span>
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 sm:p-8 pt-0">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm shadow-sm">
@@ -170,7 +170,7 @@ export default function LoginPage() {
                   placeholder="Nhập số điện thoại"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                  className="pl-10 h-12 border-gray-300 focus:border-brand-accent focus:ring-brand rounded-xl"
                   required
                 />
               </div>
@@ -188,7 +188,7 @@ export default function LoginPage() {
                   placeholder="Nhập mật khẩu"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="pl-10 pr-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                  className="pl-10 pr-10 h-12 border-gray-300 focus:border-brand-accent focus:ring-brand rounded-xl"
                   required
                 />
                 <button
@@ -204,20 +204,20 @@ export default function LoginPage() {
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-brand-accent focus:ring-brand"
                 />
                 <span className="text-sm text-gray-600">Ghi nhớ đăng nhập</span>
               </label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+                className="text-sm text-brand-accent hover:text-[color:#0a74d1] font-medium"
               >
                 Quên mật khẩu?
               </Link>
             </div>
             <Button
               type="submit"
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              className="w-full h-12 bg-brand-gradient-via hover:from-[color:#ff761a] hover:via-[color:#00ab7a] hover:to-[color:#0a74d1] text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               disabled={loading}
             >
               {loading ? (
@@ -234,7 +234,7 @@ export default function LoginPage() {
                 Chưa có tài khoản?{' '}
                 <Link
                   href="/register"
-                  className="text-blue-600 hover:text-blue-500 font-medium"
+                  className="text-brand-accent hover:text-[color:#0a74d1] font-medium"
                 >
                   Đăng ký ngay
                 </Link>

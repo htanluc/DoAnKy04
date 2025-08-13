@@ -50,7 +50,7 @@ export default function EnhancedLayout({ children, user, resident, apartment, ro
     }
   }, [isDarkMode])
 
-  // Detect screen size changes
+  // Detect screen size changes & prevent horizontal scroll
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768
@@ -64,8 +64,15 @@ export default function EnhancedLayout({ children, user, resident, apartment, ro
     }
 
     handleResize()
+    // Ensure no horizontal scroll caused by layout shifts
+    document.documentElement.style.overflowX = 'hidden'
+    document.body.style.overflowX = 'hidden'
     window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      document.documentElement.style.overflowX = ''
+      document.body.style.overflowX = ''
+    }
   }, [isSidebarOpen])
 
   const handleSidebarToggle = () => {
@@ -94,9 +101,9 @@ export default function EnhancedLayout({ children, user, resident, apartment, ro
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex overflow-x-hidden pt-[var(--app-header-h)] w-full">
       {/* Enhanced Sidebar - Always visible on desktop, hidden on mobile */}
-      <div className={`${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'}`}>
+      <div className={`${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'} overflow-x-hidden`}>
         <EnhancedSidebar
           user={user}
           resident={resident}
@@ -110,7 +117,7 @@ export default function EnhancedLayout({ children, user, resident, apartment, ro
       </div>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${!isMobile && isSidebarOpen ? 'ml-0' : 'ml-0'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 overflow-x-hidden ${!isMobile && isSidebarOpen ? 'ml-0' : 'ml-0'}`}>
         {/* Enhanced Header */}
         <EnhancedHeader
           onMenuToggle={handleSidebarToggle}
@@ -124,8 +131,8 @@ export default function EnhancedLayout({ children, user, resident, apartment, ro
         />
 
         {/* Page Content with Background */}
-        <main className={`flex-1 page-background ${getBackgroundClass()} transition-all duration-300`}>
-          <div className={`relative z-10 p-4 sm:p-6 transition-all duration-300 ${!isMobile && isSidebarOpen ? 'ml-0' : 'ml-0'}`}>
+        <main className={`flex-1 page-background ${getBackgroundClass()} transition-all duration-300 overflow-x-hidden`}>
+          <div className={`relative z-10 p-4 sm:p-6 transition-all duration-300`}>
             {children}
           </div>
         </main>

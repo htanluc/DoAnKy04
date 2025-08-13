@@ -240,6 +240,31 @@ export const translations: Translations = {
     vi: 'Chào mừng đến với hệ thống quản lý chung cư',
     en: 'Welcome to the apartment management system'
   },
+  'admin.dashboard.subtitle': {
+    vi: 'Quản lý toàn diện hệ thống chung cư của bạn',
+    en: 'Manage your apartment system comprehensively'
+  },
+  'admin.quickActions': {
+    vi: 'Thao tác nhanh',
+    en: 'Quick actions'
+  },
+  'admin.quickCreate': {
+    vi: 'Tạo nhanh',
+    en: 'Quick create'
+  },
+  'admin.search.placeholder': {
+    vi: 'Tìm kiếm...',
+    en: 'Search...'
+  },
+
+  // Sidebar groups
+  'admin.groups.overview': { vi: 'Tổng quan', en: 'Overview' },
+  'admin.groups.people': { vi: 'Người & Căn hộ', en: 'People & Apartments' },
+  'admin.groups.comms': { vi: 'Truyền thông', en: 'Communications' },
+  'admin.groups.facilities': { vi: 'Tiện ích', en: 'Facilities' },
+  'admin.groups.finance': { vi: 'Tài chính', en: 'Finance' },
+  'admin.groups.support': { vi: 'Hỗ trợ', en: 'Support' },
+  'admin.groups.reports': { vi: 'Báo cáo', en: 'Reports' },
 
   // Common Admin Actions
   'admin.action.create': {
@@ -316,6 +341,15 @@ export const translations: Translations = {
     vi: 'Danh sách người dùng',
     en: 'User List'
   },
+  'admin.users.listDesc': {
+    vi: 'Quản lý tất cả người dùng trong hệ thống',
+    en: 'Manage all users in the system'
+  },
+  'admin.users.filterRole': { vi: 'Lọc vai trò', en: 'Filter role' },
+  'admin.users.filter.all': { vi: 'Tất cả vai trò', en: 'All roles' },
+  'admin.users.role.admin': { vi: 'Quản trị', en: 'Admin' },
+  'admin.users.role.staff': { vi: 'Nhân viên', en: 'Staff' },
+  'admin.users.role.resident': { vi: 'Cư dân', en: 'Resident' },
   'admin.users.create': {
     vi: 'Tạo người dùng mới',
     en: 'Create New User'
@@ -888,6 +922,39 @@ export const translations: Translations = {
     vi: 'Quản lý đặt tiện ích',
     en: 'Facility Booking Management'
   },
+  'admin.facility-bookings.list': {
+    vi: 'Danh sách đặt tiện ích',
+    en: 'Facility Booking List'
+  },
+  'admin.facility-bookings.listDesc': {
+    vi: 'Quản lý tất cả đặt tiện ích trong chung cư',
+    en: 'Manage all facility bookings in the apartment'
+  },
+  'admin.facility-bookings.searchPlaceholder': {
+    vi: 'Tìm kiếm theo cư dân, tiện ích, mục đích...',
+    en: 'Search by resident, facility, purpose...'
+  },
+  'admin.facility-bookings.status.all': { vi: 'Tất cả trạng thái', en: 'All statuses' },
+  'admin.facility-bookings.status.PENDING': { vi: 'Chờ xác nhận', en: 'Pending' },
+  'admin.facility-bookings.status.APPROVED': { vi: 'Đã xác nhận', en: 'Approved' },
+  'admin.facility-bookings.status.REJECTED': { vi: 'Từ chối', en: 'Rejected' },
+  'admin.facility-bookings.status.CANCELLED': { vi: 'Đã hủy', en: 'Cancelled' },
+  'admin.facility-bookings.columns.resident': { vi: 'Cư dân', en: 'Resident' },
+  'admin.facility-bookings.columns.facility': { vi: 'Tiện ích', en: 'Facility' },
+  'admin.facility-bookings.columns.startTime': { vi: 'Thời gian bắt đầu', en: 'Start time' },
+  'admin.facility-bookings.columns.endTime': { vi: 'Thời gian kết thúc', en: 'End time' },
+  'admin.facility-bookings.columns.purpose': { vi: 'Mục đích', en: 'Purpose' },
+  'admin.facility-bookings.columns.status': { vi: 'Trạng thái', en: 'Status' },
+  'admin.facility-bookings.columns.actions': { vi: 'Thao tác', en: 'Actions' },
+  'admin.status.all': { vi: 'Tất cả trạng thái', en: 'All statuses' },
+
+  // Support Requests
+  'admin.support-requests.list': { vi: 'Danh sách yêu cầu hỗ trợ', en: 'Support Request List' },
+  'admin.support-requests.listDesc': { vi: 'Quản lý tất cả yêu cầu hỗ trợ của cư dân', en: 'Manage all resident support requests' },
+  'admin.support-requests.searchPlaceholder': { vi: 'Tìm kiếm theo cư dân, tiêu đề, mô tả...', en: 'Search by resident, title, description...' },
+
+  // Water meter
+  'admin.waterMeter.title': { vi: 'Danh sách chỉ số nước', en: 'Water meter list' },
   'admin.facility-bookings.list': {
     vi: 'Danh sách đặt tiện ích',
     en: 'Facility Booking List'

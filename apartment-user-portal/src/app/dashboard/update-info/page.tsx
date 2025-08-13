@@ -291,7 +291,7 @@ export default function UpdateInfoPage() {
         setApartment(data.apartment);
         setApartmentResident(data.apartmentResident);
         setFormData({
-          fullName: data.resident?.fullName || data.user?.username || '',
+          fullName: data.user?.fullName || data.user?.username || '',
           phoneNumber: data.user?.phoneNumber || '',
           emergencyContacts: data.user?.emergencyContacts && data.user.emergencyContacts.length > 0
             ? data.user.emergencyContacts

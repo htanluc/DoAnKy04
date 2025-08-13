@@ -68,6 +68,7 @@ public class AuthService {
         userCreateRequest.setEmail(request.getEmail());
         userCreateRequest.setFullName(request.getFullName());
         userCreateRequest.setIdCardNumber(request.getIdCardNumber());
+        userCreateRequest.setDateOfBirth(request.getDateOfBirth());
         // Không set roles để UserService.registerUser tự gán role RESIDENT
         User user = userService.registerUserReturnEntity(userCreateRequest);
         // Tạo token xác thực email

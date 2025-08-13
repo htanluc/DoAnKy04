@@ -116,7 +116,7 @@ export default function WaterMeterListPage() {
   };
 
   return (
-    <AdminLayout title="Danh sách chỉ số nước">
+    <AdminLayout title={t('admin.waterMeter.title','Danh sách chỉ số nước')}>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">Danh sách chỉ số nước</h1>
         <div className="mb-4 space-y-2">

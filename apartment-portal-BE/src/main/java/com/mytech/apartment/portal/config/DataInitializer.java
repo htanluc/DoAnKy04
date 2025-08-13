@@ -706,7 +706,7 @@ public class DataInitializer implements CommandLineRunner {
         // Regular Announcements
         announcements.add(announcementRepository.save(Announcement.builder()
             .title("Thông báo bảo trì thang máy tòa A")
-            .content("Thang máy tòa A sẽ được bảo trì định kỳ từ 8:00-12:00 ngày 15/12/2024. Vui lòng sử dụng thang máy khác trong thời gian này. Chúng tôi xin lỗi vì sự bất tiện này.")
+            .content("Thang máy tòa A sẽ được bảo trì định kỳ từ 8:00-12:00 ngày 15/12/2025. Vui lòng sử dụng thang máy khác trong thời gian này. Chúng tôi xin lỗi vì sự bất tiện này.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -714,8 +714,8 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
         
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("Thông báo về phí dịch vụ tháng 12/2024")
-            .content("Phí dịch vụ tháng 12/2024 sẽ tăng 5% do chi phí điện nước tăng. Vui lòng thanh toán đúng hạn để tránh phí trễ hạn. Chi tiết xem trong phần hóa đơn.")
+            .title("Thông báo về phí dịch vụ tháng 12/2025")
+            .content("Phí dịch vụ tháng 12/2025 sẽ tăng 5% do chi phí điện nước tăng. Vui lòng thanh toán đúng hạn để tránh phí trễ hạn. Chi tiết xem trong phần hóa đơn.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -734,7 +734,7 @@ public class DataInitializer implements CommandLineRunner {
         // Urgent Announcements
         announcements.add(announcementRepository.save(Announcement.builder()
             .title("THÔNG BÁO KHẨN: Mất điện bảo trì")
-            .content("Sẽ có kế hoạch cắt điện bảo trì từ 22:00-06:00 ngày 20/12/2024. Vui lòng chuẩn bị đèn pin và các thiết bị cần thiết. Điện sẽ được khôi phục sớm nhất có thể.")
+            .content("Sẽ có kế hoạch cắt điện bảo trì từ 22:00-06:00 ngày 20/12/2025. Vui lòng chuẩn bị đèn pin và các thiết bị cần thiết. Điện sẽ được khôi phục sớm nhất có thể.")
             .type("URGENT")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -753,7 +753,7 @@ public class DataInitializer implements CommandLineRunner {
         // Event Announcements
         announcements.add(announcementRepository.save(Announcement.builder()
             .title("Sự kiện Tết 2025 - Chương trình đón năm mới")
-            .content("Chương trình đón Tết 2025 sẽ diễn ra tại sảnh chính từ 18:00-22:00 ngày 30/12/2024. Có múa lân, ẩm thực truyền thống, và nhiều hoạt động vui nhộn. Mời tất cả cư dân tham gia!")
+            .content("Chương trình đón Tết 2025 sẽ diễn ra tại sảnh chính từ 18:00-22:00 ngày 30/12/2025. Có múa lân, ẩm thực truyền thống, và nhiều hoạt động vui nhộn. Mời tất cả cư dân tham gia!")
             .type("EVENT")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -762,7 +762,7 @@ public class DataInitializer implements CommandLineRunner {
         
         announcements.add(announcementRepository.save(Announcement.builder()
             .title("Thông báo về dịch vụ internet")
-            .content("Dịch vụ internet sẽ được nâng cấp vào ngày 28/12/2024. Có thể bị gián đoạn từ 2:00-4:00 sáng. Tốc độ internet sẽ được cải thiện đáng kể sau nâng cấp.")
+            .content("Dịch vụ internet sẽ được nâng cấp vào ngày 28/12/2025. Có thể bị gián đoạn từ 2:00-4:00 sáng. Tốc độ internet sẽ được cải thiện đáng kể sau nâng cấp.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -771,7 +771,7 @@ public class DataInitializer implements CommandLineRunner {
         
         announcements.add(announcementRepository.save(Announcement.builder()
             .title("Thông báo về bảo trì hệ thống nước")
-            .content("Hệ thống nước sẽ được bảo trì từ 14:00-18:00 ngày 25/12/2024. Vui lòng dự trữ nước đủ dùng trong thời gian này. Nước sẽ được khôi phục sớm nhất có thể.")
+            .content("Hệ thống nước sẽ được bảo trì từ 14:00-18:00 ngày 25/12/2025. Vui lòng dự trữ nước đủ dùng trong thời gian này. Nước sẽ được khôi phục sớm nhất có thể.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -782,34 +782,41 @@ public class DataInitializer implements CommandLineRunner {
         List<Event> events = new ArrayList<>();
         
         events.add(eventRepository.save(Event.builder()
-            .title("Tiệc Giáng sinh 2024 - Gala Dinner")
+            .title("Tiệc Giáng sinh 2025 - Gala Dinner")
             .description("Tiệc Giáng sinh sang trọng cho cư dân với nhiều hoạt động vui nhộn, ẩm thực đa dạng và chương trình văn nghệ đặc sắc")
-            .startTime(LocalDateTime.of(2024, 12, 24, 18, 0))
-            .endTime(LocalDateTime.of(2024, 12, 24, 22, 0))
+            .startTime(LocalDateTime.of(2025, 12, 24, 18, 0))
+            .endTime(LocalDateTime.of(2025, 12, 24, 22, 0))
             .location("Sảnh chính tòa A - Golden Tower")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
             .title("Họp cư dân tháng 12 - Thảo luận quy hoạch 2025")
             .description("Họp cư dân định kỳ để thảo luận các vấn đề chung, quy hoạch cải tiến và nghe ý kiến phản hồi từ cư dân")
-            .startTime(LocalDateTime.of(2024, 12, 15, 19, 0))
-            .endTime(LocalDateTime.of(2024, 12, 15, 21, 0))
+            .startTime(LocalDateTime.of(2025, 12, 15, 19, 0))
+            .endTime(LocalDateTime.of(2025, 12, 15, 21, 0))
+            .location("Phòng sinh hoạt cộng đồng")
+            .build()));
+        events.add(eventRepository.save(Event.builder()
+            .title("Họp cư dân tháng 8 - Thảo luận quy hoạch 2025")
+            .description("Họp cư dân định kỳ để thảo luận các vấn đề chung, quy hoạch cải tiến và nghe ý kiến phản hồi từ cư dân")
+            .startTime(LocalDateTime.of(2025, 8, 15, 19, 0))
+            .endTime(LocalDateTime.of(2025, 8, 15, 21, 0))
             .location("Phòng sinh hoạt cộng đồng")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
             .title("Lớp yoga miễn phí - Sáng chủ nhật")
             .description("Lớp yoga miễn phí cho cư dân mỗi sáng Chủ nhật, phù hợp cho mọi lứa tuổi, có huấn luyện viên chuyên nghiệp")
-            .startTime(LocalDateTime.of(2024, 12, 22, 7, 0))
-            .endTime(LocalDateTime.of(2024, 12, 22, 8, 30))
+            .startTime(LocalDateTime.of(2025, 12, 22, 7, 0))
+            .endTime(LocalDateTime.of(2025, 12, 22, 8, 30))
             .location("Phòng gym - Tầng 2")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
             .title("Workshop nấu ăn truyền thống Việt Nam")
             .description("Workshop nấu ăn truyền thống Việt Nam với các món ăn đặc trưng, có đầu bếp chuyên nghiệp hướng dẫn")
-            .startTime(LocalDateTime.of(2024, 12, 28, 14, 0))
-            .endTime(LocalDateTime.of(2024, 12, 28, 17, 0))
+            .startTime(LocalDateTime.of(2025, 12, 28, 14, 0))
+            .endTime(LocalDateTime.of(2025, 12, 28, 17, 0))
             .location("Khu BBQ ngoài trời")
             .build()));
         
