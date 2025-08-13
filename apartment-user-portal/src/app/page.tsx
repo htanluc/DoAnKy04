@@ -129,23 +129,23 @@ export default function Home() {
 
   return (
     <div className="min-h-screen page-background dashboard-background">
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto container-responsive py-8 relative">
         {/* Decorative Elements */}
         <div className="absolute top-10 left-10">
-          <Sparkles className="h-8 w-8 text-blue-400 animate-pulse" />
+        <Sparkles className="h-8 w-8 text-brand-accent animate-pulse" />
         </div>
         <div className="absolute top-20 right-20">
           <Star className="h-6 w-6 text-yellow-400 animate-ping" />
         </div>
         <div className="absolute bottom-20 left-20">
-          <Star className="h-4 w-4 text-purple-400 animate-bounce" />
+        <Star className="h-4 w-4 text-brand-primary animate-bounce" />
         </div>
         
         {/* Hero Section */}
         <div className="text-center mb-12 animate-fade-in">
           <div className="mb-8">
             <div className="relative inline-block mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl mx-auto">
+              <div className="w-20 h-20 bg-brand-gradient-br rounded-2xl flex items-center justify-center shadow-2xl mx-auto">
                 <Building2 className="h-12 w-12 text-white" />
               </div>
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full border-2 border-white flex items-center justify-center">
@@ -154,7 +154,7 @@ export default function Home() {
             </div>
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
               Chào mừng đến với
-              <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="block bg-brand-gradient-via bg-clip-text text-transparent">
                 Trải Nghiệm Căn Hộ FPT
               </span>
             </h1>
@@ -166,13 +166,13 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => handleNavigation('/login')}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              className="px-8 py-4 bg-brand-gradient-via hover:from-[color:#ff761a] hover:via-[color:#00ab7a] hover:to-[color:#0a74d1] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               Đăng nhập
             </button>
             <button
               onClick={() => handleNavigation('/register')}
-              className="px-8 py-4 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
+              className="px-8 py-4 border-2 border-brand-accent text-brand-accent hover:bg-[color:#E6F2FF] font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
             >
               Đăng ký
             </button>
@@ -200,7 +200,7 @@ export default function Home() {
                 <p className="text-gray-600 mb-6 leading-relaxed">
                   {feature.description}
                 </p>
-                <div className="flex items-center text-blue-600 font-medium">
+                <div className="flex items-center text-brand-accent font-medium">
                   Khám phá ngay
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </div>
@@ -239,7 +239,7 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-[color:#0066CC] to-[color:#0066CC] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <Zap className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Quản lý thông minh</h3>
@@ -248,7 +248,7 @@ export default function Home() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-[color:#009966] to-[color:#009966] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <Shield className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Bảo mật cao</h3>
@@ -257,7 +257,7 @@ export default function Home() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-[color:#FF6600] to-[color:#FF6600] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <Star className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Dịch vụ 24/7</h3>

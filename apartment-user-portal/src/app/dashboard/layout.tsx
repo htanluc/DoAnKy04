@@ -9,11 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 // Loading component for better UX
 function LoadingSpinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div className="min-h-screen flex items-center justify-center bg-brand-gradient-br/10 px-4">
       <div className="text-center animate-fade-in">
         <div className="relative">
-          <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-          <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-blue-400 rounded-full animate-ping opacity-20"></div>
+          <div className="w-20 h-20 border-4 border-[color:#CCE5FF] border-t-brand-accent rounded-full animate-spin mx-auto mb-6"></div>
+          <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-[color:#99CCFF] rounded-full animate-ping opacity-20"></div>
         </div>
         <div className="space-y-3">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
@@ -23,9 +23,9 @@ function LoadingSpinner() {
             Vui lòng chờ trong giây lát để chúng tôi chuẩn bị trải nghiệm tốt nhất cho bạn
           </p>
           <div className="flex justify-center space-x-1 mt-4">
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           </div>
         </div>
       </div>

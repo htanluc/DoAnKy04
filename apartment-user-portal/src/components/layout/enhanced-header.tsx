@@ -39,7 +39,18 @@ export default function EnhancedHeader({
   const [recentNotifications, setRecentNotifications] = useState<any[]>([])
   const [isMobile, setIsMobile] = useState(false)
   const [weather, setWeather] = useState({ temp: 25, condition: 'sunny' })
+  const [isCondensed, setIsCondensed] = useState(false)
   const router = useRouter()
+  const headerRef = useState<HTMLElement | null>(null)[0] as any
+
+  // Measure and sync header height to CSS variable
+  const updateHeaderHeight = () => {
+    const el = (headerRef?.current ?? null) as HTMLElement | null
+    const height = el?.offsetHeight
+    if (height) {
+      document.documentElement.style.setProperty('--app-header-h', `${height}px`)
+    }
+  }
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -47,6 +58,7 @@ export default function EnhancedHeader({
     }
     checkScreenSize()
     window.addEventListener('resize', checkScreenSize)
+    window.addEventListener('resize', updateHeaderHeight)
     return () => window.removeEventListener('resize', checkScreenSize)
   }, [])
 
@@ -87,12 +99,31 @@ export default function EnhancedHeader({
     }
     window.addEventListener('storage', handleStorageChange)
 
+    const handleScroll = () => {
+      setIsCondensed(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    handleScroll()
+    updateHeaderHeight()
+
     return () => {
       clearInterval(interval)
       clearInterval(weatherInterval)
       window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', updateHeaderHeight)
     }
   }, [router])
+
+  useEffect(() => {
+    updateHeaderHeight()
+  }, [isCondensed, isMobile, unreadCount])
+
+  // Update CSS variable for header height to let other components align (e.g., sidebar)
+  useEffect(() => {
+    const headerHeight = isCondensed ? '52px' : '72px'
+    document.documentElement.style.setProperty('--app-header-h', headerHeight)
+  }, [isCondensed])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -138,44 +169,47 @@ export default function EnhancedHeader({
   }
 
   return (
-    <header className={cn(
-      "sticky top-0 z-50 border-b backdrop-blur-sm",
+    <>
+    <header ref={headerRef} className={cn(
+      "fixed top-0 left-0 right-0 z-[100] border-b backdrop-blur-sm transition-all duration-300 min-h-[var(--app-header-h)]",
       isDarkMode 
         ? "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-slate-700/50" 
-        : "bg-gradient-to-r from-white via-blue-50 to-cyan-50 border-blue-200/50"
+          : "bg-gradient-to-r from-white via-[color:#FFF3E8] to-[color:#E6F2FF] border-brand-primary/30"
     )}>
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
+      <div className={cn(
+        "px-4 transition-all duration-300 relative",
+        isCondensed ? "py-2" : "py-3"
+      )}>
+        
+        <div className={cn(
+          "flex items-center justify-between transition-all duration-300",
+          isCondensed ? "" : ""
+        )}>
           {/* Left Section */}
           <div className="flex items-center space-x-4">
             <button onClick={handleMenuToggle} className={cn(
               "relative p-2 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg",
-              "bg-gradient-to-br from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+              "bg-brand-gradient-br text-white hover:from-[color:#ff761a] hover:to-[color:#0a74d1]"
             )} aria-label="Toggle menu">
               <Menu className="h-5 w-5" />
               <div className="absolute inset-0 bg-white/20 rounded-xl blur-sm"></div>
             </button>
-            <div className="hidden md:flex items-center space-x-3">
+            <div className="flex items-center">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Building2 className="h-6 w-6 text-white" />
+                <div className="bg-brand-gradient-br rounded-xl flex items-center justify-center shadow-lg w-10 h-10">
+                  <Building2 className="text-white h-6 w-6" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
               </div>
-              <div>
-                <h1 className={cn(
-                  "text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                )}>Trải Nghiệm Căn Hộ</h1>
-                <p className={cn(
-                  "text-xs",
-                  isDarkMode ? "text-slate-400" : "text-gray-500"
-                )}>FPT Smart Living</p>
+              <div className="ml-3">
+                <h1 className="font-bold bg-brand-gradient-via bg-clip-text text-transparent text-lg">Trải Nghiệm Căn Hộ</h1>
+                <p className={cn("text-xs", isDarkMode ? "text-slate-400" : "text-gray-500")}>FPT Smart Living</p>
               </div>
             </div>
           </div>
 
           {/* Center Section - Weather & Time */}
-          <div className="hidden lg:flex items-center space-x-6">
+          <div className={cn("items-center space-x-6", isCondensed ? "hidden" : "hidden lg:flex") }>
             <div className={cn(
               "flex items-center space-x-2 px-4 py-2 rounded-xl shadow-sm",
               isDarkMode 
@@ -185,7 +219,7 @@ export default function EnhancedHeader({
               {getWeatherIcon()}
               <span className="text-sm font-medium">{weather.temp}°C</span>
             </div>
-            <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl text-white shadow-lg">
+            <div className="flex items-center space-x-2 px-4 py-2 bg-brand-gradient rounded-xl text-white shadow-lg">
               <Clock className="h-4 w-4" />
               <span className="text-sm font-medium">{formatTime(currentTime)}</span>
             </div>
@@ -197,20 +231,32 @@ export default function EnhancedHeader({
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-3">
+          <div className={cn(
+            "flex items-center transition-all duration-300",
+            isCondensed ? "space-x-2" : "space-x-3"
+          )}>
+            {/* Search: icon on mobile, button on desktop */}
             <button className={cn(
-              "hidden md:flex items-center space-x-2 px-3 py-2 rounded-xl hover:bg-opacity-90 transition-colors shadow-sm",
+              "md:hidden p-2 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg",
               isDarkMode 
                 ? "bg-slate-800/70 text-slate-300 hover:bg-slate-700/70" 
                 : "bg-white/70 text-gray-600 hover:bg-white/90"
-            )}>
+            )} aria-label="Tìm kiếm">
+              <Search className="h-5 w-5" />
+            </button>
+            <button className={cn(
+              "hidden md:flex items-center space-x-2 px-3 rounded-xl hover:bg-opacity-90 transition-all duration-300 shadow-sm",
+              isDarkMode 
+                ? "bg-slate-800/70 text-slate-300 hover:bg-slate-700/70" 
+                : "bg-white/70 text-gray-600 hover:bg-white/90"
+            , isCondensed ? "py-1" : "py-2")}>
               <Search className="h-4 w-4" />
               <span className="text-sm">Tìm kiếm...</span>
             </button>
             <div className="relative">
               <button onClick={() => setShowNotifications(!showNotifications)} className={cn(
                 "relative p-2 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg",
-                "bg-gradient-to-br from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600"
+                 "bg-brand-gradient-br text-white hover:from-[color:#ff761a] hover:to-[color:#0a74d1]"
               )} aria-label="Thông báo">
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
@@ -278,9 +324,9 @@ export default function EnhancedHeader({
             <div className="relative">
               <button className={cn(
                 "flex items-center space-x-2 p-2 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg",
-                "bg-gradient-to-br from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+                 "bg-brand-gradient-via text-white hover:from-[color:#00ab7a] hover:to-[color:#0a74d1]"
               )}>
-                <Avatar className="h-8 w-8 ring-2 ring-white/20">
+                <Avatar className={cn("ring-2 ring-white/20 transition-all duration-300", isCondensed ? "h-7 w-7" : "h-8 w-8") }>
                   <AvatarImage src={getAvatarUrl(user)} />
                   <AvatarFallback className="bg-white/20 text-white text-sm">{getUserDisplayName().charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -304,21 +350,12 @@ export default function EnhancedHeader({
             </button>
           </div>
         </div>
-        <div className="md:hidden mt-3 flex items-center justify-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Trải Nghiệm Căn Hộ
-            </h1>
-          </div>
-        </div>
       </div>
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500"></div>
-      <div className="absolute top-2 right-4"><Sparkles className="h-4 w-4 text-blue-400 animate-pulse" /></div>
-      <div className="absolute top-4 left-1/4"><Star className="h-3 w-3 text-yellow-400 animate-ping" /></div>
+      <div className="absolute top-0 left-0 w-full h-[2px] sm:h-1 bg-brand-gradient"></div>
+      <div className="absolute top-2 right-4"><Sparkles className="h-4 w-4 text-brand-accent animate-pulse" /></div>
+      <div className="absolute top-4 left-1/4"><Star className="h-3 w-3 text-brand-primary animate-ping" /></div>
     </header>
+    </>
   )
 }
 

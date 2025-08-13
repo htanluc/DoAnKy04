@@ -174,15 +174,15 @@ export default function InvoicesPage() {
             <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
               <div>
                 <label className="text-sm text-gray-600">Năm</label>
-                <select value={genYear} onChange={e=>setGenYear(parseInt(e.target.value))} className="border rounded px-3 py-2">
-                  {Array.from({length:11},(_,i)=>new Date().getFullYear()-5+i).map(y=> (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600">Tháng</label>
-                <select value={genMonth} onChange={e=>setGenMonth(parseInt(e.target.value))} className="border rounded px-3 py-2">
+                  <select value={genYear} onChange={e=>setGenYear(parseInt(e.target.value))} className="border rounded px-3 py-2" title="Năm tạo hóa đơn">
+                    {Array.from({length:11},(_,i)=>new Date().getFullYear()-5+i).map(y=> (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-600">Tháng</label>
+                  <select value={genMonth} onChange={e=>setGenMonth(parseInt(e.target.value))} className="border rounded px-3 py-2" title="Tháng">
                   {Array.from({length:12},(_,i)=>i+1).map(m=> (
                     <option key={m} value={m}>Tháng {m}</option>
                   ))}

@@ -61,18 +61,21 @@ public class UserMapper {
         return dto;
     }
 
-    public User toEntity(UserCreateRequest request) {
-        if (request == null) {
-            return null;
+        public User toEntity(UserCreateRequest request) {
+            if (request == null) {
+                return null;
+            }
+            User user = new User();
+            user.setUsername(request.getUsername());
+            user.setPasswordHash(request.getPassword());
+            user.setPhoneNumber(request.getPhoneNumber());  
+            user.setEmail(request.getEmail());
+            user.setFullName(request.getFullName());
+            user.setIdCardNumber(request.getIdCardNumber());
+            user.setDateOfBirth(request.getDateOfBirth());
+            user.setStatus(UserStatus.INACTIVE);
+            return user;
         }
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPasswordHash(request.getPassword());
-        user.setPhoneNumber(request.getPhoneNumber());
-        user.setEmail(request.getEmail());
-        user.setStatus(UserStatus.INACTIVE); // Default status INACTIVE khi đăng ký
-        return user;
-    }
 
     public void updateUserFromRequest(User user, UserUpdateRequest request) {
         if (request == null || user == null) {

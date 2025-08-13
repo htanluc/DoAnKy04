@@ -139,7 +139,7 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center space-x-2">
-            <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-[color:#0066CC]" />
             <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
               Xin Chào Cư Dân Căn hộ FPT
             </h1>
@@ -187,7 +187,7 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
                       variant="ghost"
                       size="sm"
                       onClick={() => router.push('/dashboard/announcements')}
-                      className="text-blue-600 hover:text-blue-700"
+                      className="text-[color:#0066CC] hover:text-[color:#0a74d1]"
                     >
                       Xem tất cả
                     </Button>
@@ -206,8 +206,8 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
                       >
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <Bell className="h-4 w-4 text-blue-600" />
+                            <div className="w-8 h-8 bg-[color:#E6F2FF] rounded-full flex items-center justify-center">
+                              <Bell className="h-4 w-4 text-[color:#0066CC]" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
@@ -223,7 +223,7 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
                           </div>
                           {!notification.read && (
                             <div className="flex-shrink-0">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="w-2 h-2 bg-[color:#0066CC] rounded-full"></div>
                             </div>
                           )}
                         </div>
@@ -243,7 +243,7 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
           {/* Enhanced Time Display */}
           <div className="hidden md:flex flex-col items-center justify-center mx-6">
             <div className="flex items-center space-x-2">
-              <Clock className="h-6 w-6 text-blue-500" />
+              <Clock className="h-6 w-6 text-[color:#0066CC]" />
               <span className="text-2xl font-bold text-gray-800 tracking-wide drop-shadow-sm">
                 {formatTime(currentTime)}
               </span>
@@ -268,7 +268,7 @@ export default function Header({ onMenuToggle, isMenuOpen, user, resident, apart
             <div className="relative group">
               <Avatar className="h-8 w-8 cursor-pointer hover-scale transition-transform">
                 <AvatarImage src={getAvatarUrl(user)} alt={getUserDisplayName()} />
-                <AvatarFallback className="bg-blue-100 text-blue-600">
+                <AvatarFallback className="bg-[color:#E6F2FF] text-[color:#0066CC]">
                   {getUserDisplayName().charAt(0)}
                 </AvatarFallback>
               </Avatar>
