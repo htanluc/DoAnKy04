@@ -109,16 +109,7 @@ export default function UsersPage() {
     }>{t(roleKey, roleStr) || '-'}</Badge>;
   };
 
-  const handleToggleStatus = async (user: User) => {
-    const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    try {
-      const res = await apiFetch(`/api/${user.id}/status?status=${newStatus}`, { method: 'PUT' });
-      if (!res.ok) throw new Error('Failed to update status');
-      setUsers((prev) => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
-    } catch {
-      alert('Không thể đổi trạng thái người dùng!');
-    }
-  };
+
 
   if (loading) {
     return (
@@ -209,7 +200,7 @@ export default function UsersPage() {
               <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[110px] truncate">{t('admin.users.username')}</TableHead>
+                    <TableHead className="w-[150px] truncate">{t('admin.users.fullName', 'Họ và tên')}</TableHead>
                     <TableHead className="w-[130px] truncate">{t('admin.users.email')}</TableHead>
                     <TableHead className="w-[110px] truncate">{t('admin.users.phone')}</TableHead>
                     <TableHead className="w-[80px] truncate">{t('admin.users.role')}</TableHead>
@@ -220,7 +211,7 @@ export default function UsersPage() {
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium truncate max-w-[110px]" title={user.username}>{user.username}</TableCell>
+                      <TableCell className="font-medium truncate max-w-[150px]" title={user.fullName || user.username}>{user.fullName || user.username}</TableCell>
                       <TableCell className="truncate max-w-[130px] whitespace-normal break-words" title={user.email}>{user.email}</TableCell>
                       <TableCell className="truncate max-w-[110px]" title={user.phoneNumber}>{user.phoneNumber}</TableCell>
                       <TableCell>

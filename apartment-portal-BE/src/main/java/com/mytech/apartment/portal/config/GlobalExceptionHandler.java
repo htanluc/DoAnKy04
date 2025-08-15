@@ -19,6 +19,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<?>> handleRuntimeException(RuntimeException ex) {
+        // Log error để debug
+        System.err.println("RuntimeException caught: " + ex.getMessage());
+        ex.printStackTrace();
+        
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error(ex.getMessage()));
     }
@@ -55,7 +59,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleGenericException(Exception ex) {
+        // Log error để debug
+        System.err.println("Generic exception caught: " + ex.getMessage());
+        ex.printStackTrace();
+        
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau."));
+                .body(ApiResponse.error("Đã xảy ra lỗi hệ thống: " + ex.getMessage()));
     }
 } 

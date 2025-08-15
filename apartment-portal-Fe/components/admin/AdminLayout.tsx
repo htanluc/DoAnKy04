@@ -81,7 +81,6 @@ const adminMenuSections = [
     items: [
       { href: '/admin-dashboard/invoices', label: 'admin.invoices.title', icon: <Receipt className="h-5 w-5" /> },
       { href: '/admin-dashboard/yearly-billing', label: 'admin.yearly-billing.title', icon: <Calculator className="h-5 w-5" /> },
-      { href: '/admin-dashboard/billing-config', label: 'admin.billing-config.title', icon: <Settings className="h-5 w-5" /> },
       { href: '/admin-dashboard/water-meter', label: 'admin.waterMeter.title', icon: <BarChart3 className="h-5 w-5" /> },
     ],
   },

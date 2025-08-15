@@ -314,6 +314,8 @@ export const translations: Translations = {
   'admin.action.retry': { vi: 'Thử lại', en: 'Retry' },
   'admin.action.reload': { vi: 'Tải lại', en: 'Reload' },
   'admin.action.saving': { vi: 'Đang lưu...', en: 'Saving...' },
+  'admin.action.refresh': { vi: 'Làm mới', en: 'Refresh' },
+  'admin.action.loading': { vi: 'Đang tải...', en: 'Loading...' },
   'admin.action.logout': {
     vi: 'Đăng xuất',
     en: 'Logout'
@@ -592,6 +594,18 @@ export const translations: Translations = {
   'admin.apartments.floor': {
     vi: 'Tầng',
     en: 'Floor'
+  },
+  'admin.apartments.building': {
+    vi: 'Tòa',
+    en: 'Building'
+  },
+  'admin.apartments.apartment': {
+    vi: 'Căn hộ',
+    en: 'Apartment'
+  },
+  'admin.apartments.unitNumber': {
+    vi: 'Số căn hộ',
+    en: 'Unit Number'
   },
   'admin.apartments.area': {
     vi: 'Diện tích',
@@ -895,6 +909,24 @@ export const translations: Translations = {
   'admin.invoices.generateMonthly.alreadyExists': { vi: 'Đã có hóa đơn tháng này', en: 'Invoices already exist for this month' },
   'admin.invoices.generateMonthly.cannotBatch': { vi: 'Không thể tạo đồng loạt.', en: 'Cannot batch-create.' },
   'admin.invoices.generateMonthly.existsWarning': { vi: 'tháng {month}/{year} đã có {count} hóa đơn.', en: '{count} invoices already exist for {month}/{year}.' },
+  'admin.invoices.generateMonthly.generateFor': { vi: 'Tạo hóa đơn tháng', en: 'Generate invoices for month' },
+  'admin.invoices.generateMonthly.monthLabel': { vi: 'Tháng', en: 'Month' },
+
+  // Invoice Statistics
+  'admin.invoices.stats.totalInvoices': { vi: 'Tổng hóa đơn', en: 'Total Invoices' },
+  'admin.invoices.stats.paidInvoices': { vi: 'Đã thanh toán', en: 'Paid' },
+  'admin.invoices.stats.pendingInvoices': { vi: 'Chờ thanh toán', en: 'Pending Payment' },
+  'admin.invoices.stats.overdueInvoices': { vi: 'Quá hạn', en: 'Overdue' },
+  'admin.invoices.stats.totalAmount': { vi: 'Tổng tiền hóa đơn', en: 'Total Invoice Amount' },
+  'admin.invoices.stats.paidAmount': { vi: 'Đã thanh toán', en: 'Paid Amount' },
+  'admin.invoices.stats.unpaidAmount': { vi: 'Chưa thanh toán', en: 'Unpaid Amount' },
+  'admin.invoices.stats.overdueAmount': { vi: 'Quá hạn', en: 'Overdue Amount' },
+  'admin.invoices.stats.invoices': { vi: 'hóa đơn', en: 'invoices' },
+  'admin.invoices.stats.grandTotal': { vi: 'TỔNG CỘNG TẤT CẢ', en: 'GRAND TOTAL ALL' },
+  'admin.invoices.stats.grandTotalDesc': { vi: 'Tổng hợp tất cả hóa đơn trong hệ thống', en: 'Summary of all invoices in the system' },
+
+  // Invoice Table Headers
+  'admin.invoices.hạnThanhToan': { vi: 'Hạn thanh toán', en: 'Due Date' },
 
   // Yearly Billing
   'admin.yearly-billing.title': {
@@ -1421,6 +1453,18 @@ export const translations: Translations = {
   'admin.error.load': {
     vi: 'Không thể tải dữ liệu',
     en: 'Failed to load data'
+  },
+  'admin.error.loadApartments': {
+    vi: 'Lỗi tải dữ liệu căn hộ',
+    en: 'Error loading apartments'
+  },
+  'admin.error.loadInvoices': {
+    vi: 'Lỗi tải dữ liệu hóa đơn',
+    en: 'Error loading invoices'
+  },
+  'admin.error.unknown': {
+    vi: 'Đã xảy ra lỗi không xác định',
+    en: 'An unknown error occurred'
   },
   'admin.error.save': {
     vi: 'Không thể lưu dữ liệu',
