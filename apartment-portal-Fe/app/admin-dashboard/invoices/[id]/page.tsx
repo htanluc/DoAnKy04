@@ -11,7 +11,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   ArrowLeft, 
   FileText, 
-  User, 
   Calendar, 
   DollarSign,
   AlertCircle,
@@ -62,9 +61,11 @@ export default function InvoiceDetailPage() {
   
   const { getInvoiceById, loading, error } = useYearlyBilling();
   const { apartments, getApartmentById } = useApartments();
+  const { t } = useLanguage();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [debugInfo, setDebugInfo] = useState(false);
   const [apartmentCode, setApartmentCode] = useState<string>('');
+
 
   useEffect(() => {
     if (invoiceId) {
@@ -77,6 +78,9 @@ export default function InvoiceDetailPage() {
       const result = await getInvoiceById(invoiceId);
       if (result) {
         setInvoice(result);
+        
+
+        
         // If unit code is not present in invoice payload, try apartments list then fetch details
         if (!result.unitNumber && !(result as any).apartmentUnitNumber && !result.apartmentNumber) {
           const fromList = apartments.find((a: any) => Number(a.id) === Number(result.apartmentId));
@@ -258,26 +262,28 @@ export default function InvoiceDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                                 {/* Thông tin căn hộ */}
-                 <div className="flex items-center gap-3">
-                   <Building className="h-5 w-5 text-blue-600" />
-                   <div>
-                     <p className="text-sm text-gray-600">Mã căn hộ</p>
-                     <p className="font-semibold">
-                       {apartmentCode 
-                         || invoice.unitNumber 
-                         || (invoice as any).apartmentUnitNumber 
-                         || invoice.apartmentNumber 
-                         || (invoice as any).unit 
-                         || `Căn hộ ${invoice.apartmentId}`}
-                     </p>
-                     {invoice.buildingId && (
-                       <p className="text-xs text-gray-500">
-                         ID: {invoice.apartmentId}
-                       </p>
-                     )}
-                   </div>
-                 </div>
+                {/* Thông tin căn hộ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3">
+                    <Building className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Mã căn hộ</p>
+                      <p className="font-semibold">
+                        {apartmentCode 
+                          || invoice.unitNumber 
+                          || (invoice as any).apartmentUnitNumber 
+                          || invoice.apartmentNumber 
+                          || (invoice as any).unit 
+                          || `Căn hộ ${invoice.apartmentId}`}
+                      </p>
+                      {invoice.buildingId && (
+                        <p className="text-xs text-gray-500">
+                          ID: {invoice.apartmentId}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 <Separator />
 

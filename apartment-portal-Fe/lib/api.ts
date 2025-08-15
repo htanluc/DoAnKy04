@@ -133,6 +133,9 @@ export interface User {
   username: string;
   email: string;
   phoneNumber: string;
+  fullName?: string;  // Thêm trường fullName
+  firstName?: string; // Thêm trường firstName
+  lastName?: string;  // Thêm trường lastName
   status: string;
   lockReason?: string;
   createdAt?: string;
@@ -223,9 +226,9 @@ export interface ServiceRequest {
   user?: User;
   userName?: string; // Tên đầy đủ của cư dân từ backend
   userPhone?: string;
+  title?: string;  // Thêm trường title
   category?: ServiceCategory;
   categoryName?: string; // Tên danh mục từ backend
-  title?: string; // Tiêu đề từ backend
   description: string;
   imageAttachment?: string;
   submittedAt?: string;

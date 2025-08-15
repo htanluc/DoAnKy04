@@ -87,4 +87,22 @@ public class FacilityBookingDto {
     
     public Integer getMaxCheckins() { return maxCheckins; }
     public void setMaxCheckins(Integer maxCheckins) { this.maxCheckins = maxCheckins; }
+    
+    // Payment fields
+    private String paymentStatus;
+    private String paymentMethod;
+    private LocalDateTime paymentDate;
+    private String transactionId;
+    
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    
+    public LocalDateTime getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(LocalDateTime paymentDate) { this.paymentDate = paymentDate; }
+    
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
 } 

@@ -102,7 +102,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="page-background auth-background min-h-[calc(100vh-var(--app-header-h,0px))] pt-[var(--app-header-h,0px)] grid place-items-center p-4 relative">
+    <div className="page-background auth-background min-h-screen flex items-center justify-center px-4 py-0 relative">
       {/* Decorative Elements */}
       <div className="absolute top-10 left-10">
         <Sparkles className="h-8 w-8 text-brand-accent animate-pulse" />
@@ -114,7 +114,7 @@ export default function LoginPage() {
         <Star className="h-4 w-4 text-brand-primary animate-bounce" />
       </div>
       
-      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
+      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl mx-auto my-0">
         <CardHeader className="space-y-2 sm:space-y-1 p-6 sm:p-8">
           <div className="flex items-center justify-center mb-6">
             <div className="relative">

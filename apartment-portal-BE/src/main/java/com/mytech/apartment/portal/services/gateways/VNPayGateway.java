@@ -36,8 +36,13 @@ public class VNPayGateway implements PaymentGateway {
 
     @Override
     public Map<String, Object> createPayment(String orderId, Long amount, String orderInfo) {
+        return createPayment(orderId, amount, orderInfo, null);
+    }
+    
+    public Map<String, Object> createPayment(String orderId, Long amount, String orderInfo, String customReturnUrl) {
         try {
-            log.info("Bắt đầu tạo thanh toán VNPay - orderId: {}, amount: {}, orderInfo: {}", orderId, amount, orderInfo);
+            log.info("Bắt đầu tạo thanh toán VNPay - orderId: {}, amount: {}, orderInfo: {}, customReturnUrl: {}", 
+                    orderId, amount, orderInfo, customReturnUrl);
             
             // Validate configuration
             if (endpoint == null || endpoint.trim().isEmpty()) {
@@ -68,7 +73,10 @@ public class VNPayGateway implements PaymentGateway {
             String vnp_OrderInfo = removeVietnameseAccents(orderInfo);
             log.info("OrderInfo gốc: {}, OrderInfo sau khi loại bỏ dấu: {}", orderInfo, vnp_OrderInfo);
             
-            String vnp_ReturnUrl = returnUrl + "/vnpay-result";
+            // Sử dụng custom return URL nếu có, nếu không thì dùng default
+            String vnp_ReturnUrl = (customReturnUrl != null && !customReturnUrl.trim().isEmpty()) 
+                ? customReturnUrl 
+                : returnUrl + "/vnpay-result";
             
             // Xử lý IP Address - sử dụng IP thực tế hoặc 0.0.0.0
             String vnp_IpAddr = getClientIpAddress();

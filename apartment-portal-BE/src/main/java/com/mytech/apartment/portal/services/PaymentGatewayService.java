@@ -175,7 +175,7 @@ public class PaymentGatewayService {
             payment.setPaymentDate(LocalDateTime.now());
 
             // Nếu thanh toán thành công, cập nhật trạng thái hóa đơn
-            if (PaymentStatus.SUCCESS.name().equals(status)) {
+            if (PaymentStatus.PAID.name().equals(status)) {
                 Invoice invoice = payment.getInvoice();
                 invoice.setStatus(InvoiceStatus.PAID);
                 invoiceRepository.save(invoice);
@@ -423,9 +423,9 @@ public class PaymentGatewayService {
                     Long paidByUserId = transaction.getPaidByUserId();
                     if (invoice != null) {
                         String finalRef = (vnp_TransactionNo != null && !vnp_TransactionNo.isBlank()) ? vnp_TransactionNo : vnp_TxnRef;
-                        // Nếu đã có payment theo reference → cập nhật SUCCESS; nếu chưa → tạo mới payment SUCCESS
+                        // Nếu đã có payment theo reference → cập nhật PAID; nếu chưa → tạo mới payment PAID
                         paymentRepository.findByReferenceCode(finalRef).ifPresentOrElse(p -> {
-                            p.setStatus(PaymentStatus.SUCCESS);
+                            p.setStatus(PaymentStatus.PAID);
                             paymentRepository.save(p);
                         }, () -> {
                             Payment p = new Payment();
@@ -434,7 +434,7 @@ public class PaymentGatewayService {
                             p.setPaidByUserId(paidByUserId != null ? paidByUserId : 0L);
                             p.setAmount(Double.valueOf(transaction.getAmount()));
                             p.setMethod(PaymentMethod.VNPAY);
-                            p.setStatus(PaymentStatus.SUCCESS);
+                            p.setStatus(PaymentStatus.PAID);
                             p.setReferenceCode(finalRef);
                             paymentRepository.save(p);
                         });
@@ -709,8 +709,14 @@ public class PaymentGatewayService {
                 paymentTransactionService.saveTransaction(transaction);
             }
 
-            // Tạo thanh toán VNPAY
-            Map<String, Object> paymentResult = vnPayGateway.createPayment(orderId, amount, orderInfo);
+            // Lấy custom return URL nếu có
+            String customReturnUrl = null;
+            if (request.get("returnUrl") != null) {
+                customReturnUrl = (String) request.get("returnUrl");
+            }
+            
+            // Tạo thanh toán VNPAY với custom return URL nếu có
+            Map<String, Object> paymentResult = vnPayGateway.createPayment(orderId, amount, orderInfo, customReturnUrl);
 
             // Đồng bộ transactionRef với vnp_TxnRef do gateway tạo (đảm bảo callback/return tìm thấy)
             Object txnRefFromGateway = paymentResult.get("transactionRef");

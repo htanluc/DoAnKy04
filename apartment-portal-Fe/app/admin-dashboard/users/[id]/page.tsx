@@ -8,7 +8,7 @@ import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ArrowLeft, Lock, Unlock } from 'lucide-react';
+import { Edit, Trash2, ArrowLeft, Lock, Unlock, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL, fetchRoles, getToken, refreshToken, removeTokens } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
@@ -23,6 +23,8 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface UserDetail {
   id: string;
@@ -57,6 +59,9 @@ function UserDetailContent() {
   const [allRoles, setAllRoles] = useState<{id: number, name: string}[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [assigning, setAssigning] = useState(false);
+  const [showDeactivationDialog, setShowDeactivationDialog] = useState(false);
+  const [deactivationReason, setDeactivationReason] = useState('');
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   // Hàm kiểm tra và refresh token
   const checkAndRefreshToken = async (): Promise<string | null> => {
@@ -181,32 +186,109 @@ function UserDetailContent() {
 
   const handleToggleStatus = async () => {
     if (!user) return;
-    let newStatus = user.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
-    let reason = '';
-    if (newStatus === 'LOCKED') {
-      reason = prompt('Nhập lý do khóa tài khoản:', user.lockReason || '') || '';
-      if (!reason.trim()) {
-        alert('Bạn phải nhập lý do khóa!');
-        return;
-      }
+    
+    // Nếu đang kích hoạt tài khoản, thực hiện ngay
+    if (user.status === 'INACTIVE') {
+      await performStatusChange('ACTIVE', '');
+      return;
     }
-    let url = `${API_BASE_URL}/api/admin/users/${user.id}/status?status=${newStatus}`;
-    if (newStatus === 'LOCKED') {
-      url += `&reason=${encodeURIComponent(reason)}`;
+    
+    // Nếu đang vô hiệu hóa, hiển thị dialog nhập lý do
+    if (user.status === 'ACTIVE') {
+      setDeactivationReason(user.lockReason || '');
+      setShowDeactivationDialog(true);
+      return;
     }
+  };
+
+  const performStatusChange = async (newStatus: string, reason: string) => {
+    if (!user) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({ title: 'Lỗi', description: 'Không có token xác thực!', variant: 'destructive' });
+      return;
+    }
+    
+    if (newStatus === 'INACTIVE' && !reason.trim()) {
+      toast({ title: 'Lỗi', description: 'Bạn phải nhập lý do vô hiệu hóa!', variant: 'destructive' });
+      return;
+    }
+    
+    setIsDeactivating(true);
+    
     try {
-      const res = await apiCall(url, { method: 'PUT' });
-      if (res) {
-        if (res.ok) {
-          setUser({ ...user, status: newStatus, lockReason: reason });
-          toast({ title: 'Thành công', description: 'Đã đổi trạng thái người dùng.' });
-        } else {
-          throw new Error('Failed to update status');
-        }
+      let url = `${API_BASE_URL}/api/admin/users/${user.id}/status?status=${newStatus}`;
+      if (newStatus === 'INACTIVE' && reason) {
+        url += `&reason=${encodeURIComponent(reason)}`;
       }
-    } catch {
-      alert('Không thể đổi trạng thái người dùng!');
+      
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.message) {
+            throw new Error(`Backend error: ${errorJson.message}`);
+          }
+        } catch (parseError) {
+          // Nếu không parse được JSON, sử dụng text gốc
+        }
+        throw new Error(`Failed to update status: ${res.status} ${res.statusText}`);
+      }
+      
+      const result = await res.json();
+      
+      setUser({ ...user, status: newStatus, lockReason: reason });
+      
+      if (newStatus === 'INACTIVE') {
+        toast({ 
+          title: '✅ Vô hiệu hóa thành công', 
+          description: `Tài khoản ${user.username} đã được vô hiệu hóa. Email thông báo đã được gửi đến ${user.email} với lý do: "${reason}"` 
+        });
+        setShowDeactivationDialog(false);
+        setDeactivationReason('');
+      } else {
+        toast({ 
+          title: '✅ Kích hoạt thành công', 
+          description: `Tài khoản ${user.username} đã được kích hoạt lại!` 
+        });
+      }
+    } catch (error: any) {
+      console.error('Status change error:', error);
+      toast({ 
+        title: 'Lỗi', 
+        description: `Không thể đổi trạng thái người dùng: ${error.message || 'Unknown error'}`, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsDeactivating(false);
     }
+  };
+
+  const handleDeactivate = () => {
+    if (!deactivationReason.trim()) {
+      toast({ title: '❌ Lỗi', description: 'Bạn phải nhập lý do vô hiệu hóa!', variant: 'destructive' });
+      return;
+    }
+    
+    if (deactivationReason.trim().length < 10) {
+      toast({ 
+        title: '❌ Lý do quá ngắn', 
+        description: 'Lý do vô hiệu hóa phải có ít nhất 10 ký tự để đảm bảo tính rõ ràng.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
+    performStatusChange('INACTIVE', deactivationReason);
   };
 
   const handleUnlinkApartment = async (apartmentId: string) => {
@@ -320,7 +402,7 @@ function UserDetailContent() {
                 {user.roles && user.roles.length > 0 ? (
                   user.roles.map((role, idx) => (
                     <Badge key={idx} className="mr-2">
-                      {typeof role === 'string' ? role : (role as any).name}
+                      {typeof role === 'string' ? role : (role as any)?.name || role}
                     </Badge>
                   ))
                 ) : (
@@ -329,8 +411,8 @@ function UserDetailContent() {
               </div>
               <div><strong>{t('admin.users.status', 'Trạng thái')}:</strong> <Badge>{user.status}</Badge></div>
               <div><strong>{t('admin.users.createdAt', 'Ngày tạo')}:</strong> {new Date(user.createdAt).toLocaleDateString('vi-VN')}</div>
-              {(user.status === 'LOCKED' || user.status === 'INACTIVE') && user.lockReason && (
-                <div className="text-red-600"><b>Lý do khóa:</b> {user.lockReason}</div>
+              {(user.status === 'INACTIVE') && user.lockReason && (
+                <div className="text-red-600"><b>Lý do vô hiệu hóa:</b> {user.lockReason}</div>
               )}
             </div>
             <div className="mt-6">
@@ -402,11 +484,11 @@ function UserDetailContent() {
               </Link>
               <Button
                 variant="outline"
-                className={user.status === 'ACTIVE' ? 'text-yellow-600 hover:text-yellow-700' : 'text-green-600 hover:text-green-700'}
+                className={user.status === 'ACTIVE' ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
                 onClick={handleToggleStatus}
               >
                 {user.status === 'ACTIVE' ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
-                {user.status === 'ACTIVE' ? t('admin.action.lock', 'Khóa') : t('admin.action.unlock', 'Mở khóa')}
+                {user.status === 'ACTIVE' ? t('admin.action.deactivate', 'Vô hiệu hóa') : t('admin.action.activate', 'Kích hoạt')}
               </Button>
               <Button variant="outline" onClick={() => router.back()}>
                 <ArrowLeft className="h-4 w-4 mr-2" />{t('admin.action.back', 'Quay lại')}
@@ -415,6 +497,87 @@ function UserDetailContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog nhập lý do vô hiệu hóa */}
+      <AlertDialog 
+        open={showDeactivationDialog} 
+        onOpenChange={(open) => {
+          if (!open && !isDeactivating) {
+            setShowDeactivationDialog(false);
+            setDeactivationReason('');
+          }
+        }}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Vô hiệu hóa tài khoản
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn sắp vô hiệu hóa tài khoản của <strong>{user?.username}</strong> ({user?.email}). 
+              Vui lòng nhập lý do chi tiết để gửi thông báo cho cư dân.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="deactivation-reason">
+                Lý do vô hiệu hóa * 
+                <span className="text-sm text-gray-500 ml-1">(tối thiểu 10 ký tự)</span>
+              </Label>
+              <Textarea
+                id="deactivation-reason"
+                placeholder="Nhập lý do vô hiệu hóa tài khoản... (tối thiểu 10 ký tự)"
+                value={deactivationReason}
+                onChange={(e) => setDeactivationReason(e.target.value)}
+                className="min-h-[100px] resize-none"
+                disabled={isDeactivating}
+              />
+              <div className="text-xs text-gray-500 text-right">
+                {deactivationReason.length}/500 ký tự
+                {deactivationReason.length > 0 && deactivationReason.length < 10 && (
+                  <span className="text-red-500 ml-2">⚠️ Quá ngắn</span>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>📧 Thông báo email:</strong> Email thông báo sẽ được gửi tự động đến <strong>{user?.email}</strong> 
+                với lý do vô hiệu hóa và hướng dẫn khôi phục tài khoản.
+              </p>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              disabled={isDeactivating}
+              onClick={() => {
+                setShowDeactivationDialog(false);
+                setDeactivationReason('');
+              }}
+            >
+              Hủy
+            </AlertDialogCancel>
+            <Button
+              onClick={handleDeactivate}
+              disabled={isDeactivating || !deactivationReason.trim() || deactivationReason.trim().length < 10}
+              variant="destructive"
+              className="min-w-[100px]"
+            >
+              {isDeactivating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Đang xử lý...
+                </>
+              ) : (
+                'Vô hiệu hóa'
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 } 
