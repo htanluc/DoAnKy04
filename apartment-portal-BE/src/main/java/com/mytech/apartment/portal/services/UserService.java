@@ -13,6 +13,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +23,8 @@ import java.util.Optional;
 
 @Service
 public class UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -33,6 +37,9 @@ public class UserService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream().map(userMapper::toDto).collect(Collectors.toList());
@@ -96,15 +103,94 @@ public class UserService {
         }
     }
 
+    @Transactional
     public UserDto setUserStatus(Long id, UserStatus status, String reason) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found with id " + id));
-        user.setStatus(status);
-        if ("LOCKED".equalsIgnoreCase(status.toString()) || "INACTIVE".equalsIgnoreCase(status.toString())) {
-            user.setLockReason(reason);
-        } else if ("ACTIVE".equalsIgnoreCase(status.toString())) {
-            user.setLockReason(null);
+        try {
+            User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found with id " + id));
+            user.setStatus(status);
+            if ("LOCKED".equalsIgnoreCase(status.toString()) || "INACTIVE".equalsIgnoreCase(status.toString())) {
+                user.setLockReason(reason);
+            } else if ("ACTIVE".equalsIgnoreCase(status.toString())) {
+                user.setLockReason(null);
+            }
+            User savedUser = userRepository.save(user);
+            
+            // Gửi email thông báo khi vô hiệu hóa tài khoản
+            if (status == UserStatus.INACTIVE && reason != null && !reason.trim().isEmpty()) {
+                try {
+                    sendDeactivationEmail(user, reason);
+                    logger.info("Đã gửi email thông báo vô hiệu hóa tài khoản cho user: {}", user.getEmail());
+                } catch (Exception emailError) {
+                    logger.error("Không thể gửi email thông báo vô hiệu hóa tài khoản cho user {}: {}", user.getEmail(), emailError.getMessage());
+                    // Không chặn luồng chính nếu gửi email thất bại
+                }
+            }
+            
+            return userMapper.toDto(savedUser);
+        } catch (Exception e) {
+            // Log error để debug
+            logger.error("Error in setUserStatus: {}", e.getMessage(), e);
+            throw e;
         }
-        return userMapper.toDto(userRepository.save(user));
+    }
+
+    /**
+     * [EN] Send deactivation notification email to user
+     * [VI] Gửi email thông báo vô hiệu hóa tài khoản cho user
+     */
+    private void sendDeactivationEmail(User user, String reason) {
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            logger.warn("Không thể gửi email thông báo vô hiệu hóa tài khoản: user {} không có email", user.getUsername());
+            return;
+        }
+
+        String subject = "Thông báo vô hiệu hóa tài khoản - Hệ thống quản lý tòa nhà";
+        String htmlContent = String.format(
+            "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>" +
+            "<div style='background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545;'>" +
+            "<h2 style='color: #dc3545; margin-top: 0;'>⚠️ Thông báo vô hiệu hóa tài khoản</h2>" +
+            "<p>Chào <strong>%s</strong>,</p>" +
+            "<p>Tài khoản của bạn trong hệ thống quản lý tòa nhà đã bị <strong>vô hiệu hóa</strong>.</p>" +
+            "<div style='background-color: #fff; padding: 15px; border-radius: 5px; border: 1px solid #dee2e6; margin: 15px 0;'>" +
+            "<h3 style='margin-top: 0; color: #495057;'>Thông tin tài khoản:</h3>" +
+            "<ul style='margin: 10px 0; padding-left: 20px;'>" +
+            "<li><strong>Tên đăng nhập:</strong> %s</li>" +
+            "<li><strong>Email:</strong> %s</li>" +
+            "<li><strong>Trạng thái:</strong> <span style='color: #dc3545; font-weight: bold;'>Đã vô hiệu hóa</span></li>" +
+            "</ul>" +
+            "</div>" +
+            "<div style='background-color: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7; margin: 15px 0;'>" +
+            "<h3 style='margin-top: 0; color: #856404;'>Lý do vô hiệu hóa:</h3>" +
+            "<p style='margin: 0; color: #856404;'><em>%s</em></p>" +
+            "</div>" +
+            "<div style='background-color: #d1ecf1; padding: 15px; border-radius: 5px; border: 1px solid #bee5eb; margin: 15px 0;'>" +
+            "<h3 style='margin-top: 0; color: #0c5460;'>Hướng dẫn khôi phục:</h3>" +
+            "<p style='margin: 0; color: #0c5460;'>Để khôi phục tài khoản, vui lòng:</p>" +
+            "<ol style='margin: 10px 0; padding-left: 20px; color: #0c5460;'>" +
+            "<li>Liên hệ trực tiếp với ban quản lý tòa nhà</li>" +
+            "<li>Hoặc gửi email yêu cầu khôi phục đến: <strong>admin@building.com</strong></li>" +
+            "<li>Nêu rõ lý do và cam kết tuân thủ quy định</li>" +
+            "</ol>" +
+            "</div>" +
+            "<p style='color: #6c757d; font-size: 14px; margin-top: 20px;'>" +
+            "Email này được gửi tự động từ hệ thống quản lý tòa nhà.<br>" +
+            "Vui lòng không trả lời email này." +
+            "</p>" +
+            "</div>" +
+            "</div>",
+            user.getFullName() != null ? user.getFullName() : user.getUsername(),
+            user.getUsername(),
+            user.getEmail(),
+            reason
+        );
+
+        try {
+            emailService.sendHtmlEmail(user.getEmail(), subject, htmlContent);
+            logger.info("Đã gửi email thông báo vô hiệu hóa tài khoản thành công cho user: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi email thông báo vô hiệu hóa tài khoản cho user {}: {}", user.getEmail(), e.getMessage());
+            throw new RuntimeException("Không thể gửi email thông báo: " + e.getMessage());
+        }
     }
 
     public UserDto resetPassword(Long id, String newPassword) {

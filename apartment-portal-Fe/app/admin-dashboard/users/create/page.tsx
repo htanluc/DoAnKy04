@@ -15,7 +15,7 @@ export default function CreateUserPage() {
   const router = useRouter();
   const { t, language } = useLanguage();
   const [form, setForm] = useState({
-    username: "",
+    fullName: "",
     email: "",
     phoneNumber: "",
     password: "",
@@ -62,10 +62,11 @@ export default function CreateUserPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: form.username,
+          username: form.phoneNumber, // Tự động set username = phoneNumber
           email: form.email,
           phoneNumber: form.phoneNumber,
           password: form.password,
+          fullName: form.fullName, // Thêm fullName
           roles: [form.role],
         }),
       });
@@ -89,8 +90,8 @@ export default function CreateUserPage() {
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
-                <label className="block mb-1 font-medium">{language === 'vi' ? 'Tên đăng nhập' : 'Username'}</label>
-                <Input name="username" value={form.username} onChange={handleChange} required />
+                <label className="block mb-1 font-medium">{language === 'vi' ? 'Họ và tên' : 'Full Name'}</label>
+                <Input name="fullName" value={form.fullName} onChange={handleChange} required />
               </div>
               <div>
                 <label className="block mb-1 font-medium">Email</label>
@@ -99,6 +100,9 @@ export default function CreateUserPage() {
               <div>
                 <label className="block mb-1 font-medium">{language === 'vi' ? 'Số điện thoại' : 'Phone number'}</label>
                 <Input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} required />
+                <p className="text-xs text-gray-500 mt-1">
+                  {language === 'vi' ? 'Số điện thoại sẽ được sử dụng làm tên đăng nhập' : 'Phone number will be used as username'}
+                </p>
               </div>
               <div>
                 <label className="block mb-1 font-medium">{language === 'vi' ? 'Mật khẩu' : 'Password'}</label>

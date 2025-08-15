@@ -3,6 +3,7 @@ package com.mytech.apartment.portal.apis;
 import com.mytech.apartment.portal.dtos.UserCreateRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
 import com.mytech.apartment.portal.dtos.UserUpdateRequest;
+import com.mytech.apartment.portal.dtos.ApiResponse;
 import com.mytech.apartment.portal.services.UserService;
 import com.mytech.apartment.portal.services.FileUploadService;
 import com.mytech.apartment.portal.models.enums.UserStatus;
@@ -113,13 +114,27 @@ public class UserController {
      * [EN] Set user status (activate/deactivate)
      * [VI] Đổi trạng thái tài khoản (kích hoạt/vô hiệu hóa)
      */
-    @PutMapping("/{id}/status")
-    public ResponseEntity<UserDto> setUserStatus(@PathVariable("id") Long id, @RequestParam("status") String status, @RequestParam(value = "reason", required = false) String reason) {
+    @PutMapping("/admin/users/{id}/status")
+    public ResponseEntity<ApiResponse<UserDto>> setUserStatus(@PathVariable("id") Long id, @RequestParam("status") String status, @RequestParam(value = "reason", required = false) String reason) {
         try {
+            // Log để debug
+            System.out.println("setUserStatus called with id: " + id + ", status: " + status + ", reason: " + reason);
+            
             UserDto userDto = userService.setUserStatus(id, UserStatus.valueOf(status), reason);
-            return ResponseEntity.ok(userDto);
+            return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái thành công", userDto));
+        } catch (IllegalArgumentException e) {
+            System.err.println("IllegalArgumentException: " + e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Trạng thái không hợp lệ: " + status));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            System.err.println("RuntimeException: " + e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Không tìm thấy user với ID: " + id));
+        } catch (Exception e) {
+            System.err.println("Generic Exception: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error("Đã xảy ra lỗi hệ thống: " + e.getMessage()));
         }
     }
 
@@ -206,5 +221,14 @@ public class UserController {
     @PostMapping("/{id}/roles/remove")
     public void removeRoleFromUser(@PathVariable("id") Long id, @RequestParam Long roleId) {
         userService.removeRoleFromUser(id, roleId);
+    }
+
+    /**
+     * [EN] Test endpoint to check if API is working
+     * [VI] Endpoint test để kiểm tra API có hoạt động không
+     */
+    @GetMapping("/admin/users/test")
+    public ResponseEntity<ApiResponse<String>> testEndpoint() {
+        return ResponseEntity.ok(ApiResponse.success("API is working", "Test successful"));
     }
 }

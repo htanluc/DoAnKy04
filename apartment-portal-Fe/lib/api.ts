@@ -132,6 +132,9 @@ export interface User {
   username: string;
   email: string;
   phoneNumber: string;
+  fullName?: string;  // Thêm trường fullName
+  firstName?: string; // Thêm trường firstName
+  lastName?: string;  // Thêm trường lastName
   status: string;
   lockReason?: string;
   createdAt?: string;
@@ -221,6 +224,7 @@ export interface ServiceRequest {
   id: number;
   user: User;
   userPhone?: string;
+  title?: string;  // Thêm trường title
   category: ServiceCategory;
   description: string;
   imageAttachment?: string;

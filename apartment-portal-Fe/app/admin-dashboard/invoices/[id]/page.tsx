@@ -11,7 +11,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   ArrowLeft, 
   FileText, 
-  User, 
   Calendar, 
   DollarSign,
   AlertCircle,
@@ -27,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { useApartments } from '@/hooks/use-apartments';
+import { useLanguage } from '@/lib/i18n';
 
 interface InvoiceItem {
   id: number;
@@ -60,9 +60,11 @@ export default function InvoiceDetailPage() {
   
   const { getInvoiceById, loading, error } = useYearlyBilling();
   const { apartments, getApartmentById } = useApartments();
+  const { t } = useLanguage();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [debugInfo, setDebugInfo] = useState(false);
   const [apartmentCode, setApartmentCode] = useState<string>('');
+
 
   useEffect(() => {
     if (invoiceId) {
@@ -75,6 +77,9 @@ export default function InvoiceDetailPage() {
       const result = await getInvoiceById(invoiceId);
       if (result) {
         setInvoice(result);
+        
+
+        
         // If unit code is not present in invoice payload, try apartments list then fetch details
         if (!result.unitNumber && !(result as any).apartmentUnitNumber && !result.apartmentNumber) {
           const fromList = apartments.find((a: any) => Number(a.id) === Number(result.apartmentId));
@@ -278,20 +283,7 @@ export default function InvoiceDetailPage() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="text-sm text-gray-600">Cư dân</p>
-                      <p className="font-semibold">
-                        {invoice.residentName || 'Chưa cập nhật'}
-                      </p>
-                      {invoice.residentName && (
-                        <p className="text-xs text-gray-500">
-                          Cư dân chính
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  
                 </div>
 
                 <Separator />
