@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class FacilityBookingService {
@@ -104,6 +106,17 @@ public class FacilityBookingService {
         booking.setCreatedAt(LocalDateTime.now());
         booking.setNumberOfPeople(request.getNumberOfPeople());
         booking.setPurpose(request.getPurpose());
+        
+        // Tính toán totalCost
+        double usageFee = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+        int durationMinutes = request.getDuration();
+        int numberOfPeople = request.getNumberOfPeople() != null ? request.getNumberOfPeople() : 1;
+        double hours = durationMinutes / 60.0;
+        double totalCost = usageFee * hours * numberOfPeople;
+        booking.setTotalCost(totalCost);
+        
+        // Set payment status
+        booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PENDING);
 
         FacilityBooking savedBooking = facilityBookingRepository.save(booking);
         
@@ -256,5 +269,115 @@ public class FacilityBookingService {
         result.put("hourlyData", hourlyData);
         
         return result;
+    }
+    
+    // Khởi tạo thanh toán cho facility booking (tạo payment URL)
+    public Map<String, Object> initiatePayment(Long bookingId, Long userId, String paymentMethod) {
+        FacilityBooking booking = facilityBookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
+        
+        // Kiểm tra quyền sở hữu
+        if (!booking.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền thanh toán cho booking này");
+        }
+        
+        // Kiểm tra trạng thái booking
+        if (booking.getStatus() != FacilityBookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể thanh toán cho booking có trạng thái PENDING");
+        }
+        
+        // Kiểm tra trạng thái thanh toán
+        if (booking.getPaymentStatus() == com.mytech.apartment.portal.models.enums.PaymentStatus.PAID) {
+            throw new RuntimeException("Booking này đã được thanh toán");
+        }
+        
+        // Tạo orderId và orderInfo cho payment gateway
+        String orderId = "FACILITY_" + bookingId;
+        String orderInfo = "Thanh toan dat " + booking.getFacility().getName() + " - " + 
+                          booking.getBookingTime().toLocalDate() + " " + 
+                          booking.getBookingTime().toLocalTime().toString().substring(0, 5);
+        
+        // Trả về thông tin để frontend gọi payment gateway
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderId", orderId);
+        result.put("amount", booking.getTotalCost().longValue());
+        result.put("orderInfo", orderInfo);
+        result.put("bookingId", bookingId);
+        result.put("paymentMethod", paymentMethod);
+        result.put("returnUrl", "http://localhost:8080/api/facility-bookings/payment-callback");
+        
+        return result;
+    }
+    
+    // Xử lý thanh toán cho facility booking (cập nhật sau khi payment gateway callback)
+    public FacilityBookingDto processPayment(Long bookingId, Long userId, String paymentMethod) {
+        FacilityBooking booking = facilityBookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
+        
+        // Kiểm tra quyền sở hữu
+        if (!booking.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền thanh toán cho booking này");
+        }
+        
+        // Kiểm tra trạng thái booking
+        if (booking.getStatus() != FacilityBookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể thanh toán cho booking có trạng thái PENDING");
+        }
+        
+        // Kiểm tra trạng thái thanh toán
+        if (booking.getPaymentStatus() == com.mytech.apartment.portal.models.enums.PaymentStatus.PAID) {
+            throw new RuntimeException("Booking này đã được thanh toán");
+        }
+        
+        // Cập nhật trạng thái thanh toán
+        try {
+            booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.valueOf(paymentMethod.toUpperCase()));
+            booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PAID);
+            booking.setPaymentDate(LocalDateTime.now());
+            booking.setTransactionId("TXN_" + System.currentTimeMillis());
+            
+            // Cập nhật trạng thái booking thành CONFIRMED
+            booking.setStatus(FacilityBookingStatus.CONFIRMED);
+            
+            FacilityBooking savedBooking = facilityBookingRepository.save(booking);
+            return facilityBookingMapper.toDto(savedBooking);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Phương thức thanh toán không hợp lệ: " + paymentMethod);
+        }
+    }
+    
+    // Admin cập nhật trạng thái thanh toán
+    public FacilityBookingDto updatePaymentStatus(Long bookingId, String paymentStatus, String paymentMethod) {
+        FacilityBooking booking = facilityBookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
+        
+        try {
+            com.mytech.apartment.portal.models.enums.PaymentStatus status = 
+                com.mytech.apartment.portal.models.enums.PaymentStatus.valueOf(paymentStatus.toUpperCase());
+            
+            booking.setPaymentStatus(status);
+            
+            if (paymentMethod != null && !paymentMethod.trim().isEmpty()) {
+                try {
+                    com.mytech.apartment.portal.models.enums.PaymentMethod method = 
+                        com.mytech.apartment.portal.models.enums.PaymentMethod.valueOf(paymentMethod.toUpperCase());
+                    booking.setPaymentMethod(method);
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Phương thức thanh toán không hợp lệ: " + paymentMethod);
+                }
+            }
+            
+            if (status == com.mytech.apartment.portal.models.enums.PaymentStatus.PAID) {
+                booking.setPaymentDate(LocalDateTime.now());
+                if (booking.getTransactionId() == null) {
+                    booking.setTransactionId("ADMIN_" + System.currentTimeMillis());
+                }
+            }
+            
+            FacilityBooking savedBooking = facilityBookingRepository.save(booking);
+            return facilityBookingMapper.toDto(savedBooking);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái thanh toán không hợp lệ: " + paymentStatus);
+        }
     }
 } 

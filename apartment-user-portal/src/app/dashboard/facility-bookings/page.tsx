@@ -237,6 +237,11 @@ interface Booking {
   qrExpiresAt?: string
   checkedInCount?: number
   maxCheckins?: number
+  // Payment fields
+  paymentStatus?: string
+  paymentMethod?: string
+  paymentDate?: string
+  transactionId?: string
 }
 
 interface HourlyAvailability {
@@ -918,6 +923,66 @@ const FacilityBookingsPage: FC = () => {
       }
     } catch (err: any) {
       setError(err.message || 'Hủy đặt tiện ích thất bại')
+    }
+  }
+  
+  // Xử lý thanh toán
+  const handlePayment = async (bookingId: string, paymentMethod: string) => {
+    setError(null)
+    setSuccess(null)
+    setPaymentLoading(true)
+    
+    try {
+      // Bước 1: Khởi tạo thanh toán để lấy thông tin payment
+      const initiateResponse = await fetch(`http://localhost:8080/api/facility-bookings/${bookingId}/initiate-payment?paymentMethod=${paymentMethod}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!initiateResponse.ok) {
+        const errorData = await initiateResponse.json()
+        throw new Error(errorData.message || 'Khởi tạo thanh toán thất bại')
+      }
+      
+      const paymentInfo = await initiateResponse.json()
+      
+      // Bước 2: Gọi payment gateway (VNPay) với return URL tùy chỉnh cho facility booking
+      const gatewayResponse = await fetch(`http://localhost:8080/api/payments/vnpay/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: paymentInfo.orderId,
+          amount: paymentInfo.amount,
+          orderInfo: paymentInfo.orderInfo,
+          invoiceId: null, // Không phải invoice
+          returnUrl: paymentInfo.returnUrl // Sử dụng return URL tùy chỉnh
+        })
+      })
+      
+      if (!gatewayResponse.ok) {
+        const errorData = await gatewayResponse.json()
+        throw new Error(errorData.message || 'Tạo thanh toán gateway thất bại')
+      }
+      
+      const gatewayData = await gatewayResponse.json()
+      
+      if (gatewayData.success && gatewayData.data && gatewayData.data.paymentUrl) {
+        // Chuyển hướng đến trang thanh toán
+        window.location.href = gatewayData.data.paymentUrl
+      } else {
+        throw new Error('Không thể tạo URL thanh toán')
+      }
+      
+    } catch (err: any) {
+      setError(err.message || 'Thanh toán thất bại')
+    } finally {
+      setPaymentLoading(false)
     }
   }
 
@@ -1785,14 +1850,56 @@ const FacilityBookingsPage: FC = () => {
                             </div>
                           </div>
                           
-                          <div className="flex items-center justify-between">
-                            <div className="text-lg font-semibold text-green-600">
-                              {formatCurrency(booking.totalCost)}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Đặt lúc: {formatDate(booking.createdAt)}
-                            </div>
-                          </div>
+                                                     <div className="flex items-center justify-between">
+                             <div className="text-lg font-semibold text-green-600">
+                               {formatCurrency(booking.totalCost)}
+                             </div>
+                             <div className="text-sm text-gray-500">
+                               Đặt lúc: {formatDate(booking.createdAt)}
+                             </div>
+                           </div>
+                           
+                           {/* Payment Information - Only show for non-REJECTED bookings */}
+                           {booking.status !== 'REJECTED' && (
+                             <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                               <div className="flex items-center justify-between mb-2">
+                                 <span className="text-sm font-medium text-gray-700">Trạng thái thanh toán:</span>
+                                 <span className={`text-xs px-2 py-1 rounded-full ${
+                                   booking.paymentStatus === 'PAID' 
+                                     ? 'bg-green-100 text-green-800' 
+                                     : 'bg-yellow-100 text-yellow-800'
+                                 }`}>
+                                   {booking.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                                 </span>
+                               </div>
+                               
+                               {booking.paymentStatus === 'PAID' ? (
+                                 <div className="text-xs text-gray-600">
+                                   <div>Phương thức: {booking.paymentMethod || '---'}</div>
+                                   <div>Ngày thanh toán: {booking.paymentDate ? formatDateTime(booking.paymentDate) : '---'}</div>
+                                   {booking.transactionId && <div>Mã giao dịch: {booking.transactionId}</div>}
+                                 </div>
+                               ) : (
+                                 <div className="space-y-2">
+                                   <div className="text-xs text-gray-600">
+                                     Chọn phương thức thanh toán để xác nhận booking
+                                   </div>
+                                   <div className="flex gap-2 flex-wrap">
+                                     {paymentMethods.map(method => (
+                                       <button
+                                         key={method.id}
+                                         onClick={() => handlePayment(booking.id, method.id)}
+                                         disabled={paymentLoading}
+                                         className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                       >
+                                         {paymentLoading ? 'Đang xử lý...' : method.name}
+                                       </button>
+                                     ))}
+                                   </div>
+                                 </div>
+                               )}
+                             </div>
+                           )}
                         </div>
                         
                         <div className="flex gap-2 ml-4">

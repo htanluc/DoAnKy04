@@ -18,10 +18,13 @@ import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.security.UserDetailsImpl;
 import com.mytech.apartment.portal.models.FacilityBooking;
 import com.mytech.apartment.portal.mappers.FacilityBookingMapper;
+import com.mytech.apartment.portal.models.enums.PaymentStatus;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
 
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -240,6 +243,148 @@ public class FacilityBookingController {
             return ResponseEntity.ok(availability);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // API khởi tạo thanh toán cho facility booking (tạo payment URL)
+    @PostMapping("/facility-bookings/{id}/initiate-payment")
+    public ResponseEntity<?> initiatePayment(
+            @PathVariable("id") Long id,
+            @RequestParam("paymentMethod") String paymentMethod,
+            Authentication authentication) {
+        try {
+            // Kiểm tra quyền - chỉ user sở hữu booking mới được thanh toán
+            Long userId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+                userId = userDetails.getId();
+            }
+            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
+            
+            // Khởi tạo thanh toán
+            java.util.Map<String, Object> paymentInfo = facilityBookingService.initiatePayment(id, userId, paymentMethod);
+            
+            // Log activity
+            activityLogService.logActivityForCurrentUser(
+                ActivityActionType.PAYMENT_FACILITY_BOOKING, 
+                "Khởi tạo thanh toán đặt tiện ích: %s (#%d) - %s", 
+                paymentInfo.get("orderInfo"),
+                id,
+                paymentMethod
+            );
+            
+            return ResponseEntity.ok(paymentInfo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    // API xử lý thanh toán cho facility booking (cập nhật sau khi payment gateway callback)
+    @PostMapping("/facility-bookings/{id}/payment")
+    public ResponseEntity<?> processPayment(
+            @PathVariable("id") Long id,
+            @RequestParam("paymentMethod") String paymentMethod,
+            Authentication authentication) {
+        try {
+            // Kiểm tra quyền - chỉ user sở hữu booking mới được thanh toán
+            Long userId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+                userId = userDetails.getId();
+            }
+            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
+            
+            // Xử lý thanh toán
+            FacilityBookingDto updatedBooking = facilityBookingService.processPayment(id, userId, paymentMethod);
+            
+            // Log activity
+            activityLogService.logActivityForCurrentUser(
+                ActivityActionType.PAYMENT_FACILITY_BOOKING, 
+                "Thanh toán đặt tiện ích: %s (#%d) - %s", 
+                updatedBooking.getFacilityName(),
+                updatedBooking.getId(),
+                paymentMethod
+            );
+            
+            return ResponseEntity.ok(updatedBooking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    // Admin API để thay đổi trạng thái thanh toán
+    @PutMapping("/admin/facility-bookings/{id}/payment-status")
+    public ResponseEntity<?> updatePaymentStatus(
+            @PathVariable("id") Long facilityId,
+            @RequestParam("paymentStatus") String paymentStatus,
+            @RequestParam(value = "paymentMethod", required = false) String paymentMethod) {
+        try {
+            FacilityBookingDto updatedBooking = facilityBookingService.updatePaymentStatus(facilityId, paymentStatus, paymentMethod);
+            
+            // Log activity
+            activityLogService.logActivityForCurrentUser(
+                ActivityActionType.UPDATE_PAYMENT_STATUS, 
+                "Cập nhật trạng thái thanh toán: %s (#%d) - %s", 
+                updatedBooking.getFacilityName(),
+                updatedBooking.getId(),
+                paymentStatus
+            );
+            
+            return ResponseEntity.ok(updatedBooking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    // API callback từ payment gateway để cập nhật trạng thái thanh toán
+    @GetMapping("/facility-bookings/payment-callback")
+    public ResponseEntity<?> handlePaymentCallback(
+            @RequestParam("vnp_ResponseCode") String responseCode,
+            @RequestParam("vnp_TxnRef") String txnRef,
+            @RequestParam("vnp_Amount") String amount,
+            @RequestParam("vnp_OrderInfo") String orderInfo,
+            @RequestParam(value = "vnp_TransactionNo", required = false) String transactionNo,
+            Authentication authentication) {
+        try {
+            // Kiểm tra response code từ VNPay
+            if (!"00".equals(responseCode)) {
+                return ResponseEntity.badRequest().body("Thanh toán thất bại với mã lỗi: " + responseCode);
+            }
+            
+            // Trích xuất bookingId từ txnRef (format: FACILITY_123)
+            String[] orderIdParts = txnRef.split("_");
+            if (orderIdParts.length < 2) {
+                return ResponseEntity.badRequest().body("Transaction reference không hợp lệ");
+            }
+            
+            Long bookingId = Long.parseLong(orderIdParts[1]);
+            
+            // Lấy thông tin user từ authentication
+            Long userId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+                userId = userDetails.getId();
+            }
+            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
+            
+            // Cập nhật trạng thái thanh toán thành công
+            FacilityBookingDto updatedBooking = facilityBookingService.processPayment(bookingId, userId, "VNPAY");
+            
+            // Log activity
+            activityLogService.logActivityForCurrentUser(
+                ActivityActionType.PAYMENT_FACILITY_BOOKING, 
+                "Thanh toán thành công đặt tiện ích: %s (#%d) qua VNPay", 
+                updatedBooking.getFacilityName(),
+                updatedBooking.getId()
+            );
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Thanh toán thành công",
+                "booking", updatedBooking
+            ));
+            
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi xử lý callback: " + e.getMessage());
         }
     }
 } 

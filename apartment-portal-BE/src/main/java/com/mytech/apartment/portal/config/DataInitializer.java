@@ -1062,7 +1062,7 @@ public class DataInitializer implements CommandLineRunner {
                     .paidByUserId(invoice.getApartmentId()) // Using apartment ID as user ID for simplicity
                     .amount(invoice.getTotalAmount())
                     .method(PaymentMethod.BANK_TRANSFER)
-                    .status(PaymentStatus.SUCCESS)
+                    .status(PaymentStatus.PAID)
                     .referenceCode("PAY" + System.currentTimeMillis())
                     .build());
                 

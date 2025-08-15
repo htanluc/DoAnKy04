@@ -3,6 +3,8 @@ package com.mytech.apartment.portal.mappers;
 import com.mytech.apartment.portal.dtos.FacilityBookingDto;
 import com.mytech.apartment.portal.models.FacilityBooking;
 import com.mytech.apartment.portal.models.enums.FacilityBookingStatus;
+import com.mytech.apartment.portal.models.enums.PaymentStatus;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -45,6 +47,12 @@ public class FacilityBookingMapper {
         dto.setQrExpiresAt(booking.getQrExpiresAt());
         dto.setCheckedInCount(booking.getCheckedInCount());
         dto.setMaxCheckins(booking.getMaxCheckins());
+        
+        // Set payment fields
+        dto.setPaymentStatus(booking.getPaymentStatus() != null ? booking.getPaymentStatus().name() : null);
+        dto.setPaymentMethod(booking.getPaymentMethod() != null ? booking.getPaymentMethod().name() : null);
+        dto.setPaymentDate(booking.getPaymentDate());
+        dto.setTransactionId(booking.getTransactionId());
         
         return dto;
     }
