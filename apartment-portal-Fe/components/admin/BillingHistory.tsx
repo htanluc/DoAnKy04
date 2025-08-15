@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useYearlyBilling, YearlyBillingConfig } from '@/hooks/use-yearly-billing';
 import { History, Search, Calendar, AlertCircle, Info } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 
 export default function BillingHistoryComponent() {
+  const { t, language } = useLanguage();
   const { 
     loading, 
     error, 
@@ -35,22 +37,23 @@ export default function BillingHistoryComponent() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
       style: 'currency',
       currency: 'VND'
     }).format(amount);
   };
 
   const getMonthName = (month: number) => {
-    const months = [
-      'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-      'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
-    ];
-    return months[month - 1] || `Tháng ${month}`;
+    if (language === 'vi') return `Tháng ${month}`;
+    try {
+      return new Date(2000, month - 1, 1).toLocaleString('en-US', { month: 'long' });
+    } catch {
+      return `Month ${month}`;
+    }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
+    return new Date(dateString).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -64,7 +67,7 @@ export default function BillingHistoryComponent() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <History className="h-5 w-5" />
-          Lịch sử cấu hình phí dịch vụ
+          {t('admin.billing-history.title', 'Lịch sử cấu hình phí dịch vụ')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -74,7 +77,7 @@ export default function BillingHistoryComponent() {
             <div className="flex-1 space-y-2">
               <Label htmlFor="year" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Chọn năm
+                {t('admin.billing-history.chooseYear', 'Chọn năm')}
               </Label>
               <Input
                 id="year"
@@ -83,12 +86,12 @@ export default function BillingHistoryComponent() {
                 max={2030}
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                placeholder="Nhập năm..."
+                placeholder={t('admin.billing-history.inputYearPlaceholder', 'Nhập năm...')}
               />
             </div>
             <Button onClick={handleSearch} disabled={loading} className="min-w-[120px]">
               <Search className="h-4 w-4 mr-2" />
-              {loading ? 'Đang tìm...' : 'Tìm kiếm'}
+              {loading ? t('admin.loading', 'Đang tải...') : t('admin.action.search', 'Tìm kiếm')}
             </Button>
           </div>
 
@@ -96,7 +99,7 @@ export default function BillingHistoryComponent() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Xem lịch sử cấu hình phí dịch vụ theo năm. Hệ thống chỉ hiển thị cấu hình phí dịch vụ, không bao gồm hóa đơn.
+              {t('admin.billing-history.info', 'Xem lịch sử cấu hình phí dịch vụ theo năm. Hệ thống chỉ hiển thị cấu hình phí dịch vụ, không bao gồm hóa đơn.')}
             </AlertDescription>
           </Alert>
 
@@ -112,16 +115,16 @@ export default function BillingHistoryComponent() {
 
               {configs.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Không tìm thấy cấu hình phí dịch vụ cho năm {selectedYear}</p>
+                  <p className="text-gray-500">{t('admin.billing-history.notFound', 'Không tìm thấy cấu hình phí dịch vụ cho năm')} {selectedYear}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">
-                      Cấu hình phí dịch vụ năm {selectedYear}
+                      {t('admin.billing-history.yearTitle', 'Cấu hình phí dịch vụ năm')} {selectedYear}
                     </h3>
                     <span className="text-sm text-gray-500">
-                      Tổng cộng: {configs.length} tháng
+                      {t('admin.billing-history.totalMonths', 'Tổng cộng')}: {configs.length} {t('admin.yearly-billing.months','tháng')}
                     </span>
                   </div>
 
@@ -137,36 +140,32 @@ export default function BillingHistoryComponent() {
                         <CardContent className="space-y-3">
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Phí dịch vụ:</span>
+                              <span className="text-gray-600">{t('admin.invoices.feeType.SERVICE_FEE','Phí dịch vụ')}:</span>
                               <span className="font-medium">{formatCurrency(config.serviceFeePerM2)}/m²</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Phí nước:</span>
+                              <span className="text-gray-600">{t('admin.invoices.feeType.WATER_FEE','Phí nước')}:</span>
                               <span className="font-medium">{formatCurrency(config.waterFeePerM3)}/m³</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Phí xe máy:</span>
-                              <span className="font-medium">{formatCurrency(config.motorcycleFee)}/tháng</span>
+                              <span className="text-gray-600">{t('admin.yearly-billing.parking.motorcycle.label','Phí xe máy')}:</span>
+                              <span className="font-medium">{formatCurrency(config.motorcycleFee)}/{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Phí ô tô 4 chỗ:</span>
-                              <span className="font-medium">{formatCurrency(config.car4SeatsFee)}/tháng</span>
+                              <span className="text-gray-600">{t('admin.yearly-billing.parking.car4.label','Phí xe 4 chỗ')}:</span>
+                              <span className="font-medium">{formatCurrency(config.car4SeatsFee)}/{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Phí ô tô 7 chỗ:</span>
-                              <span className="font-medium">{formatCurrency(config.car7SeatsFee)}/tháng</span>
+                              <span className="text-gray-600">{t('admin.yearly-billing.parking.car7.label','Phí xe 7 chỗ')}:</span>
+                              <span className="font-medium">{formatCurrency(config.car7SeatsFee)}/{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                             </div>
                           </div>
 
                           {config.createdAt && (
                             <div className="pt-2 border-t border-gray-100">
-                              <p className="text-xs text-gray-500">
-                                Tạo: {formatDate(config.createdAt)}
-                              </p>
+                              <p className="text-xs text-gray-500">{t('admin.common.createdAt','Tạo')}: {formatDate(config.createdAt)}</p>
                               {config.updatedAt && config.updatedAt !== config.createdAt && (
-                                <p className="text-xs text-gray-500">
-                                  Cập nhật: {formatDate(config.updatedAt)}
-                                </p>
+                                <p className="text-xs text-gray-500">{t('admin.common.updatedAt','Cập nhật')}: {formatDate(config.updatedAt)}</p>
                               )}
                             </div>
                           )}
@@ -177,16 +176,16 @@ export default function BillingHistoryComponent() {
 
                   {/* Summary */}
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3">Tóm tắt năm {selectedYear}</h4>
+                    <h4 className="font-semibold mb-3">{t('admin.billing-history.summaryTitle','Tóm tắt năm')} {selectedYear}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                       <div>
-                        <span className="font-medium">Số tháng có cấu hình:</span> {configs.length}/12
+                        <span className="font-medium">{t('admin.billing-history.monthsWithConfig','Số tháng có cấu hình')}:</span> {configs.length}/12
                       </div>
                       <div>
-                        <span className="font-medium">Tháng đầu tiên:</span> {configs.length > 0 ? getMonthName(configs[0].month || 0) : 'N/A'}
+                        <span className="font-medium">{t('admin.billing-history.firstMonth','Tháng đầu tiên')}:</span> {configs.length > 0 ? getMonthName(configs[0].month || 0) : 'N/A'}
                       </div>
                       <div>
-                        <span className="font-medium">Tháng cuối cùng:</span> {configs.length > 0 ? getMonthName(configs[configs.length - 1].month || 0) : 'N/A'}
+                        <span className="font-medium">{t('admin.billing-history.lastMonth','Tháng cuối cùng')}:</span> {configs.length > 0 ? getMonthName(configs[configs.length - 1].month || 0) : 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -199,7 +198,7 @@ export default function BillingHistoryComponent() {
           {!hasSearched && (
             <div className="text-center py-8">
               <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Chọn năm và nhấn "Tìm kiếm" để xem lịch sử cấu hình phí dịch vụ</p>
+              <p className="text-gray-500">{t('admin.billing-history.initialHint','Chọn năm và nhấn "Tìm kiếm" để xem lịch sử cấu hình phí dịch vụ')}</p>
             </div>
           )}
         </div>

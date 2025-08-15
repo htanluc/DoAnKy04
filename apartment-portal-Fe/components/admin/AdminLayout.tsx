@@ -2,13 +2,12 @@
 
 import React from 'react';
 import { useLanguage } from '@/lib/i18n';
-import { useAuth } from '@/hooks/use-auth';
+// import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { LogOut, User, Home, Users, Building2, Bell, Calendar, Coffee, Receipt, MessageSquare, BarChart3, Settings, ClipboardList, History, LifeBuoy, Calculator } from 'lucide-react';
+import { Home, Users, Building2, Bell, Calendar, Coffee, Receipt, MessageSquare, BarChart3, Settings, ClipboardList, History, LifeBuoy, Calculator, ChevronDown } from 'lucide-react';
 import LanguageSwitcher from '@/components/language-switcher';
 import ThemeToggle from '@/components/theme-toggle';
 import UserMenu from '@/components/user-menu';
-import QuickCreateFAB from '@/components/admin/QuickCreateFAB';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,11 +28,12 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarSeparator,
+  // SidebarSeparator,
   SidebarTrigger,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  SidebarGroupAction,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 
@@ -80,9 +80,9 @@ const adminMenuSections = [
     label: 'admin.groups.finance',
     items: [
       { href: '/admin-dashboard/invoices', label: 'admin.invoices.title', icon: <Receipt className="h-5 w-5" /> },
-      { href: '/admin-dashboard/yearly-billing', label: 'Tạo biểu phí 1 năm', icon: <Calculator className="h-5 w-5" /> },
-      { href: '/admin-dashboard/billing-config', label: 'Cấu Hình Phí', icon: <Settings className="h-5 w-5" /> },
-      { href: '/admin-dashboard/water-meter', label: 'Quản lý chỉ số nước', icon: <BarChart3 className="h-5 w-5" /> },
+      { href: '/admin-dashboard/yearly-billing', label: 'admin.yearly-billing.title', icon: <Calculator className="h-5 w-5" /> },
+      { href: '/admin-dashboard/billing-config', label: 'admin.billing-config.title', icon: <Settings className="h-5 w-5" /> },
+      { href: '/admin-dashboard/water-meter', label: 'admin.waterMeter.title', icon: <BarChart3 className="h-5 w-5" /> },
     ],
   },
   {
@@ -105,14 +105,29 @@ const adminMenuSections = [
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const { t } = useLanguage();
-  const { logout } = useAuth();
+  // const { logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({});
+  const [hydrated, setHydrated] = React.useState(false);
+  const toggleGroup = (key: string) => {
+    // Accordion mode: only one group open at a time
+    const willOpen = !openGroups[key];
+    const next: Record<string, boolean> = {};
+    if (willOpen) next[key] = true;
+    persistGroups(next);
   };
+
+  const persistGroups = (next: Record<string, boolean>) => {
+    setOpenGroups(next);
+    try { localStorage.setItem('sidebar:groups', JSON.stringify(next)); } catch {}
+  };
+
+  // const handleLogout = () => {
+  //   logout();
+  //   router.push('/login');
+  // };
 
   const sectionKey = React.useMemo(() => {
     const p = pathname || '';
@@ -125,6 +140,25 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
     if (p.startsWith('/admin-dashboard/reports') || p.startsWith('/admin-dashboard/history')) return 'reports';
     return 'overview';
   }, [pathname]);
+
+  React.useEffect(() => {
+    // Load persisted group state on client to avoid SSR mismatch
+    try {
+      const raw = localStorage.getItem('sidebar:groups');
+      if (raw) {
+        setOpenGroups(JSON.parse(raw));
+      }
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  React.useEffect(() => {
+    // Auto mở nhóm theo route hiện tại (sau khi hydrate)
+    if (!hydrated) return;
+    // Open only the current section by default (accordion)
+    persistGroups({ [sectionKey]: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionKey, hydrated]);
 
   const sectionAccent = React.useMemo(() => {
     switch (sectionKey) {
@@ -152,7 +186,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background fpt-bg overflow-x-hidden w-full">
+      <div className="flex min-h-screen bg-background fpt-bg overflow-x-hidden w-full" style={headerStyle}>
         {/* Sidebar */}
         <Sidebar collapsible="icon" className="border-r w-64 min-w-64 max-w-64 h-screen overflow-y-auto overflow-x-hidden">
           <SidebarHeader>
@@ -171,11 +205,30 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
           </SidebarHeader>
           <SidebarContent>
             {adminMenuSections.map((section) => (
-              <SidebarGroup key={section.key} style={{ ['--group-accent' as any]: `hsl(${section.key==='people'?'220 85% 56%':section.key==='comms'?'268 80% 60%':section.key==='facilities'?'152 60% 40%':section.key==='finance'?'30 95% 55%':section.key==='support'?'0 70% 55%':section.key==='reports'?'190 70% 45%':'var(--brand-orange)'})` } as React.CSSProperties}>
-                <SidebarGroupLabel className="relative pl-3 text-xs uppercase tracking-wide text-sidebar-foreground/60 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-1.5 before:rounded-full before:bg-[var(--group-accent)]">
+              <SidebarGroup
+                key={section.key}
+                style={{
+                  ['--group-accent' as any]: `hsl(${section.key==='people'?'220 85% 56%':section.key==='comms'?'268 80% 60%':section.key==='facilities'?'152 60% 40%':section.key==='finance'?'30 95% 55%':section.key==='support'?'0 70% 55%':section.key==='reports'?'190 70% 45%':'var(--brand-orange)'})`,
+                  ['--group-border' as any]: `hsl(${section.key==='people'?'220 85% 56%':section.key==='comms'?'268 80% 60%':section.key==='facilities'?'152 60% 40%':section.key==='finance'?'30 95% 55%':section.key==='support'?'0 70% 55%':section.key==='reports'?'190 70% 45%':'var(--brand-orange)'} / 0.7)`,
+                  ['--group-bg' as any]: `hsl(${section.key==='people'?'220 85% 56%':section.key==='comms'?'268 80% 60%':section.key==='facilities'?'152 60% 40%':section.key==='finance'?'30 95% 55%':section.key==='support'?'0 70% 55%':section.key==='reports'?'190 70% 45%':'var(--brand-orange)'} / 0.1)`,
+                } as React.CSSProperties}
+              >
+                <SidebarGroupLabel
+                  onClick={() => toggleGroup(section.key)}
+                  className="relative pl-3 text-xs uppercase tracking-wide text-sidebar-foreground/60 cursor-pointer select-none before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-1.5 before:rounded-full before:bg-[var(--group-accent)]">
                   {t(section.label)}
                 </SidebarGroupLabel>
-                <SidebarGroupContent>
+                <SidebarGroupAction asChild>
+                  <button
+                    aria-label="Toggle section"
+                    onClick={() => toggleGroup(section.key)}
+                    className={`transition-transform ${openGroups[section.key] ? '' : 'rotate-180'}`}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                </SidebarGroupAction>
+                <SidebarGroupContent className={hydrated && !openGroups[section.key] ? 'hidden' : ''}>
+                  <div className="rounded-xl p-2 mb-3 shadow-sm border-2" style={{ background: 'var(--group-bg)', borderColor: 'var(--group-border)' }}>
                   <SidebarMenu>
                     {section.items.map((item) => {
                       const active = pathname?.startsWith(item.href)
@@ -198,29 +251,12 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                       )
                     })}
                   </SidebarMenu>
+                  </div>
                 </SidebarGroupContent>
               </SidebarGroup>
             ))}
           </SidebarContent>
-          <SidebarSeparator />
-          <SidebarFooter>
-            <div className="flex items-center gap-2 px-2 pb-2">
-              <User className="h-5 w-5 text-gray-500" />
-              <span className="text-sm text-gray-700 truncate">Admin</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="flex items-center gap-2 w-full"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="truncate">{t('admin.action.logout')}</span>
-            </Button>
-            <div className="mt-2 px-2 pb-2 text-[10px] text-sidebar-foreground/60">
-              © FPT Apartment
-            </div>
-          </SidebarFooter>
+          {/* Footer removed per user request */}
         </Sidebar>
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0">
@@ -264,14 +300,16 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
           <div className="fpt-tricolor-bar" />
           {/* Main content area */}
           <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
-            <div className="bg-card text-card-foreground rounded-xl border p-6">
+            <div
+              className="text-card-foreground rounded-xl border-2 p-6 shadow-sm"
+              style={{ background: `hsl(${sectionAccent} / 0.08)`, borderColor: `hsl(${sectionAccent} / 0.55)` }}
+            >
               {children}
             </div>
           </main>
         </div>
       </div>
-      {/* Floating Quick Create */}
-      <QuickCreateFAB />
+      {/* Floating Quick Create removed per user request */}
       <AdminCommandPalette />
     </SidebarProvider>
   );

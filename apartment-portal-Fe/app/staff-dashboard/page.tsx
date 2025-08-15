@@ -39,6 +39,17 @@ export default function StaffDashboard() {
             </Card>
             <Card>
               <CardHeader>
+                <CardTitle>Yêu cầu hỗ trợ</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Xử lý yêu cầu do cư dân gửi
+                <div className="mt-4">
+                  <a href="/staff-dashboard/support-requests" className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Vào danh sách</a>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
                 <CardTitle>Thông báo</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">

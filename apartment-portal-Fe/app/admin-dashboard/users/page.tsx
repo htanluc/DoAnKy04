@@ -86,9 +86,9 @@ export default function UsersPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return <Badge className="bg-green-100 text-green-800">Hoạt động</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.status.active','Hoạt động')}</Badge>;
       case 'INACTIVE':
-        return <Badge className="bg-red-100 text-red-800">Không hoạt động</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.status.inactive','Không hoạt động')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }

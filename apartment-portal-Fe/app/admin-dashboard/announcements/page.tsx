@@ -28,7 +28,7 @@ import { announcementsApi, Announcement, AnnouncementType, TargetAudience } from
 import { useToast } from '@/hooks/use-toast';
 
 export default function AnnouncementsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,8 +42,8 @@ export default function AnnouncementsPage() {
       setAnnouncements(data);
     } catch (error) {
       toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách thông báo",
+        title: t('admin.error.load','Lỗi'),
+        description: t('admin.announcements.loadError','Không thể tải danh sách thông báo'),
         variant: "destructive",
       });
     } finally {
@@ -56,18 +56,18 @@ export default function AnnouncementsPage() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa thông báo này?')) {
+    if (window.confirm(t('admin.announcements.confirmDelete','Bạn có chắc chắn muốn xóa thông báo này?'))) {
       try {
         await announcementsApi.delete(id);
         toast({
-          title: "Thành công",
-          description: "Đã xóa thông báo",
+          title: t('admin.success.delete','Thành công'),
+          description: t('admin.announcements.deleteSuccess','Đã xóa thông báo'),
         });
         fetchAnnouncements();
       } catch (error) {
         toast({
-          title: "Lỗi",
-          description: "Không thể xóa thông báo",
+          title: t('admin.error.delete','Lỗi'),
+          description: t('admin.announcements.deleteError','Không thể xóa thông báo'),
           variant: "destructive",
         });
       }
@@ -84,11 +84,11 @@ export default function AnnouncementsPage() {
   const getTypeBadge = (type: AnnouncementType) => {
     switch (type) {
       case 'NEWS':
-        return <Badge className="bg-blue-100 text-blue-800">Tin tức</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('admin.announcements.type.news','Tin tức')}</Badge>;
       case 'REGULAR':
-        return <Badge className="bg-gray-100 text-gray-800">Thường</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('admin.announcements.type.regular','Thường')}</Badge>;
       case 'URGENT':
-        return <Badge className="bg-red-100 text-red-800">Khẩn cấp</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.announcements.type.urgent','Khẩn cấp')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>;
     }
@@ -97,26 +97,28 @@ export default function AnnouncementsPage() {
   const getTargetAudienceBadge = (targetAudience: TargetAudience) => {
     switch (targetAudience) {
       case 'ALL_RESIDENTS':
-        return <Badge className="bg-purple-100 text-purple-800">Tất cả cư dân</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">{t('admin.announcements.targetAudience.ALL_RESIDENTS','Tất cả cư dân')}</Badge>;
       case 'TOWER_A_RESIDENTS':
-        return <Badge className="bg-green-100 text-green-800">Tòa A</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.announcements.targetAudience.TOWER_A_RESIDENTS','Tòa A')}</Badge>;
       case 'TOWER_B_RESIDENTS':
-        return <Badge className="bg-blue-100 text-blue-800">Tòa B</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('admin.announcements.targetAudience.TOWER_B_RESIDENTS','Tòa B')}</Badge>;
       case 'SPECIFIC_APARTMENTS':
-        return <Badge className="bg-orange-100 text-orange-800">Căn hộ cụ thể</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800">{t('admin.announcements.targetAudience.SPECIFIC_APARTMENTS','Căn hộ cụ thể')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{targetAudience}</Badge>;
     }
   };
 
   const getStatusBadge = (isActive: boolean) => {
-    return isActive ? 
-      <Badge className="bg-green-100 text-green-800">Đang hoạt động</Badge> :
-      <Badge className="bg-gray-100 text-gray-800">Không hoạt động</Badge>;
+    return isActive ? (
+      <Badge className="bg-green-100 text-green-800">{t('admin.status.active','Hoạt động')}</Badge>
+    ) : (
+      <Badge className="bg-gray-100 text-gray-800">{t('admin.status.inactive','Không hoạt động')}</Badge>
+    );
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('vi-VN', {
+    return new Date(dateString).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -175,7 +177,7 @@ export default function AnnouncementsPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
-                  title="Loại thông báo"
+                  title={t('admin.announcements.type', 'Loại thông báo')}
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
@@ -194,7 +196,7 @@ export default function AnnouncementsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Danh sách thông báo ({filteredAnnouncements.length})</span>
+              <span>{t('admin.announcements.list','Danh sách thông báo')} ({filteredAnnouncements.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -207,12 +209,12 @@ export default function AnnouncementsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tiêu đề</TableHead>
-                      <TableHead>Loại</TableHead>
-                      <TableHead>Đối tượng</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>Ngày tạo</TableHead>
-                      <TableHead className="text-right">Thao tác</TableHead>
+                      <TableHead>{t('admin.announcements.announcementTitle','Tiêu đề')}</TableHead>
+                      <TableHead>{t('admin.announcements.type','Loại thông báo')}</TableHead>
+                      <TableHead>{t('admin.announcements.targetAudience','Đối tượng')}</TableHead>
+                      <TableHead>{t('admin.users.status','Trạng thái')}</TableHead>
+                      <TableHead>{t('admin.users.createdAt','Ngày tạo')}</TableHead>
+                      <TableHead className="text-right">{t('admin.users.actions','Thao tác')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

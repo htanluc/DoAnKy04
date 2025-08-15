@@ -40,7 +40,7 @@ interface SupportRequest {
 }
 
 export default function SupportRequestsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,15 +113,15 @@ export default function SupportRequestsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return <Badge className="bg-yellow-100 text-yellow-800">Chờ xử lý</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('admin.support-requests.status.PENDING','Chờ xử lý')}</Badge>;
       case 'ASSIGNED':
-        return <Badge className="bg-blue-100 text-blue-800">Đã giao</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('admin.support-requests.status.ASSIGNED','Đã giao')}</Badge>;
       case 'IN_PROGRESS':
-        return <Badge className="bg-orange-100 text-orange-800">Đang xử lý</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800">{t('admin.support-requests.status.IN_PROGRESS','Đang xử lý')}</Badge>;
       case 'COMPLETED':
-        return <Badge className="bg-green-100 text-green-800">Hoàn thành</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.support-requests.status.COMPLETED','Hoàn thành')}</Badge>;
       case 'CANCELLED':
-        return <Badge className="bg-red-100 text-red-800">Đã hủy</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.support-requests.status.CANCELLED','Đã hủy')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -130,30 +130,57 @@ export default function SupportRequestsPage() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'URGENT':
-        return <Badge className="bg-red-100 text-red-800">Khẩn cấp</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.support-requests.priority.URGENT','Khẩn cấp')}</Badge>;
       case 'HIGH':
-        return <Badge className="bg-orange-100 text-orange-800">Cao</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800">{t('admin.support-requests.priority.HIGH','Cao')}</Badge>;
       case 'MEDIUM':
-        return <Badge className="bg-yellow-100 text-yellow-800">Trung bình</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('admin.support-requests.priority.MEDIUM','Trung bình')}</Badge>;
       case 'LOW':
-        return <Badge className="bg-green-100 text-green-800">Thấp</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.support-requests.priority.LOW','Thấp')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{priority}</Badge>;
     }
   };
 
   const getCategoryBadge = (category: string) => {
-    switch (category) {
+    let code = (category || '').toString().toUpperCase();
+    // If backend sends Vietnamese names, map them to codes
+    if (!['PLUMBING','ELEVATOR','ELECTRICAL','ADMINISTRATIVE','SECURITY','CLEANING','OTHER','WATER','AIR_CONDITIONER','GREENERY'].includes(code)) {
+      const name = (category || '').toString().trim().toLowerCase();
+      const byName: Record<string, string> = {
+        'điện': 'ELECTRICAL',
+        'nước': 'WATER',
+        'vệ sinh': 'CLEANING',
+        'an ninh': 'SECURITY',
+        'thang máy': 'ELEVATOR',
+        'hành chính': 'ADMINISTRATIVE',
+        'điều hòa': 'AIR_CONDITIONER',
+        'cây xanh': 'GREENERY',
+        'khác': 'OTHER',
+      };
+      code = byName[name] || code;
+    }
+    switch (code) {
       case 'PLUMBING':
-        return <Badge className="bg-blue-100 text-blue-800">Điện nước</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('admin.support-requests.category.PLUMBING','Điện nước')}</Badge>;
       case 'ELEVATOR':
-        return <Badge className="bg-purple-100 text-purple-800">Thang máy</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">{t('admin.support-requests.category.ELEVATOR','Thang máy')}</Badge>;
       case 'ELECTRICAL':
-        return <Badge className="bg-yellow-100 text-yellow-800">Điện</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('admin.support-requests.category.ELECTRICAL','Điện')}</Badge>;
+      case 'WATER':
+        return <Badge className="bg-blue-100 text-blue-800">{t('admin.support-requests.category.WATER','Nước')}</Badge>;
       case 'ADMINISTRATIVE':
-        return <Badge className="bg-gray-100 text-gray-800">Hành chính</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('admin.support-requests.category.ADMINISTRATIVE','Hành chính')}</Badge>;
       case 'SECURITY':
-        return <Badge className="bg-red-100 text-red-800">An ninh</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.support-requests.category.SECURITY','An ninh')}</Badge>;
+      case 'CLEANING':
+        return <Badge className="bg-green-100 text-green-800">{t('admin.support-requests.category.CLEANING','Vệ sinh')}</Badge>;
+      case 'AIR_CONDITIONER':
+        return <Badge className="bg-blue-100 text-blue-800">{t('admin.support-requests.category.AIR_CONDITIONER','Điều hòa')}</Badge>;
+      case 'GREENERY':
+        return <Badge className="bg-green-100 text-green-800">{t('admin.support-requests.category.GREENERY','Cây xanh')}</Badge>;
+      case 'OTHER':
+        return <Badge className="bg-gray-100 text-gray-800">{t('admin.support-requests.category.OTHER','Khác')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{category}</Badge>;
     }
@@ -199,13 +226,13 @@ export default function SupportRequestsPage() {
             className={`px-3 py-2 rounded border ${activeTab === 'support' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
             onClick={() => setActiveTab('support')}
           >
-            Yêu cầu hỗ trợ
+            {t('admin.support-requests.tab.support','Yêu cầu hỗ trợ')}
           </button>
           <button
             className={`px-3 py-2 rounded border ${activeTab === 'vehicles' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
             onClick={() => setActiveTab('vehicles')}
           >
-            Đăng ký xe (chờ duyệt)
+            {t('admin.support-requests.tab.vehicles','Đăng ký xe (chờ duyệt)')}
           </button>
         </div>
 
@@ -231,11 +258,11 @@ export default function SupportRequestsPage() {
                     className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                   >
                     <option value="all">{t('admin.status.all','Tất cả trạng thái')}</option>
-                    <option value="PENDING">Chờ xử lý</option>
-                    <option value="ASSIGNED">Đã giao</option>
-                    <option value="IN_PROGRESS">Đang xử lý</option>
-                    <option value="COMPLETED">Hoàn thành</option>
-                    <option value="CANCELLED">Đã hủy</option>
+                  <option value="PENDING">{t('admin.status.pending','Chờ xử lý')}</option>
+                  <option value="ASSIGNED">{t('admin.support-requests.status.ASSIGNED','Đã giao')}</option>
+                  <option value="IN_PROGRESS">{t('admin.support-requests.status.IN_PROGRESS','Đang xử lý')}</option>
+                  <option value="COMPLETED">{t('admin.status.completed','Hoàn thành')}</option>
+                  <option value="CANCELLED">{t('admin.status.cancelled','Đã hủy')}</option>
                   </select>
                 </div>
               </div>
@@ -247,7 +274,7 @@ export default function SupportRequestsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Danh sách yêu cầu hỗ trợ ({filteredSupportRequests.length})</span>
+                <span>{t('admin.support-requests.list','Danh sách yêu cầu hỗ trợ')} ({filteredSupportRequests.length})</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -288,12 +315,12 @@ export default function SupportRequestsPage() {
                                 <span>{request.assignedTo}</span>
                               </div>
                             ) : (
-                              <span className="text-gray-500">Chưa giao</span>
+                              <span className="text-gray-500">{t('admin.support-requests.notAssigned','Chưa giao')}</span>
                             )}
                           </TableCell>
                           <TableCell>{getStatusBadge(request.status)}</TableCell>
                           <TableCell>
-                            {new Date(request.createdAt).toLocaleDateString('vi-VN')}
+                            {new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
@@ -324,26 +351,26 @@ export default function SupportRequestsPage() {
 
         {activeTab === 'vehicles' && (
           <Card>
-            <CardHeader>
-              <CardTitle>Đăng ký xe chờ duyệt ({vehicles.length})</CardTitle>
+              <CardHeader>
+              <CardTitle>{t('admin.support-requests.vehicles.pendingTitle','Đăng ký xe chờ duyệt')} ({vehicles.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {vehiclesLoading ? (
-                <div className="text-center py-8 text-gray-500">Đang tải...</div>
+                <div className="text-center py-8 text-gray-500">{t('admin.support-requests.vehicles.loading','Đang tải...')}</div>
               ) : vehicles.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">Không có đăng ký xe chờ duyệt</div>
+                <div className="text-center py-8 text-gray-500">{t('admin.support-requests.vehicles.empty','Không có đăng ký xe chờ duyệt')}</div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Chủ xe</TableHead>
-                        <TableHead>Loại xe</TableHead>
-                        <TableHead>Biển số</TableHead>
-                        <TableHead>Màu sắc</TableHead>
-                        <TableHead>Căn hộ</TableHead>
-                        <TableHead>Trạng thái</TableHead>
-                        <TableHead>Hành động</TableHead>
+                      <TableHead>{t('admin.support-requests.vehicles.columns.owner','Chủ xe')}</TableHead>
+                      <TableHead>{t('admin.support-requests.vehicles.columns.type','Loại xe')}</TableHead>
+                      <TableHead>{t('admin.support-requests.vehicles.columns.license','Biển số')}</TableHead>
+                      <TableHead>{t('admin.support-requests.vehicles.columns.color','Màu sắc')}</TableHead>
+                      <TableHead>{t('admin.support-requests.vehicles.columns.apartment','Căn hộ')}</TableHead>
+                      <TableHead>{t('admin.support-requests.vehicles.columns.status','Trạng thái')}</TableHead>
+                      <TableHead>{t('admin.support-requests.vehicles.columns.actions','Hành động')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -364,12 +391,12 @@ export default function SupportRequestsPage() {
                                   await vehiclesApi.updateStatus(v.id, 'APPROVED');
                                   setVehicles((prev) => prev.filter((x) => x.id !== v.id));
                                 } catch {}
-                              }}>Duyệt</Button>
+                              }}>{t('admin.support-requests.vehicles.approve','Duyệt')}</Button>
                               <Button size="sm" variant="outline" className="text-red-600" onClick={() => {
                                 setRejectingId(v.id);
                                 setRejectionReason('');
                                 setShowRejectModal(true);
-                              }}>Từ chối</Button>
+                              }}>{t('admin.support-requests.vehicles.reject','Từ chối')}</Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -386,15 +413,15 @@ export default function SupportRequestsPage() {
         {showRejectModal && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
-              <h3 className="text-lg font-semibold mb-2">Nhập lý do từ chối</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('admin.support-requests.vehicles.rejectDialog.title','Nhập lý do từ chối')}</h3>
               <textarea
                 className="w-full border rounded p-2 h-28"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Lý do từ chối..."
+                placeholder={t('admin.support-requests.vehicles.rejectDialog.placeholder','Lý do từ chối...')}
               />
               <div className="mt-3 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowRejectModal(false)}>Hủy</Button>
+                <Button variant="outline" onClick={() => setShowRejectModal(false)}>{t('admin.support-requests.vehicles.rejectDialog.cancel','Hủy')}</Button>
                 <Button
                   className="bg-red-600 text-white"
                   onClick={async () => {
@@ -408,7 +435,7 @@ export default function SupportRequestsPage() {
                     } catch {}
                   }}
                 >
-                  Xác nhận từ chối
+                  {t('admin.support-requests.vehicles.rejectDialog.confirm','Xác nhận từ chối')}
                 </Button>
               </div>
             </div>

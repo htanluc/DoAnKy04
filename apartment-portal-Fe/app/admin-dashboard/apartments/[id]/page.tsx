@@ -11,6 +11,7 @@ import { Loader2, ArrowLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { useLanguage } from '@/lib/i18n'
 import { useApartments, ApartmentDetails, Vehicle, WaterMeter, VEHICLE_TYPE_DISPLAY, VEHICLE_TYPE_COLORS } from '@/hooks/use-apartments'
 import { useInvoices } from '@/hooks/use-invoices'
 import Link from 'next/link'
@@ -21,6 +22,7 @@ import { Trash2 } from 'lucide-react'
 export default function ApartmentDetail() {
   const params = useParams()
   const id = parseInt(params.id as string)
+  const { t } = useLanguage()
 
   const { getApartmentById, getLinkedResidents, getApartmentVehicles, getApartmentWaterMeters, loading, error } = useApartments()
   const { getLatestInvoice } = useInvoices()
@@ -226,13 +228,13 @@ export default function ApartmentDetail() {
         <div className="flex items-center gap-4">
           <Link href="/admin-dashboard/apartments">
             <Button variant="ghost">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
+              <ArrowLeft className="mr-2 h-4 w-4" /> {t('admin.action.back')}
             </Button>
           </Link>
         </div>
         <div className="mt-6">
           <Alert variant="destructive">
-            <AlertDescription>Không tìm thấy thông tin căn hộ</AlertDescription>
+            <AlertDescription>{t('admin.apartments.notFound')}</AlertDescription>
           </Alert>
         </div>
       </AdminLayout>
@@ -240,16 +242,16 @@ export default function ApartmentDetail() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout title={t('admin.apartments.details')}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/admin-dashboard/apartments">
               <Button variant="ghost">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
+                <ArrowLeft className="mr-2 h-4 w-4" /> {t('admin.action.back')}
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold">Chi tiết căn hộ {apartment.number || (apartment as any).unitNumber || (apartment as any).name || `#${id}`}</h1>
+            <h1 className="text-2xl font-bold">{t('admin.apartments.details')} {apartment.number || (apartment as any).unitNumber || (apartment as any).name || `#${id}`}</h1>
           </div>
           <div className="flex gap-2">
             <Button 
@@ -257,7 +259,7 @@ export default function ApartmentDetail() {
               onClick={loadData}
               disabled={Object.values(loadingStates).some(loading => loading)}
             >
-              🔄 Reload Data
+              🔄 {t('admin.action.reload')}
             </Button>
 
           </div>
@@ -265,28 +267,28 @@ export default function ApartmentDetail() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Thông tin căn hộ</CardTitle>
+            <CardTitle>{t('admin.apartments.info.title')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Mã/Số căn hộ</p>
+                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.number')}</p>
                 <p>{apartment.number || (apartment as any).unitNumber || (apartment as any).name || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Tòa nhà</p>
+                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.building')}</p>
                 <p>{apartment.building || (apartment as any).buildingName || (apartment as any).building || ((apartment as any).buildingId ? `Tòa ${ (apartment as any).buildingId }` : '-')}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Tầng</p>
+                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.floor')}</p>
                 <p>{(apartment as any).floor ?? (apartment as any).floorNumber ?? '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Diện tích</p>
+                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.area')}</p>
                 <p>{(apartment as any).area ?? (apartment as any).areaM2 ?? (apartment as any).squareMeters ?? '-'} m²</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Trạng thái</p>
+                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.status')}</p>
                 <Badge>{apartment.status}</Badge>
               </div>
             </div>
@@ -295,13 +297,13 @@ export default function ApartmentDetail() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Quản lý cư dân</CardTitle>
+            <CardTitle>{t('admin.apartments.residents.manage')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             
             {/* Liên kết cư dân mới */}
             <div className="border rounded-lg p-4 bg-gray-50">
-              <h3 className="text-lg font-medium mb-4">➕ Liên kết cư dân mới</h3>
+              <h3 className="text-lg font-medium mb-4">➕ {t('admin.apartments.residents.linkNew')}</h3>
               
               {linkingError && (
                 <Alert variant="destructive" className="mb-4">
@@ -311,18 +313,18 @@ export default function ApartmentDetail() {
               
               {linkingSuccess && (
                 <Alert className="mb-4 border-green-200 bg-green-50">
-                  <AlertDescription className="text-green-800">{linkingSuccess}</AlertDescription>
+                  <AlertDescription className="text-green-800">{t('admin.apartments.residents.linkSuccess')}</AlertDescription>
                 </Alert>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <div>
-                    <Label htmlFor="phone">Số điện thoại</Label>
+                    <Label htmlFor="phone">{t('admin.apartments.residents.phone')}</Label>
                     <div className="flex gap-2">
                       <Input
                         id="phone"
-                        placeholder="Nhập số điện thoại"
+                        placeholder={t('admin.apartments.residents.phone.placeholder')}
                         value={linkingPhone}
                         onChange={(e) => setLinkingPhone(e.target.value)}
                         disabled={linkingLoading}
@@ -332,7 +334,7 @@ export default function ApartmentDetail() {
                         disabled={linkingLoading || !linkingPhone}
                         variant="outline"
                       >
-                        {linkingLoading ? '🔍' : '🔍 Tìm'}
+                        {linkingLoading ? '🔍' : `🔍 ${t('admin.apartments.residents.find')}`}
                       </Button>
                     </div>
                   </div>
@@ -348,15 +350,15 @@ export default function ApartmentDetail() {
 
                 <div className="space-y-3">
                   <div>
-                    <Label htmlFor="relationType">Quan hệ với căn hộ</Label>
+                    <Label htmlFor="relationType">{t('admin.apartments.residents.relation')}</Label>
                     <Select value={selectedRelationType} onValueChange={setSelectedRelationType}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="OWNER">Chủ hộ</SelectItem>
-                        <SelectItem value="TENANT">Người thuê</SelectItem>
-                        <SelectItem value="FAMILY">Thành viên gia đình</SelectItem>
+                        <SelectItem value="OWNER">{t('admin.apartments.residents.relation.OWNER')}</SelectItem>
+                        <SelectItem value="TENANT">{t('admin.apartments.residents.relation.TENANT')}</SelectItem>
+                        <SelectItem value="FAMILY">{t('admin.apartments.residents.relation.FAMILY')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -366,7 +368,7 @@ export default function ApartmentDetail() {
                     disabled={linkingLoading || !foundUser}
                     className="w-full"
                   >
-                    {linkingLoading ? '⏳ Đang liên kết...' : '🔗 Liên kết cư dân'}
+                    {linkingLoading ? `⏳ ${t('admin.apartments.residents.linking')}` : `🔗 ${t('admin.apartments.residents.linkBtn')}`}
                   </Button>
                 </div>
               </div>
@@ -374,17 +376,17 @@ export default function ApartmentDetail() {
             
             {/* Danh sách cư dân hiện tại */}
             <div>
-              <h3 className="text-lg font-medium mb-3">Cư dân đang ở ({residents.length})</h3>
+              <h3 className="text-lg font-medium mb-3">{t('admin.apartments.residents.current')} ({residents.length})</h3>
               {loadingStates.residents ? (
                 <div className="flex justify-center py-4">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
               ) : residents.length === 0 ? (
                 <div className="space-y-2">
-                  <p className="text-muted-foreground">Chưa có cư dân liên kết</p>
+                  <p className="text-muted-foreground">{t('admin.apartments.residents.none')}</p>
                   <Alert>
                     <AlertDescription>
-                      Sử dụng form bên trên để liên kết cư dân với căn hộ này.
+                      {t('admin.apartments.residents.useFormHint')}
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -392,12 +394,12 @@ export default function ApartmentDetail() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tên</TableHead>
-                      <TableHead>SĐT</TableHead>
-                      <TableHead>Quan hệ</TableHead>
-                      <TableHead>Ngày vào</TableHead>
-                      <TableHead>Ngày ra</TableHead>
-                      <TableHead>Thao tác</TableHead>
+                      <TableHead>{t('admin.apartments.residents.table.name')}</TableHead>
+                      <TableHead>{t('admin.apartments.residents.table.phone')}</TableHead>
+                      <TableHead>{t('admin.apartments.residents.table.relation')}</TableHead>
+                      <TableHead>{t('admin.apartments.residents.table.moveIn')}</TableHead>
+                      <TableHead>{t('admin.apartments.residents.table.moveOut')}</TableHead>
+                      <TableHead>{t('admin.apartments.residents.table.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -422,9 +424,9 @@ export default function ApartmentDetail() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {res.relationType === 'OWNER' ? 'Chủ hộ' : 
-                             res.relationType === 'TENANT' ? 'Người thuê' : 
-                             res.relationType === 'FAMILY' ? 'Thành viên gia đình' : res.relationType}
+                            {res.relationType === 'OWNER' ? t('admin.apartments.residents.relation.OWNER') : 
+                             res.relationType === 'TENANT' ? t('admin.apartments.residents.relation.TENANT') : 
+                             res.relationType === 'FAMILY' ? t('admin.apartments.residents.relation.FAMILY') : res.relationType}
                           </Badge>
                         </TableCell>
                         <TableCell>{res.moveInDate ? new Date(res.moveInDate).toLocaleDateString() : '-'}</TableCell>
@@ -432,7 +434,7 @@ export default function ApartmentDetail() {
                           {res.moveOutDate ? (
                             <div className="text-red-600">{new Date(res.moveOutDate).toLocaleDateString()}</div>
                           ) : (
-                            <Badge variant="secondary">Đang ở</Badge>
+                            <Badge variant="secondary">{t('admin.apartments.residents.staying')}</Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -457,7 +459,7 @@ export default function ApartmentDetail() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Xe đăng ký</CardTitle>
+            <CardTitle>{t('admin.apartments.vehicles.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingStates.vehicles ? (
@@ -466,7 +468,7 @@ export default function ApartmentDetail() {
               </div>
             ) : vehicles.length === 0 ? (
               <div className="space-y-2">
-                <p className="text-muted-foreground">Chưa có xe đăng ký</p>
+                <p className="text-muted-foreground">{t('admin.apartments.vehicles.none')}</p>
                 <Alert>
                   <AlertDescription>
                     Có thể cư dân trong căn hộ này chưa đăng ký xe hoặc endpoint backend để lấy vehicles theo userId chưa được triển khai.
@@ -477,12 +479,12 @@ export default function ApartmentDetail() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Chủ xe</TableHead>
-                    <TableHead>Loại xe</TableHead>
-                    <TableHead>Thương hiệu & Model</TableHead>
-                    <TableHead>Biển số</TableHead>
-                    <TableHead>Màu sắc</TableHead>
-                    <TableHead>Ngày đăng ký</TableHead>
+                    <TableHead>{t('admin.apartments.vehicles.table.owner')}</TableHead>
+                    <TableHead>{t('admin.apartments.vehicles.table.type')}</TableHead>
+                    <TableHead>{t('admin.apartments.vehicles.table.brandModel')}</TableHead>
+                    <TableHead>{t('admin.apartments.vehicles.table.license')}</TableHead>
+                    <TableHead>{t('admin.apartments.vehicles.table.color')}</TableHead>
+                    <TableHead>{t('admin.apartments.vehicles.table.registrationDate')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -538,7 +540,7 @@ export default function ApartmentDetail() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Chỉ số nước</CardTitle>
+            <CardTitle>{t('admin.apartments.water.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingStates.waterMeters ? (
@@ -546,15 +548,15 @@ export default function ApartmentDetail() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : waterMeters.length === 0 ? (
-              <p className="text-muted-foreground">Chưa có chỉ số nước</p>
+              <p className="text-muted-foreground">{t('admin.apartments.water.none')}</p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Ngày đọc</TableHead>
-                    <TableHead>Chỉ số trước</TableHead>
-                    <TableHead>Chỉ số hiện tại</TableHead>
-                    <TableHead>Tiêu thụ</TableHead>
+                    <TableHead>{t('admin.apartments.water.table.date')}</TableHead>
+                    <TableHead>{t('admin.apartments.water.table.previous')}</TableHead>
+                    <TableHead>{t('admin.apartments.water.table.current')}</TableHead>
+                    <TableHead>{t('admin.apartments.water.table.consumption')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -575,27 +577,27 @@ export default function ApartmentDetail() {
         {latestInvoice && (
           <Card>
             <CardHeader>
-              <CardTitle>Hóa đơn gần nhất</CardTitle>
+              <CardTitle>{t('admin.apartments.invoice.latest')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Kỳ hóa đơn</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.apartments.invoice.period')}</p>
                   <p>{new Date(latestInvoice.billingPeriod).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Tổng tiền</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.apartments.invoice.total')}</p>
                   <p>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(latestInvoice.totalAmount)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Trạng thái</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.apartments.invoice.status')}</p>
                   <Badge variant={latestInvoice.status === 'PAID' ? 'default' : 'destructive'}>
-                    {latestInvoice.status === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                    {latestInvoice.status === 'PAID' ? t('admin.invoices.status.PAID') : t('admin.invoices.status.UNPAID')}
                   </Badge>
                 </div>
                 <div>
                   <Link href={`/admin-dashboard/invoices/${latestInvoice.id}`}>
-                    <Button variant="outline">Xem chi tiết</Button>
+                    <Button variant="outline">{t('admin.action.view')}</Button>
                   </Link>
                 </div>
               </div>

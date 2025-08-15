@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { useLanguage } from "@/lib/i18n";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { fetchRoles } from "@/lib/auth";
 
 export default function CreateUserPage() {
   const router = useRouter();
+  const { t, language } = useLanguage();
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -28,19 +30,19 @@ export default function CreateUserPage() {
     setRolesLoading(true);
     fetchRoles()
       .then((data) => {
-        // Lọc bỏ ADMIN và RESIDENT, map sang label tiếng Việt
+        // Lọc bỏ ADMIN và RESIDENT, map label theo ngôn ngữ
         const roleMap: Record<string, string> = {
-          STAFF: "Nhân viên",
-          TECHNICIAN: "Kỹ thuật viên",
-          CLEANER: "Nhân viên vệ sinh",
-          SECURITY: "Bảo vệ"
+          STAFF: language === 'vi' ? 'Nhân viên' : 'Staff',
+          TECHNICIAN: language === 'vi' ? 'Kỹ thuật viên' : 'Technician',
+          CLEANER: language === 'vi' ? 'Nhân viên vệ sinh' : 'Cleaner',
+          SECURITY: language === 'vi' ? 'Bảo vệ' : 'Security'
         };
         const filtered = data.filter((r) => r.name !== "ADMIN" && r.name !== "RESIDENT");
         setRoles(filtered.map((r) => ({ value: r.name, label: roleMap[r.name] || r.name })));
         setForm((f) => ({ ...f, role: filtered[0]?.name || "" }));
         setRolesError("");
       })
-      .catch(() => setRolesError("Không lấy được danh sách vai trò!"))
+      .catch(() => setRolesError(language === 'vi' ? 'Không lấy được danh sách vai trò!' : 'Failed to load roles!'))
       .finally(() => setRolesLoading(false));
   }, []);
 
@@ -78,16 +80,16 @@ export default function CreateUserPage() {
   };
 
   return (
-    <AdminLayout title="Tạo người dùng mới">
+    <AdminLayout title={language === 'vi' ? 'Tạo người dùng mới' : 'Create new user'}>
       <div className="max-w-lg mx-auto mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Tạo người dùng mới</CardTitle>
+            <CardTitle>{language === 'vi' ? 'Tạo người dùng mới' : 'Create new user'}</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
-                <label className="block mb-1 font-medium">Tên đăng nhập</label>
+                <label className="block mb-1 font-medium">{language === 'vi' ? 'Tên đăng nhập' : 'Username'}</label>
                 <Input name="username" value={form.username} onChange={handleChange} required />
               </div>
               <div>
@@ -95,15 +97,15 @@ export default function CreateUserPage() {
                 <Input name="email" type="email" value={form.email} onChange={handleChange} required />
               </div>
               <div>
-                <label className="block mb-1 font-medium">Số điện thoại</label>
+                <label className="block mb-1 font-medium">{language === 'vi' ? 'Số điện thoại' : 'Phone number'}</label>
                 <Input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} required />
               </div>
               <div>
-                <label className="block mb-1 font-medium">Mật khẩu</label>
+                <label className="block mb-1 font-medium">{language === 'vi' ? 'Mật khẩu' : 'Password'}</label>
                 <Input name="password" type="password" value={form.password} onChange={handleChange} required />
               </div>
               <div>
-                <label className="block mb-1 font-medium" htmlFor="role-select">Vai trò</label>
+                <label className="block mb-1 font-medium" htmlFor="role-select">{language === 'vi' ? 'Vai trò' : 'Role'}</label>
                 <select
                   id="role-select"
                   name="role"
@@ -112,22 +114,22 @@ export default function CreateUserPage() {
                   className="w-full border rounded px-3 py-2"
                   disabled={rolesLoading || !!rolesError}
                   required
-                  title="Chọn vai trò"
-                  aria-label="Chọn vai trò"
+                  title={language === 'vi' ? 'Chọn vai trò' : 'Select role'}
+                  aria-label={language === 'vi' ? 'Chọn vai trò' : 'Select role'}
                 >
                   {roles.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
                   ))}
                 </select>
-                {rolesLoading && <div className="text-xs text-gray-500 mt-1">Đang tải vai trò...</div>}
+                {rolesLoading && <div className="text-xs text-gray-500 mt-1">{language === 'vi' ? 'Đang tải vai trò...' : 'Loading roles...'}</div>}
                 {rolesError && <div className="text-xs text-red-500 mt-1">{rolesError}</div>}
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
-                  Hủy
+                  {language === 'vi' ? 'Hủy' : 'Cancel'}
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? "Đang tạo..." : "Tạo mới"}
+                  {loading ? (language === 'vi' ? 'Đang tạo...' : 'Creating...') : (language === 'vi' ? 'Tạo mới' : 'Create')}
                 </Button>
               </div>
             </form>

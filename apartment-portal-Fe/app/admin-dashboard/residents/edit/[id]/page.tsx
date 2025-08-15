@@ -17,6 +17,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useResidents, Resident, UpdateResidentRequest } from '@/hooks/use-residents';
+import { useLanguage } from '@/lib/i18n';
 import { getResidentIdCard } from '@/lib/resident-utils';
 
 export default function EditResidentPage() {
@@ -30,6 +31,7 @@ export default function EditResidentPage() {
     getResidentById, 
     updateResident 
   } = useResidents();
+  const { t } = useLanguage();
 
   const [success, setSuccess] = useState<string>("");
   
@@ -86,35 +88,35 @@ export default function EditResidentPage() {
     const errors: {[key: string]: string} = {};
     
     if (!formData.fullName.trim()) {
-      errors.fullName = 'Họ tên là bắt buộc';
+      errors.fullName = t('admin.validation.fullNameRequired','Họ tên là bắt buộc');
     }
     
     if (!formData.identityNumber.trim()) {
-      errors.identityNumber = 'Số CMND/CCCD là bắt buộc';
+      errors.identityNumber = t('admin.validation.idCardRequired','Số CMND/CCCD là bắt buộc');
     } else if (!/^\d{9}(\d{3})?$/.test(formData.identityNumber)) {
-      errors.identityNumber = 'Số CMND/CCCD không hợp lệ (9 hoặc 12 số)';
+      errors.identityNumber = t('admin.validation.idCardInvalid','Số CMND/CCCD không hợp lệ (9 hoặc 12 số)');
     }
     
     if (!formData.phoneNumber.trim()) {
-      errors.phoneNumber = 'Số điện thoại là bắt buộc';
+      errors.phoneNumber = t('admin.validation.phoneRequired','Số điện thoại là bắt buộc');
     } else if (!/^(0|\+84)[0-9]{9,10}$/.test(formData.phoneNumber)) {
-      errors.phoneNumber = 'Số điện thoại không hợp lệ';
+      errors.phoneNumber = t('validation.phone.invalid');
     }
     
     if (!formData.email.trim()) {
-      errors.email = 'Email là bắt buộc';
+      errors.email = t('admin.validation.emailRequired','Email là bắt buộc');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Email không hợp lệ';
+      errors.email = t('validation.email.invalid');
     }
     
     if (!formData.dateOfBirth) {
-      errors.dateOfBirth = 'Ngày sinh là bắt buộc';
+      errors.dateOfBirth = t('admin.validation.dobRequired','Ngày sinh là bắt buộc');
     } else {
       const birthDate = new Date(formData.dateOfBirth);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();
       if (age < 0 || age > 120) {
-        errors.dateOfBirth = 'Ngày sinh không hợp lệ';
+        errors.dateOfBirth = t('admin.validation.dobInvalid','Ngày sinh không hợp lệ');
       }
     }
     
@@ -131,7 +133,7 @@ export default function EditResidentPage() {
     }
     const result = await updateResident(residentId, formData);
     if (result) {
-      setSuccess('Cập nhật thành công');
+      setSuccess(t('admin.success.save','Cập nhật thành công'));
       // Redirect to resident detail page after successful update
       setTimeout(() => {
         router.push(`/admin-dashboard/residents/${residentId}`);
@@ -141,11 +143,11 @@ export default function EditResidentPage() {
 
   if (initialLoading) {
     return (
-      <AdminLayout title="Chỉnh sửa cư dân">
+      <AdminLayout title={t('admin.residents.edit','Chỉnh sửa cư dân')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Đang tải thông tin cư dân...</p>
+            <p className="mt-2 text-gray-600">{t('admin.loading','Đang tải...')}</p>
           </div>
         </div>
       </AdminLayout>
@@ -153,20 +155,20 @@ export default function EditResidentPage() {
   }
 
   return (
-    <AdminLayout title="Chỉnh sửa cư dân">
+    <AdminLayout title={t('admin.residents.edit','Chỉnh sửa cư dân')}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4">
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Quay lại
+            {t('admin.action.back')}
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Chỉnh sửa cư dân
+              {t('admin.residents.edit','Chỉnh sửa cư dân')}
             </h2>
             <p className="text-gray-600">
-              Cập nhật thông tin cư dân {formData.fullName}
+              {t('admin.residents.details','Chi tiết cư dân')} {formData.fullName}
             </p>
           </div>
         </div>
@@ -193,7 +195,7 @@ export default function EditResidentPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Thông tin cư dân
+              {t('admin.residents.details','Thông tin cư dân')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -202,14 +204,14 @@ export default function EditResidentPage() {
                 {/* Full Name */}
                 <div className="space-y-2">
                   <Label htmlFor="fullName">
-                    Họ tên <span className="text-red-500">*</span>
+                    {t('admin.residents.fullName','Họ và tên')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="fullName"
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => handleInputChange('fullName', e.target.value)}
-                    placeholder="Nhập họ tên đầy đủ"
+                    placeholder={t('admin.residents.fullName','Họ và tên')}
                     className={formErrors.fullName ? 'border-red-500' : ''}
                   />
                   {formErrors.fullName && (
@@ -220,14 +222,14 @@ export default function EditResidentPage() {
                 {/* Identity Number */}
                 <div className="space-y-2">
                   <Label htmlFor="identityNumber">
-                    Số CMND/CCCD <span className="text-red-500">*</span>
+                    {t('admin.residents.idCard','CMND/CCCD')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="identityNumber"
                     type="text"
                     value={formData.identityNumber}
                     onChange={(e) => handleInputChange('identityNumber', e.target.value)}
-                    placeholder="Nhập số CMND/CCCD"
+                    placeholder={t('admin.residents.idCard','CMND/CCCD')}
                     className={formErrors.identityNumber ? 'border-red-500' : ''}
                   />
                   {formErrors.identityNumber && (
@@ -238,14 +240,14 @@ export default function EditResidentPage() {
                 {/* Phone Number */}
                 <div className="space-y-2">
                   <Label htmlFor="phoneNumber">
-                    Số điện thoại <span className="text-red-500">*</span>
+                    {t('admin.residents.phone','Số điện thoại')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="phoneNumber"
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    placeholder="Nhập số điện thoại"
+                    placeholder={t('register.phoneNumber.placeholder','Nhập số điện thoại')}
                     className={formErrors.phoneNumber ? 'border-red-500' : ''}
                   />
                   {formErrors.phoneNumber && (
@@ -263,7 +265,7 @@ export default function EditResidentPage() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="Nhập địa chỉ email"
+                    placeholder={t('register.email.placeholder','Nhập email')}
                     className={formErrors.email ? 'border-red-500' : ''}
                   />
                   {formErrors.email && (
@@ -274,7 +276,7 @@ export default function EditResidentPage() {
                 {/* Date of Birth */}
                 <div className="space-y-2">
                   <Label htmlFor="dateOfBirth">
-                    Ngày sinh <span className="text-red-500">*</span>
+                    {t('admin.residents.dateOfBirth','Ngày sinh')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="dateOfBirth"
@@ -291,15 +293,15 @@ export default function EditResidentPage() {
                 {/* Status */}
                 <div className="space-y-2">
                   <Label>
-                    Trạng thái <span className="text-red-500">*</span>
+                    {t('admin.residents.columns.status','Trạng thái')} <span className="text-red-500">*</span>
                   </Label>
                   <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ACTIVE">Hoạt động</SelectItem>
-                      <SelectItem value="INACTIVE">Không hoạt động</SelectItem>
+                      <SelectItem value="ACTIVE">{t('admin.status.active')}</SelectItem>
+                      <SelectItem value="INACTIVE">{t('admin.status.inactive')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -313,7 +315,7 @@ export default function EditResidentPage() {
                   onClick={() => router.back()}
                   disabled={loading}
                 >
-                  Hủy
+                  {t('admin.action.cancel')}
                 </Button>
                 <Button 
                   type="submit" 
@@ -323,12 +325,12 @@ export default function EditResidentPage() {
                   {loading ? (
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Đang cập nhật...</span>
+                      <span>{t('admin.action.saving','Đang lưu...')}</span>
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
                       <Save className="h-4 w-4" />
-                      <span>Cập nhật</span>
+                      <span>{t('admin.action.save')}</span>
                     </div>
                   )}
                 </Button>

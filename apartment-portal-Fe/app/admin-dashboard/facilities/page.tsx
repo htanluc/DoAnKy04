@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { facilityBookingsApi, FacilityBooking } from '@/lib/api';
 
 export default function FacilitiesPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,11 +94,11 @@ export default function FacilitiesPage() {
 
   const getCapacityBadge = (capacity: number) => {
     if (capacity <= 20) {
-      return <Badge className="bg-green-100 text-green-800">Nhỏ ({capacity})</Badge>;
+      return <Badge className="bg-green-100 text-green-800">{t('admin.facilities.capacity.label.small', 'Nhỏ')} ({capacity})</Badge>;
     } else if (capacity <= 50) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Trung bình ({capacity})</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800">{t('admin.facilities.capacity.label.medium', 'Trung bình')} ({capacity})</Badge>;
     } else {
-      return <Badge className="bg-blue-100 text-blue-800">Lớn ({capacity})</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800">{t('admin.facilities.capacity.label.large', 'Lớn')} ({capacity})</Badge>;
     }
   };
 
@@ -125,7 +125,7 @@ export default function FacilitiesPage() {
               {t('admin.facilities.list')}
             </h2>
             <p className="text-gray-600">
-              Quản lý tất cả tiện ích trong chung cư
+              {t('admin.facilities.listDesc', 'Quản lý tất cả tiện ích trong chung cư')}
             </p>
           </div>
           <Link href="/admin-dashboard/facilities/create">
@@ -205,7 +205,7 @@ export default function FacilitiesPage() {
                           {getCapacityBadge(facility.capacity)}
                         </TableCell>
                         <TableCell>
-                          {facility.usageFee ? facility.usageFee : 'Miễn phí'}
+                          {facility.usageFee ? facility.usageFee : t('admin.facilities.free', 'Miễn phí')}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
                           {facility.otherDetails}
@@ -243,34 +243,34 @@ export default function FacilitiesPage() {
 
         {/* Facility Bookings Table (10 booking gần nhất) */}
         <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>10 tiện ích cư dân đã đặt gần nhất</CardTitle>
+            <CardHeader>
+            <CardTitle>{t('admin.facilities.recentBookingsTitle', '10 tiện ích cư dân đã đặt gần nhất')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingBookings ? (
-              <div className="text-center py-8">Đang tải...</div>
+              <div className="text-center py-8">{t('admin.loading', 'Đang tải...')}</div>
             ) : bookings.length === 0 ? (
-              <div className="text-center py-8">Không có dữ liệu</div>
+              <div className="text-center py-8">{t('admin.noData', 'Không có dữ liệu')}</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Cư dân</TableHead>
-                      <TableHead>Tiện ích</TableHead>
-                      <TableHead>Thời gian đặt</TableHead>
-                      <TableHead>Số người</TableHead>
-                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>{t('admin.facilities.recent.resident', 'Cư dân')}</TableHead>
+                      <TableHead>{t('admin.facilities.recent.facility', 'Tiện ích')}</TableHead>
+                      <TableHead>{t('admin.facilities.recent.bookingTime', 'Thời gian đặt')}</TableHead>
+                      <TableHead>{t('admin.facilities.recent.numPeople', 'Số người')}</TableHead>
+                      <TableHead>{t('admin.facilities.recent.status', 'Trạng thái')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {bookings.slice(0, 10).map((booking: any) => (
-                      <TableRow key={booking.id}>
-                        <TableCell>{booking.residentName || booking.user?.username || booking.user?.email || booking.user?.phoneNumber || 'Ẩn danh'}</TableCell>
+                        <TableRow key={booking.id}>
+                        <TableCell>{booking.residentName || booking.user?.username || booking.user?.email || booking.user?.phoneNumber || t('common.anonymous', 'Ẩn danh')}</TableCell>
                         <TableCell>{booking.facilityName || booking.facility?.name}</TableCell>
                         <TableCell>
-                          {(booking.startTime ? new Date(booking.startTime).toLocaleString('vi-VN') : (booking.bookingTime ? new Date(booking.bookingTime).toLocaleString('vi-VN') : '-')) +
-                          (booking.endTime ? ' - ' + new Date(booking.endTime).toLocaleString('vi-VN') : '')}
+                          {(booking.startTime ? new Date(booking.startTime).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') : (booking.bookingTime ? new Date(booking.bookingTime).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') : '-')) +
+                          (booking.endTime ? ' - ' + new Date(booking.endTime).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') : '')}
                         </TableCell>
                         <TableCell>{booking.numberOfPeople}</TableCell>
                         <TableCell>{booking.status}</TableCell>

@@ -59,7 +59,7 @@ export default function BillingConfigPage() {
 
   if (apartmentsLoading) {
     return (
-      <AdminLayout title="Cấu Hình Phí">
+      <AdminLayout title={t('admin.billing-config.title')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -72,12 +72,12 @@ export default function BillingConfigPage() {
 
   if (apartmentsError) {
     return (
-      <AdminLayout title="Cấu Hình Phí">
+      <AdminLayout title={t('admin.billing-config.title')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 font-medium">
-              Lỗi tải dữ liệu căn hộ
+              {t('admin.error.load')}
             </p>
             <p className="text-gray-600 mt-2">{apartmentsError}</p>
             <Button 
@@ -85,7 +85,7 @@ export default function BillingConfigPage() {
               className="mt-4"
               variant="outline"
             >
-              Thử lại
+              {t('admin.action.retry')}
             </Button>
           </div>
         </div>
@@ -94,16 +94,14 @@ export default function BillingConfigPage() {
   }
 
   return (
-    <AdminLayout title="Cấu Hình Phí">
+    <AdminLayout title={t('admin.billing-config.title')}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Cấu Hình Phí Dịch Vụ
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('admin.billing-config.title')}</h1>
             <p className="text-gray-600 mt-1">
-              Quản lý cấu hình phí dịch vụ cho từng tháng/năm
+              {t('admin.billing-config.subtitle','Quản lý cấu hình phí dịch vụ cho từng tháng/năm')}
             </p>
           </div>
         </div>
@@ -111,9 +109,9 @@ export default function BillingConfigPage() {
         {/* Tabs */}
         <Tabs defaultValue="current" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="current">Cấu Hình Hiện Tại</TabsTrigger>
-            <TabsTrigger value="config">Cấu Hình Mới</TabsTrigger>
-            <TabsTrigger value="history">Lịch Sử</TabsTrigger>
+            <TabsTrigger value="current">{t('admin.billing-config.current','Cấu Hình Hiện Tại')}</TabsTrigger>
+            <TabsTrigger value="config">{t('admin.billing-config.new','Cấu Hình Mới')}</TabsTrigger>
+            <TabsTrigger value="history">{t('admin.billing-config.history','Lịch Sử')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="current" className="space-y-4">
@@ -121,7 +119,7 @@ export default function BillingConfigPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Cấu Hình Phí Tháng {currentMonth}/{currentYear}
+                  {t('admin.billing-config.currentMonth','Cấu Hình Phí Tháng')} {currentMonth}/{currentYear}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -130,13 +128,11 @@ export default function BillingConfigPage() {
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   </div>
                 ) : serviceFeeConfig ? (
-                  <CurrentBillingConfig config={serviceFeeConfig} />
+                  <CurrentBillingConfig year={serviceFeeConfig.year} month={serviceFeeConfig.month} />
                 ) : (
                   <div className="text-center py-8">
                     <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                    <p className="text-gray-600">
-                      Chưa có cấu hình phí cho tháng {currentMonth}/{currentYear}
-                    </p>
+                    <p className="text-gray-600">{t('admin.noData')}</p>
                   </div>
                 )}
               </CardContent>
@@ -148,7 +144,7 @@ export default function BillingConfigPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Tạo Cấu Hình Phí Mới
+                  {t('admin.billing-config.create','Tạo Cấu Hình Phí Mới')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -162,7 +158,7 @@ export default function BillingConfigPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Lịch Sử Cấu Hình
+                  {t('admin.billing-config.history','Lịch Sử Cấu Hình')}
                 </CardTitle>
               </CardHeader>
               <CardContent>

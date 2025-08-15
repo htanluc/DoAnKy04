@@ -1,9 +1,8 @@
 package com.mytech.apartment.portal.controllers;
-
-import com.mytech.apartment.portal.services.NotificationService;
 import lombok.Data;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.stereotype.Controller;
 
 import java.time.LocalDateTime;
@@ -14,6 +13,14 @@ public class WebSocketController {
     @MessageMapping("/send-message")
     @SendTo("/topic/messages")
     public ChatMessage handleMessage(ChatMessage message) {
+        message.setTimestamp(LocalDateTime.now());
+        return message;
+    }
+
+    // Chat theo yêu cầu hỗ trợ cụ thể
+    @MessageMapping("/support-requests/{id}/chat")
+    @SendTo("/topic/support-requests/{id}/chat")
+    public ChatMessage handleRequestChat(@DestinationVariable("id") Long id, ChatMessage message) {
         message.setTimestamp(LocalDateTime.now());
         return message;
     }
