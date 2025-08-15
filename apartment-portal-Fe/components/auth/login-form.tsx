@@ -22,6 +22,14 @@ export default function LoginForm() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [animating, setAnimating] = useState(false)
+  const animateAndGo = (path: string) => {
+    setAnimating(true)
+    setTimeout(() => {
+      router.push(path)
+    }, 700)
+  }
+
   const [error, setError] = useState("")
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +70,7 @@ export default function LoginForm() {
           return;
         }
         const { status, roles, email, phoneNumber, lockReason } = response.data;
-        if (typeof status === 'string' && status.toUpperCase() === 'INACTIVE') {
+          if (typeof status === 'string' && status.toUpperCase() === 'INACTIVE') {
           // Chỉ lấy email, không lấy phoneNumber
           const emailOrPhone = email || '';
           router.push(`/activate-account?emailOrPhone=${encodeURIComponent(emailOrPhone)}`);
@@ -75,11 +83,11 @@ export default function LoginForm() {
         // Chỉ kiểm tra role khi đã active và không requireResidentInfo
         let roleNames: string[] = getRoleNames({ roles });
         if (roleNames.includes('ADMIN')) {
-          router.push('/admin-dashboard');
+          animateAndGo('/admin-dashboard');
         } else if (roleNames.includes('STAFF')) {
-          router.push('/staff-dashboard');
+          animateAndGo('/staff-dashboard');
         } else if (roleNames.includes('RESIDENT')) {
-          router.push('/resident-dashboard');
+          animateAndGo('/resident-dashboard');
         } else {
           setError('Bạn không có quyền truy cập.');
           setTimeout(() => {
@@ -109,13 +117,19 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen px-4 py-12 sm:px-6 lg:px-8 flex items-center justify-center overflow-hidden fpt-bg">
+      {/* FPT tri-color ribbon */}
+      <div className="absolute top-0 left-0 right-0 fpt-tricolor-bar" />
+      {/* Large brand backdrop */}
+      <div className="pointer-events-none absolute -top-1/3 -right-1/4 w-[60vw] h-[60vw] rounded-full bg-[hsl(var(--brand-blue))]/5 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-1/3 -left-1/4 w-[60vw] h-[60vw] rounded-full bg-[hsl(var(--brand-orange))]/5 blur-3xl" />
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
-      <Card className="w-full max-w-md">
+      <Card className={`w-full max-w-lg relative border-0 shadow-xl fpt-circuit ${animating ? 'success' : ''}`}>
+        <div className="absolute -top-3 left-6 px-2 bg-card text-[10px] uppercase tracking-wider text-[hsl(var(--brand-blue))]">FPT</div>
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">{t('login.title', language)}</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-[hsl(var(--brand-blue))]">{t('login.title', language)}</CardTitle>
           <CardDescription className="text-center">
             {t('login.subtitle', language)}
           </CardDescription>
@@ -127,86 +141,81 @@ export default function LoginForm() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber">{t('login.phoneNumber', language)}</Label>
-              <Input
-                id="phoneNumber"
-                name="phoneNumber"
-                type="text"
-                placeholder={t('login.phoneNumber.placeholder', language)}
-                value={formData.phoneNumber}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                required
-              />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('login.password', language)}</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder={t('login.password.placeholder', language)}
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  required
-                />
+            {/* 3 panels theo màu chủ đạo FPT */}
+            <div className="flex flex-col gap-3">
+              {/* Số điện thoại - xanh lá FPT */}
+              <div className="p-3 rounded-lg border bg-[hsl(var(--brand-green))]/8 border-[hsl(var(--brand-green))]/30">
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber" className="text-[hsl(var(--brand-green))]">{t('login.phoneNumber', language)}</Label>
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    type="text"
+                    placeholder={t('login.phoneNumber.placeholder', language)}
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Mật khẩu - xanh dương FPT */}
+              <div className="p-3 rounded-lg border bg-[hsl(var(--brand-blue))]/8 border-[hsl(var(--brand-blue))]/30">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[hsl(var(--brand-blue))]">{t('login.password', language)}</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder={t('login.password.placeholder', language)}
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Đăng nhập - cam FPT */}
+              <div className="p-3 rounded-lg border border-transparent bg-[hsl(var(--brand-orange))] text-white flex items-center justify-center relative overflow-hidden">
+                <div className="fpt-electric-line" />
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
+                  type="submit"
+                  className="w-full bg-white/10 hover:bg-white/20 text-white h-11 text-base"
                   disabled={isLoading}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t('login.loading', language)}
+                    </>
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    t('login.submit', language)
                   )}
                 </Button>
               </div>
             </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('login.loading', language)}
-                </>
-              ) : (
-                t('login.submit', language)
-              )}
-            </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm">
-            <p className="text-gray-600">
-              {t('login.noAccount', language)}{" "}
-              <Button
-                variant="link"
-                className="p-0 h-auto font-semibold"
-                onClick={() => router.push("/register")}
-              >
-                {t('login.register', language)}
-              </Button>
-            </p>
-          </div>
-
-          {/* Demo credentials */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-700 font-medium mb-1">{t('login.demo.title', language)}</p>
-            <p className="text-xs text-blue-600">{t('login.demo.phone', language)}</p>
-            <p className="text-xs text-blue-600">{t('login.demo.password', language)}</p>
-          </div>
+          {/* Hidden registration/demos per request */}
         </CardContent>
       </Card>
     </div>

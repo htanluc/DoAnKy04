@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import { useWaterMeter } from "../../../hooks/use-water-meter";
 import { useApartments } from "../../../hooks/use-apartments";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { useLanguage } from "@/lib/i18n";
 
 export default function WaterMeterListPage() {
+  const { t } = useLanguage();
   const { readings, loading, error, updateReading, addReading, deleteReading, patchReading, bulkGenerate, fetchReadingsByMonth, fetchReadings } = useWaterMeter();
   const { apartments, loading: apartmentsLoading, error: apartmentsError } = useApartments();
   const [editId, setEditId] = useState<string | number | null>(null);
@@ -107,7 +109,7 @@ export default function WaterMeterListPage() {
     setGenSuccess(null);
     try {
       await bulkGenerate(startMonth);
-      setGenSuccess("Tạo lịch sử chỉ số nước thành công!");
+      setGenSuccess(t('admin.waterMeter.generateSuccess'));
     } catch (err: any) {
       setGenError(err.message);
     } finally {
@@ -118,7 +120,7 @@ export default function WaterMeterListPage() {
   return (
     <AdminLayout title={t('admin.waterMeter.title','Danh sách chỉ số nước')}>
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Danh sách chỉ số nước</h1>
+        <h1 className="text-2xl font-bold mb-4">{t('admin.waterMeter.title')}</h1>
         <div className="mb-4 space-y-2">
           <div className="flex flex-wrap gap-2 items-center">
             <select
@@ -132,7 +134,7 @@ export default function WaterMeterListPage() {
             </select>
             <input
               type="text"
-              placeholder="Tìm kiếm căn hộ (ID hoặc mã)"
+              placeholder={t('admin.waterMeter.searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="border px-2 py-1 rounded w-64"
@@ -150,21 +152,19 @@ export default function WaterMeterListPage() {
               onClick={handleGenerate}
               disabled={genLoading || !startMonth}
             >
-              {genLoading ? "Đang tạo..." : "Tạo lịch sử chỉ số nước"}
+              {genLoading ? t('admin.waterMeter.generating') : t('admin.waterMeter.generate')}
             </button>
           </div>
         </div>
         {genError && <p className="text-red-500 mb-2">{genError}</p>}
         {genSuccess && <p className="text-green-600 mb-2">{genSuccess}</p>}
-        {loading && <p>Đang tải dữ liệu...</p>}
+        {loading && <p>{t('admin.waterMeter.loading')}</p>}
         {error && <p className="text-red-500">{error}</p>}
         
         {/* Thông báo khi chưa có dữ liệu */}
         {!selectedMonth && readings.length === 0 && (
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-yellow-800 font-medium">
-              Vui lòng chọn tháng để xem chỉ số nước
-            </p>
+            <p className="text-yellow-800 font-medium">{t('admin.waterMeter.pickMonthHint')}</p>
           </div>
         )}
         
@@ -172,23 +172,15 @@ export default function WaterMeterListPage() {
         {selectedMonth && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <div className="flex justify-between items-center">
-              <p className="text-blue-800 font-medium">
-                Đang xem chỉ số nước tháng: <span className="font-bold">{selectedMonth}</span>
-              </p>
+              <p className="text-blue-800 font-medium">{t('admin.waterMeter.viewingMonth')} <span className="font-bold">{selectedMonth}</span></p>
               <div className="flex gap-4 text-sm">
-                <span className="text-gray-600">
-                  Tổng căn hộ: <span className="font-bold">{filteredReadings.length}</span>
-                </span>
-                <span className="text-green-600">
-                  Tổng tiêu thụ: <span className="font-bold">
-                    {filteredReadings.reduce((sum, r) => sum + (r.consumption || (r.currentReading - r.previousReading)), 0)} m³
-                  </span>
-                </span>
+                <span className="text-gray-600">{t('admin.waterMeter.totalApts')} <span className="font-bold">{filteredReadings.length}</span></span>
+                <span className="text-green-600">{t('admin.waterMeter.totalConsumption')} <span className="font-bold">{filteredReadings.reduce((sum, r) => sum + (r.consumption || (r.currentReading - r.previousReading)), 0)} m³</span></span>
                 <button 
                   onClick={() => handleMonthChange("")}
                   className="text-sm bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
                 >
-                  Xem tất cả
+                  {t('admin.waterMeter.viewAll')}
                 </button>
               </div>
             </div>
@@ -199,12 +191,12 @@ export default function WaterMeterListPage() {
           <table className="w-full border">
           <thead>
             <tr>
-              <th className="border px-2 py-1">Căn hộ</th>
-              <th className="border px-2 py-1">Tháng</th>
-              <th className="border px-2 py-1">Chỉ số trước</th>
-              <th className="border px-2 py-1">Chỉ số mới</th>
-              <th className="border px-2 py-1">Lượng tiêu thụ (m³)</th>
-              <th className="border px-2 py-1">Hành động</th>
+              <th className="border px-2 py-1">{t('admin.waterMeter.table.apartment')}</th>
+              <th className="border px-2 py-1">{t('admin.waterMeter.table.month')}</th>
+              <th className="border px-2 py-1">{t('admin.waterMeter.table.prev')}</th>
+              <th className="border px-2 py-1">{t('admin.waterMeter.table.current')}</th>
+              <th className="border px-2 py-1">{t('admin.waterMeter.table.consumption')}</th>
+              <th className="border px-2 py-1">{t('admin.waterMeter.table.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -240,13 +232,13 @@ export default function WaterMeterListPage() {
                         className="bg-green-600 text-white px-2 py-1 rounded mr-2"
                         onClick={() => handleEditSave(rowKey, r)}
                       >
-                        Lưu
+                        {t('admin.waterMeter.btn.save')}
                       </button>
                       <button
                         className="bg-gray-400 text-white px-2 py-1 rounded mr-2"
                         onClick={() => setEditId(null)}
                       >
-                        Hủy
+                        {t('admin.waterMeter.btn.cancel')}
                       </button>
                     </>
                   ) : (
@@ -255,13 +247,13 @@ export default function WaterMeterListPage() {
                         className="bg-blue-600 text-white px-2 py-1 rounded mr-2"
                         onClick={() => handleEditClick(r)}
                       >
-                        Sửa
+                        {t('admin.waterMeter.btn.edit')}
                       </button>
                       <button
                         className="bg-red-600 text-white px-2 py-1 rounded"
                         onClick={() => handleDelete(r.readingId)}
                       >
-                        Xóa
+                        {t('admin.waterMeter.btn.delete')}
                       </button>
                     </>
                   )}

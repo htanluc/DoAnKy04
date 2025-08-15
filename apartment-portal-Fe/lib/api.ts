@@ -220,6 +220,7 @@ export interface EventRegistrationRequest {
 export interface ServiceRequest {
   id: number;
   user: User;
+  userPhone?: string;
   category: ServiceCategory;
   description: string;
   imageAttachment?: string;
@@ -697,6 +698,18 @@ export const supportRequestsApi = {
   getByCategory: async (category: string): Promise<ServiceRequest[]> => {
     const response = await api.get(`/api/admin/support-requests/category/${category}`);
     if (!response.ok) throw new Error('Lọc yêu cầu hỗ trợ theo loại dịch vụ thất bại');
+    return response.json();
+  },
+  // Dành cho nhân viên: lấy theo vai trò (role)
+  getForStaffByRole: async (role: string): Promise<ServiceRequest[]> => {
+    const response = await api.get(`/api/staff/support-requests?role=${encodeURIComponent(role)}`);
+    if (!response.ok) throw new Error('Lấy yêu cầu theo vai trò thất bại');
+    return response.json();
+  },
+  // Dành cho nhân viên: lấy các yêu cầu được gán cho chính mình
+  getAssignedTo: async (staffId: number): Promise<ServiceRequest[]> => {
+    const response = await api.get(`/api/staff/support-requests/assigned?staffId=${staffId}`);
+    if (!response.ok) throw new Error('Lấy yêu cầu được gán thất bại');
     return response.json();
   },
 }; 

@@ -9,10 +9,10 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
 const STATUS_OPTIONS = [
-  { value: "AVAILABLE", label: "Còn trống" },
-  { value: "OCCUPIED", label: "Đã có người" },
-  { value: "MAINTENANCE", label: "Bảo trì" },
-  { value: "INACTIVE", label: "Không hoạt động" },
+  { value: "AVAILABLE", labelKey: 'admin.apartments.status.AVAILABLE' },
+  { value: "OCCUPIED", labelKey: 'admin.apartments.status.OCCUPIED' },
+  { value: "MAINTENANCE", labelKey: 'admin.apartments.status.MAINTENANCE' },
+  { value: "INACTIVE", labelKey: 'admin.status.inactive' },
 ];
 
 export default function EditApartmentPage() {
@@ -49,7 +49,7 @@ export default function EditApartmentPage() {
         });
         setError("");
       })
-      .catch(() => setError("Không thể tải dữ liệu căn hộ"))
+      .catch(() => setError(t('admin.error.load', 'Không thể tải dữ liệu căn hộ')))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -77,10 +77,10 @@ export default function EditApartmentPage() {
       }),
     });
     if (res.ok) {
-      setSuccess("Cập nhật thành công!");
+      setSuccess(t('admin.success.save', 'Cập nhật thành công!'));
       setTimeout(() => router.push("/admin-dashboard/apartments"), 1200);
     } else {
-      setError("Cập nhật thất bại!");
+      setError(t('admin.error.save', 'Cập nhật thất bại!'));
     }
     setSaving(false);
   };
@@ -112,7 +112,7 @@ export default function EditApartmentPage() {
             <label className="block font-medium mb-1">{t('admin.apartment.edit.status', 'Trạng thái')}</label>
             <select name="status" value={form.status} onChange={handleChange} className="border rounded px-2 py-1 w-full">
               {STATUS_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
               ))}
             </select>
           </div>

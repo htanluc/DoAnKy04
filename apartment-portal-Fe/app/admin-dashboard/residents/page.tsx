@@ -47,9 +47,9 @@ export default function ResidentsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return <Badge className="bg-green-100 text-green-800">Hoạt động</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.status.active','Hoạt động')}</Badge>;
       case 'INACTIVE':
-        return <Badge className="bg-red-100 text-red-800">Không hoạt động</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.status.inactive','Không hoạt động')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -67,11 +67,11 @@ export default function ResidentsPage() {
 
   if (loading) {
     return (
-      <AdminLayout title="Quản Lý Cư Dân">
+      <AdminLayout title={t('admin.residents.title')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Đang tải...</p>
+            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
           </div>
         </div>
       </AdminLayout>
@@ -80,18 +80,18 @@ export default function ResidentsPage() {
 
   if (error) {
     return (
-      <AdminLayout title="Quản Lý Cư Dân">
+      <AdminLayout title={t('admin.residents.title')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-medium">Lỗi tải dữ liệu</p>
+            <p className="text-red-600 font-medium">{t('admin.error.load')}</p>
             <p className="text-gray-600 mt-2">{error}</p>
             <Button 
               onClick={() => getAllResidents()} 
               className="mt-4"
               variant="outline"
             >
-              Thử lại
+              {t('admin.action.retry','Thử lại')}
             </Button>
           </div>
         </div>
@@ -100,22 +100,18 @@ export default function ResidentsPage() {
   }
 
   return (
-    <AdminLayout title="Quản Lý Cư Dân">
+    <AdminLayout title={t('admin.residents.title')}>
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Quản Lý Cư Dân
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Quản lý thông tin cư dân trong hệ thống
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('admin.residents.title')}</h2>
+            <p className="text-gray-600 mt-1">{t('admin.residents.listDesc')}</p>
           </div>
           <Link href="/admin-dashboard/residents/create">
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Thêm Cư Dân
+              {t('admin.residents.create')}
             </Button>
           </Link>
         </div>
@@ -125,14 +121,14 @@ export default function ResidentsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
-              Tìm Kiếm & Lọc
+              {t('admin.action.search','Tìm kiếm')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <Input
-                  placeholder="Tìm theo tên, CMND, SĐT, email..."
+                  placeholder={t('admin.residents.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full"
@@ -145,9 +141,9 @@ export default function ResidentsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label="Lọc theo trạng thái"
                 >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="ACTIVE">Hoạt động</option>
-                  <option value="INACTIVE">Không hoạt động</option>
+                  <option value="all">{t('admin.residents.status.all')}</option>
+                  <option value="ACTIVE">{t('admin.residents.status.ACTIVE')}</option>
+                  <option value="INACTIVE">{t('admin.residents.status.INACTIVE')}</option>
                 </select>
               </div>
             </div>
@@ -158,24 +154,24 @@ export default function ResidentsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Danh Sách Cư Dân ({filteredResidents.length})</span>
+              <span>{t('admin.residents.list')} ({filteredResidents.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredResidents.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">Không tìm thấy cư dân nào</p>
+                <p className="text-gray-500">{t('admin.residents.empty')}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Họ Tên</TableHead>
-                    <TableHead>Số Điện Thoại</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>CMND/CCCD</TableHead>
-                    <TableHead>Trạng Thái</TableHead>
-                    <TableHead>Thao Tác</TableHead>
+                    <TableHead>{t('admin.residents.columns.fullName')}</TableHead>
+                    <TableHead>{t('admin.residents.columns.phone')}</TableHead>
+                    <TableHead>{t('admin.residents.columns.email')}</TableHead>
+                    <TableHead>{t('admin.residents.columns.idCard')}</TableHead>
+                    <TableHead>{t('admin.residents.columns.status')}</TableHead>
+                    <TableHead>{t('admin.residents.columns.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,15 +24,18 @@ interface CurrentBillingConfigProps {
   month: number;
 }
 
-const getMonthName = (month: number): string => {
-  const months = [
-    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
-  ];
-  return months[month - 1] || `Tháng ${month}`;
+// Localized month label for summary and alerts
+const formatMonthLabel = (month: number, language: 'vi' | 'en'): string => {
+  if (language === 'vi') return `Tháng ${month}`;
+  try {
+    return new Date(2000, month - 1, 1).toLocaleString('en-US', { month: 'long' });
+  } catch {
+    return `Month ${month}`;
+  }
 };
 
 export default function CurrentBillingConfig({ year, month }: CurrentBillingConfigProps) {
+  const { t, language } = useLanguage();
   const { 
     loading, 
     error, 
@@ -128,7 +132,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
 
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return '0';
-    return value.toLocaleString('vi-VN');
+    return value.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US');
   };
 
   const handleTextInputChange = (field: keyof Omit<YearlyBillingConfig, 'year' | 'month' | 'id' | 'createdAt' | 'updatedAt'>, value: string) => {
@@ -144,20 +148,20 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5" />
-          Cấu hình phí dịch vụ
+          {t('admin.yearly-billing.config')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* Chọn năm và tháng */}
+          {/* {t('admin.billing-config.selectYearMonth')} */}
           <div className="space-y-4">
             <Label className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Chọn thời gian
+              {t('admin.yearly-billing.scope')}
             </Label>
             <div className="flex items-center gap-4">
               <div className="space-y-2">
-                <Label htmlFor="year">Năm</Label>
+                <Label htmlFor="year">{t('admin.yearly-billing.year')}</Label>
                 <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -172,7 +176,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="month">Tháng</Label>
+                <Label htmlFor="month">{t('admin.yearly-billing.months')}</Label>
                 <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -180,7 +184,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
                   <SelectContent>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
                       <SelectItem key={month} value={month.toString()}>
-                        {getMonthName(month)}
+                        {formatMonthLabel(month, language)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -193,30 +197,30 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
             <Info className="h-4 w-4" />
             <AlertDescription>
               {configExists 
-                ? `Cấu hình phí dịch vụ cho ${getMonthName(selectedMonth)}/${selectedYear} đã tồn tại. Bạn có thể chỉnh sửa.`
-                : `Chưa có cấu hình phí dịch vụ cho ${getMonthName(selectedMonth)}/${selectedYear}. Vui lòng tạo cấu hình mới.`
+                ? t('admin.billing-config.existing').replace('{month}', formatMonthLabel(selectedMonth, language)).replace('{year}', String(selectedYear))
+                : t('admin.billing-config.missing').replace('{month}', formatMonthLabel(selectedMonth, language)).replace('{year}', String(selectedYear))
               }
             </AlertDescription>
           </Alert>
 
-          <div className="space-y-4">
+            <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Đơn giá phí dịch vụ - {getMonthName(selectedMonth)}/{selectedYear}</h3>
+              <h3 className="text-lg font-semibold">{t('admin.yearly-billing.feeSummary')} - {formatMonthLabel(selectedMonth, language)}/{selectedYear}</h3>
               <div className="flex gap-2">
                 {!isEditing ? (
                   <Button onClick={handleEdit} variant="outline" size="sm">
                     <Edit className="h-4 w-4 mr-2" />
-                    Chỉnh sửa
+                    {t('admin.action.edit')}
                   </Button>
                 ) : (
                   <>
                     <Button onClick={handleSave} disabled={loading} size="sm">
                       <Save className="h-4 w-4 mr-2" />
-                      {loading ? 'Đang lưu...' : 'Lưu'}
+                      {loading ? t('admin.action.saving') : t('admin.action.save')}
                     </Button>
                     <Button onClick={handleCancel} variant="outline" size="sm">
                       <X className="h-4 w-4 mr-2" />
-                      Hủy
+                      {t('admin.action.cancel')}
                     </Button>
                   </>
                 )}
@@ -225,7 +229,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="serviceFeePerM2">Phí dịch vụ (đ/m²)</Label>
+                <Label htmlFor="serviceFeePerM2">{t('admin.yearly-billing.serviceFee')}</Label>
                 <Input
                   id="serviceFeePerM2"
                   type="text"
@@ -238,7 +242,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="waterFeePerM3">Phí nước (đ/m³)</Label>
+                <Label htmlFor="waterFeePerM3">{t('admin.yearly-billing.waterFee')}</Label>
                 <Input
                   id="waterFeePerM3"
                   type="text"
@@ -251,7 +255,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="motorcycleFee">Phí xe máy (đ/xe/tháng)</Label>
+                <Label htmlFor="motorcycleFee">{t('admin.yearly-billing.parking.motorcycle')}</Label>
                 <Input
                   id="motorcycleFee"
                   type="text"
@@ -264,7 +268,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="car4SeatsFee">Phí xe 4 chỗ (đ/xe/tháng)</Label>
+                <Label htmlFor="car4SeatsFee">{t('admin.yearly-billing.parking.car4')}</Label>
                 <Input
                   id="car4SeatsFee"
                   type="text"
@@ -277,7 +281,7 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="car7SeatsFee">Phí xe 7 chỗ (đ/xe/tháng)</Label>
+                <Label htmlFor="car7SeatsFee">{t('admin.yearly-billing.parking.car7')}</Label>
                 <Input
                   id="car7SeatsFee"
                   type="text"
@@ -293,40 +297,40 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
 
             {/* Tóm tắt phí */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold mb-3">Tóm tắt đơn giá:</h4>
+              <h4 className="font-semibold mb-3">{t('admin.yearly-billing.feeSummary')}:</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Phí dịch vụ:</span>
+                  <span className="font-medium">{t('admin.invoices.feeType.SERVICE_FEE')}:</span>
                   <span className="text-blue-600 font-semibold">
                     {formatNumber(config.serviceFeePerM2)} đ/m²
                     {!isEditing && <span className="text-xs text-gray-500 ml-2">({config.serviceFeePerM2})</span>}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Phí nước:</span>
+                  <span className="font-medium">{t('admin.invoices.feeType.WATER_FEE')}:</span>
                   <span className="text-blue-600 font-semibold">
                     {formatNumber(config.waterFeePerM3)} đ/m³
                     {!isEditing && <span className="text-xs text-gray-500 ml-2">({config.waterFeePerM3})</span>}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Phí xe máy:</span>
+                  <span className="font-medium">{t('admin.invoices.feeType.VEHICLE_FEE')}:</span>
                   <span className="text-green-600 font-semibold">
-                    {formatNumber(config.motorcycleFee)} đ/xe/tháng
+                    {formatNumber(config.motorcycleFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth')}</span>
                     {!isEditing && <span className="text-xs text-gray-500 ml-2">({config.motorcycleFee})</span>}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Phí xe 4 chỗ:</span>
+                  <span className="font-medium">{t('admin.yearly-billing.parking.car4.label')}:</span>
                   <span className="text-green-600 font-semibold">
-                    {formatNumber(config.car4SeatsFee)} đ/xe/tháng
+                    {formatNumber(config.car4SeatsFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth')}</span>
                     {!isEditing && <span className="text-xs text-gray-500 ml-2">({config.car4SeatsFee})</span>}
                   </span>
                 </div>
                 <div className="flex justify-between items-center md:col-span-2">
-                  <span className="font-medium">Phí xe 7 chỗ:</span>
+                  <span className="font-medium">{t('admin.yearly-billing.parking.car7.label')}:</span>
                   <span className="text-green-600 font-semibold">
-                    {formatNumber(config.car7SeatsFee)} đ/xe/tháng
+                    {formatNumber(config.car7SeatsFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth')}</span>
                     {!isEditing && <span className="text-xs text-gray-500 ml-2">({config.car7SeatsFee})</span>}
                   </span>
                 </div>

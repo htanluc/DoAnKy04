@@ -37,7 +37,7 @@ interface ActivityLog {
 }
 
 export default function ReportsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -154,13 +154,13 @@ export default function ReportsPage() {
               {t('admin.reports.activity-logs')}
             </h2>
             <p className="text-gray-600">
-              Quản lý nhật ký hoạt động hệ thống
+              {t('admin.reports.listDesc','Quản lý nhật ký hoạt động hệ thống')}
             </p>
           </div>
           <div className="flex space-x-2">
             <Button variant="outline" className="flex items-center space-x-2">
               <Download className="h-4 w-4" />
-              <span>Xuất báo cáo</span>
+              <span>{t('admin.reports.export','Xuất báo cáo')}</span>
             </Button>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default function ReportsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Tìm kiếm theo người dùng, hành động, tài nguyên..."
+                  placeholder={t('admin.reports.searchPlaceholder','Tìm kiếm theo người dùng, hành động, tài nguyên...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -181,17 +181,17 @@ export default function ReportsPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
-                  title="Lọc hành động"
+                  title={t('admin.action.filter','Lọc')}
                   value={filterAction}
                   onChange={(e) => setFilterAction(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                 >
-                  <option value="all">Tất cả hành động</option>
-                  <option value="CREATE">Tạo mới</option>
-                  <option value="UPDATE">Cập nhật</option>
-                  <option value="DELETE">Xóa</option>
-                  <option value="LOGIN">Đăng nhập</option>
-                  <option value="LOGOUT">Đăng xuất</option>
+                  <option value="all">{t('admin.reports.action.all','Tất cả hành động')}</option>
+                  <option value="CREATE">{t('admin.reports.action.CREATE','Tạo mới')}</option>
+                  <option value="UPDATE">{t('admin.reports.action.UPDATE','Cập nhật')}</option>
+                  <option value="DELETE">{t('admin.reports.action.DELETE','Xóa')}</option>
+                  <option value="LOGIN">{t('admin.reports.action.LOGIN','Đăng nhập')}</option>
+                  <option value="LOGOUT">{t('admin.reports.action.LOGOUT','Đăng xuất')}</option>
                 </select>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Nhật ký hoạt động ({filteredActivityLogs.length})</span>
+              <span>{t('admin.reports.activity-logs','Nhật ký hoạt động')} ({filteredActivityLogs.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -218,7 +218,7 @@ export default function ReportsPage() {
                       <TableHead>{t('admin.reports.user')}</TableHead>
                       <TableHead>{t('admin.reports.action')}</TableHead>
                       <TableHead>{t('admin.reports.resource')}</TableHead>
-                      <TableHead>Chi tiết</TableHead>
+                      <TableHead>{t('admin.reports.detailsCol','Chi tiết')}</TableHead>
                       <TableHead>{t('admin.reports.timestamp')}</TableHead>
                       <TableHead>{t('admin.reports.ipAddress')}</TableHead>
                       <TableHead>{t('admin.users.actions')}</TableHead>
@@ -243,7 +243,7 @@ export default function ReportsPage() {
                         <TableCell>
                           <div className="flex items-center space-x-1">
                             <Calendar className="h-3 w-3 text-gray-500" />
-                            <span>{new Date(log.timestamp).toLocaleDateString('vi-VN')}</span>
+                            <span>{new Date(log.timestamp).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}</span>
                           </div>
                         </TableCell>
                         <TableCell className="font-mono text-sm">

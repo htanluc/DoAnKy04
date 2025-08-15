@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,7 @@ interface YearlyBillingConfigFormProps {
 }
 
 export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBillingConfigFormProps) {
+  const { t, language } = useLanguage();
   const { 
     loading, 
     error, 
@@ -107,7 +109,7 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
 
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return '0';
-    return value.toLocaleString('vi-VN');
+    return value.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US');
   };
 
   const handleInputChange = (field: keyof YearlyBillingRequest, value: string) => {
@@ -121,15 +123,15 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Tạo biểu phí cấu hình cho năm {selectedYear}
+          <Settings className="h-5 w-5" />
+          {t('admin.yearly-billing.create','Tạo biểu phí')} {selectedYear}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Năm */}
             <div className="space-y-2">
-              <Label htmlFor="year">Năm</Label>
+              <Label htmlFor="year">{t('admin.yearly-billing.year','Năm')}</Label>
               <Select 
                 value={selectedYear.toString()} 
                 onValueChange={(value) => {
@@ -139,7 +141,7 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn năm" />
+                   <SelectValue placeholder={t('admin.yearly-billing.year','Năm')} />
                 </SelectTrigger>
                 <SelectContent>
                   {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map((year) => (
@@ -153,7 +155,7 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
 
             {/* Phí dịch vụ */}
             <div className="space-y-2">
-              <Label htmlFor="serviceFeePerM2">Phí dịch vụ (VNĐ/m²)</Label>
+              <Label htmlFor="serviceFeePerM2">{t('admin.yearly-billing.serviceFee','Phí dịch vụ (VND/m²)')}</Label>
               <Input
                 id="serviceFeePerM2"
                 type="number"
@@ -168,7 +170,7 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
 
             {/* Phí nước */}
             <div className="space-y-2">
-              <Label htmlFor="waterFeePerM3">Phí nước (VNĐ/m³)</Label>
+              <Label htmlFor="waterFeePerM3">{t('admin.yearly-billing.waterFee','Phí nước (VND/m³)')}</Label>
               <Input
                 id="waterFeePerM3"
                 type="number"
@@ -184,7 +186,7 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
             {/* Phí gửi xe */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="motorcycleFee">Phí xe máy (VNĐ/xe/tháng)</Label>
+              <Label htmlFor="motorcycleFee">{t('admin.yearly-billing.parking.motorcycle.label','Phí xe máy')}</Label>
                 <Input
                   id="motorcycleFee"
                   type="number"
@@ -198,7 +200,7 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="car4SeatsFee">Phí xe 4 chỗ (VNĐ/xe/tháng)</Label>
+              <Label htmlFor="car4SeatsFee">{t('admin.yearly-billing.parking.car4.label','Phí xe 4 chỗ')}</Label>
                 <Input
                   id="car4SeatsFee"
                   type="number"
@@ -212,7 +214,7 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="car7SeatsFee">Phí xe 7 chỗ (VNĐ/xe/tháng)</Label>
+              <Label htmlFor="car7SeatsFee">{t('admin.yearly-billing.parking.car7.label','Phí xe 7 chỗ')}</Label>
                 <Input
                   id="car7SeatsFee"
                   type="number"
@@ -230,15 +232,14 @@ export default function YearlyBillingConfigForm({ apartments = [] }: YearlyBilli
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Tạo cấu hình phí dịch vụ cho tất cả tháng trong năm {selectedYear}. 
-                Cấu hình này sẽ được sử dụng để tính toán hóa đơn cho cư dân.
+                {t('admin.yearly-billing.description','Tạo biểu phí cấu hình cho tất cả căn hộ trong năm {year}. Hệ thống chỉ tạo cấu hình phí dịch vụ (không tạo hóa đơn).').replace('{year}', String(selectedYear))}
               </AlertDescription>
             </Alert>
 
             {/* Submit Button */}
             <div className="flex justify-end">
               <Button type="submit" disabled={loading}>
-                {loading ? 'Đang tạo cấu hình...' : 'Tạo cấu hình phí'}
+                {loading ? t('admin.invoices.generateMonthly.generating','Đang tạo...') : t('admin.yearly-billing.createButton','Tạo biểu phí 1 năm')}
               </Button>
             </div>
           </form>

@@ -33,7 +33,7 @@ import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { Apartment as ApiApartment } from '@/lib/api';
 
 export default function InvoicesPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { apartments, loading: apartmentsLoading, error: apartmentsError } = useApartments();
   const { invoices, loading: invoicesLoading, error: invoicesError, fetchInvoices } = useInvoices();
   const { generateMonthlyInvoices, clearMessages } = useYearlyBilling();
@@ -64,20 +64,20 @@ export default function InvoicesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PAID':
-        return <Badge className="bg-green-100 text-green-800">Đã thanh toán</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.invoices.status.PAID','Đã thanh toán')}</Badge>;
       case 'PENDING':
-        return <Badge className="bg-yellow-100 text-yellow-800">Chờ thanh toán</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('admin.invoices.status.PENDING','Chờ thanh toán')}</Badge>;
       case 'OVERDUE':
-        return <Badge className="bg-red-100 text-red-800">Quá hạn</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.invoices.status.OVERDUE','Quá hạn')}</Badge>;
       case 'CANCELLED':
-        return <Badge className="bg-gray-100 text-gray-800">Đã hủy</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('admin.invoices.status.CANCELLED','Đã hủy')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
       style: 'currency',
       currency: 'VND'
     }).format(amount);
@@ -85,7 +85,7 @@ export default function InvoicesPage() {
 
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return '0';
-    return value.toLocaleString('vi-VN');
+    return value.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US');
   };
 
   const handleGenerateMonthly = async () => {
@@ -93,16 +93,16 @@ export default function InvoicesPage() {
     setGenMessage(null);
     setGenLoading(true);
     if (blockBatchCreate) {
-      setGenMessage(`Đã phát hiện ${invoicesInSelectedPeriod.length} hóa đơn trong kỳ ${selectedPeriodKey}. Không cho phép tạo đồng loạt.`);
+      setGenMessage(`${t('admin.invoices.generateMonthly.existsWarning','tháng {month}/{year} đã có {count} hóa đơn.').replace('{month}', String(genMonth)).replace('{year}', String(genYear)).replace('{count}', String(invoicesInSelectedPeriod.length))} ${t('admin.invoices.generateMonthly.cannotBatch','Không thể tạo đồng loạt.')}`);
       setGenLoading(false);
       return;
     }
     const res = await generateMonthlyInvoices(genYear, genMonth);
     if (res?.success) {
-      setGenMessage(res.message || 'Đã tạo hóa đơn tháng thành công');
+      setGenMessage(res.message || t('admin.success.save','Lưu thành công'));
       await fetchInvoices();
     } else {
-      setGenMessage('Tạo hóa đơn thất bại');
+      setGenMessage(t('admin.error.save','Không thể lưu dữ liệu'));
     }
     setGenLoading(false);
   };
@@ -152,12 +152,12 @@ export default function InvoicesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Calculator className="h-6 w-6" />
-              Quản lý hóa đơn
+              {t('admin.invoices.title')}
             </h2>
             <p className="text-gray-600">
-              Danh sách và trạng thái hóa đơn của cư dân
+              {t('admin.invoices.subtitle','Danh sách và trạng thái hóa đơn của cư dân')}
             </p>
           </div>
         </div>
@@ -165,15 +165,15 @@ export default function InvoicesPage() {
         {/* Generate monthly invoices */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
-              Tạo hóa đơn theo tháng
+              {t('admin.invoices.generateMonthly.title','Tạo hóa đơn theo tháng')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
               <div>
-                <label className="text-sm text-gray-600">Năm</label>
+                <label className="text-sm text-gray-600">{t('admin.invoices.generateMonthly.year','Năm')}</label>
                 <select value={genYear} onChange={e=>setGenYear(parseInt(e.target.value))} className="border rounded px-3 py-2">
                   {Array.from({length:11},(_,i)=>new Date().getFullYear()-5+i).map(y=> (
                     <option key={y} value={y}>{y}</option>
@@ -181,7 +181,7 @@ export default function InvoicesPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm text-gray-600">Tháng</label>
+                <label className="text-sm text-gray-600">{t('admin.invoices.generateMonthly.month','Tháng')}</label>
                 <select value={genMonth} onChange={e=>setGenMonth(parseInt(e.target.value))} className="border rounded px-3 py-2">
                   {Array.from({length:12},(_,i)=>i+1).map(m=> (
                     <option key={m} value={m}>Tháng {m}</option>
@@ -189,11 +189,11 @@ export default function InvoicesPage() {
                 </select>
               </div>
               <Button onClick={handleGenerateMonthly} disabled={genLoading || blockBatchCreate}>
-                {genLoading ? 'Đang tạo...' : blockBatchCreate ? 'Đã có hóa đơn tháng này' : `Tạo hóa đơn tháng ${genMonth}/${genYear}`}
+                {genLoading ? t('admin.invoices.generateMonthly.generating','Đang tạo...') : blockBatchCreate ? t('admin.invoices.generateMonthly.alreadyExists','Đã có hóa đơn tháng này') : `${t('admin.invoices.generateMonthly.title','Tạo hóa đơn theo tháng')} ${genMonth}/${genYear}`}
               </Button>
               <div className="text-sm text-gray-700">
                 {blockBatchCreate && (
-                  <span className="text-red-600">Tháng {genMonth}/{genYear} đã có {invoicesInSelectedPeriod.length} hóa đơn. Không thể tạo đồng loạt.</span>
+                  <span className="text-red-600">{t('admin.invoices.generateMonthly.existsWarning','tháng {month}/{year} đã có {count} hóa đơn.').replace('{month}', String(genMonth)).replace('{year}', String(genYear)).replace('{count}', String(invoicesInSelectedPeriod.length))} {t('admin.invoices.generateMonthly.cannotBatch','Không thể tạo đồng loạt.')}</span>
                 )}
                 {genMessage && !blockBatchCreate && (
                   <span>{genMessage}</span>
@@ -283,8 +283,8 @@ export default function InvoicesPage() {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Tìm kiếm theo số hóa đơn, căn hộ, cư dân..."
+                       <Input
+                         placeholder={t('admin.invoices.searchPlaceholder','Tìm kiếm theo số hóa đơn, căn hộ, cư dân...')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -293,16 +293,16 @@ export default function InvoicesPage() {
                     <div className="flex items-center space-x-2">
                       <Filter className="h-4 w-4 text-gray-400" />
                       <select
-                        title="Trạng thái hóa đơn"
+                        title={t('admin.invoices.filter.title','Trạng thái hóa đơn')}
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                         className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                       >
-                        <option value="all">Tất cả trạng thái</option>
-                        <option value="PAID">Đã thanh toán</option>
-                        <option value="PENDING">Chờ thanh toán</option>
-                        <option value="OVERDUE">Quá hạn</option>
-                        <option value="CANCELLED">Đã hủy</option>
+                        <option value="all">{t('admin.invoices.filter.all','Tất cả trạng thái')}</option>
+                        <option value="PAID">{t('admin.invoices.status.PAID','Đã thanh toán')}</option>
+                        <option value="PENDING">{t('admin.invoices.status.PENDING','Chờ thanh toán')}</option>
+                        <option value="OVERDUE">{t('admin.invoices.status.OVERDUE','Quá hạn')}</option>
+                        <option value="CANCELLED">{t('admin.invoices.status.CANCELLED','Đã hủy')}</option>
                       </select>
                     </div>
                   </div>
@@ -313,7 +313,7 @@ export default function InvoicesPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Danh sách hóa đơn ({filteredInvoices.length})</span>
+                    <span>{t('admin.invoices.list','Danh sách hóa đơn')} ({filteredInvoices.length})</span>
                     <Button 
                       onClick={fetchInvoices} 
                       variant="outline" 
@@ -355,12 +355,12 @@ export default function InvoicesPage() {
                                 <TableCell>
                                   <div>
                                     <div className="font-medium">{apartmentInfo}</div>
-                                    <div className="text-sm text-gray-500">Kỳ: {invoice.billingPeriod}</div>
+                                    <div className="text-sm text-gray-500">{t('admin.invoices.period','Kỳ')}: {invoice.billingPeriod}</div>
                                   </div>
                                 </TableCell>
                                 <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
                                 <TableCell>
-                                  {new Date(invoice.dueDate).toLocaleDateString('vi-VN')}
+                                  {new Date(invoice.dueDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
                                 </TableCell>
                                 <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                                 <TableCell>

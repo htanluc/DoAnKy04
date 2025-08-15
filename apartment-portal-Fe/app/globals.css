@@ -110,8 +110,8 @@
 
 .fpt-bg {
   background-image:
-    radial-gradient(1200px 1200px at 0% 0%, hsl(var(--brand-orange) / 0.05), transparent 40%),
-    radial-gradient(900px 900px at 100% 0%, hsl(var(--brand-blue) / 0.05), transparent 40%),
-    radial-gradient(1000px 1000px at 100% 100%, hsl(var(--brand-green) / 0.05), transparent 45%);
+    radial-gradient(1200px 1200px at 0% 0%, hsl(var(--brand-orange) / 0.08), transparent 40%),
+    radial-gradient(900px 900px at 100% 0%, hsl(var(--brand-blue) / 0.08), transparent 40%),
+    radial-gradient(1000px 1000px at 100% 100%, hsl(var(--brand-green) / 0.08), transparent 45%);
   background-attachment: fixed;
 }

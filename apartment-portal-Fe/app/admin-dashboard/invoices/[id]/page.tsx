@@ -422,9 +422,9 @@ export default function InvoiceDetailPage() {
                               <div>
                                 <p className="font-medium text-gray-900">{item.description}</p>
                                 <p className="text-sm text-gray-600 capitalize">
-                                  {item.feeType === 'SERVICE_FEE' && 'Phí dịch vụ'}
-                                  {item.feeType === 'WATER_FEE' && 'Phí nước'}
-                                  {item.feeType === 'VEHICLE_FEE' && 'Phí gửi xe'}
+                                  {item.feeType === 'SERVICE_FEE' && t('admin.invoices.feeType.SERVICE_FEE','Phí dịch vụ')}
+                                  {item.feeType === 'WATER_FEE' && t('admin.invoices.feeType.WATER_FEE','Phí nước')}
+                                  {item.feeType === 'VEHICLE_FEE' && t('admin.invoices.feeType.VEHICLE_FEE','Phí gửi xe')}
                                   {item.feeType === 'motorcycle' && 'Phí xe máy'}
                                   {item.feeType === 'car' && 'Phí xe ô tô'}
                                   {item.feeType === 'electricity' && 'Phí điện'}

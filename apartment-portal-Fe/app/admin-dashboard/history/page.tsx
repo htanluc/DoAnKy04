@@ -35,7 +35,7 @@ interface QARecord {
 }
 
 export default function HistoryPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [qaRecords, setQaRecords] = useState<QARecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,7 +143,7 @@ export default function HistoryPage() {
               {t('admin.history.list')}
             </h2>
             <p className="text-gray-600">
-              Quản lý lịch sử hỏi đáp AI với cư dân
+              {t('admin.history.listDesc','Quản lý lịch sử hỏi đáp AI với cư dân')}
             </p>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function HistoryPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Tìm kiếm theo người dùng, câu hỏi, câu trả lời..."
+                  placeholder={t('admin.history.searchPlaceholder','Tìm kiếm theo người dùng, câu hỏi, câu trả lời...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -164,15 +164,15 @@ export default function HistoryPage() {
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-400" />
                 <select
-                  title="Lọc đánh giá"
+                  title={t('admin.history.filter.title','Lọc đánh giá')}
                   value={filterFeedback}
                   onChange={(e) => setFilterFeedback(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                 >
-                  <option value="all">Tất cả đánh giá</option>
-                  <option value="POSITIVE">Tích cực</option>
-                  <option value="NEGATIVE">Tiêu cực</option>
-                  <option value="NEUTRAL">Trung lập</option>
+                  <option value="all">{t('admin.history.filter.all','Tất cả đánh giá')}</option>
+                  <option value="POSITIVE">{t('admin.history.feedback.POSITIVE','Tích cực')}</option>
+                  <option value="NEGATIVE">{t('admin.history.feedback.NEGATIVE','Tiêu cực')}</option>
+                  <option value="NEUTRAL">{t('admin.history.feedback.NEUTRAL','Trung lập')}</option>
                 </select>
               </div>
             </div>
@@ -183,7 +183,7 @@ export default function HistoryPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Lịch sử hỏi đáp ({filteredQARecords.length})</span>
+              <span>{t('admin.history.list','Danh sách lịch sử hỏi đáp')} ({filteredQARecords.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -224,7 +224,7 @@ export default function HistoryPage() {
                           {getFeedbackBadge(record.feedback)}
                         </TableCell>
                         <TableCell>
-                          {new Date(record.createdAt).toLocaleDateString('vi-VN')}
+                          {new Date(record.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">

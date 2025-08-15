@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -19,6 +20,7 @@ interface YearlyBillingFormProps {
 }
 
 export default function YearlyBillingForm({ apartments = [] }: YearlyBillingFormProps) {
+  const { t, language } = useLanguage();
   const { 
     loading, 
     error, 
@@ -108,7 +110,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
 
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return '0';
-    return value.toLocaleString('vi-VN');
+    return value.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US');
   };
 
   const handleInputChange = (field: keyof YearlyBillingRequest, value: string) => {
@@ -120,9 +122,9 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
   };
 
   const getYearStatus = () => {
-    if (checkingYear) return 'Đang kiểm tra...';
-    if (yearExists) return 'Đã có cấu hình (không thể tạo lại)';
-    return 'Chưa có cấu hình (có thể tạo)';
+    if (checkingYear) return t('admin.loading','Đang kiểm tra...');
+    if (yearExists) return t('admin.yearly-billing.exists','Đã có cấu hình (không thể tạo lại)');
+    return t('admin.yearly-billing.notExists','Chưa có cấu hình (có thể tạo)');
   };
 
   const getYearStatusColor = () => {
@@ -136,7 +138,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calculator className="h-5 w-5" />
-          Tạo biểu phí
+          {t('admin.yearly-billing.create','Tạo biểu phí')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -144,7 +146,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              {`Tạo biểu phí cấu hình cho tất cả căn hộ trong năm ${selectedYear}. Hệ thống chỉ tạo cấu hình phí dịch vụ (không tạo hóa đơn).`}
+              {t('admin.yearly-billing.description', 'Tạo biểu phí cấu hình cho tất cả căn hộ trong năm {year}. Hệ thống chỉ tạo cấu hình phí dịch vụ (không tạo hóa đơn).').replace('{year}', String(selectedYear))}
             </AlertDescription>
           </Alert>
 
@@ -157,11 +159,11 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Calculator className="h-4 w-4" />
-                    Thông tin tạo biểu phí cho năm
+                    {t('admin.yearly-billing.info','Thông tin')}
                   </Label>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="year">Năm</Label>
+                      <Label htmlFor="year">{t('admin.yearly-billing.year','Năm')}</Label>
                       <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
                         <SelectTrigger>
                           <SelectValue />
@@ -181,7 +183,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                         <Alert>
                           <AlertCircle className="h-4 w-4" />
                           <AlertDescription>
-                            Năm {selectedYear} đã có cấu hình phí dịch vụ. <strong>Không thể tạo lại</strong>. Vui lòng chọn năm khác hoặc sử dụng tab "Cấu hình phí" để chỉnh sửa cấu hình hiện tại.
+                            {t('admin.yearly-billing.existsDetail','Năm {year} đã có cấu hình phí dịch vụ. Không thể tạo lại. Vui lòng chọn năm khác hoặc dùng tab Cấu hình phí.').replace('{year}', String(selectedYear))}
                           </AlertDescription>
                         </Alert>
                       )}
@@ -191,11 +193,11 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                     <div className="space-y-4">
                       <Label className="flex items-center gap-2">
                         <Calculator className="h-4 w-4" />
-                        Đơn giá phí dịch vụ cho tất cả căn hộ
+                        {t('admin.yearly-billing.feeConfig','Cấu hình đơn giá')}
                       </Label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="serviceFeePerM2">Phí dịch vụ (đ/m²)</Label>
+                          <Label htmlFor="serviceFeePerM2">{t('admin.yearly-billing.serviceFee','Phí dịch vụ (VND/m²)')}</Label>
                           <input
                             id="serviceFeePerM2"
                             type="number"
@@ -209,7 +211,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="waterFeePerM3">Phí nước (đ/m³)</Label>
+                          <Label htmlFor="waterFeePerM3">{t('admin.yearly-billing.waterFee','Phí nước (VND/m³)')}</Label>
                           <input
                             id="waterFeePerM3"
                             type="number"
@@ -223,7 +225,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="motorcycleFee">Phí xe máy (đ/xe/tháng)</Label>
+                          <Label htmlFor="motorcycleFee">{t('admin.yearly-billing.parkingFee','Phí gửi xe (VND/tháng)')}</Label>
                           <input
                             id="motorcycleFee"
                             type="number"
@@ -237,7 +239,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="car4SeatsFee">Phí xe 4 chỗ (đ/xe/tháng)</Label>
+                          <Label htmlFor="car4SeatsFee">{t('admin.yearly-billing.parkingFee','Phí gửi xe (VND/tháng)')}</Label>
                           <input
                             id="car4SeatsFee"
                             type="number"
@@ -251,7 +253,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="car7SeatsFee">Phí xe 7 chỗ (đ/xe/tháng)</Label>
+                          <Label htmlFor="car7SeatsFee">{t('admin.yearly-billing.parkingFee','Phí gửi xe (VND/tháng)')}</Label>
                           <input
                             id="car7SeatsFee"
                             type="number"
@@ -268,40 +270,40 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
 
                       {/* Tóm tắt đơn giá */}
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-3">Tóm tắt đơn giá:</h4>
+                        <h4 className="font-semibold mb-3">{t('admin.yearly-billing.feeSummary','Tóm tắt đơn giá')}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">Phí dịch vụ:</span>
+                            <span className="font-medium">{t('admin.invoices.feeType.SERVICE_FEE','Phí dịch vụ')}:</span>
                             <span className="text-blue-600 font-semibold">
                               {formatNumber(form.serviceFeePerM2)} đ/m²
                               <span className="text-xs text-gray-500 ml-2">({form.serviceFeePerM2})</span>
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">Phí nước:</span>
+                            <span className="font-medium">{t('admin.invoices.feeType.WATER_FEE','Phí nước')}:</span>
                             <span className="text-blue-600 font-semibold">
                               {formatNumber(form.waterFeePerM3)} đ/m³
                               <span className="text-xs text-gray-500 ml-2">({form.waterFeePerM3})</span>
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">Phí xe máy:</span>
+                            <span className="font-medium">{t('admin.invoices.feeType.VEHICLE_FEE','Phí gửi xe')}:</span>
                             <span className="text-green-600 font-semibold">
-                              {formatNumber(form.motorcycleFee)} đ/xe/tháng
+                              {formatNumber(form.motorcycleFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                               <span className="text-xs text-gray-500 ml-2">({form.motorcycleFee})</span>
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">Phí xe 4 chỗ:</span>
+                            <span className="font-medium">{t('admin.yearly-billing.parking.car4.label','Phí xe 4 chỗ')}:</span>
                             <span className="text-green-600 font-semibold">
-                              {formatNumber(form.car4SeatsFee)} đ/xe/tháng
+                              {formatNumber(form.car4SeatsFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                               <span className="text-xs text-gray-500 ml-2">({form.car4SeatsFee})</span>
                             </span>
                           </div>
                           <div className="flex justify-between items-center md:col-span-2">
-                            <span className="font-medium">Phí xe 7 chỗ:</span>
+                            <span className="font-medium">{t('admin.yearly-billing.parking.car7.label','Phí xe 7 chỗ')}:</span>
                             <span className="text-green-600 font-semibold">
-                              {formatNumber(form.car7SeatsFee)} đ/xe/tháng
+                              {formatNumber(form.car7SeatsFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                               <span className="text-xs text-gray-500 ml-2">({form.car7SeatsFee})</span>
                             </span>
                           </div>
@@ -335,7 +337,7 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                 disabled={loading || yearExists}
                 className="min-w-[200px]"
               >
-                {loading ? 'Đang xử lý...' : `Tạo biểu phí năm ${selectedYear}`}
+                {loading ? t('admin.yearly-billing.creating','Đang tạo biểu phí...') : t('admin.yearly-billing.createButton','Tạo biểu phí 1 năm')}
               </Button>
             </div>
           </div>

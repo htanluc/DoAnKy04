@@ -219,13 +219,6 @@ export default function AdminDashboard() {
       color: 'bg-red-100 text-red-600'
     },
     {
-      title: t('admin.invoices.create', 'Tạo hóa đơn mới'),
-      description: t('admin.invoices.createDesc', 'Xuất hóa đơn cho cư dân'),
-      icon: Receipt,
-      href: '/admin-dashboard/invoices/create',
-      color: 'bg-yellow-100 text-yellow-600'
-    },
-    {
       title: t('admin.users.createStaff', 'Tạo tài khoản nhân viên'),
       description: t('admin.users.createStaffDesc', 'Thêm mới tài khoản cho nhân viên quản lý'),
       icon: Users,
@@ -286,9 +279,9 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <div>
           <h3 className="text-lg font-semibold mb-4">{t('admin.quickActions','Thao tác nhanh')}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
-              <Link key={index} href={action.href}>
+              <Link key={index} href={action.href} className="block h-full">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col items-center justify-center py-8 px-4 text-center h-full">
                   <div className={`mx-auto mb-4 rounded-full w-16 h-16 flex items-center justify-center text-3xl ${action.color}`}> 
                     <action.icon className="w-8 h-8" />

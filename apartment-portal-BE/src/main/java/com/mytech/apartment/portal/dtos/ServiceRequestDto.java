@@ -7,6 +7,7 @@ public class ServiceRequestDto {
     private Long id;
     private Long userId;
     private String userName;
+    private String userPhone;
     private String categoryId;
     private String categoryName;
     private String title;
@@ -24,12 +25,13 @@ public class ServiceRequestDto {
     // Constructors
     public ServiceRequestDto() {}
 
-    public ServiceRequestDto(Long id, Long userId, String userName, String categoryId, String categoryName,
+    public ServiceRequestDto(Long id, Long userId, String userName, String userPhone, String categoryId, String categoryName,
                            String title, String description, String priority, String status, String assignedTo,
                            String resolution, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {
         this.id = id;
         this.userId = userId;
         this.userName = userName;
+        this.userPhone = userPhone;
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.title = title;
@@ -43,13 +45,14 @@ public class ServiceRequestDto {
         this.resolvedAt = resolvedAt;
     }
 
-    public ServiceRequestDto(Long id, Long userId, String userName, String categoryId, String categoryName,
+    public ServiceRequestDto(Long id, Long userId, String userName, String userPhone, String categoryId, String categoryName,
                            String title, String description, String priority, String status, String assignedTo,
                            String resolution, List<String> attachmentUrls, List<String> imageUrls,
                            LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {
         this.id = id;
         this.userId = userId;
         this.userName = userName;
+        this.userPhone = userPhone;
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.title = title;
@@ -74,6 +77,9 @@ public class ServiceRequestDto {
 
     public String getUserName() { return userName; }
     public void setUserName(String userName) { this.userName = userName; }
+
+    public String getUserPhone() { return userPhone; }
+    public void setUserPhone(String userPhone) { this.userPhone = userPhone; }
 
     public String getCategoryId() { return categoryId; }
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }

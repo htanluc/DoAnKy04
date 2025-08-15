@@ -29,7 +29,7 @@ import { eventsApi, Event } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function EventsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,8 +43,8 @@ export default function EventsPage() {
       setEvents(data);
     } catch (error) {
       toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách sự kiện",
+        title: t('admin.error.load','Lỗi'),
+        description: t('admin.error.load','Không thể tải danh sách sự kiện'),
         variant: "destructive",
       });
     } finally {
@@ -57,18 +57,18 @@ export default function EventsPage() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa sự kiện này?')) {
+    if (window.confirm(t('admin.confirm.delete','Bạn có chắc chắn muốn xóa?'))) {
       try {
         await eventsApi.delete(id);
         toast({
-          title: "Thành công",
-          description: "Đã xóa sự kiện",
+          title: t('admin.success.delete','Thành công'),
+          description: t('admin.success.delete','Đã xóa'),
         });
         fetchEvents();
       } catch (error) {
         toast({
-          title: "Lỗi",
-          description: "Không thể xóa sự kiện",
+          title: t('admin.error.delete','Lỗi'),
+          description: t('admin.error.delete','Không thể xóa'),
           variant: "destructive",
         });
       }
@@ -100,20 +100,20 @@ export default function EventsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'UPCOMING':
-        return <Badge className="bg-blue-100 text-blue-800">Sắp diễn ra</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('admin.events.status.UPCOMING','Sắp diễn ra')}</Badge>;
       case 'ONGOING':
-        return <Badge className="bg-green-100 text-green-800">Đang diễn ra</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.events.status.ONGOING','Đang diễn ra')}</Badge>;
       case 'COMPLETED':
-        return <Badge className="bg-gray-100 text-gray-800">Đã kết thúc</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('admin.events.status.COMPLETED','Đã kết thúc')}</Badge>;
       case 'CANCELLED':
-        return <Badge className="bg-red-100 text-red-800">Đã hủy</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.events.status.CANCELLED','Đã hủy')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
   const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleString('vi-VN', {
+    return new Date(dateTime).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -145,7 +145,7 @@ export default function EventsPage() {
               {t('admin.events.list')}
             </h2>
             <p className="text-gray-600">
-              Quản lý tất cả sự kiện trong chung cư
+              {t('admin.events.listDesc','Quản lý tất cả sự kiện trong chung cư')}
             </p>
           </div>
           <Link href="/admin-dashboard/events/create">
@@ -163,7 +163,7 @@ export default function EventsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Tìm kiếm theo tên, mô tả, địa điểm..."
+                  placeholder={t('admin.events.searchPlaceholder','Tìm kiếm theo tên, mô tả, địa điểm...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -177,11 +177,11 @@ export default function EventsPage() {
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                   aria-label="Lọc theo trạng thái sự kiện"
                 >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="UPCOMING">Sắp diễn ra</option>
-                  <option value="ONGOING">Đang diễn ra</option>
-                  <option value="COMPLETED">Đã kết thúc</option>
-                  <option value="CANCELLED">Đã hủy</option>
+                  <option value="all">{t('admin.status.all','Tất cả trạng thái')}</option>
+                  <option value="UPCOMING">{t('admin.events.status.UPCOMING','Sắp diễn ra')}</option>
+                  <option value="ONGOING">{t('admin.events.status.ONGOING','Đang diễn ra')}</option>
+                  <option value="COMPLETED">{t('admin.events.status.COMPLETED','Đã kết thúc')}</option>
+                  <option value="CANCELLED">{t('admin.events.status.CANCELLED','Đã hủy')}</option>
                 </select>
               </div>
             </div>
@@ -192,7 +192,7 @@ export default function EventsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Danh sách sự kiện ({filteredEvents.length})</span>
+              <span>{t('admin.events.list','Danh sách sự kiện')} ({filteredEvents.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -205,12 +205,12 @@ export default function EventsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tên sự kiện</TableHead>
-                      <TableHead>Thời gian bắt đầu</TableHead>
-                      <TableHead>Thời gian kết thúc</TableHead>
-                      <TableHead>Địa điểm</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead className="text-right">Thao tác</TableHead>
+                      <TableHead>{t('admin.events.name','Tên sự kiện')}</TableHead>
+                      <TableHead>{t('admin.events.startDate','Thời gian bắt đầu')}</TableHead>
+                      <TableHead>{t('admin.events.endDate','Thời gian kết thúc')}</TableHead>
+                      <TableHead>{t('admin.events.location','Địa điểm')}</TableHead>
+                      <TableHead>{t('admin.users.status','Trạng thái')}</TableHead>
+                      <TableHead className="text-right">{t('admin.users.actions','Thao tác')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

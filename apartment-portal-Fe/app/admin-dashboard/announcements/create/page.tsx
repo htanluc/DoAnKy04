@@ -34,8 +34,8 @@ export default function CreateAnnouncementPage() {
     
     if (!formData.title.trim() || !formData.content.trim()) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin",
+        title: t('admin.error.load','Lỗi'),
+        description: t('validation.required','Vui lòng nhập đầy đủ thông tin'),
         variant: "destructive",
       });
       return;
@@ -45,14 +45,14 @@ export default function CreateAnnouncementPage() {
       setLoading(true);
       await announcementsApi.create(formData);
       toast({
-        title: "Thành công",
-        description: "Đã tạo thông báo mới",
+        title: t('admin.success.save','Lưu thành công'),
+        description: t('admin.announcements.createSuccess','Đã tạo thông báo mới'),
       });
       router.push('/admin-dashboard/announcements');
     } catch (error) {
       toast({
-        title: "Lỗi",
-        description: "Không thể tạo thông báo",
+        title: t('admin.error.save','Không thể lưu dữ liệu'),
+        description: t('admin.announcements.createError','Không thể tạo thông báo'),
         variant: "destructive",
       });
     } finally {
@@ -68,7 +68,7 @@ export default function CreateAnnouncementPage() {
   };
 
   return (
-    <AdminLayout title="Tạo thông báo mới">
+    <AdminLayout title={t('admin.announcements.create','Tạo thông báo mới')}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -76,15 +76,15 @@ export default function CreateAnnouncementPage() {
             <Link href="/admin-dashboard/announcements">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Quay lại
+                {t('admin.action.back','Quay lại')}
               </Button>
             </Link>
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                Tạo thông báo mới
+                {t('admin.announcements.create','Tạo thông báo mới')}
               </h2>
               <p className="text-gray-600">
-                Thêm thông báo mới vào hệ thống
+                {t('admin.announcements.createDesc','Tạo một thông báo gửi đến cư dân')}
               </p>
             </div>
           </div>
@@ -178,7 +178,7 @@ export default function CreateAnnouncementPage() {
               <div className="flex justify-end space-x-4">
                 <Link href="/admin-dashboard/announcements">
                   <Button variant="outline" type="button">
-                    Hủy
+                    {t('admin.action.cancel','Hủy')}
                   </Button>
                 </Link>
                 <Button type="submit" disabled={loading}>
