@@ -291,6 +291,13 @@ public class FacilityBookingService {
             throw new RuntimeException("Booking này đã được thanh toán");
         }
         
+        // Validate payment method
+        try {
+            com.mytech.apartment.portal.models.enums.PaymentMethod.valueOf(paymentMethod.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Phương thức thanh toán không hợp lệ: " + paymentMethod);
+        }
+        
         // Tạo orderId và orderInfo cho payment gateway
         String orderId = "FACILITY_" + bookingId;
         String orderInfo = "Thanh toan dat " + booking.getFacility().getName() + " - " + 

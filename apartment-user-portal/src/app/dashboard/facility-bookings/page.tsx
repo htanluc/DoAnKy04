@@ -299,10 +299,10 @@ const FacilityBookingsPage: FC = () => {
   const [rangeEndHour, setRangeEndHour] = useState<number | null>(null)
   const [rangeError, setRangeError] = useState<string | null>(null)
   const paymentMethods = [
-    { id: 'momo', name: 'MoMo', description: 'Thanh toán qua ví MoMo' },
-    { id: 'vnpay', name: 'VNPay', description: 'Thanh toán qua VNPay' },
-    { id: 'zalopay', name: 'ZaloPay', description: 'Thanh toán qua ZaloPay' },
-    { id: 'visa', name: 'Visa/Mastercard', description: 'Thanh toán thẻ quốc tế' },
+    { id: 'MOMO', name: 'MoMo', description: 'Thanh toán qua ví MoMo' },
+    { id: 'VNPAY', name: 'VNPay', description: 'Thanh toán qua VNPay' },
+    { id: 'ZALOPAY', name: 'ZaloPay', description: 'Thanh toán qua ZaloPay' },
+    { id: 'VISA', name: 'Visa/Mastercard', description: 'Thanh toán thẻ quốc tế' },
   ];
   const [payBefore, setPayBefore] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
@@ -932,28 +932,41 @@ const FacilityBookingsPage: FC = () => {
     setSuccess(null)
     setPaymentLoading(true)
     
+    console.log('Starting payment process for booking:', bookingId, 'with method:', paymentMethod)
+    
     try {
       // Bước 1: Khởi tạo thanh toán để lấy thông tin payment
-      const initiateResponse = await fetch(`http://localhost:8080/api/facility-bookings/${bookingId}/initiate-payment?paymentMethod=${paymentMethod}`, {
+      const token = localStorage.getItem('token')
+      console.log('Using token:', token ? 'Token exists' : 'No token')
+      
+      const initiateUrl = `http://localhost:8080/api/facility-bookings/${bookingId}/initiate-payment?paymentMethod=${paymentMethod}`
+      console.log('Calling initiate-payment endpoint:', initiateUrl)
+      
+      const initiateResponse = await fetch(initiateUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
       
+      console.log('Initiate response status:', initiateResponse.status)
+      console.log('Initiate response ok:', initiateResponse.ok)
+      
       if (!initiateResponse.ok) {
         const errorData = await initiateResponse.json()
+        console.error('Initiate payment error:', errorData)
         throw new Error(errorData.message || 'Khởi tạo thanh toán thất bại')
       }
       
       const paymentInfo = await initiateResponse.json()
+      console.log('Payment info received:', paymentInfo)
       
       // Bước 2: Gọi payment gateway (VNPay) với return URL tùy chỉnh cho facility booking
       const gatewayResponse = await fetch(`http://localhost:8080/api/payments/vnpay/create`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -965,21 +978,28 @@ const FacilityBookingsPage: FC = () => {
         })
       })
       
+      console.log('Gateway response status:', gatewayResponse.status)
+      console.log('Gateway response ok:', gatewayResponse.ok)
+      
       if (!gatewayResponse.ok) {
         const errorData = await gatewayResponse.json()
+        console.error('Gateway error:', errorData)
         throw new Error(errorData.message || 'Tạo thanh toán gateway thất bại')
       }
       
       const gatewayData = await gatewayResponse.json()
+      console.log('Gateway data received:', gatewayData)
       
       if (gatewayData.success && gatewayData.data && gatewayData.data.paymentUrl) {
         // Chuyển hướng đến trang thanh toán
+        console.log('Redirecting to payment URL:', gatewayData.data.paymentUrl)
         window.location.href = gatewayData.data.paymentUrl
       } else {
         throw new Error('Không thể tạo URL thanh toán')
       }
       
     } catch (err: any) {
+      console.error('Payment error:', err)
       setError(err.message || 'Thanh toán thất bại')
     } finally {
       setPaymentLoading(false)
