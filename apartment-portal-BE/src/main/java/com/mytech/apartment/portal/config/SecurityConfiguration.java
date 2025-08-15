@@ -104,7 +104,7 @@ public class SecurityConfiguration {
               .requestMatchers("/stripe-checkout.html", "/api/payments/stripe/success", "/api/payments/stripe/cancel", "/api/payments/stripe/webhook").permitAll()  // Stripe checkout pages cần thiết
               .requestMatchers("/api/admin/**").hasRole("ADMIN")
               .requestMatchers("/api/apartments/admin/**").hasRole("ADMIN")
-              .requestMatchers("/api/apartments/**").hasRole("RESIDENT")
+              .requestMatchers("/api/apartments/**").hasAnyRole("ADMIN", "RESIDENT")
               .requestMatchers("/api/invoices/**","/api/facility-bookings/**","/api/residents/**", "/api/announcements/**", "/api/events/**", "/api/facilities/**", "/api/feedback/**", "/api/support-requests/**", "/api/upload/**", "/api/event-registrations/**", "/api/activity-logs/**", "/api/vehicles/**")
                   .hasRole("RESIDENT")
               .anyRequest().authenticated()

@@ -108,12 +108,109 @@ public class ApartmentController {
             @PathVariable("apartmentId") Long apartmentId,
             @Valid @RequestBody ApartmentResidentLinkRequest request) {
         try {
+            System.out.println("📝 Controller: Bắt đầu liên kết cư dân với căn hộ " + apartmentId);
+            System.out.println("📝 Controller: Request data: " + request);
+            
             apartmentService.linkResidentToApartment(apartmentId, request);
+            
+            System.out.println("✅ Controller: Liên kết cư dân thành công!");
             return ResponseEntity.ok(ApiResponse.success("Liên kết user với căn hộ thành công!"));
+            
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            // Log lỗi để debug
+            System.err.println("❌ Controller: Lỗi khi liên kết cư dân: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Trả về thông báo lỗi rõ ràng
+            String errorMessage = e.getMessage();
+            if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                errorMessage = "Lỗi không xác định khi liên kết cư dân";
+            }
+            
+            System.err.println("❌ Controller: Trả về error message: " + errorMessage);
+            return ResponseEntity.badRequest().body(ApiResponse.error(errorMessage));
         }
     }
+    /**
+     * Test endpoint to check if API is working
+     * Endpoint test để kiểm tra API có hoạt động không
+     */
+    @GetMapping("/admin/test")
+    public ResponseEntity<ApiResponse<String>> testEndpoint() {
+        return ResponseEntity.ok(ApiResponse.success("Apartment API is working", "Test successful"));
+    }
+
+    /**
+     * Test endpoint to check database connection
+     * Endpoint test để kiểm tra kết nối database
+     */
+    @GetMapping("/admin/test-db")
+    public ResponseEntity<ApiResponse<String>> testDatabaseEndpoint() {
+        try {
+            // Kiểm tra kết nối database bằng cách đếm số apartment
+            long apartmentCount = apartmentService.getAllApartments().size();
+            return ResponseEntity.ok(ApiResponse.success("Database connection OK", "Found " + apartmentCount + " apartments"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ApiResponse.error("Database connection failed: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Test endpoint to create a simple apartment-resident relationship
+     * Endpoint test để tạo mối quan hệ apartment-resident đơn giản
+     */
+    @PostMapping("/admin/test-create-relationship")
+    public ResponseEntity<ApiResponse<String>> testCreateRelationship() {
+        try {
+            System.out.println("🧪 Test: Bắt đầu tạo test relationship");
+            
+            // Test với apartment ID = 1 và user ID = 1
+            ApartmentResidentLinkRequest testRequest = new ApartmentResidentLinkRequest();
+            testRequest.setUserId(1L);
+            testRequest.setRelationType("OWNER");
+            testRequest.setMoveInDate(java.time.LocalDate.now());
+            
+            System.out.println("🧪 Test: Test request: " + testRequest);
+            
+            apartmentService.linkResidentToApartment(1L, testRequest);
+            
+            System.out.println("🧪 Test: Tạo relationship thành công!");
+            return ResponseEntity.ok(ApiResponse.success("Test relationship created successfully", "Created relationship between apartment 1 and user 1"));
+        } catch (Exception e) {
+            System.err.println("🧪 Test: Lỗi khi tạo test relationship: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(ApiResponse.error("Test failed: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Test endpoint to check if user and apartment exist
+     * Endpoint test để kiểm tra user và apartment có tồn tại không
+     */
+    @GetMapping("/admin/test-check-entities")
+    public ResponseEntity<ApiResponse<String>> testCheckEntities() {
+        try {
+            System.out.println("🔍 Test: Kiểm tra entities");
+            
+            // Kiểm tra apartment ID = 1
+            var apartmentOpt = apartmentService.getApartmentById(1L);
+            if (apartmentOpt.isPresent()) {
+                System.out.println("🔍 Test: Apartment 1 tồn tại: " + apartmentOpt.get().getUnitNumber());
+            } else {
+                System.out.println("🔍 Test: Apartment 1 KHÔNG tồn tại");
+            }
+            
+            // Kiểm tra user ID = 1 (cần implement method này)
+            System.out.println("🔍 Test: Kiểm tra user 1");
+            
+            return ResponseEntity.ok(ApiResponse.success("Entities check completed", "Check completed"));
+        } catch (Exception e) {
+            System.err.println("🔍 Test: Lỗi khi kiểm tra entities: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(ApiResponse.error("Entities check failed: " + e.getMessage()));
+        }
+    }
+
     @GetMapping("/admin/apartment-residents/user/{userId}")
     public ResponseEntity<List<ApartmentResidentDto>> getApartmentLinksOfUser(@PathVariable("userId") Long userId) {
         List<ApartmentResidentDto> links = apartmentService.getApartmentLinksOfUser(userId);

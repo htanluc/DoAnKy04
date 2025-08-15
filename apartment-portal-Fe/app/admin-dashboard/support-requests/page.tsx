@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,14 @@ interface SupportRequest {
 }
 
 export default function SupportRequestsPage() {
+  return (
+    <AdminGuard>
+      <SupportRequestsPageContent />
+    </AdminGuard>
+  );
+}
+
+function SupportRequestsPageContent() {
   const { t, language } = useLanguage();
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,14 +70,14 @@ export default function SupportRequestsPage() {
         // Sửa lại mapping cho đúng với dữ liệu API thực tế
         const mapped = data.map((item: any) => ({
           id: item.id,
-          residentName: item.residentName || '',
+          residentName: item.userName || item.user?.fullName || item.user?.username || item.residentName || 'Không có tên',
           title: item.title || item.description || '',
           description: item.description || '',
-          category: item.categoryName || '',
+          category: item.category?.categoryName || item.categoryName || '',
           priority: item.priority || '',
           status: item.status || '',
-          assignedTo: item.assignedTo || '',
-          createdAt: item.createdAt || '',
+          assignedTo: item.assignedTo?.fullName || item.assignedTo?.username || item.assignedTo || '',
+          createdAt: item.submittedAt || item.createdAt || '',
         }));
         setSupportRequests(mapped);
         setLoading(false);

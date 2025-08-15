@@ -6,6 +6,7 @@ import com.mytech.apartment.portal.mappers.ApartmentResidentMapper;
 import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.models.ApartmentResident;
 import com.mytech.apartment.portal.models.ApartmentResidentId;
+import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.enums.ApartmentStatus;
 import com.mytech.apartment.portal.models.enums.RelationType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 @Service
 public class ApartmentService {
@@ -104,30 +106,99 @@ public class ApartmentService {
 
     @Transactional
     public void linkResidentToApartment(Long apartmentId, ApartmentResidentLinkRequest request) {
-        Apartment apartment = apartmentRepository.findById(apartmentId)
-                .orElseThrow(() -> new RuntimeException("Căn hộ không tồn tại"));
+        try {
+            System.out.println("🔗 Bắt đầu liên kết cư dân: apartmentId=" + apartmentId + ", userId=" + request.getUserId());
+            
+            // Kiểm tra apartment
+            Apartment apartment = apartmentRepository.findById(apartmentId)
+                    .orElseThrow(() -> new RuntimeException("Căn hộ không tồn tại với ID: " + apartmentId));
 
-        if (request.getUserId() == null) {
-            throw new RuntimeException("UserId không được để trống");
-        }
+            // Kiểm tra user
+            if (request.getUserId() == null) {
+                throw new RuntimeException("UserId không được để trống");
+            }
 
-        ApartmentResidentId id = new ApartmentResidentId(apartmentId, request.getUserId());
-        if (apartmentResidentRepository.findById(id).isPresent()) {
-            throw new RuntimeException("User đã được liên kết với căn hộ này");
-        }
+            // Kiểm tra relationType
+            if (request.getRelationType() == null || request.getRelationType().trim().isEmpty()) {
+                throw new RuntimeException("Loại quan hệ không được để trống");
+            }
 
-        ApartmentResident apartmentResident = ApartmentResident.builder()
-                .id(id)
-                .relationType(RelationType.fromValue(request.getRelationType()))
-                .moveInDate(request.getMoveInDate() != null ? request.getMoveInDate() : LocalDate.now())
-                .moveOutDate(request.getMoveOutDate())
-                .build();
+            // Kiểm tra mối quan hệ đã tồn tại
+            ApartmentResidentId id = new ApartmentResidentId(apartmentId, request.getUserId());
+            if (apartmentResidentRepository.findById(id).isPresent()) {
+                throw new RuntimeException("User đã được liên kết với căn hộ này");
+            }
 
-        apartmentResidentRepository.save(apartmentResident);
+            // Validate và parse RelationType
+            RelationType relationType;
+            try {
+                relationType = RelationType.fromValue(request.getRelationType());
+                System.out.println("✅ RelationType hợp lệ: " + relationType);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Loại quan hệ không hợp lệ: '" + request.getRelationType() + 
+                    "'. Các giá trị hợp lệ: " + Arrays.toString(RelationType.values()));
+            }
 
-        if (ApartmentStatus.VACANT.equals(apartment.getStatus())) {
-            apartment.setStatus(ApartmentStatus.OCCUPIED);
-            apartmentRepository.save(apartment);
+            // Lấy user entity
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User không tồn tại với ID: " + request.getUserId()));
+            
+            // Debug: In ra thông tin user và apartment
+            System.out.println("🔍 Debug User: ID=" + user.getId() + ", Username=" + user.getUsername());
+            System.out.println("🔍 Debug Apartment: ID=" + apartment.getId() + ", UnitNumber=" + apartment.getUnitNumber());
+
+            // Tạo ApartmentResident entity
+            ApartmentResident apartmentResident = new ApartmentResident();
+            
+            // Khởi tạo id object
+            ApartmentResidentId compositeId = new ApartmentResidentId();
+            compositeId.setApartmentId(apartmentId);
+            compositeId.setUserId(request.getUserId());
+            apartmentResident.setId(compositeId);
+            
+            // Set các trường khác
+            apartmentResident.setApartment(apartment);
+            apartmentResident.setUser(user);
+            apartmentResident.setRelationType(relationType);
+            apartmentResident.setMoveInDate(request.getMoveInDate() != null ? request.getMoveInDate() : LocalDate.now());
+            apartmentResident.setMoveOutDate(request.getMoveOutDate());
+            apartmentResident.setIsPrimaryResident(false);
+            apartmentResident.setCreatedAt(java.time.LocalDateTime.now());
+            
+            // Debug: In ra thông tin entity trước khi save
+            System.out.println("🔍 Debug ApartmentResident entity:");
+            System.out.println("🔍 ID: " + apartmentResident.getId());
+            System.out.println("🔍 Apartment ID: " + apartmentResident.getId().getApartmentId());
+            System.out.println("🔍 User ID: " + apartmentResident.getId().getUserId());
+            System.out.println("🔍 Apartment: " + (apartmentResident.getApartment() != null ? apartmentResident.getApartment().getId() : "NULL"));
+            System.out.println("🔍 User: " + (apartmentResident.getUser() != null ? apartmentResident.getUser().getId() : "NULL"));
+            System.out.println("🔍 RelationType: " + apartmentResident.getRelationType());
+
+            System.out.println("💾 Lưu ApartmentResident: " + apartmentResident);
+            System.out.println("💾 ApartmentResident ID: " + apartmentResident.getId());
+            System.out.println("💾 Apartment: " + apartmentResident.getApartment());
+            System.out.println("💾 User: " + apartmentResident.getUser());
+            
+            ApartmentResident saved = apartmentResidentRepository.save(apartmentResident);
+            System.out.println("✅ Đã lưu ApartmentResident với ID: " + saved.getId());
+
+            // Cập nhật trạng thái căn hộ nếu cần
+            if (ApartmentStatus.VACANT.equals(apartment.getStatus())) {
+                apartment.setStatus(ApartmentStatus.OCCUPIED);
+                apartmentRepository.save(apartment);
+                System.out.println("🏠 Đã cập nhật trạng thái căn hộ thành OCCUPIED");
+            }
+
+            System.out.println("🎉 Liên kết cư dân thành công!");
+            
+        } catch (RuntimeException e) {
+            System.err.println("❌ RuntimeException khi liên kết cư dân: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Re-throw để giữ nguyên message
+        } catch (Exception e) {
+            System.err.println("❌ Exception không xác định khi liên kết cư dân: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi không xác định khi liên kết cư dân: " + e.getMessage());
         }
     }
 

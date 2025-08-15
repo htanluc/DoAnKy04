@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Support Requests API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #1976d2; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Test Support Requests API</h1>
+    
+    <button onclick="testGetAllSupportRequests()">Test GET /api/admin/support-requests</button>
+    <button onclick="clearResults()">Xóa kết quả</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        
+        async function testGetAllSupportRequests() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">Đang test API...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/support-requests`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // Thêm token nếu cần
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Hiển thị kết quả
+                let html = '<div class="result success">';
+                html += '<h3>✅ API Response Success</h3>';
+                html += `<p><strong>Total items:</strong> ${data.length}</p>`;
+                html += '<h4>Raw Data:</h4>';
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // Phân tích từng item
+                if (data.length > 0) {
+                    html += '<h4>Item Analysis:</h4>';
+                    data.forEach((item, index) => {
+                        html += `<div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">`;
+                        html += `<h5>Item ${index + 1} (ID: ${item.id})</h5>`;
+                        html += `<p><strong>userName:</strong> ${item.userName || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>user:</strong> ${item.user ? JSON.stringify(item.user) : 'NULL/undefined'}</p>`;
+                        html += `<p><strong>title:</strong> ${item.title || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>description:</strong> ${item.description || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>category:</strong> ${item.category ? JSON.stringify(item.category) : 'NULL/undefined'}</p>`;
+                        html += `<p><strong>categoryName:</strong> ${item.categoryName || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>priority:</strong> ${item.priority || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>status:</strong> ${item.status || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>assignedTo:</strong> ${item.assignedTo || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>submittedAt:</strong> ${item.submittedAt || 'NULL/undefined'}</p>`;
+                        html += `<p><strong>createdAt:</strong> ${item.createdAt || 'NULL/undefined'}</p>`;
+                        html += '</div>';
+                    });
+                }
+                
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">
+                    <h3>❌ API Error</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Hãy kiểm tra:</p>
+                    <ul>
+                        <li>Backend có đang chạy không?</li>
+                        <li>Port 8080 có đúng không?</li>
+                        <li>CORS có được cấu hình đúng không?</li>
+                        <li>Authentication có cần thiết không?</li>
+                    </ul>
+                </div>`;
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

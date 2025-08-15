@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,14 @@ import { useResidents, Resident } from '@/hooks/use-residents';
 import { getResidentIdCard, formatIdCard } from '@/lib/resident-utils';
 
 export default function ResidentsPage() {
+  return (
+    <AdminGuard>
+      <ResidentsPageContent />
+    </AdminGuard>
+  );
+}
+
+function ResidentsPageContent() {
   const { t } = useLanguage();
   const { residents, loading, error, getAllResidents, deleteResident } = useResidents();
   const [searchTerm, setSearchTerm] = useState('');

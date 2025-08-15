@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,14 @@ import { announcementsApi, Announcement, AnnouncementType, TargetAudience } from
 import { useToast } from '@/hooks/use-toast';
 
 export default function AnnouncementsPage() {
+  return (
+    <AdminGuard>
+      <AnnouncementsPageContent />
+    </AdminGuard>
+  );
+}
+
+function AnnouncementsPageContent() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);

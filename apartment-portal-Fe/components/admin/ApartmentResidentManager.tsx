@@ -38,7 +38,7 @@ interface ApartmentResidentManagerProps {
 const RELATION_TYPES = [
   { value: "OWNER", label: "Chủ hộ" },
   { value: "TENANT", label: "Người thuê" },
-  { value: "FAMILY", label: "Thành viên gia đình" },
+  { value: "FAMILY_MEMBER", label: "Thành viên gia đình" },
 ];
 
 export default function ApartmentResidentManager({ apartmentId }: ApartmentResidentManagerProps) {
@@ -80,33 +80,56 @@ export default function ApartmentResidentManager({ apartmentId }: ApartmentResid
   const handleLink = async () => {
     setError("");
     setSuccess("");
+    
+    // Validation
     if (!selectedResidentId) {
       setError("Vui lòng chọn cư dân");
       return;
     }
-    setLoading(true);
-    const res = await fetch(`${API_BASE_URL}/api/apartments/${apartmentId}/residents`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${getToken()}`,
-      },
-      body: JSON.stringify({
-        residentId: selectedResidentId,
-        relationType,
-        ...(moveInDate ? { moveInDate } : {}),
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setSuccess(data.message || "Liên kết thành công!");
-      setSelectedResidentId("");
-      setRelationType("OWNER");
-      setMoveInDate("");
-    } else {
-      setError(data.message || "Có lỗi xảy ra");
+    
+    if (!relationType) {
+      setError("Vui lòng chọn loại quan hệ");
+      return;
     }
-    setLoading(false);
+    
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/apartments/${apartmentId}/residents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          userId: selectedResidentId, // Sửa từ residentId thành userId
+          relationType: relationType, // Đã sửa thành FAMILY_MEMBER
+          ...(moveInDate ? { moveInDate } : {}),
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setSuccess(data.message || "Liên kết thành công!");
+        setSelectedResidentId("");
+        setRelationType("OWNER");
+        setMoveInDate("");
+        // Reload data nếu cần
+        if (typeof window !== 'undefined' && window.location.reload) {
+          setTimeout(() => window.location.reload(), 1000);
+        }
+      } else {
+        // Xử lý lỗi từ API
+        const errorMessage = data.message || data.error || `Lỗi ${res.status}: ${res.statusText}`;
+        setError(errorMessage);
+        console.error('API Error:', data);
+      }
+    } catch (err) {
+      console.error('Network Error:', err);
+      setError("Lỗi kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Hủy liên kết resident với căn hộ
@@ -120,7 +143,7 @@ export default function ApartmentResidentManager({ apartmentId }: ApartmentResid
         "Content-Type": "application/json",
         "Authorization": `Bearer ${getToken()}`,
       },
-      body: JSON.stringify({ residentId }),
+      body: JSON.stringify({ userId: residentId }), // Sửa từ residentId thành userId
     });
     const data = await res.json();
     if (data.success) {

@@ -29,7 +29,7 @@ import { Eye } from 'lucide-react';
 const RELATION_TYPES = [
   { value: "OWNER", label: "Chủ hộ" },
   { value: "TENANT", label: "Người thuê" },
-  { value: "FAMILY", label: "Thành viên gia đình" },
+  { value: "FAMILY_MEMBER", label: "Thành viên gia đình" }, // Sửa từ FAMILY thành FAMILY_MEMBER
 ];
 
 interface ApartmentUserLinkModalProps {

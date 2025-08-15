@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import YearlyBillingForm from '@/components/admin/YearlyBillingForm';
 import CurrentBillingConfig from '@/components/admin/CurrentBillingConfig';
@@ -24,6 +25,14 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function YearlyBillingPage() {
+  return (
+    <AdminGuard>
+      <YearlyBillingPageContent />
+    </AdminGuard>
+  );
+}
+
+function YearlyBillingPageContent() {
   const { t, language } = useLanguage();
   const { apartments, loading, error } = useApartments();
   const currentYear = new Date().getFullYear();

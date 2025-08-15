@@ -168,7 +168,7 @@ export default function ResidentDetailPage() {
         return <Badge className="bg-purple-100 text-purple-800">Chủ hộ</Badge>;
       case 'TENANT':
         return <Badge className="bg-blue-100 text-blue-800">Người thuê</Badge>;
-      case 'FAMILY':
+      case 'FAMILY_MEMBER':
         return <Badge className="bg-green-100 text-green-800">Thành viên gia đình</Badge>;
       case 'CHỦ SỞ HỮU':
         return <Badge className="bg-purple-100 text-purple-800">Chủ hộ</Badge>;

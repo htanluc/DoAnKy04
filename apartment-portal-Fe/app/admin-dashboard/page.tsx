@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,14 @@ interface ActivityLog {
 }
 
 export default function AdminDashboard() {
+  return (
+    <AdminGuard>
+      <AdminDashboardContent />
+    </AdminGuard>
+  );
+}
+
+function AdminDashboardContent() {
   const { t } = useLanguage();
   const [counts, setCounts] = useState({
     users: 0,

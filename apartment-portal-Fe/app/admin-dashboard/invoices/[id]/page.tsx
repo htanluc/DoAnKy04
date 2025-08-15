@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { useApartments } from '@/hooks/use-apartments';
+import { useLanguage } from '@/lib/i18n';
 
 interface InvoiceItem {
   id: number;
@@ -56,6 +57,7 @@ interface Invoice {
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const invoiceId = parseInt(params.id as string);
   
   const { getInvoiceById, loading, error } = useYearlyBilling();
@@ -256,43 +258,26 @@ export default function InvoiceDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Thông tin căn hộ */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <Building className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm text-gray-600">Mã căn hộ</p>
-                      <p className="font-semibold">
-                        {apartmentCode 
-                          || invoice.unitNumber 
-                          || (invoice as any).apartmentUnitNumber 
-                          || invoice.apartmentNumber 
-                          || (invoice as any).unit 
-                          || `Căn hộ ${invoice.apartmentId}`}
-                      </p>
-                      {invoice.buildingId && (
-                        <p className="text-xs text-gray-500">
-                          ID: {invoice.apartmentId}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="text-sm text-gray-600">Cư dân</p>
-                      <p className="font-semibold">
-                        {invoice.residentName || 'Chưa cập nhật'}
-                      </p>
-                      {invoice.residentName && (
-                        <p className="text-xs text-gray-500">
-                          Cư dân chính
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                                 {/* Thông tin căn hộ */}
+                 <div className="flex items-center gap-3">
+                   <Building className="h-5 w-5 text-blue-600" />
+                   <div>
+                     <p className="text-sm text-gray-600">Mã căn hộ</p>
+                     <p className="font-semibold">
+                       {apartmentCode 
+                         || invoice.unitNumber 
+                         || (invoice as any).apartmentUnitNumber 
+                         || invoice.apartmentNumber 
+                         || (invoice as any).unit 
+                         || `Căn hộ ${invoice.apartmentId}`}
+                     </p>
+                     {invoice.buildingId && (
+                       <p className="text-xs text-gray-500">
+                         ID: {invoice.apartmentId}
+                       </p>
+                     )}
+                   </div>
+                 </div>
 
                 <Separator />
 

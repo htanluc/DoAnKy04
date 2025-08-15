@@ -534,7 +534,7 @@ export const translations: Translations = {
   'admin.apartments.residents.relation': { vi: 'Quan hệ với căn hộ', en: 'Relation to apartment' },
   'admin.apartments.residents.relation.OWNER': { vi: 'Chủ hộ', en: 'Owner' },
   'admin.apartments.residents.relation.TENANT': { vi: 'Người thuê', en: 'Tenant' },
-  'admin.apartments.residents.relation.FAMILY': { vi: 'Thành viên gia đình', en: 'Family member' },
+  'admin.apartments.residents.relation.FAMILY_MEMBER': { vi: 'Thành viên gia đình', en: 'Family member' },
   'admin.apartments.residents.linkBtn': { vi: 'Liên kết cư dân', en: 'Link resident' },
   'admin.apartments.residents.linking': { vi: 'Đang liên kết...', en: 'Linking...' },
   'admin.apartments.residents.current': { vi: 'Cư dân đang ở', en: 'Current residents' },

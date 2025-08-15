@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,14 @@ function hasAdminRole(roles?: Role[]): boolean {
 }
 
 export default function UsersPage() {
+  return (
+    <AdminGuard>
+      <UsersPageContent />
+    </AdminGuard>
+  );
+}
+
+function UsersPageContent() {
   const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);

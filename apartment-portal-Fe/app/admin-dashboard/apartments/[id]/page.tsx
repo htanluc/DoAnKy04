@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import AdminGuard from '@/components/auth/admin-guard'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Trash2 } from 'lucide-react'
 
 export default function ApartmentDetail() {
+  return (
+    <AdminGuard>
+      <ApartmentDetailContent />
+    </AdminGuard>
+  );
+}
+
+function ApartmentDetailContent() {
   const params = useParams()
   const id = parseInt(params.id as string)
   const { t } = useLanguage()
@@ -358,7 +367,7 @@ export default function ApartmentDetail() {
                       <SelectContent>
                         <SelectItem value="OWNER">{t('admin.apartments.residents.relation.OWNER')}</SelectItem>
                         <SelectItem value="TENANT">{t('admin.apartments.residents.relation.TENANT')}</SelectItem>
-                        <SelectItem value="FAMILY">{t('admin.apartments.residents.relation.FAMILY')}</SelectItem>
+                        <SelectItem value="FAMILY_MEMBER">{t('admin.apartments.residents.relation.FAMILY_MEMBER')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -426,7 +435,7 @@ export default function ApartmentDetail() {
                           <Badge variant="outline">
                             {res.relationType === 'OWNER' ? t('admin.apartments.residents.relation.OWNER') : 
                              res.relationType === 'TENANT' ? t('admin.apartments.residents.relation.TENANT') : 
-                             res.relationType === 'FAMILY' ? t('admin.apartments.residents.relation.FAMILY') : res.relationType}
+                             res.relationType === 'FAMILY_MEMBER' ? t('admin.apartments.residents.relation.FAMILY_MEMBER') : res.relationType}
                           </Badge>
                         </TableCell>
                         <TableCell>{res.moveInDate ? new Date(res.moveInDate).toLocaleDateString() : '-'}</TableCell>

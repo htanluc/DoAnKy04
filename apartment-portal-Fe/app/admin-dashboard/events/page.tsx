@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,14 @@ import { eventsApi, Event } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function EventsPage() {
+  return (
+    <AdminGuard>
+      <EventsPageContent />
+    </AdminGuard>
+  );
+}
+
+function EventsPageContent() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);

@@ -31,6 +31,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     // Nếu vẫn 401 hoặc refresh token hết hạn
     removeTokens()
     if (typeof window !== 'undefined') {
+      // Redirect về login thay vì reload trang
       window.location.href = '/login'
     }
   }
@@ -219,13 +220,17 @@ export interface EventRegistrationRequest {
 // ServiceRequest
 export interface ServiceRequest {
   id: number;
-  user: User;
+  user?: User;
+  userName?: string; // Tên đầy đủ của cư dân từ backend
   userPhone?: string;
-  category: ServiceCategory;
+  category?: ServiceCategory;
+  categoryName?: string; // Tên danh mục từ backend
+  title?: string; // Tiêu đề từ backend
   description: string;
   imageAttachment?: string;
-  submittedAt: string;
-  assignedTo?: User;
+  submittedAt?: string;
+  createdAt?: string; // Ngày tạo từ backend
+  assignedTo?: User | string; // Có thể là User object hoặc string từ backend
   assignedAt?: string;
   status: string;
   priority: string;

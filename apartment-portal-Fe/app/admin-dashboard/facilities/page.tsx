@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,14 @@ import { useToast } from '@/hooks/use-toast';
 import { facilityBookingsApi, FacilityBooking } from '@/lib/api';
 
 export default function FacilitiesPage() {
+  return (
+    <AdminGuard>
+      <FacilitiesPageContent />
+    </AdminGuard>
+  );
+}
+
+function FacilitiesPageContent() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const [facilities, setFacilities] = useState<Facility[]>([]);

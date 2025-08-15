@@ -81,7 +81,6 @@ const adminMenuSections = [
     items: [
       { href: '/admin-dashboard/invoices', label: 'admin.invoices.title', icon: <Receipt className="h-5 w-5" /> },
       { href: '/admin-dashboard/yearly-billing', label: 'admin.yearly-billing.title', icon: <Calculator className="h-5 w-5" /> },
-      { href: '/admin-dashboard/billing-config', label: 'admin.billing-config.title', icon: <Settings className="h-5 w-5" /> },
       { href: '/admin-dashboard/water-meter', label: 'admin.waterMeter.title', icon: <BarChart3 className="h-5 w-5" /> },
     ],
   },
@@ -135,7 +134,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
     if (p.startsWith('/admin-dashboard/users') || p.startsWith('/admin-dashboard/residents') || p.startsWith('/admin-dashboard/apartments')) return 'people';
     if (p.startsWith('/admin-dashboard/announcements') || p.startsWith('/admin-dashboard/events')) return 'comms';
     if (p.startsWith('/admin-dashboard/facilities') || p.startsWith('/admin-dashboard/facility-bookings')) return 'facilities';
-    if (p.startsWith('/admin-dashboard/invoices') || p.startsWith('/admin-dashboard/yearly-billing') || p.startsWith('/admin-dashboard/billing-config') || p.startsWith('/admin-dashboard/water-meter')) return 'finance';
+    if (p.startsWith('/admin-dashboard/invoices') || p.startsWith('/admin-dashboard/yearly-billing') || p.startsWith('/admin-dashboard/water-meter')) return 'finance';
     if (p.startsWith('/admin-dashboard/support-requests') || p.startsWith('/admin-dashboard/feedbacks')) return 'support';
     if (p.startsWith('/admin-dashboard/reports') || p.startsWith('/admin-dashboard/history')) return 'reports';
     return 'overview';

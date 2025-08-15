@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,14 @@ import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { Apartment as ApiApartment } from '@/lib/api';
 
 export default function InvoicesPage() {
+  return (
+    <AdminGuard>
+      <InvoicesPageContent />
+    </AdminGuard>
+  );
+}
+
+function InvoicesPageContent() {
   const { t, language } = useLanguage();
   const { apartments, loading: apartmentsLoading, error: apartmentsError } = useApartments();
   const { invoices, loading: invoicesLoading, error: invoicesError, fetchInvoices } = useInvoices();

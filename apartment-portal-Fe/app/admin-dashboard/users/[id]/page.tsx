@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, ArrowLeft, Lock, Unlock } from 'lucide-react';
 import Link from 'next/link';
-import { API_BASE_URL, fetchRoles } from '@/lib/auth';
+import { API_BASE_URL, fetchRoles, getToken, refreshToken, removeTokens } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
@@ -35,6 +36,14 @@ interface UserDetail {
 }
 
 export default function UserDetailPage() {
+  return (
+    <AdminGuard>
+      <UserDetailContent />
+    </AdminGuard>
+  );
+}
+
+function UserDetailContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const params = useParams();
@@ -49,58 +58,129 @@ export default function UserDetailPage() {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [assigning, setAssigning] = useState(false);
 
+  // Hàm kiểm tra và refresh token
+  const checkAndRefreshToken = async (): Promise<string | null> => {
+    let token = getToken();
+    if (!token) {
+      router.push('/login');
+      return null;
+    }
+    return token;
+  };
+
+  // Hàm xử lý API call với authentication
+  const apiCall = async (url: string, options: RequestInit = {}) => {
+    let token = await checkAndRefreshToken();
+    if (!token) return null;
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    // Nếu 401, thử refresh token
+    if (response.status === 401) {
+      const refreshed = await refreshToken();
+      if (refreshed && refreshed.token) {
+        // Gửi lại request với token mới
+        const retryResponse = await fetch(url, {
+          ...options,
+          headers: {
+            'Authorization': `Bearer ${refreshed.token}`,
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+        });
+        return retryResponse;
+      } else {
+        // Token hết hạn, logout và redirect
+        removeTokens();
+        router.push('/login');
+        return null;
+      }
+    }
+
+    return response;
+  };
+
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    const token = localStorage.getItem('token');
-    fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Not found');
-        return res.json();
-      })
-      .then((data) => {
-        setUser(data);
-        setError('');
-      })
-      .catch(() => {
+    
+    const loadUserData = async () => {
+      try {
+        const response = await apiCall(`${API_BASE_URL}/api/admin/users/${userId}`);
+        if (response) {
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data);
+            setError('');
+          } else {
+            setError('Không thể tải dữ liệu');
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
         setError('Không thể tải dữ liệu');
         setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, [userId]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [userId, router]);
 
   useEffect(() => {
     if (!userId) return;
     setApartmentsLoading(true);
-    const token = localStorage.getItem('token');
-    fetch(`${API_BASE_URL}/api/admin/apartment-residents/user/${userId}`, {
-      headers: { 'Authorization': token ? `Bearer ${token}` : '' },
-    })
-      .then(res => res.json())
-      .then((apartments) => {
-        if (Array.isArray(apartments)) {
-          setLinkedApartments(apartments);
-        } else if (apartments && Array.isArray(apartments.data)) {
-          setLinkedApartments(apartments.data);
-        } else {
-          setLinkedApartments([]);
+    
+    const loadApartments = async () => {
+      try {
+        const response = await apiCall(`${API_BASE_URL}/api/admin/apartment-residents/user/${userId}`);
+        if (response) {
+          if (response.ok) {
+            const apartments = await response.json();
+            if (Array.isArray(apartments)) {
+              setLinkedApartments(apartments);
+            } else if (apartments && Array.isArray(apartments.data)) {
+              setLinkedApartments(apartments.data);
+            } else {
+              setLinkedApartments([]);
+            }
+          }
         }
-      })
-      .finally(() => setApartmentsLoading(false));
-  }, [userId]);
+      } catch (error) {
+        console.error('Error loading apartments:', error);
+        setLinkedApartments([]);
+      } finally {
+        setApartmentsLoading(false);
+      }
+    };
+
+    loadApartments();
+  }, [userId, router]);
 
   useEffect(() => {
-    fetchRoles().then(setAllRoles).catch(() => setAllRoles([]));
+    const loadRoles = async () => {
+      try {
+        const roles = await fetchRoles();
+        setAllRoles(roles);
+      } catch (error) {
+        console.error('Error loading roles:', error);
+        setAllRoles([]);
+      }
+    };
+    loadRoles();
   }, []);
 
   const handleToggleStatus = async () => {
     if (!user) return;
-    const token = localStorage.getItem('token');
     let newStatus = user.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
     let reason = '';
     if (newStatus === 'LOCKED') {
@@ -115,15 +195,15 @@ export default function UserDetailPage() {
       url += `&reason=${encodeURIComponent(reason)}`;
     }
     try {
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!res.ok) throw new Error('Failed to update status');
-      setUser({ ...user, status: newStatus, lockReason: reason });
+      const res = await apiCall(url, { method: 'PUT' });
+      if (res) {
+        if (res.ok) {
+          setUser({ ...user, status: newStatus, lockReason: reason });
+          toast({ title: 'Thành công', description: 'Đã đổi trạng thái người dùng.' });
+        } else {
+          throw new Error('Failed to update status');
+        }
+      }
     } catch {
       alert('Không thể đổi trạng thái người dùng!');
     }
@@ -137,19 +217,19 @@ export default function UserDetailPage() {
     if (!pendingUnlink) return;
     const apartmentId = pendingUnlink;
     setPendingUnlink(null);
-    const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/api/apartments/${apartmentId}/residents`, {
+      const res = await apiCall(`${API_BASE_URL}/api/apartments/${apartmentId}/residents`, { 
         method: 'DELETE',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId }) 
       });
-      if (!res.ok) throw new Error('Hủy liên kết thất bại');
-      setLinkedApartments(linkedApartments.filter(ap => ap.apartmentId !== apartmentId));
-      toast({ title: 'Thành công', description: 'Đã hủy liên kết căn hộ.' });
+      if (res) {
+        if (res.ok) {
+          setLinkedApartments(linkedApartments.filter(ap => ap.apartmentId !== apartmentId));
+          toast({ title: 'Thành công', description: 'Đã hủy liên kết căn hộ.' });
+        } else {
+          throw new Error('Hủy liên kết thất bại');
+        }
+      }
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể hủy liên kết!', variant: 'destructive' });
     }
@@ -158,21 +238,19 @@ export default function UserDetailPage() {
   const handleAssignRole = async () => {
     if (!user || !selectedRole) return;
     setAssigning(true);
-    const token = localStorage.getItem('token');
     const roleObj = allRoles.find(r => r.name === selectedRole);
     if (!roleObj) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/users/${user.id}/roles/assign?roleId=${roleObj.id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!res.ok) throw new Error('Failed to assign role');
-      setUser({ ...user, roles: [...(user.roles || []), selectedRole] });
-      setSelectedRole('');
-      toast({ title: 'Thành công', description: 'Đã gán vai trò cho user.' });
+      const res = await apiCall(`${API_BASE_URL}/api/admin/users/${user.id}/roles/assign?roleId=${roleObj.id}`, { method: 'POST' });
+      if (res) {
+        if (res.ok) {
+          setUser({ ...user, roles: [...(user.roles || []), selectedRole] });
+          setSelectedRole('');
+          toast({ title: 'Thành công', description: 'Đã gán vai trò cho user.' });
+        } else {
+          throw new Error('Failed to assign role');
+        }
+      }
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể gán vai trò!', variant: 'destructive' });
     } finally {
@@ -183,20 +261,18 @@ export default function UserDetailPage() {
   const handleRemoveRole = async (roleName: string) => {
     if (!user) return;
     setAssigning(true);
-    const token = localStorage.getItem('token');
     const roleObj = allRoles.find(r => r.name === roleName);
     if (!roleObj) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/users/${user.id}/roles/remove?roleId=${roleObj.id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!res.ok) throw new Error('Failed to remove role');
-      setUser({ ...user, roles: (user.roles || []).filter(r => r !== roleName) });
-      toast({ title: 'Thành công', description: 'Đã xóa vai trò khỏi user.' });
+      const res = await apiCall(`${API_BASE_URL}/api/admin/users/${user.id}/roles/remove?roleId=${roleObj.id}`, { method: 'POST' });
+      if (res) {
+        if (res.ok) {
+          setUser({ ...user, roles: (user.roles || []).filter(r => r !== roleName) });
+          toast({ title: 'Thành công', description: 'Đã xóa vai trò khỏi user.' });
+        } else {
+          throw new Error('Failed to remove role');
+        }
+      }
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể xóa vai trò!', variant: 'destructive' });
     } finally {
@@ -244,7 +320,7 @@ export default function UserDetailPage() {
                 {user.roles && user.roles.length > 0 ? (
                   user.roles.map((role, idx) => (
                     <Badge key={idx} className="mr-2">
-                      {typeof role === 'string' ? role : role.name}
+                      {typeof role === 'string' ? role : (role as any).name}
                     </Badge>
                   ))
                 ) : (

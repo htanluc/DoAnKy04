@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,14 @@ interface Apartment {
 }
 
 export default function ApartmentsPage() {
+  return (
+    <AdminGuard>
+      <ApartmentsPageContent />
+    </AdminGuard>
+  );
+}
+
+function ApartmentsPageContent() {
   const { t } = useLanguage();
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState(true);

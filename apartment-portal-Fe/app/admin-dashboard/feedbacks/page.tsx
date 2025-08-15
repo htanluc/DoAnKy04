@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import AdminGuard from '@/components/auth/admin-guard';
 import { useLanguage } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,14 @@ import Link from 'next/link';
 import { feedbacksApi, Feedback, FeedbackStatus } from '@/lib/api';
 
 export default function FeedbacksPage() {
+  return (
+    <AdminGuard>
+      <FeedbacksPageContent />
+    </AdminGuard>
+  );
+}
+
+function FeedbacksPageContent() {
   const { t, language } = useLanguage();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
