@@ -3,6 +3,8 @@ package com.mytech.apartment.portal.mappers;
 import com.mytech.apartment.portal.dtos.FacilityBookingDto;
 import com.mytech.apartment.portal.models.FacilityBooking;
 import com.mytech.apartment.portal.models.enums.FacilityBookingStatus;
+import com.mytech.apartment.portal.models.enums.PaymentStatus;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -16,8 +18,9 @@ public class FacilityBookingMapper {
         }
 
         LocalDateTime startTime = booking.getBookingTime();
-        LocalDateTime endTime = startTime != null && booking.getDuration() != null ? 
-            startTime.plusMinutes(booking.getDuration()) : null;
+        LocalDateTime endTime = booking.getEndTime() != null ? booking.getEndTime() : 
+            (startTime != null && booking.getDuration() != null ? 
+                startTime.plusMinutes(booking.getDuration()) : null);
 
         FacilityBookingDto dto = new FacilityBookingDto(
             booking.getId(),
@@ -45,6 +48,12 @@ public class FacilityBookingMapper {
         dto.setCheckedInCount(booking.getCheckedInCount());
         dto.setMaxCheckins(booking.getMaxCheckins());
         
+        // Set payment fields
+        dto.setPaymentStatus(booking.getPaymentStatus() != null ? booking.getPaymentStatus().name() : null);
+        dto.setPaymentMethod(booking.getPaymentMethod() != null ? booking.getPaymentMethod().name() : null);
+        dto.setPaymentDate(booking.getPaymentDate());
+        dto.setTransactionId(booking.getTransactionId());
+        
         return dto;
     }
 
@@ -56,6 +65,7 @@ public class FacilityBookingMapper {
         FacilityBooking booking = new FacilityBooking();
         booking.setId(dto.getId());
         booking.setBookingTime(dto.getStartTime());
+        booking.setEndTime(dto.getEndTime());
         
         // Calculate duration from start and end time
         if (dto.getStartTime() != null && dto.getEndTime() != null) {

@@ -1,6 +1,8 @@
 package com.mytech.apartment.portal.models;
 
 import com.mytech.apartment.portal.models.enums.FacilityBookingStatus;
+import com.mytech.apartment.portal.models.enums.PaymentStatus;
+import com.mytech.apartment.portal.models.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -25,8 +27,11 @@ public class FacilityBooking {
     @JoinColumn(name = "user_id")
     private User user;
     
-    @Column(name = "booking_time")
+    @Column(name = "start_time")
     private LocalDateTime bookingTime;
+    
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
     
     @Column(name = "duration")
     private Integer duration;
@@ -63,4 +68,22 @@ public class FacilityBooking {
     // One-to-many relationship với check-in records
     @OneToMany(mappedBy = "facilityBooking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FacilityCheckIn> checkIns;
+    
+    // Payment fields
+    @Column(name = "total_cost")
+    private Double totalCost;
+    
+    @Column(name = "payment_status")
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+    
+    @Column(name = "payment_method")
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+    
+    @Column(name = "payment_date")
+    private LocalDateTime paymentDate;
+    
+    @Column(name = "transaction_id")
+    private String transactionId;
 } 

@@ -25,6 +25,8 @@ public enum ActivityActionType {
     CANCEL_FACILITY_BOOKING,
     FACILITY_CHECKIN,
     FACILITY_CHECKOUT,
+    PAYMENT_FACILITY_BOOKING,
+    UPDATE_PAYMENT_STATUS,
     
     // Announcements & Events
     VIEW_ANNOUNCEMENT,
@@ -79,6 +81,8 @@ public enum ActivityActionType {
             case CANCEL_FACILITY_BOOKING: return "Hủy đặt tiện ích";
             case FACILITY_CHECKIN: return "Check-in tiện ích";
             case FACILITY_CHECKOUT: return "Check-out tiện ích";
+            case PAYMENT_FACILITY_BOOKING: return "Thanh toán đặt tiện ích";
+            case UPDATE_PAYMENT_STATUS: return "Cập nhật trạng thái thanh toán";
             case VIEW_ANNOUNCEMENT: return "Xem thông báo";
             case MARK_ANNOUNCEMENT_READ: return "Đánh dấu đã đọc thông báo";
             case VIEW_EVENT: return "Xem sự kiện";

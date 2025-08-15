@@ -57,14 +57,14 @@ public class PaymentService {
         payment.setAmount(request.getAmount());
         payment.setMethod(request.getMethod() != null ? PaymentMethod.valueOf(request.getMethod()) : null);
         payment.setReferenceCode(request.getReferenceCode());
-        payment.setStatus(PaymentStatus.SUCCESS); // Manual payments are considered successful
+        payment.setStatus(PaymentStatus.PAID); // Manual payments are considered successful
 
         Payment savedPayment = paymentRepository.save(payment);
 
         // Tính tổng số tiền đã thanh toán từ database
         double totalPaid = paymentRepository.findByInvoiceId(request.getInvoiceId())
                 .stream()
-                .filter(p -> p.getStatus() == PaymentStatus.SUCCESS)
+                .filter(p -> p.getStatus() == PaymentStatus.PAID)
                 .mapToDouble(Payment::getAmount)
                 .sum();
         
@@ -130,7 +130,7 @@ public class PaymentService {
         // Tính tổng số tiền đã thanh toán
         double totalPaid = paymentRepository.findByInvoiceId(invoiceId)
                 .stream()
-                .filter(p -> p.getStatus() == PaymentStatus.SUCCESS)
+                .filter(p -> p.getStatus() == PaymentStatus.PAID)
                 .mapToDouble(Payment::getAmount)
                 .sum();
         
