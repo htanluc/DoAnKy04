@@ -289,6 +289,10 @@ const FacilityBookingsPage: FC = () => {
     purpose: '',
     duration: 60
   })
+  // Range select state (multi-hour selection)
+  const [rangeStartHour, setRangeStartHour] = useState<number | null>(null)
+  const [rangeEndHour, setRangeEndHour] = useState<number | null>(null)
+  const [rangeError, setRangeError] = useState<string | null>(null)
   const paymentMethods = [
     { id: 'momo', name: 'MoMo', description: 'Thanh toán qua ví MoMo' },
     { id: 'vnpay', name: 'VNPay', description: 'Thanh toán qua VNPay' },
@@ -360,6 +364,83 @@ const FacilityBookingsPage: FC = () => {
       console.error('Error fetching availability:', error);
     }
   };
+
+  const clearRange = () => {
+    setRangeStartHour(null)
+    setRangeEndHour(null)
+    setRangeError(null)
+  }
+
+  const isHourSelectable = (hour: number) => {
+    if (!availability) return false
+    const slot = availability.hourlyData.find(h => h.hour === hour)
+    if (!slot) return false
+    if (isTimeSlotPassed(hour, selectedDate)) return false
+    if (!isWithinOperatingHours(hour, selectedFacility!)) return false
+    return slot.availableCapacity > 0
+  }
+
+  const handleSelectHour = (hour: number) => {
+    if (!isHourSelectable(hour)) return
+    setRangeError(null)
+    // First selection
+    if (rangeStartHour === null) {
+      setRangeStartHour(hour)
+      setRangeEndHour(null)
+      return
+    }
+    // If selecting lại đúng mốc bắt đầu -> hiểu là đặt 1 giờ duy nhất
+    if (rangeStartHour === hour) {
+      setRangeEndHour(hour)
+      return
+    }
+    // Second selection defines end (INCLUSIVE last slot).
+    const start = Math.min(rangeStartHour, hour)
+    const endExclusive = Math.max(rangeStartHour, hour) + 1
+    // Opening hours hard-guard for same-day windows
+    if (selectedFacility?.openingHours) {
+      const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
+      if (startStr && endStr) {
+        const [oh] = startStr.split(':').map(Number)
+        const [ch] = endStr.split(':').map(Number)
+        if (oh <= ch) {
+          if (start < oh || endExclusive > ch) {
+            setRangeError(`Khoảng giờ vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
+            return
+          }
+        }
+      }
+    }
+    // Validate availability cho từng giờ trong [start, endExclusive)
+    const invalid = availability!.hourlyData.some(h => h.hour >= start && h.hour < endExclusive && (!h.isAvailable || h.availableCapacity <= 0 || isTimeSlotPassed(h.hour, selectedDate) || !isWithinOperatingHours(h.hour, selectedFacility!)))
+    if (invalid) {
+      setRangeError('Khoảng giờ đã chọn có giờ không khả dụng. Vui lòng chọn lại.')
+      return
+    }
+    setRangeStartHour(start)
+    setRangeEndHour(endExclusive - 1) // lưu giờ cuối (bắt đầu) để hiển thị, nhưng logic coi là inclusive
+  }
+
+  const confirmRangeBooking = () => {
+    if (rangeStartHour === null || rangeEndHour === null || !selectedFacility) return
+    const startTime = `${rangeStartHour.toString().padStart(2, '0')}:00`
+    const endHourForTime = (rangeEndHour + 1)
+    const endTime = `${endHourForTime.toString().padStart(2, '0')}:00`
+    const duration = (endHourForTime - rangeStartHour) * 60
+    setShowBookingForm(true)
+    setNewBooking(prev => ({
+      ...prev,
+      date: selectedDate,
+      startTime,
+      endTime,
+      duration,
+    }))
+    // Scroll to booking form
+    setTimeout(() => {
+      const form = document.getElementById('booking-form')
+      if (form) form.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+  }
 
   const filteredBookings = bookings.filter((booking: Booking) => {
     const matchesSearch = booking.facilityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -537,14 +618,41 @@ const FacilityBookingsPage: FC = () => {
     }
     
     // Logic màu sắc cho slot còn hiệu lực
-    if (hour.availableCapacity === 0) {
+    // Tính lại used/available để phản ánh các booking đang có và lựa chọn hiện tại
+    const overlayUsed = getAdjustedUsedCapacity(hour.hour)
+    const baseTotal = hour.usedCapacity + hour.availableCapacity
+    const adjustedAvailable = Math.max(0, baseTotal - overlayUsed)
+
+    if (adjustedAvailable === 0) {
       return 'bg-red-200 text-red-800 cursor-not-allowed';
-    } else if (hour.availableCapacity < hour.usedCapacity) {
+    } else if (adjustedAvailable < (baseTotal / 2)) {
       return 'bg-yellow-200 text-yellow-800 cursor-pointer hover:bg-yellow-300';
     } else {
       return 'bg-green-200 text-green-800 cursor-pointer hover:bg-green-300';
     }
   };
+
+  // Tính usedCapacity đã điều chỉnh: used từ API + các booking của tôi bao phủ giờ này + vùng chọn tạm
+  const getAdjustedUsedCapacity = (hourValue: number) => {
+    const hourStart = new Date(`${selectedDate}T${hourValue.toString().padStart(2, '0')}:00:00`).getTime()
+    const hourEnd = new Date(`${selectedDate}T${(hourValue + 1).toString().padStart(2, '0')}:00:00`).getTime()
+    let overlay = 0
+    // Chỉ cộng vùng chọn tạm thời khi đã chọn đủ khoảng (bao gồm ô cuối)
+    if (rangeStartHour !== null && rangeEndHour !== null) {
+      const start = Math.min(rangeStartHour, rangeEndHour)
+      const endEx = Math.max(rangeStartHour, rangeEndHour) + 1
+      if (hourValue >= start && hourValue < endEx) {
+        overlay += newBooking.numberOfPeople || 1
+      }
+    }
+    // Nếu chỉ chọn 1 mốc bắt đầu, cộng overlay cho đúng ô đó
+    else if (rangeStartHour !== null && rangeEndHour === null) {
+      if (hourValue === rangeStartHour) overlay += newBooking.numberOfPeople || 1
+    }
+    // usedCapacity cơ bản từ API cho giờ này
+    const baseUsed = availability?.hourlyData.find(h => h.hour === hourValue)?.usedCapacity || 0
+    return baseUsed + overlay
+  }
 
   const handleAddToSlot = (hour: number, availableCapacity: number) => {
     // Không cho phép đặt slot đã qua
@@ -602,6 +710,33 @@ const FacilityBookingsPage: FC = () => {
     if (isFacilityTimeOverlap(selectedFacility.id, bookingTime, endTime)) {
       setTimeError('Bạn đã có lịch đặt trùng slot bắt đầu với tiện ích này!');
       return;
+    }
+
+    // Validate within operating hours ở bước submit (phòng trường hợp bypass)
+    if (selectedFacility.openingHours) {
+      const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
+      if (startStr && endStr) {
+        const [oh, om] = startStr.split(':').map(Number)
+        const [ch, cm] = endStr.split(':').map(Number)
+        const openMin = oh * 60 + (om || 0)
+        const closeMin = ch * 60 + (cm || 0)
+        const [sh, sm] = newBooking.startTime.split(':').map(Number)
+        const [eh, em] = newBooking.endTime.split(':').map(Number)
+        const selStartMin = sh * 60 + (sm || 0)
+        const selEndMin = eh * 60 + (em || 0)
+        if (oh <= ch) {
+          if (selStartMin < openMin || selEndMin > closeMin) {
+            setTimeError(`Thời gian chọn vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
+            return
+          }
+        } else {
+          const inWindow = (selStartMin >= openMin || selEndMin <= closeMin)
+          if (!inWindow) {
+            setTimeError(`Thời gian chọn vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
+            return
+          }
+        }
+      }
     }
     
     // Tạo booking
@@ -751,6 +886,33 @@ const FacilityBookingsPage: FC = () => {
       if (duration < 30) {
         setTimeError('Thời gian đặt tối thiểu là 30 phút!');
         return;
+      }
+
+      // Validate within operating hours
+      if (selectedFacility.openingHours) {
+        const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
+        if (startStr && endStr) {
+          const [oh, om] = startStr.split(':').map(Number)
+          const [ch, cm] = endStr.split(':').map(Number)
+          const openMin = oh * 60 + (om || 0)
+          const closeMin = ch * 60 + (cm || 0)
+          const selStartMin = sh * 60 + (sm || 0)
+          const selEndMin = eh * 60 + (em || 0)
+          if (oh <= ch) {
+            // same day window
+            if (selStartMin < openMin || selEndMin > closeMin) {
+              setTimeError(`Thời gian chọn vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
+              return
+            }
+          } else {
+            // overnight window (e.g., 22:00 - 06:00) → đơn giản: từ open..24h hoặc 0..close
+            const inWindow = (selStartMin >= openMin || selEndMin <= closeMin)
+            if (!inWindow) {
+              setTimeError(`Thời gian chọn vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
+              return
+            }
+          }
+        }
       }
       
       if (isFacilityTimeOverlap(selectedFacility.id, bookingTime, endTime)) {
@@ -992,22 +1154,22 @@ const FacilityBookingsPage: FC = () => {
                 {availability.hourlyData.map((hour) => (
                   <div
                     key={hour.hour}
-                    className={`p-3 rounded-lg text-center transition-colors ${
-                      getSlotColor(hour, selectedDate)
-                    }`}
-                    onClick={() => hour.isAvailable && !isTimeSlotPassed(hour.hour, selectedDate) && handleAddToSlot(hour.hour, hour.availableCapacity)}
+                    className={`p-3 rounded-lg text-center transition-colors ${getSlotColor(hour, selectedDate)} ${
+                      rangeStartHour !== null && rangeEndHour !== null && hour.hour >= Math.min(rangeStartHour, rangeEndHour) && hour.hour <= Math.max(rangeStartHour, rangeEndHour) ? 'ring-2 ring-[color:#0066CC]' : ''
+                    } ${rangeStartHour !== null && rangeEndHour === null && hour.hour === rangeStartHour ? 'ring-2 ring-[color:#0066CC]' : ''}`}
+                    onClick={() => handleSelectHour(hour.hour)}
                     title={
-                      isTimeSlotPassed(hour.hour, selectedDate) 
+                      isTimeSlotPassed(hour.hour, selectedDate)
                         ? 'Thời gian này đã qua, không thể đặt lịch'
-                        : hour.isAvailable 
-                          ? `Đặt thêm người cho slot ${hour.hour}:00 (còn ${hour.availableCapacity} chỗ)`
+                        : hour.isAvailable
+                          ? `Chọn ${hour.hour}:00 làm mốc thời gian`
                           : 'Slot này đã hết chỗ'
                     }
                   >
                     <div className="font-semibold">{hour.hour}:00</div>
-                    <div className="text-sm">
-                      {hour.usedCapacity}/{hour.usedCapacity + hour.availableCapacity}
-                    </div>
+                     <div className="text-sm">
+                       {getAdjustedUsedCapacity(hour.hour)}/{hour.usedCapacity + hour.availableCapacity}
+                     </div>
                     <div className="text-xs">
                       {hour.bookingCount} booking
                     </div>
@@ -1023,6 +1185,28 @@ const FacilityBookingsPage: FC = () => {
                     )}
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 flex flex-col gap-2">
+                {rangeError && <div className="text-red-600 text-sm">{rangeError}</div>}
+                <div className="text-sm text-gray-700">
+                  {rangeStartHour !== null && rangeEndHour !== null ? (
+                    <>Khoảng đã chọn: <span className="font-semibold">{rangeStartHour}:00</span> - <span className="font-semibold">{(rangeEndHour + 1)}:00</span> ({(rangeEndHour + 1 - rangeStartHour) * 60} phút)</>
+                  ) : rangeStartHour !== null ? (
+                    <>Đã chọn mốc bắt đầu: <span className="font-semibold">{rangeStartHour}:00</span>. Chọn mốc kết thúc.</>
+                  ) : (
+                    <>Chọn 2 ô giờ để tạo khoảng thời gian cần đặt.</>
+                  )}
+                </div>
+                <div className="flex gap-2 flex-wrap items-center">
+                  <Button
+                    onClick={confirmRangeBooking}
+                    disabled={rangeStartHour === null}
+                  >
+                    {rangeStartHour !== null && rangeEndHour === null ? 'Đặt 1 giờ đã chọn' : 'Đặt dải giờ đã chọn'}
+                  </Button>
+                  <Button variant="outline" onClick={clearRange}>Xóa lựa chọn</Button>
+                  <div className="text-xs text-gray-500 mt-1">Tip: Chọn 1 ô để đặt 60 phút; chọn 2 ô để đặt theo dải giờ.</div>
+                </div>
               </div>
               <div className="mt-4 text-sm text-gray-600">
                 <div className="flex items-center gap-4 mb-2">
@@ -1158,7 +1342,7 @@ const FacilityBookingsPage: FC = () => {
 
         {/* Booking Form */}
         {showBookingForm && selectedFacility && (
-          <Card className="mb-6">
+          <Card className="mb-6" id="booking-form">
             <CardHeader>
               <CardTitle>Đặt {selectedFacility.name}</CardTitle>
               <CardDescription>
@@ -1210,34 +1394,9 @@ const FacilityBookingsPage: FC = () => {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Thời gian sử dụng (phút)
+                      Giờ kết thúc
                     </label>
-                    <Input
-                      type="number"
-                      min="30"
-                      max="480"
-                      step="30"
-                      value={newBooking.duration || 60}
-                      onChange={e => {
-                        const duration = parseInt(e.target.value);
-                        const startTime = newBooking.startTime;
-                        if (startTime && duration) {
-                          const [hours, minutes] = startTime.split(':');
-                          const startDate = new Date();
-                          startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                          const endDate = new Date(startDate.getTime() + duration * 60000);
-                          const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
-                          setNewBooking(prev => ({ 
-                            ...prev, 
-                            duration: duration,
-                            endTime: endTime 
-                          }));
-                        }
-                      }}
-                    />
-                    <div className="text-xs text-gray-500 mt-1">
-                      Tối thiểu 30 phút, tối đa 8 giờ (480 phút)
-                    </div>
+                    <Input type="time" value={newBooking.endTime} onChange={e => handleTimeChange('endTime', e.target.value)} />
                   </div>
                 </div>
                 

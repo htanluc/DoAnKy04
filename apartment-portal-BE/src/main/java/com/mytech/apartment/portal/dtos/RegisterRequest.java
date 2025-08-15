@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 
 @Data
 public class RegisterRequest {
@@ -30,4 +31,7 @@ public class RegisterRequest {
     
     @NotBlank(message = "CCCD/CMND không được để trống")
     private String idCardNumber;
+
+    // Ngày sinh (ISO yyyy-MM-dd). FE gửi "dateOfBirth": "YYYY-MM-DD"
+    private LocalDate dateOfBirth;
 } 

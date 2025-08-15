@@ -170,7 +170,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-fade-in">
         {/* Welcome Section Skeleton */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-4 sm:p-6">
+        <div className="bg-gradient-to-r from-[color:#FF6600] via-[color:#009966] to-[color:#0066CC] rounded-xl p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="h-6 sm:h-8 w-48 sm:w-64 bg-white bg-opacity-20 rounded"></div>
@@ -232,7 +232,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Enhanced Welcome Section with Glass Effect */}
-      <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl p-6 sm:p-8 text-white overflow-hidden shadow-2xl">
+      <div className="relative bg-gradient-to-r from-[color:#FF6600] via-[color:#009966] to-[color:#0066CC] rounded-2xl p-6 sm:p-8 text-white overflow-hidden shadow-2xl">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-black bg-opacity-10"></div>
         <div className="absolute top-0 right-0 w-32 h-32 bg-white bg-opacity-10 rounded-full -translate-y-16 translate-x-16"></div>
@@ -246,7 +246,7 @@ export default function DashboardPage() {
                 Chào mừng trở lại! 👋
               </h1>
             </div>
-            <p className="text-blue-100 text-lg sm:text-xl text-ellipsis">
+            <p className="text-white/80 text-lg sm:text-xl text-ellipsis">
               Căn hộ {apartmentInfo.apartmentNumber} - {apartmentInfo.buildingName}
             </p>
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-4">
@@ -277,16 +277,16 @@ export default function DashboardPage() {
 
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+        <Card className="bg-gradient-to-br from-[color:#0066CC] to-[color:#0066CC] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Tổng hóa đơn</CardTitle>
-              <Receipt className="h-6 w-6 text-blue-200" />
+              <Receipt className="h-6 w-6 text-[color:#E6F2FF]" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalInvoices}</div>
-            <p className="text-blue-200 text-sm">Hóa đơn trong tháng</p>
+            <p className="text-[color:#E6F2FF] text-sm">Hóa đơn trong tháng</p>
           </CardContent>
         </Card>
 
@@ -316,16 +316,16 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500 to-pink-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+        <Card className="bg-gradient-to-br from-[color:#009966] to-[color:#0066CC] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Thông báo mới</CardTitle>
-              <Bell className="h-6 w-6 text-purple-200" />
+              <Bell className="h-6 w-6 text-[color:#E6F2FF]" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.unreadAnnouncements}</div>
-            <p className="text-purple-200 text-sm">Thông báo chưa đọc</p>
+            <p className="text-[color:#E6F2FF] text-sm">Thông báo chưa đọc</p>
           </CardContent>
         </Card>
       </div>
@@ -334,16 +334,16 @@ export default function DashboardPage() {
       <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center space-x-2">
-            <Zap className="h-5 w-5 text-blue-600" />
+            <Zap className="h-5 w-5 text-[color:#0066CC]" />
             <CardTitle>Thao tác nhanh</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Link href="/dashboard/invoices">
-              <div className="group p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300 cursor-pointer border border-blue-200 hover:border-blue-300">
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-[color:#E6F2FF] to-[color:#CCE5FF] hover:from-[color:#D9EBFF] hover:to-[color:#B3D7FF] transition-all duration-300 cursor-pointer border border-[color:#99CCFF] hover:border-[color:#80BFFF]">
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-[color:#0066CC] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Receipt className="h-6 w-6 text-white" />
                   </div>
                   <span className="text-sm font-medium text-gray-700">Hóa đơn</span>
@@ -374,9 +374,9 @@ export default function DashboardPage() {
             </Link>
 
             <Link href="/dashboard/announcements">
-              <div className="group p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 cursor-pointer border border-purple-200 hover:border-purple-300">
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-[color:#E6F2FF] to-[color:#CCE5FF] hover:from-[color:#D9EBFF] hover:to-[color:#B3D7FF] transition-all duration-300 cursor-pointer border border-[color:#99CCFF] hover:border-[color:#80BFFF]">
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-[color:#0066CC] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Bell className="h-6 w-6 text-white" />
                   </div>
                   <span className="text-sm font-medium text-gray-700">Thông báo</span>
@@ -394,11 +394,11 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Activity className="h-5 w-5 text-blue-600" />
+                  <Activity className="h-5 w-5 text-[color:#0066CC]" />
                   <CardTitle>Hoạt động gần đây</CardTitle>
                 </div>
                 <Link href="/dashboard/activity-logs">
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                  <Button variant="ghost" size="sm" className="text-[color:#0066CC] hover:text-[color:#0a74d1]">
                     Xem tất cả
                     <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
@@ -438,7 +438,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[color:#E6F2FF] to-[color:#CCE5FF] rounded-lg">
                   <span className="text-sm font-medium text-gray-700">Số căn hộ</span>
                   <span className="text-sm font-semibold text-gray-900">{apartmentInfo.apartmentNumber}</span>
                 </div>
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                   <span className="text-sm font-medium text-gray-700">Tòa nhà</span>
                   <span className="text-sm font-semibold text-gray-900">{apartmentInfo.buildingName}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[color:#FFF3E8] to-[color:#FFE0CC] rounded-lg">
                   <span className="text-sm font-medium text-gray-700">Diện tích</span>
                   <span className="text-sm font-semibold text-gray-900">{apartmentInfo.area}m²</span>
                 </div>
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                   <span className="text-sm font-medium text-gray-700">Phòng ngủ</span>
                   <span className="text-sm font-semibold text-gray-900">{apartmentInfo.bedrooms}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-pink-50 to-pink-100 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[color:#E6F2FF] to-[color:#CCE5FF] rounded-lg">
                   <span className="text-sm font-medium text-gray-700">Tầng</span>
                   <span className="text-sm font-semibold text-gray-900">{apartmentInfo.floor}</span>
                 </div>

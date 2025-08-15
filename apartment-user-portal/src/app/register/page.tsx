@@ -16,6 +16,7 @@ export default function RegisterPage() {
     email: '',
     phone: '',
     idCardNumber: '',
+    dateOfBirth: '',
     apartmentNumber: '',
     password: '',
     confirmPassword: ''
@@ -50,6 +51,7 @@ export default function RegisterPage() {
         email: formData.email,
         phoneNumber: formData.phone,
         idCardNumber: formData.idCardNumber,
+        dateOfBirth: formData.dateOfBirth,
         password: formData.password,
         confirmPassword: formData.confirmPassword || formData.password,
       })
@@ -84,7 +86,7 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-brand-gradient-br/10 page-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
@@ -104,11 +106,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[color:#FFF3E8] via-[color:#E6F2FF] to-[color:#E6FFF6] flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <Building2 className="h-8 w-8 text-blue-600 mr-2" />
+            <Building2 className="h-8 w-8 text-brand-accent mr-2" />
             <h1 className="text-2xl font-bold text-gray-900">Apartment Portal</h1>
           </div>
           <CardTitle className="text-2xl text-center">Đăng ký tài khoản</CardTitle>
@@ -195,6 +197,23 @@ export default function RegisterPage() {
                   value={formData.idCardNumber}
                   onChange={handleInputChange}
                   className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-700">
+                Ngày sinh
+              </label>
+              <div className="relative">
+                <Input
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  type="date"
+                  placeholder="Chọn ngày sinh"
+                  value={formData.dateOfBirth}
+                  onChange={handleInputChange}
                   required
                 />
               </div>

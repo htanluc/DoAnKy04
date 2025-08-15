@@ -14,7 +14,7 @@ import {
 const navigation = [
   {
     name: "Tổng quan", href: "/dashboard", icon: Home,
-    description: "Xem tổng quan căn hộ", color: "from-blue-500 to-cyan-500", gradient: "bg-gradient-to-br from-blue-500 to-cyan-500"
+    description: "Xem tổng quan căn hộ", color: "from-[color:#FF6600] to-[color:#0066CC]", gradient: "bg-gradient-to-br from-[color:#FF6600] to-[color:#0066CC]"
   },
   {
     name: "Hóa đơn", href: "/dashboard/invoices", icon: FileText,
@@ -22,7 +22,7 @@ const navigation = [
   },
   {
     name: "Thông báo", href: "/dashboard/announcements", icon: Bell,
-    description: "Cập nhật tin tức", color: "from-purple-500 to-pink-500", gradient: "bg-gradient-to-br from-purple-500 to-pink-500"
+    description: "Cập nhật tin tức", color: "from-[color:#009966] to-[color:#0066CC]", gradient: "bg-gradient-to-br from-[color:#009966] to-[color:#0066CC]"
   },
   {
     name: "Sự kiện", href: "/dashboard/events", icon: Calendar,
@@ -30,7 +30,7 @@ const navigation = [
   },
   {
     name: "Tiện ích", href: "/dashboard/facility-bookings", icon: Coffee,
-    description: "Đặt chỗ dễ dàng", color: "from-cyan-500 to-indigo-500", gradient: "bg-gradient-to-br from-cyan-500 to-indigo-500"
+    description: "Đặt chỗ dễ dàng", color: "from-[color:#FF6600] to-[color:#009966]", gradient: "bg-gradient-to-br from-[color:#FF6600] to-[color:#009966]"
   },
   {
     name: "Yêu cầu dịch vụ", href: "/dashboard/service-requests", icon: Wrench,
@@ -38,7 +38,7 @@ const navigation = [
   },
   {
     name: "Cập nhật thông tin", href: "/dashboard/update-info", icon: User,
-    description: "Quản lý hồ sơ", color: "from-pink-500 to-purple-500", gradient: "bg-gradient-to-br from-pink-500 to-purple-500"
+    description: "Quản lý hồ sơ", color: "from-[color:#0066CC] to-[color:#009966]", gradient: "bg-gradient-to-br from-[color:#0066CC] to-[color:#009966]"
   },
   {
     name: "Phương tiện", href: "/dashboard/vehicles", icon: Car,
@@ -46,7 +46,7 @@ const navigation = [
   },
   {
     name: "Nhật ký hoạt động", href: "/dashboard/activity-logs", icon: Activity,
-    description: "Theo dõi lịch sử", color: "from-indigo-500 to-purple-500", gradient: "bg-gradient-to-br from-indigo-500 to-purple-500"
+    description: "Theo dõi lịch sử", color: "from-[color:#009966] to-[color:#FF6600]", gradient: "bg-gradient-to-br from-[color:#009966] to-[color:#FF6600]"
   },
 ]
 
@@ -118,11 +118,11 @@ export default function EnhancedSidebar({
   return (
     <>
       {isOpen && isMobile && (
-        <div className="fixed inset-0 z-30 bg-black bg-opacity-50 transition-opacity duration-300" onClick={handleCloseMenu} aria-label="Đóng menu" />
+        <div className="fixed inset-0 z-60 bg-black bg-opacity-50 transition-opacity duration-300" onClick={handleCloseMenu} aria-label="Đóng menu" />
       )}
       <div className={cn(
-        "h-full w-80 transform transition-transform duration-300 ease-in-out",
-        isMobile ? "fixed left-0 top-0 z-40" : "relative",
+        "w-80 transform transition-transform duration-300 ease-in-out flex flex-col overflow-hidden min-h-0 md:sticky md:top-0 md:h-[calc(100vh-var(--app-header-h))] md:overflow-y-auto",
+        isMobile ? "fixed left-0 z-[120] top-[calc(var(--app-header-h))] h-[calc(100vh-(var(--app-header-h)))]" : "relative",
         isOpen ? "translate-x-0" : isMobile ? "-translate-x-full" : "translate-x-0",
         isDarkMode 
           ? "bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-slate-700/50" 
@@ -131,20 +131,20 @@ export default function EnhancedSidebar({
       )}>
         {/* Sidebar Header */}
         <div className={cn(
-          "relative h-32 p-6",
+          "relative h-28 sm:h-32 p-4 sm:p-6 pr-14",
           isDarkMode 
             ? "bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600" 
             : "bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600"
         )}>
           <div className="absolute inset-0 bg-black bg-opacity-20"></div>
           <div className="relative z-10 flex items-center space-x-3">
-            <Avatar className="h-16 w-16 ring-4 ring-white/30 shadow-lg">
+            <Avatar className="h-10 w-10 sm:h-12 sm:w-12 ring-4 ring-white/30 shadow-lg">
               <AvatarImage src={getAvatarUrl(user)} alt={getUserDisplayName()} />
               <AvatarFallback className="bg-white/30 text-white text-xl font-semibold">{getUserDisplayName().charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-lg font-semibold truncate">{getUserDisplayName()}</p>
-              <p className="text-blue-100 text-sm truncate">{getUserInfo()}</p>
+              <p className="text-white text-sm sm:text-base font-semibold truncate">{getUserDisplayName()}</p>
+              <p className="text-blue-100 text-[11px] sm:text-xs truncate">{getUserInfo()}</p>
               <div className="flex items-center mt-1">
                 <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
                 <span className="text-xs text-white/80">Online</span>
@@ -156,7 +156,7 @@ export default function EnhancedSidebar({
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-6 px-4">
+        <div className="flex-1 overflow-y-auto py-6 px-4 min-h-0 scroll-mt-[600px]">
           <nav className="space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href

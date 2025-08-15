@@ -183,6 +183,7 @@ export default function InvoicesPage() {
               <div>
                 <label className="text-sm text-gray-600">{t('admin.invoices.generateMonthly.month','Tháng')}</label>
                 <select value={genMonth} onChange={e=>setGenMonth(parseInt(e.target.value))} className="border rounded px-3 py-2">
+
                   {Array.from({length:12},(_,i)=>i+1).map(m=> (
                     <option key={m} value={m}>Tháng {m}</option>
                   ))}

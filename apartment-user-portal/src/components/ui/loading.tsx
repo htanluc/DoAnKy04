@@ -14,23 +14,23 @@ export function Loading({ size = "md", text = "Đang tải...", fullScreen = fal
   }
 
   const containerClasses = fullScreen 
-    ? "min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100"
+    ? "min-h-screen flex items-center justify-center bg-gradient-to-br from-[color:#FFF3E8] to-[color:#E6F2FF]"
     : "flex items-center justify-center p-8"
 
   return (
     <div className={containerClasses}>
       <div className="text-center animate-fade-in">
         <div className="relative">
-          <Loader2 className={`${sizeClasses[size]} animate-spin mx-auto mb-4 text-blue-600`} />
-          <div className={`absolute inset-0 ${sizeClasses[size]} border-4 border-transparent border-t-blue-400 rounded-full animate-ping opacity-20`}></div>
+          <Loader2 className={`${sizeClasses[size]} animate-spin mx-auto mb-4 text-[color:#0066CC]`} />
+          <div className={`absolute inset-0 ${sizeClasses[size]} border-4 border-transparent border-t-[color:#99CCFF] rounded-full animate-ping opacity-20`}></div>
         </div>
         {text && (
           <div className="space-y-2">
             <p className="text-gray-700 font-medium">{text}</p>
             <div className="flex justify-center space-x-1">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-[color:#0066CC] rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-[color:#0066CC] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-[color:#0066CC] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
           </div>
         )}
