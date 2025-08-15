@@ -1,0 +1,4 @@
+apartment-portal-Fe/app/admin-dashboard/invoices/[id]/page.tsx
+apartment-portal-Fe/app/admin-dashboard/support-requests/page.tsx
+apartment-portal-Fe/app/admin-dashboard/users/[id]/page.tsx
+apartment-portal-Fe/lib/api.ts

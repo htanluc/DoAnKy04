@@ -61,7 +61,6 @@ export default function InvoiceDetailPage() {
   
   const { getInvoiceById, loading, error } = useYearlyBilling();
   const { apartments, getApartmentById } = useApartments();
-  const { t } = useLanguage();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [debugInfo, setDebugInfo] = useState(false);
   const [apartmentCode, setApartmentCode] = useState<string>('');
