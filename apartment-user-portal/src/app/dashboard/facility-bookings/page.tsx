@@ -326,6 +326,7 @@ const FacilityBookingsPage: FC = () => {
 
         // Lấy lịch sử đặt chỗ
         const data = await fetchMyFacilityBookings()
+        console.log('Facility bookings data:', data) // Debug log
         setBookings(data)
       } catch (err: any) {
         setError(err.message || 'Lỗi khi lấy lịch sử đặt tiện ích')
@@ -358,6 +359,7 @@ const FacilityBookingsPage: FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
+        console.log('API Availability Response:', data); // Debug log để xem API trả về gì
         setAvailability(data);
       }
     } catch (error) {
@@ -377,12 +379,13 @@ const FacilityBookingsPage: FC = () => {
     if (!slot) return false
     if (isTimeSlotPassed(hour, selectedDate)) return false
     if (!isWithinOperatingHours(hour, selectedFacility!)) return false
-    return slot.availableCapacity > 0
+    return getAvailableForBooking(slot) > 0
   }
 
   const handleSelectHour = (hour: number) => {
     if (!isHourSelectable(hour)) return
     setRangeError(null)
+    setTimeError(null) // Clear error khi chọn slot mới
     // First selection
     if (rangeStartHour === null) {
       setRangeStartHour(hour)
@@ -411,8 +414,8 @@ const FacilityBookingsPage: FC = () => {
         }
       }
     }
-    // Validate availability cho từng giờ trong [start, endExclusive)
-    const invalid = availability!.hourlyData.some(h => h.hour >= start && h.hour < endExclusive && (!h.isAvailable || h.availableCapacity <= 0 || isTimeSlotPassed(h.hour, selectedDate) || !isWithinOperatingHours(h.hour, selectedFacility!)))
+    // Validate availability cho từng giờ trong [start, endExclusive) - sử dụng capacity cho booking mới
+    const invalid = availability!.hourlyData.some(h => h.hour >= start && h.hour < endExclusive && (!h.isAvailable || getAvailableForBooking(h) <= 0 || isTimeSlotPassed(h.hour, selectedDate) || !isWithinOperatingHours(h.hour, selectedFacility!)))
     if (invalid) {
       setRangeError('Khoảng giờ đã chọn có giờ không khả dụng. Vui lòng chọn lại.')
       return
@@ -567,7 +570,9 @@ const FacilityBookingsPage: FC = () => {
   const isFacilityTimeOverlap = (facilityId: string, newStart: string, newEnd: string) => {
     return bookings.some(b => {
       if (b.facilityId !== facilityId) return false;
-      if (!['PENDING', 'CONFIRMED'].includes(b.status)) return false; // Bỏ COMPLETED và REJECTED để cho phép đặt lại
+      // Chỉ kiểm tra conflict với booking PENDING (chờ xác nhận)
+      // CONFIRMED booking cho phép đặt thêm trong cùng khung giờ
+      if (b.status !== 'PENDING') return false;
       
       const bookedStart = new Date(b.startTime).getTime();
       const newStartTime = new Date(newStart).getTime();
@@ -632,11 +637,15 @@ const FacilityBookingsPage: FC = () => {
     }
   };
 
-  // Tính usedCapacity đã điều chỉnh: used từ API + các booking của tôi bao phủ giờ này + vùng chọn tạm
+  // Tính usedCapacity đã điều chỉnh: used từ API + các booking thực tế bao phủ giờ này + vùng chọn tạm
   const getAdjustedUsedCapacity = (hourValue: number) => {
     const hourStart = new Date(`${selectedDate}T${hourValue.toString().padStart(2, '0')}:00:00`).getTime()
     const hourEnd = new Date(`${selectedDate}T${(hourValue + 1).toString().padStart(2, '0')}:00:00`).getTime()
     let overlay = 0
+    
+    // Backend API đã tính đúng capacity cho tất cả slots, frontend không cần overlay thêm nữa
+    // Chỉ giữ lại logic cho range selection tạm thời của user
+    
     // Chỉ cộng vùng chọn tạm thời khi đã chọn đủ khoảng (bao gồm ô cuối)
     if (rangeStartHour !== null && rangeEndHour !== null) {
       const start = Math.min(rangeStartHour, rangeEndHour)
@@ -649,9 +658,114 @@ const FacilityBookingsPage: FC = () => {
     else if (rangeStartHour !== null && rangeEndHour === null) {
       if (hourValue === rangeStartHour) overlay += newBooking.numberOfPeople || 1
     }
+    
     // usedCapacity cơ bản từ API cho giờ này
     const baseUsed = availability?.hourlyData.find(h => h.hour === hourValue)?.usedCapacity || 0
-    return baseUsed + overlay
+    
+    console.log(`Hour ${hourValue}: baseUsed=${baseUsed}, overlay=${overlay}, final=${baseUsed + overlay}`) // Debug log
+    
+    // Backend API đã tính đúng, frontend chỉ thêm overlay cho range selection tạm thời
+    const finalUsed = baseUsed + overlay
+    return finalUsed
+  }
+
+  // Tính số booking thực tế bao phủ giờ này
+  const getHourlyBookingCount = (hourValue: number) => {
+    const hourStart = new Date(`${selectedDate}T${hourValue.toString().padStart(2, '0')}:00:00`).getTime()
+    let count = 0
+    
+    if (selectedFacility) {
+      // Chỉ đếm booking PENDING để hiển thị số blocking
+      const activeBookings = bookings.filter(booking => 
+        booking.facilityId.toString() === selectedFacility.id.toString() && 
+        booking.status === 'PENDING'
+      )
+      
+      for (const booking of activeBookings) {
+        if (booking.startTime && booking.endTime) {
+          const bookingStart = new Date(booking.startTime).getTime()
+          const bookingEnd = new Date(booking.endTime).getTime()
+          
+          // Kiểm tra nếu booking bao phủ giờ này
+          if (bookingStart <= hourStart && bookingEnd > hourStart) {
+            count++
+          }
+        }
+      }
+    }
+    
+    // Cộng thêm booking tạm thời nếu có
+    if (rangeStartHour !== null && rangeEndHour !== null) {
+      const start = Math.min(rangeStartHour, rangeEndHour)
+      const endEx = Math.max(rangeStartHour, rangeEndHour) + 1
+      if (hourValue >= start && hourValue < endEx) {
+        count += 1
+      }
+    } else if (rangeStartHour !== null && rangeEndHour === null) {
+      if (hourValue === rangeStartHour) count += 1
+    }
+    
+    console.log(`Hour ${hourValue} booking count: ${count}`) // Debug log
+    return count
+  }
+
+  // Tính capacity bị block bởi booking PENDING (cho validation booking mới)  
+  const getBlockedCapacity = (hourValue: number) => {
+    const hourStart = new Date(`${selectedDate}T${hourValue.toString().padStart(2, '0')}:00:00`).getTime()
+    let blocked = 0
+    
+    if (selectedFacility) {
+      const pendingBookings = bookings.filter(booking => 
+        booking.facilityId.toString() === selectedFacility.id.toString() && 
+        booking.status === 'PENDING'
+      )
+      
+      for (const booking of pendingBookings) {
+        if (booking.startTime && booking.endTime) {
+          const bookingStart = new Date(booking.startTime).getTime()
+          const bookingEnd = new Date(booking.endTime).getTime()
+          const bookingStartHour = new Date(booking.startTime).getHours()
+          
+          // Kiểm tra nếu booking bao phủ giờ này
+          if (bookingStart <= hourStart && bookingEnd > hourStart) {
+            // Nếu đây KHÔNG phải slot bắt đầu, cộng vào blocked
+            if (hourValue !== bookingStartHour) {
+              blocked += booking.numberOfPeople || 1
+            }
+          }
+        }
+      }
+    }
+    
+    // Cộng thêm blocked từ range selection
+    if (rangeStartHour !== null && rangeEndHour !== null) {
+      const start = Math.min(rangeStartHour, rangeEndHour)
+      const endEx = Math.max(rangeStartHour, rangeEndHour) + 1
+      if (hourValue >= start && hourValue < endEx) {
+        blocked += newBooking.numberOfPeople || 1
+      }
+    } else if (rangeStartHour !== null && rangeEndHour === null) {
+      if (hourValue === rangeStartHour) blocked += newBooking.numberOfPeople || 1
+    }
+    
+    return blocked
+  }
+
+  // Tính availableCapacity cho booking mới (chỉ bị block bởi PENDING)
+  const getAvailableForBooking = (hour: HourlyAvailability) => {
+    const blockedCapacity = getBlockedCapacity(hour.hour)
+    const baseUsed = hour.usedCapacity
+    const baseTotal = hour.usedCapacity + hour.availableCapacity
+    const adjustedAvailable = Math.max(0, baseTotal - baseUsed - blockedCapacity)
+    return adjustedAvailable
+  }
+
+  // Tính availableCapacity đã điều chỉnh cho hiển thị (tất cả bookings)
+  const getAdjustedAvailableCapacity = (hour: HourlyAvailability) => {
+    const overlayUsed = getAdjustedUsedCapacity(hour.hour)
+    const baseTotal = hour.usedCapacity + hour.availableCapacity
+    const adjustedAvailable = Math.max(0, baseTotal - overlayUsed)
+    return adjustedAvailable
   }
 
   const handleAddToSlot = (hour: number, availableCapacity: number) => {
@@ -660,7 +774,11 @@ const FacilityBookingsPage: FC = () => {
       return;
     }
     
-    setSelectedSlot({ hour, availableCapacity });
+    // Sử dụng available capacity cho booking mới
+    const hourData = availability?.hourlyData.find(h => h.hour === hour)
+    const adjustedCapacity = hourData ? getAvailableForBooking(hourData) : 0
+    
+    setSelectedSlot({ hour, availableCapacity: adjustedCapacity });
     setShowAddToSlotModal(true);
     setNewBooking(prev => ({
       ...prev,
@@ -708,7 +826,7 @@ const FacilityBookingsPage: FC = () => {
     
     // Kiểm tra overlap thời gian (chỉ kiểm tra slot bắt đầu)
     if (isFacilityTimeOverlap(selectedFacility.id, bookingTime, endTime)) {
-      setTimeError('Bạn đã có lịch đặt trùng slot bắt đầu với tiện ích này!');
+      setTimeError('Bạn đã có lịch đặt chờ xác nhận trùng thời gian này!');
       return;
     }
 
@@ -824,16 +942,22 @@ const FacilityBookingsPage: FC = () => {
   // Định dạng ngày giờ dd/MM/yyyy HH:mm:ss
   const formatDateTime = (dateString: string) => {
     if (!dateString) return '---';
-    const d = new Date(dateString);
-    return d.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return '---';
+      return d.toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return '---';
+    }
   };
 
   const isFacilityBooked = (facilityId: string) => {
@@ -845,6 +969,9 @@ const FacilityBookingsPage: FC = () => {
   // Hàm kiểm tra realtime số lượng
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
+    // Clear error khi user thay đổi số người
+    setNumberError(null);
+    setTimeError(null);
     setNewBooking(prev => ({ ...prev, numberOfPeople: value }));
     if (selectedFacility && value > selectedFacility.capacity) {
       setNumberError(`Số lượng người đặt tối đa là ${selectedFacility.capacity}!`);
@@ -855,6 +982,8 @@ const FacilityBookingsPage: FC = () => {
 
   // Hàm kiểm tra realtime thời gian
   const handleTimeChange = (field: 'startTime' | 'endTime', value: string) => {
+    // Clear error ngay khi user bắt đầu thay đổi thời gian
+    setTimeError(null);
     setNewBooking(prev => ({ ...prev, [field]: value }));
     const date = newBooking.date;
     const start = field === 'startTime' ? value : newBooking.startTime;
@@ -916,7 +1045,7 @@ const FacilityBookingsPage: FC = () => {
       }
       
       if (isFacilityTimeOverlap(selectedFacility.id, bookingTime, endTime)) {
-        setTimeError('Bạn đã có lịch đặt trùng slot bắt đầu với tiện ích này!');
+        setTimeError('Bạn đã có lịch đặt chờ xác nhận trùng thời gian này!');
       } else {
         setTimeError(null);
       }
@@ -927,6 +1056,9 @@ const FacilityBookingsPage: FC = () => {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSelectedDate = e.target.value;
+    // Clear error khi user thay đổi ngày
+    setTimeError(null);
+    setDateError(null);
     setSelectedDate(newSelectedDate);
     setNewBooking(prev => ({ ...prev, date: newSelectedDate, duration: 60 }));
     setUserSelectedDate(true); // Đánh dấu người dùng đã chọn ngày
@@ -954,7 +1086,46 @@ const FacilityBookingsPage: FC = () => {
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Đặt tiện ích</h1>
+                <p className="text-gray-600">Đặt và quản lý các tiện ích của chung cư</p>
+              </div>
+            </div>
+            
+            {/* Error Message */}
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Có lỗi xảy ra</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    {error}
+                  </div>
+                  <div className="mt-4">
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                    >
+                      Thử lại
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -971,28 +1142,91 @@ const FacilityBookingsPage: FC = () => {
           
           {/* Success/Error Messages */}
           {success && (
-            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-              {success}
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg shadow-sm">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-green-800">Thành công!</h3>
+                  <div className="mt-1 text-sm text-green-700">
+                    {success}
+                  </div>
+                </div>
+                <div className="ml-auto pl-3">
+                  <button
+                    onClick={() => setSuccess(null)}
+                    className="inline-flex text-green-400 hover:text-green-500 transition-colors"
+                    aria-label="Đóng thông báo thành công"
+                    title="Đóng thông báo thành công"
+                  >
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {error}
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Có lỗi xảy ra</h3>
+                  <div className="mt-1 text-sm text-red-700">
+                    {error}
+                  </div>
+                </div>
+                <div className="ml-auto pl-3">
+                  <button
+                    onClick={() => setError(null)}
+                    className="inline-flex text-red-400 hover:text-red-500 transition-colors"
+                    aria-label="Đóng thông báo lỗi"
+                    title="Đóng thông báo lỗi"
+                  >
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
           {dateError && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {dateError}
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-4 w-4 text-amber-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm text-amber-700">{dateError}</span>
+              </div>
             </div>
           )}
           {timeError && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {timeError}
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-4 w-4 text-amber-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm text-amber-700">{timeError}</span>
+              </div>
             </div>
           )}
           {numberError && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {numberError}
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-4 w-4 text-amber-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm text-amber-700">{numberError}</span>
+              </div>
             </div>
           )}
         </div>
@@ -1171,11 +1405,11 @@ const FacilityBookingsPage: FC = () => {
                        {getAdjustedUsedCapacity(hour.hour)}/{hour.usedCapacity + hour.availableCapacity}
                      </div>
                     <div className="text-xs">
-                      {hour.bookingCount} booking
+                      {getHourlyBookingCount(hour.hour)} booking
                     </div>
-                    {hour.availableCapacity > 0 && !isTimeSlotPassed(hour.hour, selectedDate) && (
+                    {getAdjustedAvailableCapacity(hour) > 0 && !isTimeSlotPassed(hour.hour, selectedDate) && (
                       <div className="text-xs font-medium text-green-700">
-                        +{hour.availableCapacity}
+                        +{getAdjustedAvailableCapacity(hour)}
                       </div>
                     )}
                     {isTimeSlotPassed(hour.hour, selectedDate) && (
@@ -1544,7 +1778,7 @@ const FacilityBookingsPage: FC = () => {
                               <span className="font-medium">Bắt đầu:</span> {formatDateTime(booking.startTime)}
                             </div>
                             <div>
-                              <span className="font-medium">Kết thúc:</span> {formatDateTime(booking.endTime)}
+                              <span className="font-medium">Kết thúc:</span> {booking.endTime ? formatDateTime(booking.endTime) : '---'}
                             </div>
                             <div>
                               <span className="font-medium">Thời gian sử dụng:</span> {booking.startTime && booking.endTime ? `${Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000)} phút` : '---'}

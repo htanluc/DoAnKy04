@@ -16,8 +16,9 @@ public class FacilityBookingMapper {
         }
 
         LocalDateTime startTime = booking.getBookingTime();
-        LocalDateTime endTime = startTime != null && booking.getDuration() != null ? 
-            startTime.plusMinutes(booking.getDuration()) : null;
+        LocalDateTime endTime = booking.getEndTime() != null ? booking.getEndTime() : 
+            (startTime != null && booking.getDuration() != null ? 
+                startTime.plusMinutes(booking.getDuration()) : null);
 
         FacilityBookingDto dto = new FacilityBookingDto(
             booking.getId(),
@@ -56,6 +57,7 @@ public class FacilityBookingMapper {
         FacilityBooking booking = new FacilityBooking();
         booking.setId(dto.getId());
         booking.setBookingTime(dto.getStartTime());
+        booking.setEndTime(dto.getEndTime());
         
         // Calculate duration from start and end time
         if (dto.getStartTime() != null && dto.getEndTime() != null) {

@@ -98,6 +98,7 @@ public class FacilityBookingService {
         booking.setFacility(facility);
         booking.setUser(user);
         booking.setBookingTime(bookingTime);
+        booking.setEndTime(bookingTime.plusMinutes(request.getDuration())); // Tính endTime
         booking.setDuration(request.getDuration());
         booking.setStatus(FacilityBookingStatus.PENDING);
         booking.setCreatedAt(LocalDateTime.now());
@@ -190,21 +191,44 @@ public class FacilityBookingService {
             .filter(booking -> booking != null)
             .collect(java.util.stream.Collectors.toList());
         
-        // Tạo map theo giờ (0-23)
-        java.util.Map<Integer, java.util.List<FacilityBooking>> bookingsByHour = new java.util.HashMap<>();
+        // Tạo map theo giờ để lưu capacity đã sử dụng (0-23)
+        java.util.Map<Integer, Integer> usedCapacityByHour = new java.util.HashMap<>();
+        java.util.Map<Integer, Integer> bookingCountByHour = new java.util.HashMap<>();
         for (int hour = 0; hour < 24; hour++) {
-            bookingsByHour.put(hour, new java.util.ArrayList<>());
+            usedCapacityByHour.put(hour, 0);
+            bookingCountByHour.put(hour, 0);
         }
         
-        // Phân loại booking theo giờ (chỉ tính slot bắt đầu)
-        for (FacilityBooking booking : dayBookings) {
-            LocalDateTime start = booking.getBookingTime();
-            int startHour = start.getHour();
+        // Tính capacity cho từng giờ - nhóm booking theo slot và tính tổng người dùng
+        for (int hour = 0; hour < 24; hour++) {
+            final int currentHour = hour;
             
-            // Chỉ thêm booking vào slot bắt đầu
-            if (startHour >= 0 && startHour < 24) {
-                bookingsByHour.get(startHour).add(booking);
-            }
+            // Lấy tất cả booking đang hoạt động trong slot này
+            List<FacilityBooking> activeBookingsInSlot = dayBookings.stream()
+                .filter(booking -> {
+                    LocalDateTime start = booking.getBookingTime();
+                    LocalDateTime end = booking.getEndTime();
+                    
+                    if (start != null && end != null) {
+                        // Kiểm tra booking có bao phủ slot này không
+                        LocalDateTime slotStart = start.toLocalDate().atTime(currentHour, 0);
+                        LocalDateTime slotEnd = slotStart.plusHours(1);
+                        return start.isBefore(slotEnd) && end.isAfter(slotStart);
+                    } else if (start != null) {
+                        // Fallback cho booking chỉ có startTime
+                        return start.getHour() == currentHour;
+                    }
+                    return false;
+                })
+                .collect(java.util.stream.Collectors.toList());
+            
+            // Tính tổng số người trong slot này
+            int totalPeopleInSlot = activeBookingsInSlot.stream()
+                .mapToInt(booking -> booking.getNumberOfPeople() != null ? booking.getNumberOfPeople() : 0)
+                .sum();
+            
+            usedCapacityByHour.put(hour, totalPeopleInSlot);
+            bookingCountByHour.put(hour, activeBookingsInSlot.size());
         }
         
         // Tính toán sức chứa theo giờ
@@ -216,18 +240,16 @@ public class FacilityBookingService {
         
         java.util.List<java.util.Map<String, Object>> hourlyData = new java.util.ArrayList<>();
         for (int hour = 0; hour < 24; hour++) {
-            java.util.List<FacilityBooking> hourBookings = bookingsByHour.get(hour);
-            int usedCapacity = hourBookings.stream()
-                .mapToInt(booking -> booking.getNumberOfPeople() != null ? booking.getNumberOfPeople() : 0)
-                .sum();
+            int usedCapacity = usedCapacityByHour.get(hour);
             int availableCapacity = facility.getCapacity() - usedCapacity;
+            int bookingCount = bookingCountByHour.get(hour);
             
             java.util.Map<String, Object> hourInfo = new java.util.HashMap<>();
             hourInfo.put("hour", hour);
             hourInfo.put("usedCapacity", usedCapacity);
             hourInfo.put("availableCapacity", availableCapacity);
             hourInfo.put("isAvailable", availableCapacity > 0);
-            hourInfo.put("bookingCount", hourBookings.size());
+            hourInfo.put("bookingCount", bookingCount);
             
             hourlyData.add(hourInfo);
         }

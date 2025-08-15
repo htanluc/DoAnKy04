@@ -25,8 +25,11 @@ public class FacilityBooking {
     @JoinColumn(name = "user_id")
     private User user;
     
-    @Column(name = "booking_time")
+    @Column(name = "start_time")
     private LocalDateTime bookingTime;
+    
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
     
     @Column(name = "duration")
     private Integer duration;
