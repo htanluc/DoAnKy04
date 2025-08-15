@@ -409,12 +409,18 @@ const FacilityBookingsPage: FC = () => {
     if (selectedFacility?.openingHours) {
       const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
       if (startStr && endStr) {
-        const [oh] = startStr.split(':').map(Number)
-        const [ch] = endStr.split(':').map(Number)
-        if (oh <= ch) {
-          if (start < oh || endExclusive > ch) {
-            setRangeError(`Khoảng giờ vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
-            return
+        const startHourParts = startStr.split(':').map(Number)
+        const endHourParts = endStr.split(':').map(Number)
+        
+        if (startHourParts.length > 0 && endHourParts.length > 0) {
+          const oh = startHourParts[0]
+          const ch = endHourParts[0]
+          
+          if (oh !== undefined && ch !== undefined && oh <= ch) {
+            if (start < oh || endExclusive > ch) {
+              setRangeError(`Khoảng giờ vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
+              return
+            }
           }
         }
       }
@@ -602,11 +608,18 @@ const FacilityBookingsPage: FC = () => {
   const isWithinOperatingHours = (hour: number, facility: Facility) => {
     if (!facility.openingHours) return true; // Nếu không có giờ hoạt động, cho phép tất cả
     
+    if (!facility.openingHours) return true; // Không có giờ hoạt động, cho phép tất cả
+    
     const hours = facility.openingHours.split(' - ');
     if (hours.length !== 2) return true; // Format không đúng, cho phép tất cả
     
-    const startHour = parseInt(hours[0].split(':')[0]);
-    const endHour = parseInt(hours[1].split(':')[0]);
+    const startHourPart = hours[0]?.split(':')[0];
+    const endHourPart = hours[1]?.split(':')[0];
+    
+    if (!startHourPart || !endHourPart) return true; // Format không đúng, cho phép tất cả
+    
+    const startHour = parseInt(startHourPart);
+    const endHour = parseInt(endHourPart);
     
     // Xử lý trường hợp qua đêm (ví dụ: 22:00 - 06:00)
     if (startHour > endHour) {
@@ -841,70 +854,64 @@ const FacilityBookingsPage: FC = () => {
       if (startStr && endStr) {
         const [oh, om] = startStr.split(':').map(Number)
         const [ch, cm] = endStr.split(':').map(Number)
-        const openMin = oh * 60 + (om || 0)
-        const closeMin = ch * 60 + (cm || 0)
-        const [sh, sm] = newBooking.startTime.split(':').map(Number)
-        const [eh, em] = newBooking.endTime.split(':').map(Number)
-        const selStartMin = sh * 60 + (sm || 0)
-        const selEndMin = eh * 60 + (em || 0)
-        if (oh <= ch) {
-          if (selStartMin < openMin || selEndMin > closeMin) {
-            setTimeError(`Thời gian chọn vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
-            return
-          }
-        } else {
-          const inWindow = (selStartMin >= openMin || selEndMin <= closeMin)
-          if (!inWindow) {
-            setTimeError(`Thời gian chọn vượt quá khung phục vụ (${selectedFacility.openingHours}).`)
-            return
+        
+        if (oh !== undefined && om !== undefined && ch !== undefined && cm !== undefined) {
+          const openMin = oh * 60 + om
+          const closeMin = ch * 60 + cm
+          const startTimeParts = newBooking.startTime.split(':').map(Number)
+          const endTimeParts = newBooking.endTime.split(':').map(Number)
+          
+          if (startTimeParts.length >= 2 && endTimeParts.length >= 2) {
+            const startHour = startTimeParts[0];
+            const startMinute = startTimeParts[1];
+            const endHour = endTimeParts[0];
+            const endMinute = endTimeParts[1];
+            
+            if (startHour !== undefined && startMinute !== undefined && 
+                endHour !== undefined && endMinute !== undefined) {
+              let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+              if (duration <= 0) duration += 24 * 60;
+              
+              const bookingData = {
+                facilityId: selectedFacility.id,
+                bookingTime,
+                duration,
+                numberOfPeople: newBooking.numberOfPeople,
+                purpose: newBooking.purpose
+              };
+              
+              await createFacilityBooking(bookingData);
+              const successMessage = showAddToSlotModal 
+                ? `Đặt thêm ${newBooking.numberOfPeople} người cho slot ${selectedSlot?.hour}:00 thành công!`
+                : 'Đặt tiện ích thành công!';
+              setSuccess(successMessage);
+              const data = await fetchMyFacilityBookings();
+              setBookings(data);
+              // Refresh availability
+              if (selectedFacility && newBooking.date) {
+                fetchAvailability(selectedFacility.id, newBooking.date);
+              }
+              // Đóng modal nếu đang đặt thêm
+              if (showAddToSlotModal) {
+                setShowAddToSlotModal(false);
+                setSelectedSlot(null);
+              }
+              // Reset form nếu đặt mới
+              if (!showAddToSlotModal) {
+                setShowBookingForm(false);
+                setNewBooking({
+                  date: '',
+                  startTime: '',
+                  endTime: '',
+                  numberOfPeople: 1,
+                  purpose: '',
+                  duration: 0
+                });
+              }
+            }
           }
         }
       }
-    }
-    
-    // Tạo booking
-    try {
-      const [startHour, startMinute] = newBooking.startTime.split(":").map(Number);
-      const [endHour, endMinute] = newBooking.endTime.split(":").map(Number);
-      let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
-      if (duration <= 0) duration += 24 * 60;
-      const bookingData = {
-        facilityId: selectedFacility.id,
-        bookingTime,
-        duration,
-        numberOfPeople: newBooking.numberOfPeople,
-        purpose: newBooking.purpose
-      };
-      await createFacilityBooking(bookingData);
-      const successMessage = showAddToSlotModal 
-        ? `Đặt thêm ${newBooking.numberOfPeople} người cho slot ${selectedSlot?.hour}:00 thành công!`
-        : 'Đặt tiện ích thành công!';
-      setSuccess(successMessage);
-      const data = await fetchMyFacilityBookings();
-      setBookings(data);
-      // Refresh availability
-      if (selectedFacility && newBooking.date) {
-        fetchAvailability(selectedFacility.id, newBooking.date);
-      }
-      // Đóng modal nếu đang đặt thêm
-      if (showAddToSlotModal) {
-        setShowAddToSlotModal(false);
-        setSelectedSlot(null);
-      }
-      // Reset form nếu đặt mới
-      if (!showAddToSlotModal) {
-        setShowBookingForm(false);
-        setNewBooking({
-          date: '',
-          startTime: '',
-          endTime: '',
-          numberOfPeople: 1,
-          purpose: '',
-          duration: 0
-        });
-      }
-    } catch (err: any) {
-      setError(err.message || 'Đặt tiện ích thất bại');
     }
   };
 
@@ -1093,8 +1100,24 @@ const FacilityBookingsPage: FC = () => {
       }
       
       // Check duration >= 30 minutes
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
+      const startParts = start.split(":").map(Number);
+      const endParts = end.split(":").map(Number);
+      
+      if (startParts.length < 2 || endParts.length < 2) {
+        setTimeError('Định dạng thời gian không hợp lệ!');
+        return;
+      }
+      
+      const sh = startParts[0];
+      const sm = startParts[1];
+      const eh = endParts[0];
+      const em = endParts[1];
+      
+      if (sh === undefined || sm === undefined || eh === undefined || em === undefined) {
+        setTimeError('Định dạng thời gian không hợp lệ!');
+        return;
+      }
+      
       let duration = (eh * 60 + em) - (sh * 60 + sm);
       if (duration <= 0) duration += 24 * 60; // Handle overnight bookings
       if (duration < 30) {
@@ -1106,12 +1129,29 @@ const FacilityBookingsPage: FC = () => {
       if (selectedFacility.openingHours) {
         const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
         if (startStr && endStr) {
-          const [oh, om] = startStr.split(':').map(Number)
-          const [ch, cm] = endStr.split(':').map(Number)
-          const openMin = oh * 60 + (om || 0)
-          const closeMin = ch * 60 + (cm || 0)
-          const selStartMin = sh * 60 + (sm || 0)
-          const selEndMin = eh * 60 + (em || 0)
+          const startTimeParts = startStr.split(':').map(Number)
+          const endTimeParts = endStr.split(':').map(Number)
+          
+          if (startTimeParts.length < 2 || endTimeParts.length < 2) {
+            setTimeError('Định dạng giờ hoạt động không hợp lệ!');
+            return;
+          }
+          
+          const oh = startTimeParts[0];
+          const om = startTimeParts[1];
+          const ch = endTimeParts[0];
+          const cm = endTimeParts[1];
+          
+          if (oh === undefined || om === undefined || ch === undefined || cm === undefined) {
+            setTimeError('Định dạng giờ hoạt động không hợp lệ!');
+            return;
+          }
+          
+          const openMin = oh * 60 + om
+          const closeMin = ch * 60 + cm
+          const selStartMin = sh * 60 + sm
+          const selEndMin = eh * 60 + em
+          
           if (oh <= ch) {
             // same day window
             if (selStartMin < openMin || selEndMin > closeMin) {

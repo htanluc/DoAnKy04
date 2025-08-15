@@ -161,7 +161,7 @@ export default function AdminFacilityBookingsPage() {
     }
   }
 
-  const getPaymentStatusBadge = (status: string) => {
+  const getPaymentStatusBadge = (status: string | undefined) => {
     switch (status) {
       case 'PAID':
         return <Badge className="bg-green-100 text-green-800">Đã thanh toán</Badge>

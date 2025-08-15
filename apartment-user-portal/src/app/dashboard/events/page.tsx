@@ -172,14 +172,50 @@ export default function EventsPage() {
 
   const getEventStatus = useCallback((event: Event) => {
     const now = new Date();
-    const [startDatePart, startTimePart] = event.startTime.split(' ');
-    const [startYear, startMonth, startDay] = startDatePart.split('-');
-    const [startHour, startMinute] = startTimePart.split(':');
-    const startTime = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), parseInt(startHour), parseInt(startMinute));
+    const startTimeParts = event.startTime.split(' ');
+    const endTimeParts = event.endTime.split(' ');
     
-    const [endDatePart, endTimePart] = event.endTime.split(' ');
-    const [endYear, endMonth, endDay] = endDatePart.split('-');
-    const [endHour, endMinute] = endTimePart.split(':');
+    if (startTimeParts.length < 2 || endTimeParts.length < 2) {
+      return 'UPCOMING'; // Default status if parsing fails
+    }
+    
+    const startDatePart = startTimeParts[0];
+    const startTimePart = startTimeParts[1];
+    const endDatePart = endTimeParts[0];
+    const endTimePart = endTimeParts[1];
+    
+    if (!startDatePart || !startTimePart || !endDatePart || !endTimePart) {
+      return 'UPCOMING'; // Default status if parsing fails
+    }
+    
+    const startDateParts = startDatePart.split('-');
+    const startTimeParts2 = startTimePart.split(':');
+    const endDateParts = endDatePart.split('-');
+    const endTimeParts2 = endTimePart.split(':');
+    
+    if (startDateParts.length < 3 || startTimeParts2.length < 2 || 
+        endDateParts.length < 3 || endTimeParts2.length < 2) {
+      return 'UPCOMING'; // Default status if parsing fails
+    }
+    
+    const startYear = startDateParts[0];
+    const startMonth = startDateParts[1];
+    const startDay = startDateParts[2];
+    const startHour = startTimeParts2[0];
+    const startMinute = startTimeParts2[1];
+    
+    const endYear = endDateParts[0];
+    const endMonth = endDateParts[1];
+    const endDay = endDateParts[2];
+    const endHour = endTimeParts2[0];
+    const endMinute = endTimeParts2[1];
+    
+    if (!startYear || !startMonth || !startDay || !startHour || !startMinute ||
+        !endYear || !endMonth || !endDay || !endHour || !endMinute) {
+      return 'UPCOMING'; // Default status if parsing fails
+    }
+    
+    const startTime = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), parseInt(startHour), parseInt(startMinute));
     const endTime = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), parseInt(endHour), parseInt(endMinute));
     
     if (now > endTime) {
@@ -205,29 +241,80 @@ export default function EventsPage() {
 
   const formatDate = useCallback((dateString: string) => {
     // Parse format "yyyy-MM-dd HH:mm:ss"
-    const [datePart] = dateString.split(' ');
-    const [year, month, day] = datePart.split('-');
+    const dateParts = dateString.split(' ');
+    if (dateParts.length < 1) return dateString;
+    
+    const datePart = dateParts[0];
+    if (!datePart) return dateString;
+    
+    const dateComponents = datePart.split('-');
+    if (dateComponents.length < 3) return dateString;
+    
+    const year = dateComponents[0];
+    const month = dateComponents[1];
+    const day = dateComponents[2];
+    
+    if (!year || !month || !day) return dateString;
+    
     return `${day}/${month}/${year}`;
   }, [])
 
   const formatTime = useCallback((dateString: string) => {
     // Parse format "yyyy-MM-dd HH:mm:ss"
-    const [datePart, timePart] = dateString.split(' ');
-    const [hours, minutes] = timePart.split(':');
+    const dateParts = dateString.split(' ');
+    if (dateParts.length < 2) return dateString;
+    
+    const timePart = dateParts[1];
+    if (!timePart) return dateString;
+    
+    const timeComponents = timePart.split(':');
+    if (timeComponents.length < 2) return dateString;
+    
+    const hours = timeComponents[0];
+    const minutes = timeComponents[1];
+    
+    if (!hours || !minutes) return dateString;
+    
     return `${hours}:${minutes}`;
   }, [])
 
   const formatDateTime = useCallback((dateString: string) => {
     // Parse format "yyyy-MM-dd HH:mm:ss"
-    const [datePart, timePart] = dateString.split(' ');
-    const [year, month, day] = datePart.split('-');
-    const [hours, minutes] = timePart.split(':');
+    const dateParts = dateString.split(' ');
+    if (dateParts.length < 2) return dateString;
+    
+    const datePart = dateParts[0];
+    const timePart = dateParts[1];
+    
+    if (!datePart || !timePart) return dateString;
+    
+    const dateComponents = datePart.split('-');
+    const timeComponents = timePart.split(':');
+    
+    if (dateComponents.length < 3 || timeComponents.length < 2) return dateString;
+    
+    const year = dateComponents[0];
+    const month = dateComponents[1];
+    const day = dateComponents[2];
+    const hours = timeComponents[0];
+    const minutes = timeComponents[1];
+    
+    if (!year || !month || !day || !hours || !minutes) return dateString;
+    
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   }, [])
 
   const isSameDay = useCallback((startTime: string, endTime: string) => {
-    const [startDatePart] = startTime.split(' ');
-    const [endDatePart] = endTime.split(' ');
+    const startParts = startTime.split(' ');
+    const endParts = endTime.split(' ');
+    
+    if (startParts.length < 1 || endParts.length < 1) return false;
+    
+    const startDatePart = startParts[0];
+    const endDatePart = endParts[0];
+    
+    if (!startDatePart || !endDatePart) return false;
+    
     return startDatePart === endDatePart;
   }, [])
 

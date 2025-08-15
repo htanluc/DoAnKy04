@@ -611,7 +611,25 @@ export async function fetchRecentActivities() {
       },
     });
     if (!res.ok) throw new Error('Không lấy được hoạt động gần đây');
-    return res.json();
+    const data = await res.json();
+    
+    // Đảm bảo mỗi activity có id duy nhất
+    if (Array.isArray(data)) {
+      return data.map((activity, index) => ({
+        ...activity,
+        id: activity.id || `activity-${index}-${Date.now()}`
+      }));
+    }
+    
+    // Nếu API trả về cấu trúc khác, xử lý phù hợp
+    if (data.success && Array.isArray(data.data)) {
+      return data.data.map((activity: any, index: number) => ({
+        ...activity,
+        id: activity.id || `activity-${index}-${Date.now()}`
+      }));
+    }
+    
+    return [];
   } catch (error) {
     console.error('Error fetching recent activities:', error);
     // Trả về mảng rỗng nếu API lỗi
