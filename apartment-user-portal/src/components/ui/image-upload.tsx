@@ -124,7 +124,10 @@ export default function ImageUpload({
 
   const removeImage = (index: number) => {
     const newUrls = uploadedUrls.filter((_, i) => i !== index);
-    onImagesRemoved([uploadedUrls[index]]);
+    const removedUrl = uploadedUrls[index];
+    if (removedUrl) {
+      onImagesRemoved([removedUrl]);
+    }
   };
 
   return (

@@ -511,27 +511,27 @@ public class DataInitializer implements CommandLineRunner {
         
         // Sports & Fitness Facilities
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Phòng Gym Premium")
+            .name("Phòng Gym")
             .description("Phòng tập thể dục với đầy đủ thiết bị hiện đại, có huấn luyện viên cá nhân")
             .location("Tầng 1 - Tòa A")
             .capacity(30)
             .otherDetails("Mở cửa 6:00-22:00, có phòng thay đồ, tủ khóa, vòi sen")
-            .usageFee(80000.0)
+            .usageFee(20000.0)
             .openingHours("06:00 - 22:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Hồ bơi Olympic")
+            .name("Hồ bơi")
             .description("Hồ bơi ngoài trời với view đẹp, có cứu hộ chuyên nghiệp")
             .location("Khu vực ngoài trời - Tầng trệt")
-            .capacity(50)
+            .capacity(20)
             .otherDetails("Mở cửa 6:00-21:00, có ghế tắm nắng, quán bar bên hồ")
             .usageFee(120000.0)
             .openingHours("06:00 - 21:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Sân tennis chuyên nghiệp")
+            .name("Sân tennis")
             .description("Sân tennis ngoài trời chất lượng cao với đèn chiếu sáng")
             .location("Khu vực ngoài trời - Tầng trệt")
             .capacity(8)
@@ -541,7 +541,7 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Sân bóng rổ")
+            .name("Phòng họp")
             .description("Sân bóng rổ ngoài trời với đèn chiếu sáng")
             .location("Khu vực ngoài trời - Tầng trệt")
             .capacity(20)
@@ -571,24 +571,25 @@ public class DataInitializer implements CommandLineRunner {
             .openingHours("08:00 - 20:00")
             .build()));
         
+        // Tiện ích mới theo yêu cầu
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Khu BBQ ngoài trời")
-            .description("Khu vực nướng BBQ ngoài trời với view đẹp")
-            .location("Khu vực ngoài trời - Tầng trệt")
-            .capacity(50)
-            .otherDetails("Có bàn ghế, lò nướng, bếp gas, quán bar")
-            .usageFee(80000.0)
-            .openingHours("16:00 - 22:00")
+            .name("Phòng Gym Premium")
+            .description("Phòng tập thể dục cao cấp với thiết bị hiện đại, huấn luyện viên cá nhân, và hệ thống QR check-in/check-out hàng ngày")
+            .location("Tầng 1 - Tòa A")
+            .capacity(30)
+            .otherDetails("Mở cửa 6:00-22:00, có phòng thay đồ, tủ khóa, vòi sen, thiết bị cao cấp, huấn luyện viên 24/7")
+            .usageFee(400000.0) // Giá 400,000 VND/tháng
+            .openingHours("06:00 - 22:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Khu vui chơi trẻ em")
-            .description("Sân chơi an toàn cho trẻ em với nhiều trò chơi")
-            .location("Khu vực ngoài trời - Tầng trệt")
-            .capacity(30)
-            .otherDetails("Có đồ chơi, có ghế ngồi cho phụ huynh, có mái che")
-            .usageFee(40000.0)
-            .openingHours("06:00 - 20:00")
+            .name("Khu BBQ ngoài trời")
+            .description("Khu vực nướng BBQ ngoài trời với view đẹp, book theo slot thời gian, không giới hạn số người tham gia")
+            .location("Khu vực ngoài trời - Tầng trệt tòa A")
+            .capacity(100) // Không giới hạn người tham gia
+            .otherDetails("Có bàn ghế, lò nướng, bếp gas, quán bar, view đẹp")
+            .usageFee(200000.0) // Giá 200,000 VND/slot
+            .openingHours("16:00 - 22:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
@@ -601,15 +602,7 @@ public class DataInitializer implements CommandLineRunner {
             .openingHours("09:00 - 21:00")
             .build()));
         
-        facilities.add(facilityRepository.save(Facility.builder()
-            .name("Bãi đỗ xe có mái che")
-            .description("Bãi đỗ xe có mái che, an toàn cho xe cư dân")
-            .location("Tầng hầm - Tòa A")
-            .capacity(200)
-            .otherDetails("Miễn phí cho cư dân, có camera giám sát, có bảo vệ")
-            .usageFee(10000.0)
-            .openingHours("24/7")
-            .build()));
+        
         
         // 4.2 Create Service Categories (only if they don't exist)
         List<ServiceCategory> serviceCategories = new ArrayList<>();

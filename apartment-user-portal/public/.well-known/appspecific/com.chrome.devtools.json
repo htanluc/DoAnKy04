@@ -1,0 +1,8 @@
+{
+  "name": "Apartment Portal",
+  "description": "Portal quản lý chung cư",
+  "version": "1.0.0",
+  "devtools": {
+    "enabled": false
+  }
+}

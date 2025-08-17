@@ -565,8 +565,10 @@ export default function UpdateInfoPage() {
                               value={contact.name}
                               onChange={e => {
                                 const newContacts = [...formData.emergencyContacts];
-                                newContacts[idx].name = e.target.value;
-                                setFormData(prev => ({ ...prev, emergencyContacts: newContacts }));
+                                if (newContacts[idx]) {
+                                  newContacts[idx].name = e.target.value;
+                                  setFormData(prev => ({ ...prev, emergencyContacts: newContacts }));
+                                }
                               }}
                               placeholder="Nhập họ và tên"
                             />
@@ -582,8 +584,10 @@ export default function UpdateInfoPage() {
                               value={contact.phone}
                               onChange={e => {
                                 const newContacts = [...formData.emergencyContacts];
-                                newContacts[idx].phone = e.target.value;
-                                setFormData(prev => ({ ...prev, emergencyContacts: newContacts }));
+                                if (newContacts[idx]) {
+                                  newContacts[idx].phone = e.target.value;
+                                  setFormData(prev => ({ ...prev, emergencyContacts: newContacts }));
+                                }
                               }}
                               placeholder="Nhập số điện thoại"
                             />
@@ -599,8 +603,10 @@ export default function UpdateInfoPage() {
                               value={contact.relationship}
                               onChange={e => {
                                 const newContacts = [...formData.emergencyContacts];
-                                newContacts[idx].relationship = e.target.value;
-                                setFormData(prev => ({ ...prev, emergencyContacts: newContacts }));
+                                if (newContacts[idx]) {
+                                  newContacts[idx].relationship = e.target.value;
+                                  setFormData(prev => ({ ...prev, emergencyContacts: newContacts }));
+                                }
                               }}
                               placeholder="Ví dụ: Vợ, chồng, con..."
                             />

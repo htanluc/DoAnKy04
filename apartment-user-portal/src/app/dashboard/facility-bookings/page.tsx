@@ -219,6 +219,11 @@ interface Facility {
   amenities: string[]
   openingHours?: string
   status: 'AVAILABLE' | 'MAINTENANCE' | 'CLOSED'
+  facilityType: 'FREE' | 'PAID' | 'PREMIUM' | 'SLOT_BASED'
+  bookingType: 'HOURLY' | 'DAILY' | 'MONTHLY' | 'SLOT'
+  maxDuration?: number // Thời gian tối đa cho mỗi booking (phút)
+  qrCodeEnabled?: boolean // Có hỗ trợ QR check-in/check-out không
+  slotDuration?: number // Thời gian mỗi slot (phút) - cho slot-based facilities
 }
 
 interface Booking {
@@ -1441,21 +1446,108 @@ const FacilityBookingsPage: FC = () => {
           </CardContent>
         </Card>
 
-        {/* Facilities Section */}
+        {/* Facilities Section with Categories */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Tiện ích có sẵn</CardTitle>
             <CardDescription>
-              Các tiện ích có thể đặt trong chung cư
+              Các tiện ích có thể đặt trong chung cư - Phân loại theo loại hình
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Category Filters */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              <Button
+                variant={filterStatus === 'all' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('all')}
+                className="transition-all duration-200"
+              >
+                Tất cả
+              </Button>
+              <Button
+                variant={filterStatus === 'free' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('free')}
+                className="transition-all duration-200"
+              >
+                <span className="text-green-600 mr-1">●</span>
+                Miễn phí
+              </Button>
+              <Button
+                variant={filterStatus === 'paid' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('paid')}
+                className="transition-all duration-200"
+              >
+                <span className="text-blue-600 mr-1">●</span>
+                Có phí
+              </Button>
+              <Button
+                variant={filterStatus === 'premium' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('premium')}
+                className="transition-all duration-200"
+              >
+                <span className="text-purple-600 mr-1">●</span>
+                Premium
+              </Button>
+              <Button
+                variant={filterStatus === 'slot' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('slot')}
+                className="transition-all duration-200"
+              >
+                <span className="text-orange-600 mr-1">●</span>
+                Theo Slot
+              </Button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {facilities.map((facility) => (
-                <Card key={facility.id} className="hover:shadow-lg transition-shadow">
+              {facilities
+                .filter(facility => {
+                  if (filterStatus === 'all') return true;
+                  if (filterStatus === 'free') return facility.facilityType === 'FREE';
+                  if (filterStatus === 'paid') return facility.facilityType === 'PAID';
+                  if (filterStatus === 'premium') return facility.facilityType === 'PREMIUM';
+                  if (filterStatus === 'slot') return facility.facilityType === 'SLOT_BASED';
+                  return true;
+                })
+                .map((facility) => (
+                <Card key={`facility-${facility.id}-${Date.now()}`} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
-                      {getFacilityStatusBadge(facility.status)}
+                      <div className="flex items-center space-x-2">
+                        {getFacilityStatusBadge(facility.status)}
+                        
+                        {/* Facility Type Badge */}
+                        {facility.facilityType === 'FREE' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="text-green-600 mr-1">●</span>
+                            Miễn phí
+                          </span>
+                        )}
+                        {facility.facilityType === 'PAID' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <span className="text-blue-600 mr-1">●</span>
+                            Có phí
+                          </span>
+                        )}
+                        {facility.facilityType === 'PREMIUM' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            <span className="text-purple-600 mr-1">●</span>
+                            Premium
+                          </span>
+                        )}
+                        {facility.facilityType === 'SLOT_BASED' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            <span className="text-orange-600 mr-1">●</span>
+                            Theo Slot
+                          </span>
+                        )}
+                      </div>
+                      
+                      {facility.qrCodeEnabled && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <QrCode className="h-3 w-3 mr-1" />
+                          QR
+                        </span>
+                      )}
                     </div>
                     <CardTitle className="text-lg">{facility.name}</CardTitle>
                     <CardDescription className="line-clamp-2">
@@ -1470,16 +1562,50 @@ const FacilityBookingsPage: FC = () => {
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Users className="h-4 w-4 mr-2" />
-                        Sức chứa: {facility.capacity} người
+                        Sức chứa: {facility.facilityType === 'SLOT_BASED' ? 'Không giới hạn' : `${facility.capacity} người`}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <DollarSign className="h-4 w-4 mr-2" />
-                        {formatCurrency(facility.usageFee)}
+                        {facility.usageFee === 0 ? 'Miễn phí' : `${facility.usageFee.toLocaleString()}đ`}
+                        <span className="text-xs text-gray-500 ml-1">
+                          {facility.usageFee === 0 ? '' : 
+                           facility.bookingType === 'MONTHLY' ? '/tháng' :
+                           facility.bookingType === 'SLOT' ? '/slot' : '/giờ'}
+                        </span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Clock className="h-4 w-4 mr-2" />
                         {facility.openingHours ?? '---'}
                       </div>
+
+                      {/* Special Features */}
+                      {facility.facilityType === 'PREMIUM' && (
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                          <div className="flex items-center text-sm text-purple-700">
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            <span className="font-medium">Premium Features:</span>
+                          </div>
+                          <ul className="text-xs text-purple-600 mt-1 ml-6 list-disc">
+                            <li>Thiết bị cao cấp</li>
+                            <li>Huấn luyện viên 24/7</li>
+                            <li>QR check-in/check-out hàng ngày</li>
+                          </ul>
+                        </div>
+                      )}
+
+                      {facility.facilityType === 'SLOT_BASED' && (
+                        <div className="p-3 bg-orange-50 rounded-lg">
+                          <div className="flex items-center text-sm text-orange-700">
+                            <Target className="h-4 w-4 mr-2" />
+                            <span className="font-medium">Slot Booking:</span>
+                          </div>
+                          <ul className="text-xs text-orange-600 mt-1 ml-6 list-disc">
+                            <li>Book theo slot thời gian</li>
+                            <li>Không giới hạn số người</li>
+                            <li>Chi phí cố định mỗi slot</li>
+                          </ul>
+                        </div>
+                      )}
                       
                       <div className="pt-3">
                         <Button 
@@ -1488,7 +1614,7 @@ const FacilityBookingsPage: FC = () => {
                           disabled={facility.status !== 'AVAILABLE'}
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          Xem lịch
+                          {facility.facilityType === 'SLOT_BASED' ? 'Book Slot' : 'Xem lịch'}
                         </Button>
                       </div>
                     </div>
@@ -1499,97 +1625,242 @@ const FacilityBookingsPage: FC = () => {
           </CardContent>
         </Card>
 
-        {/* Availability View */}
+        {/* Availability View - Different for each facility type */}
         {showAvailability && selectedFacility && availability && (
           <Card className="mb-6" id="availability-section">
             <CardHeader>
               <CardTitle>Lịch {selectedFacility.name} - {formatDate(selectedDate)}</CardTitle>
               <CardDescription>
-                Sức chứa theo từng giờ trong ngày - Có thể đặt thêm người vào slot đã có booking
+                {selectedFacility.facilityType === 'PREMIUM' ? 
+                  'Phòng Gym Premium - Đặt theo tháng với QR check-in/check-out hàng ngày' :
+                  selectedFacility.facilityType === 'SLOT_BASED' ?
+                  'Khu BBQ - Book theo slot thời gian, không giới hạn số người' :
+                  'Sức chứa theo từng giờ trong ngày - Có thể đặt thêm người vào slot đã có booking'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
-                {availability.hourlyData.map((hour) => (
-                  <div
-                    key={hour.hour}
-                    className={`p-3 rounded-lg text-center transition-colors ${getSlotColor(hour, selectedDate)} ${
-                      rangeStartHour !== null && rangeEndHour !== null && hour.hour >= Math.min(rangeStartHour, rangeEndHour) && hour.hour <= Math.max(rangeStartHour, rangeEndHour) ? 'ring-2 ring-[color:#0066CC]' : ''
-                    } ${rangeStartHour !== null && rangeEndHour === null && hour.hour === rangeStartHour ? 'ring-2 ring-[color:#0066CC]' : ''}`}
-                    onClick={() => handleSelectHour(hour.hour)}
-                    title={
-                      isTimeSlotPassed(hour.hour, selectedDate)
-                        ? 'Thời gian này đã qua, không thể đặt lịch'
-                        : hour.isAvailable
-                          ? `Chọn ${hour.hour}:00 làm mốc thời gian`
-                          : 'Slot này đã hết chỗ'
-                    }
-                  >
-                    <div className="font-semibold">{hour.hour}:00</div>
-                     <div className="text-sm">
-                       {getAdjustedUsedCapacity(hour.hour)}/{hour.usedCapacity + hour.availableCapacity}
-                     </div>
-                    <div className="text-xs">
-                      {getHourlyBookingCount(hour.hour)} booking
+              {/* Premium Gym - Monthly Booking */}
+              {selectedFacility.facilityType === 'PREMIUM' && (
+                <div className="space-y-6">
+                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Sparkles className="h-5 w-5 text-purple-600" />
+                      <h4 className="text-lg font-semibold text-purple-800">Phòng Gym Premium</h4>
                     </div>
-                    {getAdjustedAvailableCapacity(hour) > 0 && !isTimeSlotPassed(hour.hour, selectedDate) && (
-                      <div className="text-xs font-medium text-green-700">
-                        +{getAdjustedAvailableCapacity(hour)}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-purple-700">
+                        <span className="font-medium">Giá:</span> 400,000đ/tháng
                       </div>
-                    )}
-                    {isTimeSlotPassed(hour.hour, selectedDate) && (
-                      <div className="text-xs font-medium text-gray-500">
-                        Đã qua
+                      <div className="text-purple-700">
+                        <span className="font-medium">QR Code:</span> Check-in/check-out hàng ngày
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-col gap-2">
-                {rangeError && <div className="text-red-600 text-sm">{rangeError}</div>}
-                <div className="text-sm text-gray-700">
-                  {rangeStartHour !== null && rangeEndHour !== null ? (
-                    <>Khoảng đã chọn: <span className="font-semibold">{rangeStartHour}:00</span> - <span className="font-semibold">{(rangeEndHour + 1)}:00</span> ({(rangeEndHour + 1 - rangeStartHour) * 60} phút)</>
-                  ) : rangeStartHour !== null ? (
-                    <>Đã chọn mốc bắt đầu: <span className="font-semibold">{rangeStartHour}:00</span>. Chọn mốc kết thúc.</>
-                  ) : (
-                    <>Chọn 2 ô giờ để tạo khoảng thời gian cần đặt.</>
-                  )}
-                </div>
-                <div className="flex gap-2 flex-wrap items-center">
-                  <Button
-                    onClick={confirmRangeBooking}
-                    disabled={rangeStartHour === null}
-                  >
-                    {rangeStartHour !== null && rangeEndHour === null ? 'Đặt 1 giờ đã chọn' : 'Đặt dải giờ đã chọn'}
-                  </Button>
-                  <Button variant="outline" onClick={clearRange}>Xóa lựa chọn</Button>
-                  <div className="text-xs text-gray-500 mt-1">Tip: Chọn 1 ô để đặt 60 phút; chọn 2 ô để đặt theo dải giờ.</div>
-                </div>
-              </div>
-              <div className="mt-4 text-sm text-gray-600">
-                <div className="flex items-center gap-4 mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-200 rounded"></div>
-                    <span>Còn nhiều chỗ (&gt;50%)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-200 rounded"></div>
-                    <span>Ít chỗ (&lt;50%)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-200 rounded"></div>
-                    <span>Hết chỗ</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gray-300 rounded"></div>
-                    <span>Đã qua</span>
+                      <div className="text-purple-700">
+                        <span className="font-medium">Thời gian:</span> 6:00 - 22:00
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-white rounded border">
+                      <h5 className="font-medium text-purple-800 mb-2">Đặc quyền Premium:</h5>
+                      <ul className="text-sm text-purple-700 space-y-1">
+                        <li>• Thiết bị tập luyện cao cấp</li>
+                        <li>• Huấn luyện viên cá nhân 24/7</li>
+                        <li>• Phòng thay đồ riêng biệt</li>
+                        <li>• Hệ thống QR check-in/check-out</li>
+                        <li>• Không giới hạn số lần sử dụng</li>
+                      </ul>
+                    </div>
+                    <div className="mt-4">
+                      <Button 
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        onClick={() => {
+                          setNewBooking(prev => ({
+                            ...prev,
+                            date: selectedDate,
+                            startTime: '06:00',
+                            endTime: '22:00',
+                            numberOfPeople: 1,
+                            purpose: 'Gym Premium Monthly'
+                          }));
+                          setShowBookingForm(true);
+                        }}
+                      >
+                        <QrCode className="h-4 w-4 mr-2" />
+                        Đặt Phòng Gym Premium (400,000đ/tháng)
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">
-                  * Click vào slot có màu để đặt thêm người. Slot xám là thời gian đã qua.
-                </p>
-              </div>
+              )}
+
+              {/* Slot-based BBQ - Time Slot Booking */}
+              {selectedFacility.facilityType === 'SLOT_BASED' && (
+                <div className="space-y-6">
+                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Target className="h-5 w-5 text-orange-600" />
+                      <h4 className="text-lg font-semibold text-orange-800">Khu BBQ ngoài trời</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-orange-700">
+                        <span className="font-medium">Giá:</span> 200,000đ/slot
+                      </div>
+                      <div className="text-orange-700">
+                        <span className="font-medium">Số người:</span> Không giới hạn
+                      </div>
+                      <div className="text-orange-700">
+                        <span className="font-medium">Thời gian:</span> 16:00 - 22:00
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-white rounded border">
+                      <h5 className="font-medium text-orange-800 mb-2">Thông tin Slot:</h5>
+                      <ul className="text-sm text-orange-700 space-y-1">
+                        <li>• Mỗi slot 4 giờ (16:00-20:00 hoặc 18:00-22:00)</li>
+                        <li>• Không giới hạn số người tham gia</li>
+                        <li>• Bao gồm: bàn ghế, lò nướng, bếp gas</li>
+                        <li>• Có quán bar và view đẹp</li>
+                        <li>• Chi phí cố định 200,000đ/slot</li>
+                      </ul>
+                    </div>
+                    
+                    {/* BBQ Time Slots */}
+                    <div className="mt-4">
+                      <h5 className="font-medium text-orange-800 mb-3">Chọn Slot thời gian:</h5>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          variant="outline"
+                          className="h-16 border-orange-300 hover:bg-orange-100"
+                          onClick={() => {
+                            setNewBooking(prev => ({
+                              ...prev,
+                              date: selectedDate,
+                              startTime: '16:00',
+                              endTime: '20:00',
+                              numberOfPeople: 1,
+                              purpose: 'BBQ Slot 1 (16:00-20:00)'
+                            }));
+                            setShowBookingForm(true);
+                          }}
+                        >
+                          <div className="text-center">
+                            <div className="font-medium">Slot 1</div>
+                            <div className="text-sm text-orange-600">16:00 - 20:00</div>
+                            <div className="text-xs text-orange-500">200,000đ</div>
+                          </div>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-16 border-orange-300 hover:bg-orange-100"
+                          onClick={() => {
+                            setNewBooking(prev => ({
+                              ...prev,
+                              date: selectedDate,
+                              startTime: '18:00',
+                              endTime: '22:00',
+                              numberOfPeople: 1,
+                              purpose: 'BBQ Slot 2 (18:00-22:00)'
+                            }));
+                            setShowBookingForm(true);
+                          }}
+                        >
+                          <div className="text-center">
+                            <div className="font-medium">Slot 2</div>
+                            <div className="text-sm text-orange-600">18:00 - 22:00</div>
+                            <div className="text-xs text-orange-500">200,000đ</div>
+                          </div>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Regular Facilities - Hourly Grid */}
+              {selectedFacility.facilityType !== 'PREMIUM' && selectedFacility.facilityType !== 'SLOT_BASED' && (
+                <>
+                  <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
+                    {availability.hourlyData.map((hour) => (
+                      <div
+                        key={hour.hour}
+                        className={`p-3 rounded-lg text-center transition-colors ${getSlotColor(hour, selectedDate)} ${
+                          rangeStartHour !== null && rangeEndHour !== null && hour.hour >= Math.min(rangeStartHour, rangeEndHour) && hour.hour <= Math.max(rangeStartHour, rangeEndHour) ? 'ring-2 ring-[color:#0066CC]' : ''
+                        } ${rangeStartHour !== null && rangeEndHour === null && hour.hour === rangeStartHour ? 'ring-2 ring-[color:#0066CC]' : ''}`}
+                        onClick={() => handleSelectHour(hour.hour)}
+                        title={
+                          isTimeSlotPassed(hour.hour, selectedDate)
+                            ? 'Thời gian này đã qua, không thể đặt lịch'
+                            : hour.isAvailable
+                              ? `Chọn ${hour.hour}:00 làm mốc thời gian`
+                              : 'Slot này đã hết chỗ'
+                        }
+                      >
+                        <div className="font-semibold">{hour.hour}:00</div>
+                         <div className="text-sm">
+                           {getAdjustedUsedCapacity(hour.hour)}/{hour.usedCapacity + hour.availableCapacity}
+                         </div>
+                        <div className="text-xs">
+                          {getHourlyBookingCount(hour.hour)} booking
+                        </div>
+                        {getAdjustedAvailableCapacity(hour) > 0 && !isTimeSlotPassed(hour.hour, selectedDate) && (
+                          <div className="text-xs font-medium text-green-700">
+                            +{getAdjustedAvailableCapacity(hour)}
+                          </div>
+                        )}
+                        {isTimeSlotPassed(hour.hour, selectedDate) && (
+                          <div className="text-xs font-medium text-gray-500">
+                            Đã qua
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex flex-col gap-2">
+                    {rangeError && <div className="text-red-600 text-sm">{rangeError}</div>}
+                    <div className="text-sm text-gray-700">
+                      {rangeStartHour !== null && rangeEndHour !== null ? (
+                        <>Khoảng đã chọn: <span className="font-semibold">{rangeStartHour}:00</span> - <span className="font-semibold">{(rangeEndHour + 1)}:00</span> ({(rangeEndHour + 1 - rangeStartHour) * 60} phút)</>
+                      ) : rangeStartHour !== null ? (
+                        <>Đã chọn mốc bắt đầu: <span className="font-semibold">{rangeStartHour}:00</span>. Chọn mốc kết thúc.</>
+                      ) : (
+                        <>Chọn 2 ô giờ để tạo khoảng thời gian cần đặt.</>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <Button
+                        onClick={confirmRangeBooking}
+                        disabled={rangeStartHour === null}
+                      >
+                        {rangeStartHour !== null && rangeEndHour === null ? 'Đặt 1 giờ đã chọn' : 'Đặt dải giờ đã chọn'}
+                      </Button>
+                      <Button variant="outline" onClick={clearRange}>Xóa lựa chọn</Button>
+                      <div className="text-xs text-gray-500 mt-1">Tip: Chọn 1 ô để đặt 60 phút; chọn 2 ô để đặt theo dải giờ.</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-green-200 rounded"></div>
+                        <span>Còn nhiều chỗ (&gt;50%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 bg-yellow-200 rounded"></div>
+                        <span>Ít chỗ (&lt;50%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-red-200 rounded"></div>
+                        <span>Hết chỗ</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                        <span>Đã qua</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      * Click vào slot có màu để đặt thêm người. Slot xám là thời gian đã qua.
+                    </p>
+                  </div>
+                </>
+              )}
+              
               <div className="mt-4">
                 <Button variant="outline" onClick={() => {
                   setShowAvailability(false);
@@ -1887,7 +2158,7 @@ const FacilityBookingsPage: FC = () => {
             ) : (
               <div className="space-y-4">
                 {filteredBookings.map((booking) => (
-                  <Card key={booking.id} className="hover:shadow-md transition-shadow">
+                  <Card key={`booking-${booking.id}-${Date.now()}`} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1947,7 +2218,7 @@ const FacilityBookingsPage: FC = () => {
                                    <div className="flex gap-2 flex-wrap">
                                      {paymentMethods.map(method => (
                                        <button
-                                         key={method.id}
+                                         key={`payment-${method.id}-${booking.id}-${Date.now()}`}
                                          onClick={() => handlePayment(booking.id, method.id)}
                                          disabled={paymentLoading}
                                          className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"

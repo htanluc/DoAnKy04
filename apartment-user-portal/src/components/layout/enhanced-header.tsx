@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Bell, Menu, X, LogOut, Building2, Clock, User, Settings, Search, Sparkles, Star, Heart, Zap, Target, Award, Shield, Coffee, Wrench, MapPin, Flame, TrendingUp, Sun, Moon, Wifi, Battery, Signal, Cloud, CloudRain
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { fetchAnnouncements } from "@/lib/api"
 import { getAvatarUrl } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import GlobalSearch from '@/components/global-search'
 
 interface EnhancedHeaderProps {
   onMenuToggle?: () => void
@@ -38,10 +39,11 @@ export default function EnhancedHeader({
   const [showNotifications, setShowNotifications] = useState(false)
   const [recentNotifications, setRecentNotifications] = useState<any[]>([])
   const [isMobile, setIsMobile] = useState(false)
-  const [weather, setWeather] = useState({ temp: 25, condition: 'sunny' })
+  const [weather, setWeather] = useState<{ temp: number; condition: 'sunny' | 'cloudy' | 'rainy' }>({ temp: 25, condition: 'sunny' })
   const [isCondensed, setIsCondensed] = useState(false)
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false)
   const router = useRouter()
-  const headerRef = useState<HTMLElement | null>(null)[0] as any
+  const headerRef = useRef<HTMLElement>(null)
 
   // Measure and sync header height to CSS variable
   const updateHeaderHeight = () => {
@@ -86,8 +88,9 @@ export default function EnhancedHeader({
     // Simulate weather update
     const weatherInterval = setInterval(() => {
       const newTemp = Math.floor(Math.random() * (35 - 20 + 1)) + 20 // 20-35°C
-      const conditions = ['sunny', 'cloudy', 'rainy']
-      const newCondition = conditions[Math.floor(Math.random() * conditions.length)]
+      const conditions = ['sunny', 'cloudy', 'rainy'] as const
+      const randomIndex = Math.floor(Math.random() * conditions.length)
+      const newCondition = conditions[randomIndex] || 'sunny' // Fallback to sunny if undefined
       setWeather({ temp: newTemp, condition: newCondition })
     }, 60000) // Update weather every minute
 
@@ -236,22 +239,29 @@ export default function EnhancedHeader({
             isCondensed ? "space-x-2" : "space-x-3"
           )}>
             {/* Search: icon on mobile, button on desktop */}
-            <button className={cn(
-              "md:hidden p-2 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg",
-              isDarkMode 
-                ? "bg-slate-800/70 text-slate-300 hover:bg-slate-700/70" 
-                : "bg-white/70 text-gray-600 hover:bg-white/90"
-            )} aria-label="Tìm kiếm">
+            <button 
+              onClick={() => setShowGlobalSearch(true)}
+              className={cn(
+                "md:hidden p-2 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg",
+                isDarkMode 
+                  ? "bg-slate-800/70 text-slate-300 hover:bg-slate-700/70" 
+                  : "bg-white/70 text-gray-600 hover:bg-white/90"
+              )} 
+              aria-label="Tìm kiếm toàn diện"
+            >
               <Search className="h-5 w-5" />
             </button>
-            <button className={cn(
-              "hidden md:flex items-center space-x-2 px-3 rounded-xl hover:bg-opacity-90 transition-all duration-300 shadow-sm",
-              isDarkMode 
-                ? "bg-slate-800/70 text-slate-300 hover:bg-slate-700/70" 
-                : "bg-white/70 text-gray-600 hover:bg-white/90"
-            , isCondensed ? "py-1" : "py-2")}>
+            <button 
+              onClick={() => setShowGlobalSearch(true)}
+              className={cn(
+                "hidden md:flex items-center space-x-2 px-3 rounded-xl hover:bg-opacity-90 transition-all duration-300 shadow-sm",
+                isDarkMode 
+                  ? "bg-slate-800/70 text-slate-300 hover:bg-slate-700/70" 
+                  : "bg-white/70 text-gray-600 hover:bg-white/90"
+              , isCondensed ? "py-1" : "py-2")}
+            >
               <Search className="h-4 w-4" />
-              <span className="text-sm">Tìm kiếm...</span>
+              <span className="text-sm">Tìm kiếm toàn diện...</span>
             </button>
             <div className="relative">
               <button onClick={() => setShowNotifications(!showNotifications)} className={cn(
@@ -353,8 +363,15 @@ export default function EnhancedHeader({
       </div>
       <div className="absolute top-0 left-0 w-full h-[2px] sm:h-1 bg-brand-gradient"></div>
       <div className="absolute top-2 right-4"><Sparkles className="h-4 w-4 text-brand-accent animate-pulse" /></div>
-      <div className="absolute top-4 left-1/4"><Star className="h-3 w-3 text-brand-primary animate-ping" /></div>
-    </header>
+      <div className="absolute top-4 left-1/4"><Star className="h-3 w-3 text-brand-primary animate-ping" />        </div>
+      </header>
+      
+      {/* Global Search Modal */}
+      <GlobalSearch 
+        isOpen={showGlobalSearch}
+        onClose={() => setShowGlobalSearch(false)}
+        placeholder="Tìm kiếm toàn bộ dữ liệu..."
+      />
     </>
   )
 }

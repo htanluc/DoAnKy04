@@ -13,14 +13,28 @@ export async function fetchCurrentUser(forceRefresh = false) {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` },
       });
+      
+      if (res.status === 401) {
+        // Token hết hạn hoặc không hợp lệ
+        console.warn('Token expired or invalid, clearing cache');
+        cachedCurrentUser = null;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+        }
+        return null;
+      }
+      
       if (!res.ok) {
+        console.warn(`API call failed with status ${res.status}`);
         cachedCurrentUser = null;
         return null;
       }
+      
       const data = await res.json();
       cachedCurrentUser = data.success && data.data ? data.data : null;
       return cachedCurrentUser;
-    } catch {
+    } catch (error) {
+      console.error('Error fetching current user:', error);
       cachedCurrentUser = null;
       return null;
     } finally {
@@ -51,9 +65,25 @@ export async function fetchMyApartment(forceRefresh = false) {
 }
 
 export async function fetchUserProfile(forceRefresh = false) {
-  const user = await fetchCurrentUser(forceRefresh);
-  if (!user) throw new Error('Không thể lấy thông tin user');
-  return user;
+  try {
+    const user = await fetchCurrentUser(forceRefresh);
+    if (!user) {
+      // Kiểm tra token
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        throw new Error('Chưa đăng nhập. Vui lòng đăng nhập lại.');
+      }
+      throw new Error('Không thể lấy thông tin user. Vui lòng đăng nhập lại.');
+    }
+    return user;
+  } catch (error) {
+    console.error('Error in fetchUserProfile:', error);
+    // Xóa token nếu có lỗi
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    throw error;
+  }
 }
 
 export async function fetchInvoices() {
@@ -153,190 +183,344 @@ export async function changePassword(data: { oldPassword: string; newPassword: s
 
 // Lấy lịch sử đặt tiện ích của resident hiện tại
 export async function fetchMyFacilityBookings() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/facility-bookings/my', {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Không lấy được lịch sử đặt tiện ích');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/facility-bookings/my', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Facility bookings API returned ${res.status}: ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch (error) {
+    console.warn('Failed to fetch facility bookings:', error);
+    return [];
+  }
 }
 
 // Đặt tiện ích
 export async function createFacilityBooking(data: any) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/facility-bookings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error('Đặt tiện ích thất bại');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/facility-bookings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!res.ok) {
+      console.warn(`Create facility booking API returned ${res.status}: ${res.statusText}`);
+      throw new Error('Đặt tiện ích thất bại');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.warn('Failed to create facility booking:', error);
+    throw error;
+  }
 }
 
 // Hủy đặt tiện ích
 export async function cancelFacilityBooking(id: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/facility-bookings/${id}`, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Hủy đặt tiện ích thất bại');
-  return true;
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch(`http://localhost:8080/api/facility-bookings/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Cancel facility booking API returned ${res.status}: ${res.statusText}`);
+      throw new Error('Hủy đặt tiện ích thất bại');
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn('Failed to cancel facility booking:', error);
+    throw error;
+  }
 }
 
 // Đăng ký sự kiện
 export async function registerEvent(data: any) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  
-  const res = await fetch('http://localhost:8080/api/event-registrations/register', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error('Đăng ký sự kiện thất bại: ' + errorText);
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/event-registrations/register', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.warn(`Register event API returned ${res.status}: ${errorText}`);
+      throw new Error('Đăng ký sự kiện thất bại: ' + errorText);
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.warn('Failed to register event:', error);
+    throw error;
   }
-  return res.json();
 }
 
 // Hủy đăng ký sự kiện
 export async function cancelEventRegistration(registrationId: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/event-registrations/${registrationId}/cancel`, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Hủy đăng ký sự kiện thất bại');
-  return true;
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch(`http://localhost:8080/api/event-registrations/${registrationId}/cancel`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Cancel event registration API returned ${res.status}: ${res.statusText}`);
+      throw new Error('Hủy đăng ký sự kiện thất bại');
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn('Failed to cancel event registration:', error);
+    throw error;
+  }
 }
 
 // Hủy đăng ký sự kiện theo event ID
 export async function cancelEventRegistrationByEventId(eventId: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/event-registrations/cancel/${eventId}`, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Hủy đăng ký sự kiện thất bại');
-  return true;
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch(`http://localhost:8080/api/event-registrations/cancel/${eventId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Cancel event registration by event ID API returned ${res.status}: ${res.statusText}`);
+      throw new Error('Hủy đăng ký sự kiện thất bại');
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn('Failed to cancel event registration by event ID:', error);
+    throw error;
+  }
 }
 
 // Gửi yêu cầu hỗ trợ
 export async function createSupportRequest(data: any) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/support-requests', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP ${res.status}: Gửi yêu cầu hỗ trợ thất bại`);
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/support-requests', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.warn(`Create support request API returned ${res.status}: ${errorData.message || res.statusText}`);
+      throw new Error(errorData.message || `HTTP ${res.status}: Gửi yêu cầu hỗ trợ thất bại`);
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.warn('Failed to create support request:', error);
+    throw error;
   }
-  return res.json();
 }
 
 // Lấy lịch sử yêu cầu hỗ trợ
 export async function fetchMySupportRequests() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/support-requests/my', {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Không lấy được lịch sử yêu cầu hỗ trợ');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/support-requests/my', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Support requests API returned ${res.status}: ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch (error) {
+    console.warn('Failed to fetch support requests:', error);
+    return [];
+  }
 }
 
 // Gửi phản hồi
 export async function createFeedback(data: any) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/feedback', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error('Gửi phản hồi thất bại');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/feedback', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!res.ok) {
+      console.warn(`Create feedback API returned ${res.status}: ${res.statusText}`);
+      throw new Error('Gửi phản hồi thất bại');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.warn('Failed to create feedback:', error);
+    throw error;
+  }
 }
 
 // Lấy lịch sử phản hồi
 export async function fetchMyFeedback() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/feedback/my', {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Không lấy được lịch sử phản hồi');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/feedback/my', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Feedback API returned ${res.status}: ${res.statusText}`);
+      // Fallback: trả về mảng rỗng thay vì throw error
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch (error) {
+    console.warn('Failed to fetch feedback:', error);
+    // Fallback: trả về mảng rỗng thay vì throw error
+    return [];
+  }
 }
 
 // Lấy danh sách thông báo
 export async function fetchAnnouncements() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/announcements', {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Không lấy được thông báo');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/announcements', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Announcements API returned ${res.status}: ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch (error) {
+    console.warn('Failed to fetch announcements:', error);
+    return [];
+  }
 }
 
 // Lấy danh sách sự kiện
 export async function fetchEvents() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/events', {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Không lấy được sự kiện');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/events', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Events API returned ${res.status}: ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch (error) {
+    console.warn('Failed to fetch events:', error);
+    return [];
+  }
 }
 
 // Lấy danh sách tiện ích
 export async function fetchFacilities() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/facilities', {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Không lấy được danh sách tiện ích');
-  return res.json();
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/facilities', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Facilities API returned ${res.status}: ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch (error) {
+    console.warn('Failed to fetch facilities:', error);
+    return [];
+  }
 }
 
 // Lấy hóa đơn của tôi
 export async function fetchMyInvoices() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/invoices/my', {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Không lấy được hóa đơn');
-  // Nếu backend trả về object { data: [...] } thì return (await res.json()).data;
-  // Nếu backend trả về trực tiếp mảng thì return await res.json();
-  const data = await res.json();
-  return Array.isArray(data) ? data : data.data;
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) throw new Error('Chưa đăng nhập');
+    
+    const res = await fetch('http://localhost:8080/api/invoices/my', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      console.warn(`Invoices API returned ${res.status}: ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch (error) {
+    console.warn('Failed to fetch invoices:', error);
+    return [];
+  }
 }
 
 // Lấy chi tiết một hóa đơn (bao gồm các khoản phí/items)
