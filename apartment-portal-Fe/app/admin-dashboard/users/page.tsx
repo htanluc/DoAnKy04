@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { User, Role } from '@/lib/api';
 import { apiFetch } from '@/lib/api';
 import { getRoleNames } from '@/lib/auth';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 // Hàm kiểm tra role có phải là ADMIN không (fix lỗi typescript)
 function hasAdminRole(roles?: Role[]): boolean {
@@ -50,6 +51,7 @@ function UsersPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   // filterRole là string để phù hợp với value của <select>
   const [filterRole, setFilterRole] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'staff' | 'resident'>('staff');
 
   useEffect(() => {
     setLoading(true);
@@ -70,7 +72,7 @@ function UsersPageContent() {
         setError('');
       })
       .catch(() => {
-        setError(t('admin.error.load'));
+        setError(t('admin.error.load', 'Không thể tải dữ liệu'));
         setUsers([]);
       })
       .finally(() => {
@@ -79,7 +81,7 @@ function UsersPageContent() {
       });
   }, []);
 
-  // Sửa lỗi: so sánh đúng kiểu Role (so sánh string, không truyền string vào mảng Role)
+  // Danh sách theo tab + filter
   const filteredUsers = users.filter(user => {
     const roleNames = getRoleNames(user);
     // Loại bỏ user admin (username === 'admin') và user có role ADMIN
@@ -87,9 +89,16 @@ function UsersPageContent() {
     const matchesSearch =
       (user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-      (user.phoneNumber?.includes(searchTerm) ?? false);
+      (user.phoneNumber?.includes(searchTerm) ?? false) ||
+      (user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+
+    const inTab = activeTab === 'resident'
+      ? roleNames.includes('RESIDENT')
+      : roleNames.some(r => r !== 'RESIDENT' && r !== 'ADMIN'); // nhân viên: các role không phải RESIDENT/ADMIN
+
     const matchesRole = filterRole === 'all' || roleNames.includes(filterRole);
-    return matchesSearch && matchesRole;
+
+    return matchesSearch && inTab && matchesRole;
   });
 
   const getStatusBadge = (status: string) => {
@@ -114,19 +123,20 @@ function UsersPageContent() {
       roleStr === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
         roleStr === 'STAFF' ? 'bg-blue-100 text-blue-800' :
           roleStr === 'RESIDENT' ? 'bg-green-100 text-green-800' :
+            roleStr === 'TECHNICIAN' ? 'bg-orange-100 text-orange-800' :
+            roleStr === 'CLEANER' ? 'bg-yellow-100 text-yellow-800' :
+            roleStr === 'SECURITY' ? 'bg-indigo-100 text-indigo-800' :
             'bg-gray-100 text-gray-800'
     }>{t(roleKey, roleStr) || '-'}</Badge>;
   };
 
-
-
   if (loading) {
     return (
-      <AdminLayout title={t('admin.users.title')}>
+      <AdminLayout title={t('admin.users.title', 'Quản lý người dùng')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
+            <p className="mt-2 text-gray-600">{t('admin.loading', 'Đang tải...')}</p>
           </div>
         </div>
       </AdminLayout>
@@ -135,7 +145,7 @@ function UsersPageContent() {
 
   if (error) {
     return (
-      <AdminLayout title={t('admin.users.title')}>
+      <AdminLayout title={t('admin.users.title', 'Quản lý người dùng')}>
         <div className="flex items-center justify-center h-64">
           <p className="text-red-500">{error}</p>
         </div>
@@ -144,105 +154,183 @@ function UsersPageContent() {
   }
 
   return (
-    <AdminLayout title={t('admin.users.title')}>
+    <AdminLayout title={t('admin.users.title', 'Quản lý người dùng')}>
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {t('admin.users.list')}
+              {activeTab === 'staff' ? t('admin.users.staff.title', 'Quản lý nhân viên') : t('admin.users.resident.title', 'Quản lý cư dân')}
             </h2>
-            <p className="text-gray-600">{t('admin.users.listDesc')}</p>
+            <p className="text-gray-600">{t('admin.users.listDesc', 'Quản lý tất cả người dùng trong hệ thống')}</p>
           </div>
-          <Link href="/admin-dashboard/users/create">
-            <Button className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>{t('admin.action.create')}</span>
-            </Button>
-          </Link>
+          {activeTab === 'staff' ? (
+            <Link href="/admin-dashboard/users/create">
+              <Button className="flex items-center space-x-2">
+                <Plus className="h-4 w-4" />
+                <span>{t('admin.action.create', 'Tạo mới')}</span>
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/admin-dashboard/residents/create">
+              <Button className="flex items-center space-x-2">
+                <Plus className="h-4 w-4" />
+                <span>{t('admin.action.create', 'Tạo mới')}</span>
+              </Button>
+            </Link>
+          )}
         </div>
 
-        {/* Search and Filter */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder={t('admin.action.search')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-400" />
-                <select
-                  title={t('admin.users.filterRole')}
-                  value={filterRole}
-                  onChange={(e) => setFilterRole(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="all">{t('admin.users.filter.all')}</option>
-                  <option value="ADMIN">{t('admin.users.role.admin')}</option>
-                  <option value="STAFF">{t('admin.users.role.staff')}</option>
-                  <option value="RESIDENT">{t('admin.users.role.resident')}</option>
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as 'staff' | 'resident'); setFilterRole('all'); }}>
+          <TabsList>
+            <TabsTrigger value="staff">{t('admin.users.staff.tab', 'Nhân viên')}</TabsTrigger>
+            <TabsTrigger value="resident">{t('admin.users.resident.tab', 'Cư dân')}</TabsTrigger>
+          </TabsList>
 
-        {/* Users Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{t('admin.users.list')} ({filteredUsers.length})</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredUsers.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">{t('admin.noData')}</p>
+          {/* Search and Filter */}
+          <Card className="mt-2">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder={t('admin.action.search', 'Tìm kiếm...')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Filter className="h-4 w-4 text-gray-400" />
+                  <select
+                    title={t('admin.users.filterRole', 'Lọc vai trò')}
+                    value={filterRole}
+                    onChange={(e) => setFilterRole(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  >
+                    <option value="all">{t('admin.users.filter.all', 'Tất cả vai trò')}</option>
+                    {activeTab === 'resident' ? (
+                      <option value="RESIDENT">{t('admin.users.role.resident', 'Cư dân')}</option>
+                    ) : (
+                      <>
+                        <option value="STAFF">{t('admin.users.role.staff', 'Nhân viên')}</option>
+                        <option value="TECHNICIAN">{t('admin.users.role.technician', 'Kỹ thuật viên')}</option>
+                        <option value="CLEANER">{t('admin.users.role.cleaner', 'Nhân viên vệ sinh')}</option>
+                        <option value="SECURITY">{t('admin.users.role.security', 'Bảo vệ')}</option>
+                      </>
+                    )}
+                  </select>
+                </div>
               </div>
-            ) : (
-              <Table className="table-fixed w-full">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[150px] truncate">{t('admin.users.fullName', 'Họ và tên')}</TableHead>
-                    <TableHead className="w-[130px] truncate">{t('admin.users.email')}</TableHead>
-                    <TableHead className="w-[110px] truncate">{t('admin.users.phone')}</TableHead>
-                    <TableHead className="w-[80px] truncate">{t('admin.users.role')}</TableHead>
-                    <TableHead className="w-[90px] truncate">{t('admin.users.status')}</TableHead>
-                    <TableHead className="w-[60px] truncate">{t('admin.users.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium truncate max-w-[150px]" title={user.fullName || user.username}>{user.fullName || user.username}</TableCell>
-                      <TableCell className="truncate max-w-[130px] whitespace-normal break-words" title={user.email}>{user.email}</TableCell>
-                      <TableCell className="truncate max-w-[110px]" title={user.phoneNumber}>{user.phoneNumber}</TableCell>
-                      <TableCell>
-                        {getRoleBadge(getRoleNames(user)[0])}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Link href={`/admin-dashboard/users/${user.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Users Table by Tab (content is same, just title/count) */}
+          <TabsContent value="staff">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>{t('admin.users.staff.list', 'Danh sách nhân viên')} ({filteredUsers.length})</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredUsers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">{t('admin.noData', 'Không có dữ liệu')}</p>
+                  </div>
+                ) : (
+                  <Table className="table-fixed w-full">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[150px] truncate">{t('admin.users.fullName', 'Họ và tên')}</TableHead>
+                        <TableHead className="w-[130px] truncate">{t('admin.users.email', 'Email')}</TableHead>
+                        <TableHead className="w-[110px] truncate">{t('admin.users.phone', 'Số điện thoại')}</TableHead>
+                        <TableHead className="w-[80px] truncate">{t('admin.users.role', 'Vai trò')}</TableHead>
+                        <TableHead className="w-[90px] truncate">{t('admin.users.status', 'Trạng thái')}</TableHead>
+                        <TableHead className="w-[60px] truncate">{t('admin.users.actions', 'Thao tác')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium truncate max-w-[150px]" title={user.fullName || user.username}>{user.fullName || user.username}</TableCell>
+                          <TableCell className="truncate max-w-[130px] whitespace-normal break-words" title={user.email}>{user.email}</TableCell>
+                          <TableCell className="truncate max-w-[110px]" title={user.phoneNumber}>{user.phoneNumber}</TableCell>
+                          <TableCell>
+                            {getRoleBadge(getRoleNames(user)[0])}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(user.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Link href={`/admin-dashboard/users/${user.id}`}>
+                                <Button variant="outline" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="resident">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>{t('admin.users.resident.list', 'Danh sách cư dân')} ({filteredUsers.length})</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredUsers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">{t('admin.noData', 'Không có dữ liệu')}</p>
+                  </div>
+                ) : (
+                  <Table className="table-fixed w-full">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[150px] truncate">{t('admin.users.fullName', 'Họ và tên')}</TableHead>
+                        <TableHead className="w-[130px] truncate">{t('admin.users.email', 'Email')}</TableHead>
+                        <TableHead className="w-[110px] truncate">{t('admin.users.phone', 'Số điện thoại')}</TableHead>
+                        <TableHead className="w-[80px] truncate">{t('admin.users.role', 'Vai trò')}</TableHead>
+                        <TableHead className="w-[90px] truncate">{t('admin.users.status', 'Trạng thái')}</TableHead>
+                        <TableHead className="w-[60px] truncate">{t('admin.users.actions', 'Thao tác')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium truncate max-w-[150px]" title={user.fullName || user.username}>{user.fullName || user.username}</TableCell>
+                          <TableCell className="truncate max-w-[130px] whitespace-normal break-words" title={user.email}>{user.email}</TableCell>
+                          <TableCell className="truncate max-w-[110px]" title={user.phoneNumber}>{user.phoneNumber}</TableCell>
+                          <TableCell>
+                            {getRoleBadge(getRoleNames(user)[0])}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(user.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Link href={`/admin-dashboard/users/${user.id}`}>
+                                <Button variant="outline" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );

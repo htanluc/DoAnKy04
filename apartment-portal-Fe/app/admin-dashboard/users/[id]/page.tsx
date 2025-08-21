@@ -23,7 +23,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
 interface UserDetail {
@@ -46,7 +46,7 @@ export default function UserDetailPage() {
 }
 
 function UserDetailContent() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const params = useParams();
   const userId = params?.id as string;
@@ -61,6 +61,15 @@ function UserDetailContent() {
   const [assigning, setAssigning] = useState(false);
   const [showDeactivationDialog, setShowDeactivationDialog] = useState(false);
   const [deactivationReason, setDeactivationReason] = useState('');
+
+  // Danh sách lý do cố định
+  const fixedReasons: { value: string; label: string }[] = [
+    { value: 'VIOLATION_RULES', label: 'Vi phạm nội quy' },
+    { value: 'FRAUD_SUSPICION', label: 'Nghi ngờ gian lận' },
+    { value: 'INAPPROPRIATE_BEHAVIOR', label: 'Hành vi không phù hợp' },
+    { value: 'SECURITY_CONCERN', label: 'Vấn đề bảo mật' },
+    { value: 'REQUESTED_BY_USER', label: 'Theo yêu cầu của người dùng' },
+  ];
   const [isDeactivating, setIsDeactivating] = useState(false);
 
   // Hàm kiểm tra và refresh token
@@ -193,9 +202,9 @@ function UserDetailContent() {
       return;
     }
     
-    // Nếu đang vô hiệu hóa, hiển thị dialog nhập lý do
+    // Nếu đang vô hiệu hóa, hiển thị dialog chọn lý do
     if (user.status === 'ACTIVE') {
-      setDeactivationReason(user.lockReason || '');
+      setDeactivationReason('');
       setShowDeactivationDialog(true);
       return;
     }
@@ -210,8 +219,8 @@ function UserDetailContent() {
       return;
     }
     
-    if (newStatus === 'INACTIVE' && !reason.trim()) {
-      toast({ title: 'Lỗi', description: 'Bạn phải nhập lý do vô hiệu hóa!', variant: 'destructive' });
+    if (newStatus === 'INACTIVE' && !reason) {
+      toast({ title: 'Lỗi', description: 'Bạn phải chọn lý do vô hiệu hóa!', variant: 'destructive' });
       return;
     }
     
@@ -274,21 +283,13 @@ function UserDetailContent() {
   };
 
   const handleDeactivate = () => {
-    if (!deactivationReason.trim()) {
-      toast({ title: '❌ Lỗi', description: 'Bạn phải nhập lý do vô hiệu hóa!', variant: 'destructive' });
+    if (!deactivationReason) {
+      toast({ title: '❌ Lỗi', description: 'Bạn phải chọn lý do vô hiệu hóa!', variant: 'destructive' });
       return;
     }
-    
-    if (deactivationReason.trim().length < 10) {
-      toast({ 
-        title: '❌ Lý do quá ngắn', 
-        description: 'Lý do vô hiệu hóa phải có ít nhất 10 ký tự để đảm bảo tính rõ ràng.', 
-        variant: 'destructive' 
-      });
-      return;
-    }
-    
-    performStatusChange('INACTIVE', deactivationReason);
+    // Gửi label làm lý do hiển thị trong email/thông báo
+    const selected = fixedReasons.find(r => r.value === deactivationReason);
+    performStatusChange('INACTIVE', selected?.label || deactivationReason);
   };
 
   const handleUnlinkApartment = async (apartmentId: string) => {
@@ -410,15 +411,15 @@ function UserDetailContent() {
                 )}
               </div>
               <div><strong>{t('admin.users.status', 'Trạng thái')}:</strong> <Badge>{user.status}</Badge></div>
-              <div><strong>{t('admin.users.createdAt', 'Ngày tạo')}:</strong> {new Date(user.createdAt).toLocaleDateString('vi-VN')}</div>
+              <div><strong>{t('admin.users.createdAt', 'Ngày tạo')}:</strong> {new Date(user.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}</div>
               {(user.status === 'INACTIVE') && user.lockReason && (
-                <div className="text-red-600"><b>Lý do vô hiệu hóa:</b> {user.lockReason}</div>
+                <div className="text-red-600"><b>{t('admin.users.deactivate.reason', 'Lý do vô hiệu hóa')}:</b> {t(`admin.users.deactivate.reason.${user.lockReason}`, user.lockReason)}</div>
               )}
             </div>
             <div className="mt-6">
-              <div className="font-semibold mb-2">Căn hộ đã liên kết:</div>
+              <div className="font-semibold mb-2">{t('admin.users.linkedApartments', 'Căn hộ đã liên kết')}:</div>
               {apartmentsLoading ? (
-                <div>Đang tải...</div>
+                <div>{t('admin.loading', 'Đang tải...')}</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-[400px] w-full text-sm rounded-lg shadow border border-gray-200">
@@ -442,7 +443,7 @@ function UserDetailContent() {
                                 ap.relationType === 'TENANT' ? 'bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold' :
                                 'bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold'
                               }>
-                                {ap.relationType === 'OWNER' ? 'Chủ hộ' : ap.relationType === 'TENANT' ? 'Người thuê' : 'Thành viên'}
+                                {ap.relationType === 'OWNER' ? t('admin.users.relationType.OWNER', 'Chủ hộ') : ap.relationType === 'TENANT' ? t('admin.users.relationType.TENANT', 'Người thuê') : t('admin.users.relationType.FAMILY_MEMBER', 'Thành viên')}
                               </span>
                             </td>
                             <td className="py-2 px-3">
@@ -454,14 +455,14 @@ function UserDetailContent() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Xác nhận hủy liên kết</AlertDialogTitle>
+                                    <AlertDialogTitle>{t('admin.users.unlink.confirmTitle', 'Xác nhận hủy liên kết')}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Bạn có chắc chắn muốn hủy liên kết căn hộ <b>{ap.unitNumber}</b> với tài khoản này không?
+                                      {t('admin.users.unlink.confirmDesc', 'Bạn có chắc chắn muốn hủy liên kết căn hộ {unit} với tài khoản này không?').replace('{unit}', String(ap.unitNumber))}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                    <AlertDialogAction onClick={confirmUnlinkApartment}>Đồng ý</AlertDialogAction>
+                                    <AlertDialogCancel>{t('admin.action.cancel', 'Hủy')}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={confirmUnlinkApartment}>{t('admin.action.confirm', 'Đồng ý')}</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
@@ -470,7 +471,7 @@ function UserDetailContent() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="text-center py-2 text-gray-500">Chưa liên kết căn hộ nào</td>
+                          <td colSpan={4} className="text-center py-2 text-gray-500">{t('admin.users.linkedApartments.none', 'Chưa liên kết căn hộ nào')}</td>
                         </tr>
                       )}
                     </tbody>
@@ -498,7 +499,7 @@ function UserDetailContent() {
         </Card>
       </div>
 
-      {/* Dialog nhập lý do vô hiệu hóa */}
+      {/* Dialog chọn lý do vô hiệu hóa */}
       <AlertDialog 
         open={showDeactivationDialog} 
         onOpenChange={(open) => {
@@ -512,40 +513,38 @@ function UserDetailContent() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="h-5 w-5" />
-              Vô hiệu hóa tài khoản
+              {t('admin.users.deactivate.title', 'Vô hiệu hóa tài khoản')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn sắp vô hiệu hóa tài khoản của <strong>{user?.username}</strong> ({user?.email}). 
-              Vui lòng nhập lý do chi tiết để gửi thông báo cho cư dân.
+              {t('admin.users.deactivate.desc', `Bạn sắp vô hiệu hóa tài khoản của {username} ({email}). Vui lòng chọn một lý do để gửi thông báo cho cư dân.`)
+                .replace('{username}', String(user?.username || ''))
+                .replace('{email}', String(user?.email || ''))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="deactivation-reason">
-                Lý do vô hiệu hóa * 
-                <span className="text-sm text-gray-500 ml-1">(tối thiểu 10 ký tự)</span>
-              </Label>
-              <Textarea
-                id="deactivation-reason"
-                placeholder="Nhập lý do vô hiệu hóa tài khoản... (tối thiểu 10 ký tự)"
+              <Label htmlFor="deactivation-reason">{t('admin.users.deactivate.reason', 'Lý do vô hiệu hóa')} *</Label>
+              <Select
                 value={deactivationReason}
-                onChange={(e) => setDeactivationReason(e.target.value)}
-                className="min-h-[100px] resize-none"
+                onValueChange={(v) => setDeactivationReason(v)}
                 disabled={isDeactivating}
-              />
-              <div className="text-xs text-gray-500 text-right">
-                {deactivationReason.length}/500 ký tự
-                {deactivationReason.length > 0 && deactivationReason.length < 10 && (
-                  <span className="text-red-500 ml-2">⚠️ Quá ngắn</span>
-                )}
-              </div>
+              >
+                <SelectTrigger id="deactivation-reason">
+                  <SelectValue placeholder={t('admin.users.deactivate.reason.placeholder', 'Chọn lý do')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {fixedReasons.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{t(`admin.users.deactivate.reason.${r.value}`, r.label)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                <strong>📧 Thông báo email:</strong> Email thông báo sẽ được gửi tự động đến <strong>{user?.email}</strong> 
-                với lý do vô hiệu hóa và hướng dẫn khôi phục tài khoản.
+                {t('admin.users.deactivate.emailNotice', 'Email thông báo sẽ được gửi tự động đến {email} với lý do đã chọn và hướng dẫn khôi phục tài khoản.')
+                  .replace('{email}', String(user?.email || ''))}
               </p>
             </div>
           </div>
@@ -558,21 +557,21 @@ function UserDetailContent() {
                 setDeactivationReason('');
               }}
             >
-              Hủy
+              {t('admin.action.cancel', 'Hủy')}
             </AlertDialogCancel>
             <Button
               onClick={handleDeactivate}
-              disabled={isDeactivating || !deactivationReason.trim() || deactivationReason.trim().length < 10}
+              disabled={isDeactivating || !deactivationReason}
               variant="destructive"
               className="min-w-[100px]"
             >
               {isDeactivating ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Đang xử lý...
+                  {t('admin.action.loading', 'Đang tải...')}
                 </>
               ) : (
-                'Vô hiệu hóa'
+                t('admin.action.deactivate', 'Vô hiệu hóa')
               )}
             </Button>
           </AlertDialogFooter>

@@ -147,7 +147,7 @@ function AdminDashboardContent() {
 
   const stats = [
     {
-      title: t('admin.users.title'),
+      title: t('admin.users.title', 'Quản lý người dùng'),
       value: counts.users,
       icon: Users,
       color: 'text-blue-600',
@@ -155,7 +155,7 @@ function AdminDashboardContent() {
       href: '/admin-dashboard/users'
     },
     {
-      title: t('admin.residents.title'),
+      title: t('admin.residents.title', 'Quản lý cư dân'),
       value: counts.residents,
       icon: Users,
       color: 'text-green-600',
@@ -163,7 +163,7 @@ function AdminDashboardContent() {
       href: '/admin-dashboard/residents'
     },
     {
-      title: t('admin.apartments.title'),
+      title: t('admin.apartments.title', 'Quản lý căn hộ'),
       value: counts.apartments,
       icon: Building2,
       color: 'text-purple-600',
@@ -171,7 +171,7 @@ function AdminDashboardContent() {
       href: '/admin-dashboard/apartments'
     },
     {
-      title: t('admin.announcements.title'),
+      title: t('admin.announcements.title', 'Quản lý thông báo'),
       value: counts.announcements,
       icon: Bell,
       color: 'text-orange-600',
@@ -179,7 +179,7 @@ function AdminDashboardContent() {
       href: '/admin-dashboard/announcements'
     },
     {
-      title: t('admin.events.title'),
+      title: t('admin.events.title', 'Quản lý sự kiện'),
       value: counts.events,
       icon: Calendar,
       color: 'text-red-600',
@@ -187,7 +187,7 @@ function AdminDashboardContent() {
       href: '/admin-dashboard/events'
     },
     {
-      title: t('admin.facilities.title'),
+      title: t('admin.facilities.title', 'Quản lý cơ sở vật chất'),
       value: counts.facilities,
       icon: Coffee,
       color: 'text-indigo-600',
@@ -195,7 +195,7 @@ function AdminDashboardContent() {
       href: '/admin-dashboard/facilities'
     },
     {
-      title: t('admin.invoices.title'),
+      title: t('admin.invoices.title', 'Quản lý hóa đơn'),
       value: counts.invoices,
       icon: Receipt,
       color: 'text-yellow-600',
@@ -203,7 +203,7 @@ function AdminDashboardContent() {
       href: '/admin-dashboard/invoices'
     },
     {
-      title: t('admin.support-requests.title'),
+      title: t('admin.support-requests.title', 'Quản lý yêu cầu hỗ trợ'),
       value: counts.supportRequests,
       icon: HelpCircle,
       color: 'text-pink-600',

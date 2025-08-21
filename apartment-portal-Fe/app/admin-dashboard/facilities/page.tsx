@@ -113,11 +113,11 @@ function FacilitiesPageContent() {
 
   if (loading) {
     return (
-      <AdminLayout title={t('admin.facilities.title')}>
+      <AdminLayout title={t('admin.facilities.title', 'Quản lý tiện ích')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
+            <p className="mt-2 text-gray-600">{t('admin.loading', 'Đang tải...')}</p>
           </div>
         </div>
       </AdminLayout>
@@ -125,49 +125,49 @@ function FacilitiesPageContent() {
   }
 
   return (
-    <AdminLayout title={t('admin.facilities.title')}>
+    <AdminLayout title={t('admin.facilities.title', 'Quản lý tiện ích')}>
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {t('admin.facilities.list')}
-            </h2>
-            <p className="text-gray-600">
-              {t('admin.facilities.listDesc', 'Quản lý tất cả tiện ích trong chung cư')}
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('admin.facilities.title', 'Quản lý tiện ích')}</h2>
+            <p className="text-gray-600 mt-1">{t('admin.facilities.listDesc', 'Quản lý tất cả tiện ích trong chung cư')}</p>
           </div>
           <Link href="/admin-dashboard/facilities/create">
-            <Button className="flex items-center space-x-2">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              <span>{t('admin.action.create')}</span>
+              {t('admin.facilities.create', 'Tạo tiện ích mới')}
             </Button>
           </Link>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search and filters */}
         <Card>
-          <CardContent className="p-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              {t('admin.filters.searchAndFilter', 'Tìm kiếm & lọc')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <div className="flex-1">
                 <Input
                   placeholder={t('admin.facilities.searchPlaceholder', 'Tìm kiếm theo tên, mô tả...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="w-full"
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+              <div className="sm:w-48">
                 <select
-                  title="Sức chứa tiện ích"
                   value={filterCapacity}
                   onChange={(e) => setFilterCapacity(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Lọc theo sức chứa"
                 >
                   <option value="all">{t('admin.facilities.capacity.all', 'Tất cả sức chứa')}</option>
-                  <option value="small">{t('admin.facilities.capacity.small', 'Nhỏ (≤20)')}</option>
+                  <option value="small">{t('admin.facilities.capacity.small', 'Nhỏ (1-20)')}</option>
                   <option value="medium">{t('admin.facilities.capacity.medium', 'Trung bình (21-50)')}</option>
                   <option value="large">{t('admin.facilities.capacity.large', 'Lớn (>50)')}</option>
                 </select>
@@ -186,7 +186,7 @@ function FacilitiesPageContent() {
           <CardContent>
             {filteredFacilities.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">{t('admin.noData')}</p>
+                <p className="text-gray-500">{t('admin.noData', 'Không có dữ liệu')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">

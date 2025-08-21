@@ -4,6 +4,10 @@ import com.mytech.apartment.portal.dtos.UserCreateRequest;
 import com.mytech.apartment.portal.dtos.UserDto;
 import com.mytech.apartment.portal.dtos.UserUpdateRequest;
 import com.mytech.apartment.portal.services.UserService;
+import com.mytech.apartment.portal.services.EmailService;
+import java.security.SecureRandom;
+import org.springframework.beans.factory.annotation.Value;
+import com.mytech.apartment.portal.models.enums.UserStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +26,12 @@ public class ResidentController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
     /**
      * [EN] Get all residents
@@ -69,8 +79,76 @@ public class ResidentController {
      */
     @PostMapping
     public UserDto createResident(@RequestBody UserCreateRequest request) {
-        // Ensure the user will have RESIDENT role by using registerUser method
-        return userService.registerUser(request);
+        // Chuẩn hóa dữ liệu đầu vào từ Admin:
+        // - Nếu thiếu username, dùng phoneNumber làm username
+        // - Nếu thiếu mật khẩu, tự sinh mật khẩu ngẫu nhiên và gửi email cho cư dân
+        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+            request.setUsername(request.getPhoneNumber());
+        }
+
+        String generatedPassword = null;
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            generatedPassword = generateRandomPassword(12);
+            request.setPassword(generatedPassword);
+        }
+
+        UserDto created = userService.registerUser(request);
+
+        // Kích hoạt tài khoản ngay khi admin tạo
+        try {
+            created = userService.setUserStatus(created.getId(), UserStatus.ACTIVE, null);
+        } catch (Exception ignored) { }
+
+        // Nếu đã tự sinh mật khẩu và có email, gửi email thông báo
+        if (generatedPassword != null && created.getEmail() != null && !created.getEmail().trim().isEmpty()) {
+            try {
+                String subject = "Tài khoản cư dân của bạn đã được tạo";
+                String loginUrl = frontendUrl + "/login";
+                String htmlContent = String.format(
+                    "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>" +
+                    "<h2 style='color:#0d6efd;'>Chào %s,</h2>" +
+                    "<p>Tài khoản cư dân của bạn đã được <strong>ban quản trị</strong> tạo trên hệ thống.</p>" +
+                    "<div style='background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:12px;margin:12px 0;'>" +
+                    "<p style='margin:4px 0'><strong>Tên đăng nhập:</strong> %s</p>" +
+                    "<p style='margin:4px 0'><strong>Mật khẩu tạm thời:</strong> %s</p>" +
+                    "</div>" +
+                    "<p>Vui lòng đăng nhập và đổi mật khẩu ngay tại trang hồ sơ để đảm bảo an toàn.</p>" +
+                    "<p><a href='%s' style='display:inline-block;background:#0d6efd;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;'>Đăng nhập ngay</a></p>" +
+                    "<p style='color:#6c757d;font-size:12px'>Nếu bạn không yêu cầu tạo tài khoản, vui lòng liên hệ ban quản trị.</p>" +
+                    "</div>",
+                    created.getFullName() != null ? created.getFullName() : created.getUsername(),
+                    created.getUsername(),
+                    generatedPassword,
+                    loginUrl
+                );
+                emailService.sendHtmlEmail(created.getEmail(), subject, htmlContent);
+            } catch (Exception e) {
+                // Không chặn luồng chính nếu gửi email thất bại
+            }
+        }
+
+        return created;
+    }
+
+    private String generateRandomPassword(int length) {
+        final String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        final String lower = "abcdefghijklmnopqrstuvwxyz";
+        final String digits = "0123456789";
+        final String specials = "!@#$%^&*()-_";
+        final String all = upper + lower + digits + specials;
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder();
+
+        // Đảm bảo có đủ đa dạng ký tự
+        sb.append(upper.charAt(random.nextInt(upper.length())));
+        sb.append(lower.charAt(random.nextInt(lower.length())));
+        sb.append(digits.charAt(random.nextInt(digits.length())));
+        sb.append(specials.charAt(random.nextInt(specials.length())));
+
+        for (int i = sb.length(); i < length; i++) {
+            sb.append(all.charAt(random.nextInt(all.length())));
+        }
+        return sb.toString();
     }
 
     /**

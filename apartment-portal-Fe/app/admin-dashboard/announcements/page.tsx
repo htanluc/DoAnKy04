@@ -27,6 +27,7 @@ import {
 import Link from 'next/link';
 import { announcementsApi, Announcement, AnnouncementType, TargetAudience } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 export default function AnnouncementsPage() {
   return (
@@ -43,6 +44,8 @@ function AnnouncementsPageContent() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const fetchAnnouncements = async () => {
     try {
@@ -63,6 +66,11 @@ function AnnouncementsPageContent() {
   useEffect(() => {
     fetchAnnouncements();
   }, []);
+
+  // Reset về trang 1 khi filter/search thay đổi hoặc dữ liệu mới về
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterType, announcements]);
 
   const handleDelete = async (id: number) => {
     if (window.confirm(t('admin.announcements.confirmDelete','Bạn có chắc chắn muốn xóa thông báo này?'))) {
@@ -89,6 +97,18 @@ function AnnouncementsPageContent() {
     const matchesType = filterType === 'all' || announcement.type === filterType;
     return matchesSearch && matchesType;
   });
+
+  // Sắp xếp mới nhất trước (giảm dần theo createdAt)
+  const sortedAnnouncements = [...filteredAnnouncements].sort((a, b) => {
+    const aTime = new Date(a.createdAt).getTime();
+    const bTime = new Date(b.createdAt).getTime();
+    return bTime - aTime;
+  });
+
+  // Phân trang 10 thông báo/trang
+  const totalPages = Math.max(1, Math.ceil(sortedAnnouncements.length / pageSize));
+  const startIdx = (currentPage - 1) * pageSize;
+  const pageAnnouncements = sortedAnnouncements.slice(startIdx, startIdx + pageSize);
 
   const getTypeBadge = (type: AnnouncementType) => {
     switch (type) {
@@ -138,11 +158,11 @@ function AnnouncementsPageContent() {
 
   if (loading) {
     return (
-      <AdminLayout title={t('admin.announcements.title')}>
+      <AdminLayout title={t('admin.announcements.title', 'Quản lý thông báo')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
+            <p className="mt-2 text-gray-600">{t('admin.loading', 'Đang tải...')}</p>
           </div>
         </div>
       </AdminLayout>
@@ -150,46 +170,46 @@ function AnnouncementsPageContent() {
   }
 
   return (
-    <AdminLayout title={t('admin.announcements.title')}>
+    <AdminLayout title={t('admin.announcements.title', 'Quản lý thông báo')}>
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {t('admin.announcements.list', 'Danh sách thông báo')}
-            </h2>
-            <p className="text-gray-600">
-              {t('admin.announcements.listDesc', 'Quản lý tất cả thông báo trong hệ thống')}
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('admin.announcements.title', 'Quản lý thông báo')}</h2>
+            <p className="text-gray-600 mt-1">{t('admin.announcements.listDesc', 'Quản lý tất cả thông báo trong hệ thống')}</p>
           </div>
           <Link href="/admin-dashboard/announcements/create">
-            <Button className="flex items-center space-x-2">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              <span>{t('admin.action.create', 'Tạo mới')}</span>
+              {t('admin.announcements.create', 'Tạo thông báo mới')}
             </Button>
           </Link>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search and filters */}
         <Card>
-          <CardContent className="p-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              {t('admin.filters.searchAndFilter', 'Tìm kiếm & lọc')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <div className="flex-1">
                 <Input
                   placeholder={t('admin.announcements.searchPlaceholder', 'Tìm kiếm theo tiêu đề, nội dung...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="w-full"
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+              <div className="sm:w-48">
                 <select
-                  title={t('admin.announcements.type', 'Loại thông báo')}
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Lọc theo loại"
                 >
                   <option value="all">{t('admin.announcements.type.all', 'Tất cả loại')}</option>
                   <option value="NEWS">{t('admin.announcements.type.news', 'Tin tức')}</option>
@@ -205,11 +225,11 @@ function AnnouncementsPageContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>{t('admin.announcements.list','Danh sách thông báo')} ({filteredAnnouncements.length})</span>
+              <span>{t('admin.announcements.list','Danh sách thông báo')} ({sortedAnnouncements.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {filteredAnnouncements.length === 0 ? (
+            {sortedAnnouncements.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">{t('admin.noData')}</p>
               </div>
@@ -227,7 +247,7 @@ function AnnouncementsPageContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAnnouncements.map((announcement) => (
+                    {pageAnnouncements.map((announcement) => (
                       <TableRow key={announcement.id}>
                         <TableCell className="font-medium max-w-xs truncate">
                           {announcement.title}
@@ -270,6 +290,39 @@ function AnnouncementsPageContent() {
                     ))}
                   </TableBody>
                 </Table>
+                {totalPages > 1 && (
+                  <div className="mt-4">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); if (currentPage > 1) setCurrentPage(currentPage - 1); }}
+                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                          />
+                        </PaginationItem>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              isActive={page === currentPage}
+                              onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                          <PaginationNext
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); if (currentPage < totalPages) setCurrentPage(currentPage + 1); }}
+                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

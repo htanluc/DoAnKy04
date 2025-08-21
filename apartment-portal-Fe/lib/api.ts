@@ -771,6 +771,11 @@ export const vehiclesApi = {
     if (!response.ok) throw new Error('Cập nhật trạng thái xe thất bại');
     return response.json();
   },
+  // Gửi email thông báo cho người dùng khi hủy/gỡ đăng ký xe
+  notifyCancellation: async (id: number): Promise<void> => {
+    const response = await api.post(`/api/admin/vehicles/${id}/notify-cancel`, {});
+    if (!response.ok) throw new Error('Gửi email thông báo hủy đăng ký xe thất bại');
+  },
   delete: async (id: number): Promise<void> => {
     const response = await api.delete(`/api/admin/vehicles/${id}`);
     if (!response.ok) throw new Error('Xóa xe thất bại');
