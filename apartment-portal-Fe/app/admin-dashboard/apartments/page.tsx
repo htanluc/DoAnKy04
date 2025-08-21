@@ -88,11 +88,11 @@ function ApartmentsPageContent() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OCCUPIED':
-        return <Badge className="bg-green-100 text-green-800">{t('admin.apartments.status.OCCUPIED')}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('admin.apartments.status.OCCUPIED', 'Có người ở')}</Badge>;
       case 'VACANT':
-        return <Badge className="bg-yellow-100 text-yellow-800">{t('admin.apartments.status.VACANT')}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('admin.apartments.status.VACANT', 'Trống')}</Badge>;
       case 'MAINTENANCE':
-        return <Badge className="bg-red-100 text-red-800">{t('admin.apartments.status.MAINTENANCE')}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('admin.apartments.status.MAINTENANCE', 'Bảo trì')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -100,11 +100,11 @@ function ApartmentsPageContent() {
 
   if (loading) {
     return (
-      <AdminLayout title={t('admin.apartments.title')}>
+      <AdminLayout title={t('admin.apartments.title', 'Quản lý căn hộ')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
+            <p className="mt-2 text-gray-600">{t('admin.loading', 'Đang tải...')}</p>
           </div>
         </div>
       </AdminLayout>
@@ -113,18 +113,18 @@ function ApartmentsPageContent() {
 
   if (error) {
     return (
-      <AdminLayout title={t('admin.apartments.title')}>
+      <AdminLayout title={t('admin.apartments.title', 'Quản lý căn hộ')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-medium">{t('admin.error.load')}</p>
+            <p className="text-red-600 font-medium">{t('admin.error.load', 'Không thể tải dữ liệu')}</p>
             <p className="text-gray-600 mt-2">{error}</p>
             <Button 
               onClick={loadApartments} 
               className="mt-4"
               variant="outline"
             >
-              {t('admin.action.retry')}
+              {t('admin.action.retry', 'Thử lại')}
             </Button>
           </div>
         </div>
@@ -133,18 +133,18 @@ function ApartmentsPageContent() {
   }
 
   return (
-    <AdminLayout title={t('admin.apartments.title')}>
+    <AdminLayout title={t('admin.apartments.title', 'Quản lý căn hộ')}>
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{t('admin.apartments.title')}</h2>
-            <p className="text-gray-600 mt-1">{t('admin.apartments.listDesc')}</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('admin.apartments.title', 'Quản lý căn hộ')}</h2>
+            <p className="text-gray-600 mt-1">{t('admin.apartments.listDesc', 'Quản lý thông tin căn hộ trong hệ thống')}</p>
           </div>
           <Link href="/admin-dashboard/apartments/create">
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              {t('admin.apartments.addButton')}
+              {t('admin.apartments.addButton', 'Thêm Căn Hộ')}
             </Button>
           </Link>
         </div>
@@ -154,14 +154,14 @@ function ApartmentsPageContent() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
-              {t('admin.filters.searchAndFilter')}
+              {t('admin.filters.searchAndFilter', 'Tìm kiếm & lọc')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <Input
-                  placeholder={t('admin.apartments.searchPlaceholder')}
+                  placeholder={t('admin.apartments.searchPlaceholder', 'Tìm theo mã căn hộ, tòa nhà...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full"
@@ -174,10 +174,10 @@ function ApartmentsPageContent() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label="Lọc theo trạng thái"
                 >
-                  <option value="all">{t('admin.apartments.status.all')}</option>
-                  <option value="OCCUPIED">{t('admin.apartments.status.OCCUPIED')}</option>
-                  <option value="VACANT">{t('admin.apartments.status.VACANT')}</option>
-                  <option value="MAINTENANCE">{t('admin.apartments.status.MAINTENANCE')}</option>
+                  <option value="all">{t('admin.apartments.status.all', 'Tất cả trạng thái')}</option>
+                  <option value="OCCUPIED">{t('admin.apartments.status.OCCUPIED', 'Có người ở')}</option>
+                  <option value="VACANT">{t('admin.apartments.status.VACANT', 'Trống')}</option>
+                  <option value="MAINTENANCE">{t('admin.apartments.status.MAINTENANCE', 'Bảo trì')}</option>
                 </select>
               </div>
             </div>
@@ -188,25 +188,25 @@ function ApartmentsPageContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>{t('admin.apartments.list')} ({filteredApartments.length})</span>
+              <span>{t('admin.apartments.list', 'Danh sách căn hộ')} ({filteredApartments.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredApartments.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">{t('admin.apartments.empty')}</p>
+                <p className="text-gray-500">{t('admin.apartments.empty', 'Không tìm thấy căn hộ nào')}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('admin.apartments.columns.id')}</TableHead>
-                    <TableHead>{t('admin.apartments.columns.unitNumber')}</TableHead>
-                    <TableHead>{t('admin.apartments.columns.building')}</TableHead>
-                    <TableHead>{t('admin.apartments.columns.floor')}</TableHead>
-                    <TableHead>{t('admin.apartments.columns.area')}</TableHead>
-                    <TableHead>{t('admin.apartments.columns.status')}</TableHead>
-                    <TableHead>{t('admin.apartments.columns.actions')}</TableHead>
+                    <TableHead>{t('admin.apartments.columns.id', 'ID')}</TableHead>
+                    <TableHead>{t('admin.apartments.columns.unitNumber', 'Mã Căn Hộ')}</TableHead>
+                    <TableHead>{t('admin.apartments.columns.building', 'Tòa Nhà')}</TableHead>
+                    <TableHead>{t('admin.apartments.columns.floor', 'Tầng')}</TableHead>
+                    <TableHead>{t('admin.apartments.columns.area', 'Diện Tích (m²)')}</TableHead>
+                    <TableHead>{t('admin.apartments.columns.status', 'Trạng Thái')}</TableHead>
+                    <TableHead>{t('admin.apartments.columns.actions', 'Thao Tác')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

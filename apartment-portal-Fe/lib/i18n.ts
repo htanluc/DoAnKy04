@@ -283,6 +283,9 @@ export const translations: Translations = {
     vi: 'Xóa',
     en: 'Delete'
   },
+  'admin.action.activate': { vi: 'Kích hoạt', en: 'Activate' },
+  'admin.action.deactivate': { vi: 'Vô hiệu hóa', en: 'Deactivate' },
+  'admin.action.confirm': { vi: 'Đồng ý', en: 'Confirm' },
   'admin.action.view': {
     vi: 'Xem chi tiết',
     en: 'View Details'
@@ -354,11 +357,38 @@ export const translations: Translations = {
     vi: 'Quản lý tất cả người dùng trong hệ thống',
     en: 'Manage all users in the system'
   },
+  'admin.users.staff.title': {
+    vi: 'Quản lý nhân viên',
+    en: 'Staff Management'
+  },
+  'admin.users.staff.tab': {
+    vi: 'Nhân viên',
+    en: 'Staff'
+  },
+  'admin.users.staff.list': {
+    vi: 'Danh sách nhân viên',
+    en: 'Staff List'
+  },
+  'admin.users.resident.title': {
+    vi: 'Quản lý cư dân',
+    en: 'Resident Management'
+  },
+  'admin.users.resident.tab': {
+    vi: 'Cư dân',
+    en: 'Resident'
+  },
+  'admin.users.resident.list': {
+    vi: 'Danh sách cư dân',
+    en: 'Resident List'
+  },
   'admin.users.filterRole': { vi: 'Lọc vai trò', en: 'Filter role' },
   'admin.users.filter.all': { vi: 'Tất cả vai trò', en: 'All roles' },
   'admin.users.role.admin': { vi: 'Quản trị', en: 'Admin' },
   'admin.users.role.staff': { vi: 'Nhân viên', en: 'Staff' },
   'admin.users.role.resident': { vi: 'Cư dân', en: 'Resident' },
+  'admin.users.role.technician': { vi: 'Kỹ thuật viên', en: 'Technician' },
+  'admin.users.role.cleaner': { vi: 'Nhân viên vệ sinh', en: 'Cleaner' },
+  'admin.users.role.security': { vi: 'Bảo vệ', en: 'Security' },
   'admin.users.create': {
     vi: 'Tạo người dùng mới',
     en: 'Create New User'
@@ -379,10 +409,24 @@ export const translations: Translations = {
     vi: 'Chi tiết người dùng',
     en: 'User Details'
   },
+  'admin.users.deactivate.title': { vi: 'Vô hiệu hóa tài khoản', en: 'Deactivate account' },
+  'admin.users.deactivate.desc': { vi: 'Bạn sắp vô hiệu hóa tài khoản của {username} ({email}). Vui lòng chọn một lý do để gửi thông báo cho cư dân.', en: 'You are about to deactivate the account of {username} ({email}). Please select a reason to notify the resident.' },
+  'admin.users.deactivate.reason': { vi: 'Lý do vô hiệu hóa', en: 'Deactivation reason' },
+  'admin.users.deactivate.reason.placeholder': { vi: 'Chọn lý do', en: 'Select a reason' },
+  'admin.users.deactivate.emailNotice': { vi: 'Email thông báo sẽ được gửi tự động đến {email} với lý do đã chọn và hướng dẫn khôi phục tài khoản.', en: 'A notification email will be sent to {email} with the selected reason and instructions to restore the account.' },
+  'admin.users.deactivate.reason.required': { vi: 'Bạn phải chọn lý do vô hiệu hóa!', en: 'You must select a deactivation reason!' },
+  // Deactivation reason options
+  'admin.users.deactivate.reason.VIOLATION_RULES': { vi: 'Vi phạm nội quy', en: 'Violation of community rules' },
+  'admin.users.deactivate.reason.FRAUD_SUSPICION': { vi: 'Nghi ngờ gian lận', en: 'Fraud suspicion' },
+  'admin.users.deactivate.reason.INAPPROPRIATE_BEHAVIOR': { vi: 'Hành vi không phù hợp', en: 'Inappropriate behavior' },
+  'admin.users.deactivate.reason.SECURITY_CONCERN': { vi: 'Vấn đề bảo mật', en: 'Security concern' },
+  'admin.users.deactivate.reason.REQUESTED_BY_USER': { vi: 'Theo yêu cầu của người dùng', en: 'Per user request' },
+  'admin.users.unlink': { vi: 'Hủy liên kết', en: 'Unlink' },
   'admin.users.username': {
     vi: 'Tên đăng nhập',
     en: 'Username'
   },
+  'admin.users.phoneNumber': { vi: 'Số điện thoại', en: 'Phone number' },
   'admin.users.email': {
     vi: 'Email',
     en: 'Email'
@@ -406,6 +450,22 @@ export const translations: Translations = {
   'admin.users.actions': {
     vi: 'Thao tác',
     en: 'Actions'
+  },
+  // User detail - linked apartments
+  'admin.users.linkedApartments': { vi: 'Căn hộ đã liên kết', en: 'Linked apartments' },
+  'admin.users.apartmentCode': { vi: 'Mã căn hộ', en: 'Apartment code' },
+  'admin.users.building': { vi: 'Tòa', en: 'Building' },
+  'admin.users.relationType': { vi: 'Loại quan hệ', en: 'Relation type' },
+  'admin.users.relationType.OWNER': { vi: 'Chủ hộ', en: 'Owner' },
+  'admin.users.relationType.TENANT': { vi: 'Người thuê', en: 'Tenant' },
+  'admin.users.relationType.FAMILY_MEMBER': { vi: 'Thành viên', en: 'Family member' },
+  'admin.users.action': { vi: 'Hành động', en: 'Action' },
+  'admin.users.linkedApartments.none': { vi: 'Chưa liên kết căn hộ nào', en: 'No linked apartments' },
+  'admin.users.unlink.confirmTitle': { vi: 'Xác nhận hủy liên kết', en: 'Confirm unlink' },
+  'admin.users.unlink.confirmDesc': { vi: 'Bạn có chắc chắn muốn hủy liên kết căn hộ {unit} với tài khoản này không?', en: 'Are you sure you want to unlink apartment {unit} from this account?' },
+  'admin.users.fullName': {
+    vi: 'Họ và tên',
+    en: 'Full Name'
   },
 
   // Resident Management

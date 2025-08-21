@@ -191,7 +191,36 @@ public class VehicleService {
     }
 
     public void deleteVehicle(Long id) {
-        vehicleRepository.deleteById(id);
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy xe"));
+
+        // Gửi email xác nhận hủy đăng ký xe cho chủ xe (nếu có)
+        try {
+            User owner = vehicle.getUser();
+            if (owner != null && owner.getEmail() != null && !owner.getEmail().isBlank()) {
+                String email = owner.getEmail();
+                String subject = "Xác nhận hủy đăng ký xe";
+                String content = String.format(
+                        "<p>Chào %s,</p>" +
+                        "<p>Đăng ký xe của bạn đã được <b>HỦY</b>.</p>" +
+                        "<ul>" +
+                        "<li>Biển số: <b>%s</b></li>" +
+                        "<li>Loại xe: <b>%s</b></li>" +
+                        "<li>Căn hộ: <b>%s</b></li>" +
+                        "</ul>" +
+                        "<p>Nếu đây không phải yêu cầu của bạn, vui lòng liên hệ ban quản lý ngay.</p>",
+                        owner.getFullName() != null ? owner.getFullName() : owner.getUsername(),
+                        vehicle.getLicensePlate(),
+                        vehicle.getVehicleType(),
+                        vehicle.getApartment() != null ? vehicle.getApartment().getUnitNumber() : "-"
+                );
+                emailService.sendHtmlEmail(email, subject, content);
+            }
+        } catch (Exception ignored) {
+            // Không chặn luồng nếu gửi mail lỗi
+        }
+
+        vehicleRepository.delete(vehicle);
     }
 
     public List<VehicleType> getVehicleTypes() {

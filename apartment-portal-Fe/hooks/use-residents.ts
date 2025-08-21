@@ -17,16 +17,20 @@ export interface Resident {
   updatedAt?: string;
 }
 
-export interface ResidentCreateRequest {
+// Align with the Create Resident form
+export interface CreateResidentRequest {
   fullName: string;
   phoneNumber: string;
   email: string;
-  password: string;
   dateOfBirth?: string;
   gender?: 'MALE' | 'FEMALE' | 'OTHER';
   identityNumber?: string;
+  idCardNumber?: string;
   address?: string;
 }
+
+// Backward compatibility alias if needed elsewhere
+export type ResidentCreateRequest = CreateResidentRequest;
 
 export interface ResidentUpdateRequest {
   fullName?: string;
@@ -43,6 +47,7 @@ export const useResidents = () => {
   const [residents, setResidents] = useState<Resident[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const getAllResidents = async (): Promise<Resident[]> => {
     setLoading(true);
@@ -87,24 +92,39 @@ export const useResidents = () => {
     }
   };
 
-  const createResident = async (data: ResidentCreateRequest): Promise<Resident | null> => {
+  const createResident = async (data: CreateResidentRequest): Promise<{ success: boolean; message: string } | null> => {
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
+      // Map identityNumber (form) -> idCardNumber (backend)
+      const requestBody = {
+        username: data.phoneNumber,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
+        fullName: data.fullName,
+        idCardNumber: data.idCardNumber ?? data.identityNumber,
+        dateOfBirth: data.dateOfBirth,
+      };
+
       const response = await apiFetch('/api/admin/residents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(requestBody),
       });
       if (response.ok) {
         const newResident = await response.json();
         setResidents(prev => [...prev, newResident]);
-        return newResident;
+        const message = 'Tạo cư dân thành công';
+        setSuccess(message);
+        return { success: true, message };
       } else {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to create resident');
+        const errorMessage = errorData.message || 'Failed to create resident';
+        setError(errorMessage);
+        return null;
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create resident';
@@ -194,15 +214,22 @@ export const useResidents = () => {
     getAllResidents();
   }, []);
 
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
   return {
     residents,
     loading,
     error,
+    success,
     getAllResidents,
     getResidentById,
     createResident,
     updateResident,
     deleteResident,
     getApartmentsByResidentId,
+    clearMessages,
   };
 };

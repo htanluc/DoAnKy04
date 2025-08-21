@@ -215,7 +215,13 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                 <SidebarGroupLabel
                   onClick={() => toggleGroup(section.key)}
                   className="relative pl-3 text-xs uppercase tracking-wide text-sidebar-foreground/60 cursor-pointer select-none before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-1.5 before:rounded-full before:bg-[var(--group-accent)]">
-                  {t(section.label)}
+                  {t(section.label, section.key === 'overview' ? 'Tổng quan' : 
+                     section.key === 'people' ? 'Người & Căn hộ' :
+                     section.key === 'comms' ? 'Truyền thông' :
+                     section.key === 'facilities' ? 'Tiện ích' :
+                     section.key === 'finance' ? 'Tài chính' :
+                     section.key === 'support' ? 'Hỗ trợ' :
+                     section.key === 'reports' ? 'Báo cáo' : 'Khác')}
                 </SidebarGroupLabel>
                 <SidebarGroupAction asChild>
                   <button
@@ -236,14 +242,34 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                           <SidebarMenuButton
                             asChild
                             isActive={!!active}
-                            tooltip={t(item.label)}
+                            tooltip={t(item.label, item.label.includes('users') ? 'Quản lý người dùng' :
+                                       item.label.includes('residents') ? 'Quản lý cư dân' :
+                                       item.label.includes('apartments') ? 'Quản lý căn hộ' :
+                                       item.label.includes('announcements') ? 'Quản lý thông báo' :
+                                       item.label.includes('events') ? 'Quản lý sự kiện' :
+                                       item.label.includes('facilities') ? 'Quản lý tiện ích' :
+                                       item.label.includes('invoices') ? 'Quản lý hóa đơn' :
+                                       item.label.includes('feedbacks') ? 'Quản lý phản hồi' :
+                                       item.label.includes('support-requests') ? 'Quản lý yêu cầu hỗ trợ' :
+                                       item.label.includes('reports') ? 'Quản lý báo cáo' :
+                                       item.label.includes('history') ? 'Lịch sử AI Q&A' : 'Chức năng')}
                             className="relative border-l-2 border-transparent hover:border-[var(--group-accent)] data-[active=true]:border-[var(--group-accent)] data-[active=true]:bg-[var(--group-accent)]/10 data-[active=true]:text-[var(--group-accent)]"
                           >
                             <Link href={item.href} className="flex items-center gap-3 w-full truncate">
                               <span className="h-6 w-6 grid place-items-center rounded-md bg-[var(--group-accent)]/10 text-[var(--group-accent)]">
                                 {item.icon}
                               </span>
-                              <span className="truncate block w-full text-left">{t(item.label)}</span>
+                              <span className="truncate block w-full text-left">{t(item.label, item.label.includes('users') ? 'Quản lý người dùng' :
+                                       item.label.includes('residents') ? 'Quản lý cư dân' :
+                                       item.label.includes('apartments') ? 'Quản lý căn hộ' :
+                                       item.label.includes('announcements') ? 'Quản lý thông báo' :
+                                       item.label.includes('events') ? 'Quản lý sự kiện' :
+                                       item.label.includes('facilities') ? 'Quản lý tiện ích' :
+                                       item.label.includes('invoices') ? 'Quản lý hóa đơn' :
+                                       item.label.includes('feedbacks') ? 'Quản lý phản hồi' :
+                                       item.label.includes('support-requests') ? 'Quản lý yêu cầu hỗ trợ' :
+                                       item.label.includes('reports') ? 'Quản lý báo cáo' :
+                                       item.label.includes('history') ? 'Lịch sử AI Q&A' : 'Chức năng')}</span>
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -265,21 +291,21 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
               <SidebarTrigger className="-ml-1" />
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold truncate">
-                  {title || t('admin.dashboard.title')}
+                  {title || t('admin.dashboard.title', 'Bảng điều khiển quản trị')}
                 </h1>
-                <p className="text-indigo-100/90 text-xs sm:text-sm truncate">{t('admin.dashboard.welcome')}</p>
+                <p className="text-indigo-100/90 text-xs sm:text-sm truncate">{t('admin.dashboard.welcome', 'Chào mừng đến với hệ thống quản lý chung cư')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <div className="hidden md:block">
                 <div className="relative">
-                  <Input placeholder={`${t('admin.search.placeholder')} (Ctrl+K)`} readOnly onFocus={() => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('open-cmd'))} className="h-9 w-[220px] lg:w-[320px] bg-white/15 placeholder:text-white/80 text-white border-white/20 focus-visible:ring-white/60 cursor-pointer" />
+                  <Input placeholder={`${t('admin.search.placeholder', 'Tìm kiếm...')} (Ctrl+K)`} readOnly onFocus={() => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('open-cmd'))} className="h-9 w-[220px] lg:w-[320px] bg-white/15 placeholder:text-white/80 text-white border-white/20 focus-visible:ring-white/60 cursor-pointer" />
                 </div>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="secondary" size="sm" className="bg-white/20 text-white hover:bg-white/30">
-                    + {t('admin.quickCreate')}
+                    + {t('admin.quickCreate', 'Tạo nhanh')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
