@@ -39,6 +39,7 @@ type Facility = {
   name: string;
 };
 
+// Mapping kiểu dữ liệu dùng cho UI
 type FacilityBookingFixed = {
   id: string;
   resident: Resident;
@@ -57,25 +58,79 @@ export default function FacilityBookingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // Chuẩn hóa status từ BE sang UI
+  const normalizeStatus = (status: string): BookingStatus => {
+    const up = String(status || '').toUpperCase();
+    switch (up) {
+      case 'CONFIRMED':
+      case 'APPROVE':
+      case 'APPROVED':
+        return 'APPROVED';
+      case 'REJECTED':
+      case 'REJECT':
+        return 'REJECTED';
+      case 'CANCELLED':
+      case 'CANCELED':
+        return 'CANCELLED';
+      default:
+        return 'PENDING';
+    }
+  };
+
+  const addDurationToStart = (startIso: string, duration: number | undefined): string => {
+    if (!startIso) return '';
+    try {
+      const start = new Date(startIso);
+      const minutes = typeof duration === 'number' ? duration : 0;
+      const end = new Date(start.getTime() + minutes * 60 * 1000);
+      // Nếu back đã có endTime, sẽ dùng field đó ở dưới; còn không thì dùng tính toán này
+      return end.toISOString();
+    } catch {
+      return '';
+    }
+  };
+
   // Sửa lỗi: Map lại dữ liệu trả về từ API sang FacilityBookingFixed
   const fetchBookings = async () => {
     try {
       setLoading(true);
       const data: FacilityBooking[] = await facilityBookingsApi.getAll();
-      // Map dữ liệu sang FacilityBookingFixed
-      const mapped: FacilityBookingFixed[] = data.map((item: any) => ({
-        id: item.id,
-        resident: item.resident
-          ? { id: item.resident.id, name: item.resident.name }
-          : { id: '', name: '' },
-        facility: item.facility
-          ? { id: item.facility.id, name: item.facility.name }
-          : { id: '', name: '' },
-        start_time: item.start_time,
-        end_time: item.end_time,
-        purpose: item.purpose,
-        status: item.status,
-      }));
+      // Map dữ liệu sang FacilityBookingFixed theo nhiều khả năng field từ BE
+      const mapped: FacilityBookingFixed[] = (data as any[]).map((item: any) => {
+        const startRaw: string = item.bookingTime || item.startTime || item.start_time || item.startDateTime || '';
+        const endRaw: string = item.endTime || item.end_time || '';
+        const durationRaw: number | undefined = item.durationMinutes ?? item.duration ?? item.durationInMinutes;
+
+        const startIso = startRaw;
+        const endIso = endRaw || addDurationToStart(startIso, durationRaw);
+
+        const residentName: string =
+          item.user?.fullName ||
+          item.userFullName ||
+          item.user?.username ||
+          item.username ||
+          item.userName ||
+          item.residentName ||
+          '';
+
+        const facilityName: string =
+          item.facility?.name ||
+          item.facilityName ||
+          item.facility?.facilityName ||
+          '';
+
+        const purpose: string = item.purpose || item.reason || item.description || '';
+
+        return {
+          id: String(item.id ?? item.bookingId ?? ''),
+          resident: residentName ? { id: String(item.user?.id ?? ''), name: residentName } : { id: '', name: '' },
+          facility: facilityName ? { id: String(item.facility?.id ?? ''), name: facilityName } : { id: '', name: '' },
+          start_time: startIso,
+          end_time: endIso,
+          purpose,
+          status: normalizeStatus(item.status),
+        };
+      });
       setBookings(mapped);
     } catch (error) {
       toast({
@@ -204,7 +259,6 @@ export default function FacilityBookingsPage() {
                       <TableHead>{t('admin.facility-bookings.columns.facility')}</TableHead>
                       <TableHead>{t('admin.facility-bookings.columns.startTime')}</TableHead>
                       <TableHead>{t('admin.facility-bookings.columns.endTime')}</TableHead>
-                      <TableHead>{t('admin.facility-bookings.columns.purpose')}</TableHead>
                       <TableHead>{t('admin.facility-bookings.columns.status')}</TableHead>
                       <TableHead className="text-right">{t('admin.facility-bookings.columns.actions')}</TableHead>
                     </TableRow>
@@ -213,10 +267,10 @@ export default function FacilityBookingsPage() {
                     {filteredBookings.map((booking) => (
                       <TableRow key={booking.id}>
                         <TableCell className="font-medium">
-                          {booking.resident?.name}
+                          {booking.resident?.name || '-'}
                         </TableCell>
                         <TableCell>
-                          {booking.facility?.name}
+                          {booking.facility?.name || '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-1">
@@ -229,9 +283,6 @@ export default function FacilityBookingsPage() {
                             <Clock className="h-3 w-3 text-gray-500" />
                             <span>{formatDateTime(booking.end_time)}</span>
                           </div>
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {booking.purpose}
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(booking.status)}
