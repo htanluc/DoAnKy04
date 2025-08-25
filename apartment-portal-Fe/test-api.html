@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Vehicle Capacity</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; background: #2196f3; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #1976d2; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🚗 Test API Vehicle Capacity Limit</h1>
+    
+    <div class="test-section">
+        <h3>1. Tạo Cấu Hình Mới</h3>
+        <input type="number" id="buildingId" placeholder="Building ID" value="1">
+        <input type="number" id="maxCars" placeholder="Max Cars" value="50">
+        <input type="number" id="maxMotorcycles" placeholder="Max Motorcycles" value="100">
+        <button onclick="createConfig()">Tạo Cấu Hình</button>
+        <div id="createResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Lấy Tất Cả Cấu Hình</h3>
+        <button onclick="getAllConfigs()">Lấy Danh Sách</button>
+        <div id="getAllResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Lấy Cấu Hình Theo Building</h3>
+        <input type="number" id="getBuildingId" placeholder="Building ID" value="1">
+        <button onclick="getConfigByBuilding()">Lấy Cấu Hình</button>
+        <div id="getBuildingResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Kiểm Tra Capacity</h3>
+        <input type="number" id="checkBuildingId" placeholder="Building ID" value="1">
+        <select id="vehicleType">
+            <option value="CAR_4_SEATS">Ô tô 4 chỗ</option>
+            <option value="CAR_7_SEATS">Ô tô 7 chỗ</option>
+            <option value="MOTORCYCLE">Xe máy</option>
+            <option value="TRUCK">Xe tải</option>
+            <option value="VAN">Xe van</option>
+            <option value="ELECTRIC_CAR">Xe điện</option>
+            <option value="ELECTRIC_MOTORCYCLE">Xe máy điện</option>
+            <option value="ELECTRIC_BICYCLE">Xe đạp điện</option>
+            <option value="BICYCLE">Xe đạp</option>
+        </select>
+        <button onclick="checkCapacity()">Kiểm Tra</button>
+        <div id="checkResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Cập Nhật Cấu Hình</h3>
+        <input type="number" id="updateId" placeholder="Config ID" value="1">
+        <input type="number" id="updateMaxCars" placeholder="Max Cars" value="60">
+        <button onclick="updateConfig()">Cập Nhật</button>
+        <div id="updateResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>6. Toggle Active Status</h3>
+        <input type="number" id="toggleId" placeholder="Config ID" value="1">
+        <select id="toggleStatus">
+            <option value="true">Bật</option>
+            <option value="false">Tắt</option>
+        </select>
+        <button onclick="toggleActive()">Thay Đổi Trạng Thái</button>
+        <div id="toggleResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>7. Xóa Cấu Hình</h3>
+        <input type="number" id="deleteId" placeholder="Config ID" value="1">
+        <button onclick="deleteConfig()">Xóa</button>
+        <div id="deleteResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/vehicle-capacity-config';
+        
+        // Lưu JWT token (cần đăng nhập trước)
+        let jwtToken = localStorage.getItem('jwt_token') || prompt('Nhập JWT Token:');
+        if (jwtToken) {
+            localStorage.setItem('jwt_token', jwtToken);
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`,
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        async function createConfig() {
+            try {
+                const data = {
+                    buildingId: parseInt(document.getElementById('buildingId').value),
+                    maxCars: parseInt(document.getElementById('maxCars').value),
+                    maxMotorcycles: parseInt(document.getElementById('maxMotorcycles').value),
+                    maxTrucks: 20,
+                    maxVans: 15,
+                    maxElectricVehicles: 30,
+                    maxBicycles: 80
+                };
+
+                const result = await apiCall('', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                showResult('createResult', result);
+            } catch (error) {
+                showResult('createResult', { error: error.message }, true);
+            }
+        }
+
+        async function getAllConfigs() {
+            try {
+                const result = await apiCall('');
+                showResult('getAllResult', result);
+            } catch (error) {
+                showResult('getAllResult', { error: error.message }, true);
+            }
+        }
+
+        async function getConfigByBuilding() {
+            try {
+                const buildingId = document.getElementById('getBuildingId').value;
+                const result = await apiCall(`/building/${buildingId}`);
+                showResult('getBuildingResult', result);
+            } catch (error) {
+                showResult('getBuildingResult', { error: error.message }, true);
+            }
+        }
+
+        async function checkCapacity() {
+            try {
+                const buildingId = document.getElementById('checkBuildingId').value;
+                const vehicleType = document.getElementById('vehicleType').value;
+                const result = await apiCall(`/check-capacity?buildingId=${buildingId}&vehicleType=${vehicleType}`);
+                showResult('checkResult', result);
+            } catch (error) {
+                showResult('checkResult', { error: error.message }, true);
+            }
+        }
+
+        async function updateConfig() {
+            try {
+                const id = document.getElementById('updateId').value;
+                const data = {
+                    maxCars: parseInt(document.getElementById('updateMaxCars').value)
+                };
+
+                const result = await apiCall(`/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                });
+
+                showResult('updateResult', result);
+            } catch (error) {
+                showResult('updateResult', { error: error.message }, true);
+            }
+        }
+
+        async function toggleActive() {
+            try {
+                const id = document.getElementById('toggleId').value;
+                const isActive = document.getElementById('toggleStatus').value === 'true';
+
+                const result = await apiCall(`/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ isActive })
+                });
+
+                showResult('toggleResult', result);
+            } catch (error) {
+                showResult('toggleResult', { error: error.message }, true);
+            }
+        }
+
+        async function deleteConfig() {
+            try {
+                const id = document.getElementById('deleteId').value;
+                await apiCall(`/${id}`, { method: 'DELETE' });
+                showResult('deleteResult', { message: 'Xóa thành công' });
+            } catch (error) {
+                showResult('deleteResult', { error: error.message }, true);
+            }
+        }
+
+        // Auto-refresh token nếu cần
+        setInterval(() => {
+            if (!jwtToken) {
+                jwtToken = prompt('JWT Token đã hết hạn. Nhập token mới:');
+                if (jwtToken) {
+                    localStorage.setItem('jwt_token', jwtToken);
+                }
+            }
+        }, 60000); // Check mỗi phút
+    </script>
+</body>
+</html>

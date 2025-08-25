@@ -23,6 +23,7 @@ import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import com.mytech.apartment.portal.models.WaterMeterReading;
+import com.mytech.apartment.portal.repositories.VehicleCapacityConfigRepository;
 
 @Component
 @Profile("!test")
@@ -49,6 +50,7 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private FeedbackCategoryRepository feedbackCategoryRepository;
     @Autowired private WaterMeterReadingRepository waterMeterReadingRepository;
     @Autowired private VehicleRepository vehicleRepository;
+    @Autowired private VehicleCapacityConfigRepository vehicleCapacityConfigRepository;
     // @Autowired private PaymentMethodRepository paymentMethodRepository; // Comment out if not exists
     // @Autowired private EmergencyContactRepository emergencyContactRepository; // Comment out if not exists
     // @Autowired private ApartmentInvitationRepository apartmentInvitationRepository; // Comment out if not exists
@@ -380,6 +382,23 @@ public class DataInitializer implements CommandLineRunner {
         }
         
         System.out.println("✅ Created " + buildings.size() + " buildings and " + apartments.size() + " apartments");
+        
+        // 2.3 Create vehicle capacity configurations for each building
+        System.out.println("🚗 Creating vehicle capacity configurations...");
+        List<VehicleCapacityConfig> vehicleCapacityConfigs = new ArrayList<>();
+        
+        for (Building building : buildings) {
+            VehicleCapacityConfig config = VehicleCapacityConfig.builder()
+                .buildingId(building.getId())
+                .maxCars(50) // Giới hạn 50 ô tô
+                .maxMotorcycles(100) // Giới hạn 100 xe máy
+                .isActive(true)
+                .build();
+            
+            vehicleCapacityConfigs.add(vehicleCapacityConfigRepository.save(config));
+        }
+        
+        System.out.println("✅ Created " + vehicleCapacityConfigs.size() + " vehicle capacity configurations");
     }
 
     /**
