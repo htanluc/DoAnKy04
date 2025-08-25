@@ -26,7 +26,7 @@ import {
   Plus
 } from 'lucide-react';
 import Link from 'next/link';
-import { supportRequestsApi, vehiclesApi, Vehicle } from '@/lib/api';
+import { supportRequestsApi } from '@/lib/api';
 
 interface SupportRequest {
   id: string;
@@ -56,21 +56,7 @@ function SupportRequestsPageContent() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [activeTab, setActiveTab] = useState<'support' | 'vehicles'>('support');
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [vehiclesLoading, setVehiclesLoading] = useState<boolean>(false);
-  // Danh sách tất cả xe trong chung cư (không chỉ chờ duyệt)
-  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
-  const [allVehiclesLoading, setAllVehiclesLoading] = useState<boolean>(false);
-  const [rejectingId, setRejectingId] = useState<number | null>(null);
-  const [rejectionReason, setRejectionReason] = useState<string>('');
-  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  // Search & cancel for vehicles
-  const [vehicleSearch, setVehicleSearch] = useState<string>('');
-  const [cancelId, setCancelId] = useState<number | null>(null);
-  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
-  const [cancelling, setCancelling] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -191,60 +177,9 @@ function SupportRequestsPageContent() {
     return () => { isMounted = false; };
   }, []);
 
-  useEffect(() => {
-    if (activeTab !== 'vehicles') return;
-    let isMounted = true;
-    setVehiclesLoading(true);
-    vehiclesApi.getPending()
-      .then((data) => {
-        if (!isMounted) return;
-        setVehicles(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setVehicles([]);
-      })
-      .finally(() => {
-        if (!isMounted) return;
-        setVehiclesLoading(false);
-      });
-    // Load tất cả xe trong chung cư
-    setAllVehiclesLoading(true);
-    vehiclesApi.getAll()
-      .then((data) => {
-        if (!isMounted) return;
-        setAllVehicles(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setAllVehicles([]);
-      })
-      .finally(() => {
-        if (!isMounted) return;
-        setAllVehiclesLoading(false);
-      });
-    return () => { isMounted = false; };
-  }, [activeTab]);
 
-  // Filter vehicles by search term (owner, license, apartment, type)
-  const normalizedSearch = vehicleSearch.trim().toLowerCase();
-  const vehicleMatches = (v: Vehicle) => {
-    if (!normalizedSearch) return true;
-    const fields = [
-      v.userFullName,
-      v.licensePlate,
-      v.apartmentUnitNumber,
-      v.vehicleType,
-      v.vehicleTypeDisplayName,
-      v.color,
-    ]
-      .filter(Boolean)
-      .map((s) => String(s).toLowerCase());
-    return fields.some((f) => f.includes(normalizedSearch));
-  };
 
-  const filteredPendingVehicles = vehicles.filter(vehicleMatches);
-  const filteredAllVehicles = allVehicles.filter(vehicleMatches);
+
 
   const filteredSupportRequests = supportRequests.filter(request => {
     const matchesSearch = request.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -375,82 +310,57 @@ function SupportRequestsPageContent() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs - Chỉ hiển thị tab yêu cầu hỗ trợ */}
         <div className="flex gap-2">
           <button
-            className={`px-3 py-2 rounded border ${activeTab === 'support' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
-            onClick={() => setActiveTab('support')}
+            className="px-3 py-2 rounded border bg-blue-600 text-white border-blue-600"
           >
             {t('admin.support-requests.tab.support','Yêu cầu hỗ trợ')}
           </button>
-          <button
-            className={`px-3 py-2 rounded border ${activeTab === 'vehicles' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
-            onClick={() => setActiveTab('vehicles')}
-          >
-            {t('admin.support-requests.tab.vehicles','Đăng ký xe (chờ duyệt)')}
-          </button>
         </div>
 
-        {/* Vehicle search (only on vehicles tab) */}
-        {activeTab === 'vehicles' && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder={t('admin.support-requests.vehicles.searchPlaceholder','Tìm xe theo chủ xe, biển số, căn hộ, loại xe...')}
-                  value={vehicleSearch}
-                  onChange={(e) => setVehicleSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
 
         {/* Đã loại bỏ các khối thống kê và tổng cộng theo yêu cầu */}
 
-        {activeTab === 'support' && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder={t('admin.support-requests.searchPlaceholder','Tìm kiếm theo cư dân, số điện thoại, tiêu đề, mô tả...')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Filter className="h-4 w-4 text-gray-400" />
-                  <select
-                    title={t('admin.support-requests.filter.statusTitle', 'Trạng thái yêu cầu')}
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="all">{t('admin.status.all','Tất cả trạng thái')}</option>
-                    <option value="PENDING">{t('admin.status.pending','Chờ xử lý')}</option>
-                    <option value="ASSIGNED">{t('admin.support-requests.status.ASSIGNED','Đã giao')}</option>
-                    <option value="IN_PROGRESS">{t('admin.support-requests.status.IN_PROGRESS','Đang xử lý')}</option>
-                    <option value="COMPLETED">{t('admin.status.completed','Hoàn thành')}</option>
-                    <option value="CANCELLED">{t('admin.status.cancelled','Đã hủy')}</option>
-                  </select>
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder={t('admin.support-requests.searchPlaceholder','Tìm kiếm theo cư dân, số điện thoại, tiêu đề, mô tả...')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-gray-400" />
+                <select
+                  title={t('admin.support-requests.filter.statusTitle', 'Trạng thái yêu cầu')}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="all">{t('admin.status.all','Tất cả trạng thái')}</option>
+                  <option value="PENDING">{t('admin.status.pending','Chờ xử lý')}</option>
+                  <option value="ASSIGNED">{t('admin.support-requests.status.ASSIGNED','Đã giao')}</option>
+                  <option value="IN_PROGRESS">{t('admin.support-requests.status.IN_PROGRESS','Đang xử lý')}</option>
+                  <option value="COMPLETED">{t('admin.status.completed','Hoàn thành')}</option>
+                  <option value="CANCELLED">{t('admin.status.cancelled','Đã hủy')}</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {activeTab === 'support' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>{t('admin.support-requests.list','Danh sách yêu cầu hỗ trợ')} ({filteredSupportRequests.length})</span>
-              </CardTitle>
-            </CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>{t('admin.support-requests.list','Danh sách yêu cầu hỗ trợ')} ({filteredSupportRequests.length})</span>
+            </CardTitle>
+          </CardHeader>
             <CardContent>
               {filteredSupportRequests.length === 0 ? (
                 <div className="text-center py-8">
@@ -637,188 +547,6 @@ function SupportRequestsPageContent() {
               )}
             </CardContent>
           </Card>
-        )}
-
-        {activeTab === 'vehicles' && (
-          <Card>
-              <CardHeader>
-              <CardTitle>{t('admin.support-requests.vehicles.pendingTitle','Đăng ký xe chờ duyệt')} ({filteredPendingVehicles.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {vehiclesLoading ? (
-                <div className="text-center py-8 text-gray-500">{t('admin.support-requests.vehicles.loading','Đang tải...')}</div>
-              ) : filteredPendingVehicles.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">{t('admin.support-requests.vehicles.empty','Không có đăng ký xe chờ duyệt')}</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                      <TableHead>{t('admin.support-requests.vehicles.columns.owner','Chủ xe')}</TableHead>
-                      <TableHead>{t('admin.support-requests.vehicles.columns.type','Loại xe')}</TableHead>
-                      <TableHead>{t('admin.support-requests.vehicles.columns.license','Biển số')}</TableHead>
-                      <TableHead>{t('admin.support-requests.vehicles.columns.color','Màu sắc')}</TableHead>
-                      <TableHead>{t('admin.support-requests.vehicles.columns.apartment','Căn hộ')}</TableHead>
-                      <TableHead>{t('admin.support-requests.vehicles.columns.status','Trạng thái')}</TableHead>
-                      <TableHead>{t('admin.support-requests.vehicles.columns.actions','Hành động')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPendingVehicles.map((v) => (
-                        <TableRow key={v.id}>
-                          <TableCell className="font-medium">{v.userFullName || '-'}</TableCell>
-                          <TableCell>{v.vehicleTypeDisplayName || v.vehicleType}</TableCell>
-                          <TableCell>{v.licensePlate}</TableCell>
-                          <TableCell>{v.color || '-'}</TableCell>
-                          <TableCell>{v.apartmentUnitNumber || '-'}</TableCell>
-                          <TableCell>
-                            <Badge className="bg-yellow-100 text-yellow-800">{v.statusDisplayName || v.status}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" onClick={async () => {
-                                try {
-                                  await vehiclesApi.updateStatus(v.id, 'APPROVED');
-                                  setVehicles((prev) => prev.filter((x) => x.id !== v.id));
-                                } catch {}
-                              }}>{t('admin.support-requests.vehicles.approve','Duyệt')}</Button>
-                              <Button size="sm" variant="outline" className="text-red-600" onClick={() => {
-                                setRejectingId(v.id);
-                                setRejectionReason('');
-                                setShowRejectModal(true);
-                              }}>{t('admin.support-requests.vehicles.reject','Từ chối')}</Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === 'vehicles' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('admin.support-requests.vehicles.allTitle','Danh sách xe trong chung cư')} ({filteredAllVehicles.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {allVehiclesLoading ? (
-                <div className="text-center py-8 text-gray-500">{t('admin.loading','Đang tải...')}</div>
-              ) : filteredAllVehicles.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">{t('admin.noData','Không có dữ liệu')}</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('admin.support-requests.vehicles.columns.owner','Chủ xe')}</TableHead>
-                        <TableHead>{t('admin.support-requests.vehicles.columns.type','Loại xe')}</TableHead>
-                        <TableHead>{t('admin.support-requests.vehicles.columns.license','Biển số')}</TableHead>
-                        <TableHead>{t('admin.support-requests.vehicles.columns.color','Màu sắc')}</TableHead>
-                        <TableHead>{t('admin.support-requests.vehicles.columns.apartment','Căn hộ')}</TableHead>
-                        <TableHead>{t('admin.invoices.status','Trạng thái')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAllVehicles.map((v) => (
-                        <TableRow key={`all-${v.id}`}>
-                          <TableCell className="font-medium">{v.userFullName || '-'}</TableCell>
-                          <TableCell>{v.vehicleTypeDisplayName || v.vehicleType || '-'}</TableCell>
-                          <TableCell>{v.licensePlate}</TableCell>
-                          <TableCell>{v.color || '-'}</TableCell>
-                          <TableCell>{v.apartmentUnitNumber || v.apartmentId || '-'}</TableCell>
-                          <TableCell>{v.statusDisplayName || v.status}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="text-red-600" onClick={() => {
-                                setCancelId(v.id);
-                                setShowCancelModal(true);
-                              }}>
-                                {t('admin.support-requests.vehicles.cancel','Hủy đăng ký')}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Reject Modal */}
-        {showRejectModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
-              <h3 className="text-lg font-semibold mb-2">{t('admin.support-requests.vehicles.rejectDialog.title','Nhập lý do từ chối')}</h3>
-              <textarea
-                className="w-full border rounded p-2 h-28"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder={t('admin.support-requests.vehicles.rejectDialog.placeholder','Lý do từ chối...')}
-              />
-              <div className="mt-3 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowRejectModal(false)}>{t('admin.support-requests.vehicles.rejectDialog.cancel','Hủy')}</Button>
-                <Button
-                  className="bg-red-600 text-white"
-                  onClick={async () => {
-                    if (!rejectingId) return;
-                    try {
-                      await vehiclesApi.updateStatus(rejectingId, 'REJECTED', rejectionReason);
-                      setVehicles((prev) => prev.filter((x) => x.id !== rejectingId));
-                      setShowRejectModal(false);
-                      setRejectingId(null);
-                      setRejectionReason('');
-                    } catch {}
-                  }}
-                >
-                  {t('admin.support-requests.vehicles.rejectDialog.confirm','Xác nhận từ chối')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Cancel vehicle modal */}
-        {showCancelModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
-              <h3 className="text-lg font-semibold mb-2">{t('admin.support-requests.vehicles.cancelDialog.title','Xác nhận hủy đăng ký xe')}</h3>
-              <p className="text-sm text-gray-600 mb-4">{t('admin.support-requests.vehicles.cancelDialog.desc','Bạn chắc chắn muốn hủy đăng ký xe này? Thao tác này sẽ ngừng hiệu lực đăng ký.')}</p>
-              <div className="mt-3 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowCancelModal(false)}>{t('admin.action.cancel','Hủy')}</Button>
-                <Button
-                  className="bg-red-600 text-white"
-                  disabled={cancelling || cancelId === null}
-                  onClick={async () => {
-                    if (!cancelId) return;
-                    setCancelling(true);
-                    try {
-                      try {
-                        await vehiclesApi.updateStatus(cancelId, 'CANCELLED');
-                      } catch {
-                        await vehiclesApi.delete(cancelId);
-                      }
-                      // Gửi email thông báo cho chủ xe
-                      try { await vehiclesApi.notifyCancellation(cancelId); } catch {}
-                      setAllVehicles((prev) => prev.filter((x) => x.id !== cancelId));
-                      setShowCancelModal(false);
-                      setCancelId(null);
-                    } catch {}
-                    setCancelling(false);
-                  }}
-                >
-                  {t('admin.support-requests.vehicles.cancelDialog.confirm','Xác nhận hủy')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </AdminLayout>
   );

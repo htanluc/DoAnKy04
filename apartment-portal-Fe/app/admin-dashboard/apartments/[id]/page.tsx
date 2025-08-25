@@ -20,6 +20,14 @@ import { apiFetch } from '@/lib/api'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Trash2 } from 'lucide-react'
 
+// Helper to get token from localStorage (if any)
+function getToken() {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token') || localStorage.getItem('accessToken') || null;
+  }
+  return null;
+}
+
 export default function ApartmentDetail() {
   return (
     <AdminGuard>
@@ -178,12 +186,24 @@ function ApartmentDetailContent() {
     setLinkingSuccess('');
 
     try {
+      // Lấy token từ localStorage nếu có
+      const token = getToken();
+      addDebugInfo(token ? `Gửi kèm token khi gán căn hộ: ${token.slice(0, 10)}...` : 'Không tìm thấy token trong localStorage');
+
       const response = await apiFetch(`/api/apartments/${id}/residents`, {
         method: 'POST',
         body: JSON.stringify({
           userId: foundUser.id,
           relationType: selectedRelationType
-        })
+        }),
+        headers: token
+          ? {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            }
+          : {
+              'Content-Type': 'application/json',
+            }
       });
 
       if (response.ok) {
@@ -212,9 +232,21 @@ function ApartmentDetailContent() {
 
     setLinkingLoading(true);
     try {
+      // Lấy token từ localStorage nếu có
+      const token = getToken();
+      addDebugInfo(token ? `Gửi kèm token khi hủy liên kết căn hộ: ${token.slice(0, 10)}...` : 'Không tìm thấy token trong localStorage');
+
       const response = await apiFetch(`/api/apartments/${id}/residents`, {
         method: 'DELETE',
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId }),
+        headers: token
+          ? {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            }
+          : {
+              'Content-Type': 'application/json',
+            }
       });
 
       if (response.ok) {
@@ -367,7 +399,7 @@ function ApartmentDetailContent() {
                       <SelectContent>
                         <SelectItem value="OWNER">{t('admin.apartments.residents.relation.OWNER')}</SelectItem>
                         <SelectItem value="TENANT">{t('admin.apartments.residents.relation.TENANT')}</SelectItem>
-                        <SelectItem value="FAMILY_MEMBER">{t('admin.apartments.residents.relation.FAMILY_MEMBER')}</SelectItem>
+                        <SelectItem value="FAMILY">{t('admin.apartments.residents.relation.FAMILY')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -435,7 +467,7 @@ function ApartmentDetailContent() {
                           <Badge variant="outline">
                             {res.relationType === 'OWNER' ? t('admin.apartments.residents.relation.OWNER') : 
                              res.relationType === 'TENANT' ? t('admin.apartments.residents.relation.TENANT') : 
-                             res.relationType === 'FAMILY_MEMBER' ? t('admin.apartments.residents.relation.FAMILY_MEMBER') : res.relationType}
+                             res.relationType === 'FAMILY' ? t('admin.apartments.residents.relation.FAMILY') : res.relationType}
                           </Badge>
                         </TableCell>
                         <TableCell>{res.moveInDate ? new Date(res.moveInDate).toLocaleDateString() : '-'}</TableCell>

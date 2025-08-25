@@ -527,7 +527,7 @@ export const residentsApi = {
     const response = await api.delete(`/api/admin/residents/${id}`);
     if (!response.ok) throw new Error('Failed to delete resident');
   },
-}; 
+};
 
 // EventCreateRequest & EventUpdateRequest
 export interface EventCreateRequest {
@@ -565,7 +565,7 @@ export interface FacilityUpdateRequest {
   otherDetails?: string;
   usageFee?: number;
   openingHours?: string;
-} 
+}
 
 // FEEDBACK TYPES
 export type FeedbackStatus = 'PENDING' | 'RESPONDED' | 'REJECTED';
@@ -638,7 +638,7 @@ export const feedbacksApi = {
     if (!response.ok) throw new Error('Trả lời phản hồi thất bại');
     return response.json();
   },
-}; 
+};
 
 // SUPPORT REQUESTS API
 export const supportRequestsApi = {
@@ -720,7 +720,7 @@ export const supportRequestsApi = {
     if (!response.ok) throw new Error('Lấy yêu cầu được gán thất bại');
     return response.json();
   },
-}; 
+};
 
 // VEHICLES API (Admin)
 export interface Vehicle {
@@ -803,4 +803,186 @@ export async function fetchServiceFeeConfig(month: number, year: number): Promis
   }
   // Có thể xử lý các lỗi khác nếu muốn
   return null;
-} 
+}
+
+// VEHICLE CAPACITY CONFIG API
+export interface VehicleCapacityConfig {
+  id?: number;
+  buildingId: number;
+  buildingName?: string;
+  maxCars: number;
+  maxMotorcycles: number;
+  maxTrucks: number;
+  maxVans: number;
+  maxElectricVehicles: number;
+  maxBicycles: number;
+  isActive: boolean;
+  currentCars?: number;
+  currentMotorcycles?: number;
+  currentTrucks?: number;
+  currentVans?: number;
+  currentElectricVehicles?: number;
+  currentBicycles?: number;
+  remainingCars?: number;
+  remainingMotorcycles?: number;
+  remainingTrucks?: number;
+  remainingVans?: number;
+  remainingElectricVehicles?: number;
+  remainingBicycles?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface VehicleCapacityCheck {
+  canAdd: boolean; // API trả về 'canAdd' thay vì 'canRegister'
+  buildingId: number;
+  vehicleType: string;
+  currentCount: number;
+  maxCapacity: number; // API trả về 'maxCapacity' thay vì 'maxCount'
+  remainingSlots: number; // API trả về 'remainingSlots' thay vì 'remainingCount'
+  message: string;
+}
+
+export const vehicleCapacityApi = {
+  // Tạo cấu hình mới
+  create: async (config: Omit<VehicleCapacityConfig, 'id'>): Promise<VehicleCapacityConfig> => {
+    try {
+      const response = await api.post('/api/vehicle-capacity-config', config);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {}
+        throw new Error(`Tạo cấu hình giới hạn xe thất bại: ${errorMessage}`);
+      }
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Tạo cấu hình giới hạn xe thất bại: ${error}`);
+    }
+  },
+
+  // Cập nhật cấu hình
+  update: async (id: number, config: Partial<VehicleCapacityConfig>): Promise<VehicleCapacityConfig> => {
+    try {
+      const response = await api.put(`/api/vehicle-capacity-config/${id}`, config);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {}
+        throw new Error(`Cập nhật cấu hình giới hạn xe thất bại: ${errorMessage}`);
+      }
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Cập nhật cấu hình giới hạn xe thất bại: ${error}`);
+    }
+  },
+
+  // Lấy cấu hình theo building
+  getByBuilding: async (buildingId: number): Promise<VehicleCapacityConfig | null> => {
+    try {
+      const response = await api.get(`/api/vehicle-capacity-config/building/${buildingId}`);
+      if (response.status === 404) return null;
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {}
+        throw new Error(`Lấy cấu hình giới hạn xe thất bại: ${errorMessage}`);
+      }
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Lấy cấu hình giới hạn xe thất bại: ${error}`);
+    }
+  },
+
+  // Lấy tất cả cấu hình với pagination
+  getAll: async (page: number = 0, size: number = 20): Promise<VehicleCapacityConfig[]> => {
+    try {
+      const response = await api.get(`/api/vehicle-capacity-config?page=${page}&size=${size}`);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {}
+        throw new Error(`Lấy danh sách cấu hình giới hạn xe thất bại: ${errorMessage}`);
+      }
+      const data = await response.json();
+      // Trả về content array từ pagination response
+      return data.content || data;
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Lấy danh sách cấu hình giới hạn xe thất bại: ${error}`);
+    }
+  },
+
+  // Kiểm tra khả năng thêm xe
+  checkCapacity: async (buildingId: number, vehicleType: string): Promise<VehicleCapacityCheck> => {
+    try {
+      const response = await api.get(`/api/vehicle-capacity-config/check-capacity?buildingId=${buildingId}&vehicleType=${encodeURIComponent(vehicleType)}`);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {}
+        throw new Error(`Kiểm tra khả năng thêm xe thất bại: ${errorMessage}`);
+      }
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Kiểm tra khả năng thêm xe thất bại: ${error}`);
+    }
+  },
+
+  // Xóa cấu hình
+  delete: async (id: number): Promise<void> => {
+    try {
+      const response = await api.delete(`/api/vehicle-capacity-config/${id}`);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {}
+        throw new Error(`Xóa cấu hình giới hạn xe thất bại: ${errorMessage}`);
+      }
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Xóa cấu hình giới hạn xe thất bại: ${error}`);
+    }
+  },
+
+  // Bật/tắt cấu hình - sử dụng PATCH endpoint mới
+  toggleActive: async (id: number, isActive: boolean): Promise<VehicleCapacityConfig> => {
+    try {
+      const response = await api.patch(`/api/vehicle-capacity-config/${id}/toggle-status`);
+      
+      if (!response.ok) {
+        // Lấy thông tin lỗi chi tiết
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          // Không thể parse JSON error
+        }
+        throw new Error(`Cập nhật trạng thái cấu hình thất bại: ${errorMessage}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Cập nhật trạng thái cấu hình thất bại: ${error}`);
+    }
+  }
+}; 

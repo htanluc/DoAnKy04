@@ -46,6 +46,19 @@ CREATE TABLE IF NOT EXISTS buildings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 4.1. VEHICLE_CAPACITY_CONFIG (Cấu hình giới hạn xe cho từng tòa nhà)
+CREATE TABLE IF NOT EXISTS vehicle_capacity_config (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    building_id BIGINT NOT NULL,
+    max_cars INT NOT NULL DEFAULT 0 COMMENT 'Số lượng ô tô tối đa cho phép',
+    max_motorcycles INT NOT NULL DEFAULT 0 COMMENT 'Số lượng xe máy tối đa cho phép',
+    is_active BOOLEAN DEFAULT TRUE COMMENT 'Trạng thái kích hoạt cấu hình',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_building_vehicle_capacity (building_id)
+);
+
 -- 5. APARTMENTS (Căn hộ)
 CREATE TABLE IF NOT EXISTS apartments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

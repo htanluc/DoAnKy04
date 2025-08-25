@@ -31,6 +31,7 @@ public class VehicleService {
     private final UserService userService;
     private final ApartmentResidentService apartmentResidentService;
     private final EmailService emailService;
+    private final VehicleCapacityConfigService vehicleCapacityConfigService;
 
     public VehicleDto createVehicle(VehicleCreateRequest request, Authentication authentication) {
         // Kiểm tra biển số xe đã tồn tại chưa
@@ -55,6 +56,11 @@ public class VehicleService {
         // Kiểm tra user có quyền với apartment này không
         if (!apartmentResidentService.hasAccessToApartment(userId, request.getApartmentId())) {
             throw new RuntimeException("Bạn không có quyền đăng ký xe cho căn hộ này");
+        }
+
+        // Kiểm tra giới hạn xe cho tòa nhà
+        if (!vehicleCapacityConfigService.canAddVehicle(apartment.getBuildingId(), request.getVehicleType())) {
+            throw new RuntimeException("Đã đạt giới hạn xe cho loại xe này trong tòa nhà. Vui lòng liên hệ ban quản lý.");
         }
 
         // Tạo vehicle mới
@@ -101,7 +107,7 @@ public class VehicleService {
     }
 
     public List<VehicleDto> getAllVehicles() {
-        return vehicleRepository.findAll().stream()
+        return vehicleRepository.findAllByOrderByCreatedAtAsc().stream()
                 .map(vehicleMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -177,7 +183,7 @@ public class VehicleService {
     }
 
     public List<VehicleDto> getVehiclesByStatus(VehicleStatus status) {
-        return vehicleRepository.findByStatus(status).stream()
+        return vehicleRepository.findByStatusOrderByCreatedAtAsc(status).stream()
                 .map(vehicleMapper::toDto)
                 .collect(Collectors.toList());
     }

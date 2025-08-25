@@ -4,7 +4,7 @@ import React from 'react';
 import { useLanguage } from '@/lib/i18n';
 // import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, Users, Building2, Bell, Calendar, Coffee, Receipt, MessageSquare, BarChart3, Settings, ClipboardList, History, LifeBuoy, Calculator, ChevronDown } from 'lucide-react';
+import { Home, Users, Building2, Bell, Calendar, Coffee, Receipt, MessageSquare, BarChart3, Settings, ClipboardList, History, LifeBuoy, Calculator, ChevronDown, Car } from 'lucide-react';
 import LanguageSwitcher from '@/components/language-switcher';
 import ThemeToggle from '@/components/theme-toggle';
 import UserMenu from '@/components/user-menu';
@@ -90,6 +90,7 @@ const adminMenuSections = [
     items: [
       { href: '/admin-dashboard/feedbacks', label: 'admin.feedbacks.title', icon: <MessageSquare className="h-5 w-5" /> },
       { href: '/admin-dashboard/support-requests', label: 'admin.support-requests.title', icon: <LifeBuoy className="h-5 w-5" /> },
+      { href: '/admin-dashboard/vehicle-registrations', label: 'admin.vehicle-registrations.title', icon: <Car className="h-5 w-5" /> },
     ],
   },
   {
@@ -135,7 +136,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
     if (p.startsWith('/admin-dashboard/announcements') || p.startsWith('/admin-dashboard/events')) return 'comms';
     if (p.startsWith('/admin-dashboard/facilities') || p.startsWith('/admin-dashboard/facility-bookings')) return 'facilities';
     if (p.startsWith('/admin-dashboard/invoices') || p.startsWith('/admin-dashboard/yearly-billing') || p.startsWith('/admin-dashboard/water-meter')) return 'finance';
-    if (p.startsWith('/admin-dashboard/support-requests') || p.startsWith('/admin-dashboard/feedbacks')) return 'support';
+    if (p.startsWith('/admin-dashboard/support-requests') || p.startsWith('/admin-dashboard/feedbacks') || p.startsWith('/admin-dashboard/vehicle-registrations')) return 'support';
     if (p.startsWith('/admin-dashboard/reports') || p.startsWith('/admin-dashboard/history')) return 'reports';
     return 'overview';
   }, [pathname]);
@@ -251,6 +252,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                                        item.label.includes('invoices') ? 'Quản lý hóa đơn' :
                                        item.label.includes('feedbacks') ? 'Quản lý phản hồi' :
                                        item.label.includes('support-requests') ? 'Quản lý yêu cầu hỗ trợ' :
+                                       item.label.includes('vehicle-registrations') ? 'Quản lý đăng ký xe' :
                                        item.label.includes('reports') ? 'Quản lý báo cáo' :
                                        item.label.includes('history') ? 'Lịch sử AI Q&A' : 'Chức năng')}
                             className="relative border-l-2 border-transparent hover:border-[var(--group-accent)] data-[active=true]:border-[var(--group-accent)] data-[active=true]:bg-[var(--group-accent)]/10 data-[active=true]:text-[var(--group-accent)]"
@@ -268,6 +270,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                                        item.label.includes('invoices') ? 'Quản lý hóa đơn' :
                                        item.label.includes('feedbacks') ? 'Quản lý phản hồi' :
                                        item.label.includes('support-requests') ? 'Quản lý yêu cầu hỗ trợ' :
+                                       item.label.includes('vehicle-registrations') ? 'Quản lý đăng ký xe' :
                                        item.label.includes('reports') ? 'Quản lý báo cáo' :
                                        item.label.includes('history') ? 'Lịch sử AI Q&A' : 'Chức năng')}</span>
                             </Link>
