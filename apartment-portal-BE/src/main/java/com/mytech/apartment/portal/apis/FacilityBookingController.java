@@ -16,10 +16,6 @@ import com.mytech.apartment.portal.services.LoggingService;
 import com.mytech.apartment.portal.services.ActivityLogService;
 import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.security.UserDetailsImpl;
-import com.mytech.apartment.portal.models.FacilityBooking;
-import com.mytech.apartment.portal.mappers.FacilityBookingMapper;
-import com.mytech.apartment.portal.models.enums.PaymentStatus;
-import com.mytech.apartment.portal.models.enums.PaymentMethod;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -35,7 +31,7 @@ public class FacilityBookingController {
     @Autowired
     private UserService userService;
     @Autowired private LoggingService loggingService;
-    @Autowired private FacilityBookingMapper facilityBookingMapper;
+    // Removed unused mapper field to avoid warnings
     @Autowired private ActivityLogService activityLogService;
 
     // Admin endpoint to get all bookings
@@ -81,6 +77,30 @@ public class FacilityBookingController {
         Optional<FacilityBookingDto> booking = facilityBookingService.getFacilityBookingById(id);
         return booking.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Admin endpoint: update booking status (approve/reject)
+    @PatchMapping("/admin/facility-bookings/{id}")
+    public ResponseEntity<?> updateBookingStatus(
+            @PathVariable("id") Long id,
+            @RequestBody Map<String, String> request
+    ) {
+        try {
+            String status = request.get("status");
+            String rejectionReason = request.get("rejectionReason");
+            FacilityBookingDto dto = facilityBookingService.updateBookingStatus(id, status, rejectionReason);
+            // Log activity
+            activityLogService.logActivityForCurrentUser(
+                com.mytech.apartment.portal.models.enums.ActivityActionType.UPDATE_FACILITY_BOOKING,
+                "Cập nhật trạng thái đặt tiện ích: %s (#%d) -> %s",
+                dto.getFacilityName(),
+                dto.getId(),
+                status
+            );
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // User endpoint to update their booking

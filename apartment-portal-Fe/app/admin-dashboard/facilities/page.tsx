@@ -21,14 +21,12 @@ import {
   Search, 
   Edit, 
   Trash2, 
-  Eye,
-  Filter,
-  Users
+  Eye
 } from 'lucide-react';
 import Link from 'next/link';
 import { facilitiesApi, Facility } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { facilityBookingsApi, FacilityBooking } from '@/lib/api';
+ 
 
 export default function FacilitiesPage() {
   return (
@@ -39,14 +37,13 @@ export default function FacilitiesPage() {
 }
 
 function FacilitiesPageContent() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCapacity, setFilterCapacity] = useState('all');
-  const [bookings, setBookings] = useState<FacilityBooking[]>([]);
-  const [loadingBookings, setLoadingBookings] = useState(true);
+  
 
   const fetchFacilities = async () => {
     try {
@@ -66,10 +63,6 @@ function FacilitiesPageContent() {
 
   useEffect(() => {
     fetchFacilities();
-    facilityBookingsApi.getAll().then(data => {
-      setBookings(data);
-      setLoadingBookings(false);
-    }).catch(() => setLoadingBookings(false));
   }, []);
 
   const handleDelete = async (id: number) => {
@@ -250,47 +243,7 @@ function FacilitiesPageContent() {
           </CardContent>
         </Card>
 
-        {/* Facility Bookings Table (10 booking gần nhất) */}
-        <Card className="mt-8">
-            <CardHeader>
-            <CardTitle>{t('admin.facilities.recentBookingsTitle', '10 tiện ích cư dân đã đặt gần nhất')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingBookings ? (
-              <div className="text-center py-8">{t('admin.loading', 'Đang tải...')}</div>
-            ) : bookings.length === 0 ? (
-              <div className="text-center py-8">{t('admin.noData', 'Không có dữ liệu')}</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('admin.facilities.recent.resident', 'Cư dân')}</TableHead>
-                      <TableHead>{t('admin.facilities.recent.facility', 'Tiện ích')}</TableHead>
-                      <TableHead>{t('admin.facilities.recent.bookingTime', 'Thời gian đặt')}</TableHead>
-                      <TableHead>{t('admin.facilities.recent.numPeople', 'Số người')}</TableHead>
-                      <TableHead>{t('admin.facilities.recent.status', 'Trạng thái')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bookings.slice(0, 10).map((booking: any) => (
-                        <TableRow key={booking.id}>
-                        <TableCell>{booking.residentName || booking.user?.username || booking.user?.email || booking.user?.phoneNumber || t('common.anonymous', 'Ẩn danh')}</TableCell>
-                        <TableCell>{booking.facilityName || booking.facility?.name}</TableCell>
-                        <TableCell>
-                          {(booking.startTime ? new Date(booking.startTime).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') : (booking.bookingTime ? new Date(booking.bookingTime).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') : '-')) +
-                          (booking.endTime ? ' - ' + new Date(booking.endTime).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') : '')}
-                        </TableCell>
-                        <TableCell>{booking.numberOfPeople}</TableCell>
-                        <TableCell>{booking.status}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        
       </div>
     </AdminLayout>
   );

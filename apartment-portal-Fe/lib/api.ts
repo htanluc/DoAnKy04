@@ -470,6 +470,22 @@ export const facilityBookingsApi = {
     return response.json();
   },
 
+  // Update status (admin)
+  updateStatus: async (
+    id: number,
+    status: 'PENDING' | 'APPROVED' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED',
+    rejectionReason?: string
+  ): Promise<FacilityBooking> => {
+    // Map APPROVED -> CONFIRMED để phù hợp BE
+    const mapped = status === 'APPROVED' ? 'CONFIRMED' : status;
+    const response = await api.patch(`/api/admin/facility-bookings/${id}`, {
+      status: mapped,
+      ...(mapped === 'REJECTED' && rejectionReason ? { rejectionReason } : {}),
+    } as any);
+    if (!response.ok) throw new Error('Failed to update booking status');
+    return response.json();
+  },
+
   // Create facility booking (resident)
   create: async (data: FacilityBookingCreateRequest): Promise<FacilityBooking> => {
     const response = await api.post('/api/facility-bookings', data);
