@@ -34,6 +34,9 @@ public class FacilityBookingService {
     @Autowired
     private FacilityBookingMapper facilityBookingMapper;
 
+    @Autowired
+    private EmailService emailService;
+
     public List<FacilityBookingDto> getAllFacilityBookings() {
         return facilityBookingRepository.findAll().stream()
                 .map(facilityBookingMapper::toDto)
@@ -379,5 +382,56 @@ public class FacilityBookingService {
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Trạng thái thanh toán không hợp lệ: " + paymentStatus);
         }
+    }
+
+    // Admin cập nhật trạng thái booking (phê duyệt / từ chối). Nếu từ chối thì gửi email với lý do.
+    public FacilityBookingDto updateBookingStatus(Long bookingId, String status, String rejectionReason) {
+        FacilityBooking booking = facilityBookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
+
+        FacilityBookingStatus newStatus;
+        try {
+            String normalized = status != null ? status.trim().toUpperCase() : "";
+            if ("APPROVED".equals(normalized)) normalized = "CONFIRMED"; // đồng bộ enum BE
+            newStatus = FacilityBookingStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái không hợp lệ: " + status);
+        }
+
+        // Không cho phép từ chối nếu đã phê duyệt hoặc đã hoàn tất
+        if ((booking.getStatus() == FacilityBookingStatus.CONFIRMED ||
+             booking.getStatus() == FacilityBookingStatus.COMPLETED) &&
+            newStatus == FacilityBookingStatus.REJECTED) {
+            throw new RuntimeException("Không thể từ chối khi booking đã được phê duyệt hoặc đã hoàn tất");
+        }
+
+        booking.setStatus(newStatus);
+        FacilityBooking saved = facilityBookingRepository.save(booking);
+
+        // Gửi email khi từ chối
+        if (newStatus == FacilityBookingStatus.REJECTED) {
+            try {
+                User user = saved.getUser();
+                if (user != null && user.getEmail() != null && !user.getEmail().isBlank()) {
+                    String email = user.getEmail();
+                    String subject = "Đặt tiện ích bị từ chối";
+                    String content = String.format(
+                        "<p>Chào %s,</p>" +
+                        "<p>Yêu cầu đặt tiện ích của bạn đã bị <b>TỪ CHỐI</b>.</p>" +
+                        "<ul>" +
+                        "<li>Tiện ích: <b>%s</b></li>" +
+                        "<li>Thời gian: <b>%s</b></li>" +
+                        "</ul>" +
+                        (rejectionReason != null && !rejectionReason.isBlank() ? ("<p>Lý do: " + rejectionReason + "</p>") : "") +
+                        "<p>Vui lòng liên hệ ban quản lý nếu cần hỗ trợ.</p>",
+                        (user.getFullName() != null ? user.getFullName() : user.getUsername()),
+                        saved.getFacility() != null ? saved.getFacility().getName() : "-",
+                        saved.getBookingTime() != null ? saved.getBookingTime().toString() : "-");
+                    emailService.sendHtmlEmail(email, subject, content);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return facilityBookingMapper.toDto(saved);
     }
 } 

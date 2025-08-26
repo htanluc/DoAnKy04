@@ -8,6 +8,14 @@ import { Button } from "@/components/ui/button";
 import { facilityBookingsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { BookingStatus } from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
+const REJECTION_REASONS = [
+  "Không đủ sức chứa",
+  "Trùng khung giờ",
+  "Thông tin không hợp lệ",
+  "Vi phạm quy định sử dụng",
+];
 
 // Hàm cập nhật trạng thái thay thế do facilityBookingsApi chưa có updateStatus
 // Sửa lại để PATCH trực tiếp endpoint với body { status }
@@ -50,10 +58,14 @@ export default function FacilityBookingDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleUpdateStatus = async (status: string) => {
+  const handleUpdateStatus = async (status: string, rejectionReason?: string) => {
     setUpdating(true);
     try {
-      await updateBookingStatus(id, status as BookingStatus);
+      await facilityBookingsApi.updateStatus(
+        id,
+        status as BookingStatus,
+        status === "REJECTED" ? rejectionReason : undefined
+      );
       toast({
         title: "Thành công",
         description: `Đã cập nhật trạng thái: ${status}`,
@@ -69,6 +81,23 @@ export default function FacilityBookingDetailPage() {
       setUpdating(false);
     }
   };
+
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [selectedReason, setSelectedReason] = useState<string>(REJECTION_REASONS[0]);
+
+  const status: string = data?.status || '';
+  const canApprove = !(
+    status === "APPROVED" ||
+    status === "CONFIRMED" ||
+    status === "REJECTED" ||
+    status === "COMPLETED"
+  );
+  const canReject = !(
+    status === "REJECTED" ||
+    status === "CONFIRMED" ||
+    status === "APPROVED" ||
+    status === "COMPLETED"
+  );
 
   if (loading) return <div className="p-8">Đang tải...</div>;
   if (!data)
@@ -121,27 +150,57 @@ export default function FacilityBookingDetailPage() {
                 : "-"}
             </div>
             <div className="flex gap-4 mt-6">
-              <Button
-                disabled={
-                  updating ||
-                  data.status === "APPROVED" ||
-                  data.status === "CONFIRMED"
-                }
-                onClick={() => handleUpdateStatus("CONFIRMED")}
-              >
-                Phê duyệt
-              </Button>
-              <Button
-                variant="destructive"
-                disabled={updating || data.status === "REJECTED"}
-                onClick={() => handleUpdateStatus("REJECTED")}
-              >
-                Từ chối
-              </Button>
+              {canApprove && (
+                <Button disabled={updating} onClick={() => handleUpdateStatus("CONFIRMED")}>
+                  Phê duyệt
+                </Button>
+              )}
+              {canReject && (
+                <Button variant="destructive" disabled={updating} onClick={() => setRejectOpen(true)}>
+                  Từ chối
+                </Button>
+              )}
               <Button variant="outline" onClick={() => router.back()}>
                 Quay lại
               </Button>
             </div>
+
+            {canReject && (
+            <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Chọn lý do từ chối</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <select
+                    className="w-full border rounded px-3 py-2"
+                    value={selectedReason}
+                    onChange={(e) => setSelectedReason(e.target.value)}
+                  >
+                    {REJECTION_REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setRejectOpen(false)}>
+                    Hủy
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      await handleUpdateStatus("REJECTED", selectedReason);
+                      setRejectOpen(false);
+                    }}
+                  >
+                    Xác nhận từ chối
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            )}
           </CardContent>
         </Card>
       </div>

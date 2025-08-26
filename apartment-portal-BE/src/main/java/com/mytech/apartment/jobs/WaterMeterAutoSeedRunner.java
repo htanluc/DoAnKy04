@@ -1,10 +1,8 @@
 package com.mytech.apartment.jobs;
 
 import com.mytech.apartment.portal.models.Apartment;
-import com.mytech.apartment.portal.models.ServiceFeeConfig;
 import com.mytech.apartment.portal.models.WaterMeterReading;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
-import com.mytech.apartment.portal.repositories.ServiceFeeConfigRepository;
 import com.mytech.apartment.portal.repositories.WaterMeterReadingRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Auto seed water meter readings for the entire current year on application startup.
@@ -27,26 +24,25 @@ public class WaterMeterAutoSeedRunner {
 
     @Autowired private ApartmentRepository apartmentRepository;
     @Autowired private WaterMeterReadingRepository waterRepo;
-    @Autowired private ServiceFeeConfigRepository feeCfgRepo;
 
     private static final long SYSTEM_RECORDED_BY = 0L; // system user placeholder
-    private static final BigDecimal DEFAULT_MONTHLY_CONSUMPTION_M3 = BigDecimal.valueOf(10); // 10 m3 / month
     private static final int FIXED_READING_DAY = 1; // day-of-month for generated readings
 
     @PostConstruct
     @Transactional
     public void seedCurrentYearIfMissing() {
-        int year = LocalDate.now().getYear();
+        int year = 2025; // Seed cố định cho năm 2025 với giá trị 0
         try {
             List<Apartment> apartments = apartmentRepository.findAll();
             if (apartments.isEmpty()) {
                 return;
             }
 
-            System.out.println("DEBUG: WaterMeterAutoSeedRunner - start seeding for year " + year + ", apartments=" + apartments.size());
+            System.out.println("DEBUG: WaterMeterAutoSeedRunner - start seeding ZERO readings for year " + year + ", apartments=" + apartments.size());
 
             for (Apartment apt : apartments) {
-                BigDecimal lastMeter = getLastMeterBefore(apt.getId(), LocalDate.of(year, 1, 1));
+                // Không dùng chỉ số trước đó, tạo mặc định 0
+                BigDecimal zero = BigDecimal.ZERO;
 
                 for (int month = 1; month <= 12; month++) {
                     LocalDate readingDate = LocalDate.of(year, month, FIXED_READING_DAY);
@@ -56,10 +52,11 @@ public class WaterMeterAutoSeedRunner {
                         continue;
                     }
 
-                    BigDecimal unitPrice = BigDecimal.valueOf(resolveUnitPrice(month, year));
-                    BigDecimal consumption = DEFAULT_MONTHLY_CONSUMPTION_M3;
-                    BigDecimal meterReading = lastMeter.add(consumption);
-                    BigDecimal totalAmount = consumption.multiply(unitPrice);
+                    // Tạo chỉ số mặc định 0 cho tất cả các giá trị
+                    BigDecimal unitPrice = zero;
+                    BigDecimal consumption = zero;
+                    BigDecimal meterReading = zero;
+                    BigDecimal totalAmount = zero;
 
                     WaterMeterReading r = new WaterMeterReading();
                     r.setApartmentId(apt.getId());
@@ -72,27 +69,17 @@ public class WaterMeterAutoSeedRunner {
 
                     waterRepo.save(r);
 
-                    lastMeter = meterReading;
+                    // Không cộng dồn vì luôn 0
                 }
             }
 
-            System.out.println("DEBUG: WaterMeterAutoSeedRunner - completed seeding for year " + year);
+            System.out.println("DEBUG: WaterMeterAutoSeedRunner - completed seeding ZERO readings for year " + year);
         } catch (Exception ex) {
             System.err.println("DEBUG: WaterMeterAutoSeedRunner - error: " + ex.getMessage());
         }
     }
 
-    private BigDecimal getLastMeterBefore(Long apartmentId, LocalDate date) {
-        return waterRepo
-                .findTopByApartmentIdAndReadingDateLessThanOrderByReadingDateDesc(apartmentId, date)
-                .map(WaterMeterReading::getMeterReading)
-                .orElse(BigDecimal.ZERO);
-    }
-
-    private double resolveUnitPrice(int month, int year) {
-        Optional<ServiceFeeConfig> cfg = feeCfgRepo.findByMonthAndYear(month, year);
-        return cfg.map(ServiceFeeConfig::getWaterFeePerM3).orElse(15000.0);
-    }
+    // No price resolution needed for zero seeding
 }
 
 
