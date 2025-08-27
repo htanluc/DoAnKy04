@@ -26,7 +26,9 @@ import {
   Settings,
   Upload,
   Image,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { createSupportRequest, fetchMySupportRequests } from '@/lib/api'
 import ImageUpload from '@/components/ui/image-upload'
@@ -51,6 +53,7 @@ interface ServiceRequest {
   staffPhone?: string
   resolutionNotes?: string
   comments: Comment[]
+  attachmentUrls?: string[]
 }
 
 interface Comment {
@@ -90,6 +93,40 @@ export default function ServiceRequestsPage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [expandedRequests, setExpandedRequests] = useState<Set<string>>(new Set())
   const [staffPhoneMap, setStaffPhoneMap] = useState<{[key: string]: string}>({})
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentImages, setCurrentImages] = useState<string[]>([])
+
+  const getImageUrl = (rawUrl: string): string => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : ''
+      const cacheBust = Date.now()
+      const params = new URLSearchParams({ url: rawUrl })
+      if (token) params.set('token', token)
+      params.set('_', String(cacheBust))
+      return `/api/image-proxy?${params.toString()}`
+    } catch {
+      return rawUrl
+    }
+  }
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeLightbox()
+      } else if (e.key === 'ArrowRight') {
+        nextImage()
+      } else if (e.key === 'ArrowLeft') {
+        prevImage()
+      }
+    }
+    if (lightboxOpen) {
+      window.addEventListener('keydown', onKeyDown)
+    }
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [lightboxOpen, currentImages])
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -408,6 +445,26 @@ export default function ServiceRequestsPage() {
     setExpandedRequests(newExpanded);
   };
 
+  const openLightbox = (images: string[], startIndex: number = 0) => {
+    setCurrentImages(images)
+    setCurrentImageIndex(startIndex)
+    setLightboxOpen(true)
+  }
+
+  const closeLightbox = () => {
+    setLightboxOpen(false)
+    setCurrentImages([])
+    setCurrentImageIndex(0)
+  }
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % currentImages.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length)
+  }
+
   const filteredRequests = requests.filter(request => {
     const title = request.title || ''
     const description = request.description || ''
@@ -679,6 +736,36 @@ export default function ServiceRequestsPage() {
               <CardContent className="space-y-4">
                 <p className="text-gray-600">{request.description || 'Không có mô tả'}</p>
                 
+                {/* Display Attached Images */}
+                {request.attachmentUrls && request.attachmentUrls.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Image className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Hình ảnh đính kèm ({request.attachmentUrls.length} ảnh):</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {request.attachmentUrls.map((url, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={getImageUrl(url)}
+                            alt={`Hình ảnh ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                            onClick={() => openLightbox(request.attachmentUrls!, index)}
+                            title="Click để xem ảnh đầy đủ"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="bg-white bg-opacity-90 rounded-full p-1">
+                                <Image className="h-4 w-4 text-gray-700" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Debug info */}
                 <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
                   Debug: assignedTo={request.assignedTo || 'undefined'}, 
@@ -747,6 +834,55 @@ export default function ServiceRequestsPage() {
           ))
         )}
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <X className="h-8 w-8" />
+            </button>
+
+            {/* Navigation buttons */}
+            {currentImages.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="max-w-4xl max-h-full p-4">
+              <img
+                src={getImageUrl(currentImages[currentImageIndex])}
+                alt={`Hình ảnh ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+
+            {/* Image counter */}
+            {currentImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {currentImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

@@ -23,7 +23,11 @@ import {
   Eye,
   Filter,
   User,
-  Plus
+  Plus,
+  Image,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { supportRequestsApi } from '@/lib/api';
@@ -41,6 +45,7 @@ interface SupportRequest {
   assignedTo: string;
   // assignedAt: string; // Bỏ thời gian gán nhân viên
   createdAt: string;
+  attachmentUrls?: string[];
 }
 
 export default function SupportRequestsPage() {
@@ -58,6 +63,9 @@ function SupportRequestsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
 
   const truncateTitle = (title: string, max: number = 20) => {
     if (!title) return '';
@@ -166,6 +174,7 @@ function SupportRequestsPageContent() {
                        item.requestDate ||
                        item.dateCreated ||
                        '',
+            attachmentUrls: item.attachmentUrls || item.attachments || [],
           };
         });
         console.log('Mapped data:', mapped); // Debug: xem dữ liệu sau khi map
@@ -207,6 +216,26 @@ function SupportRequestsPageContent() {
       newExpandedRows.add(requestId);
     }
     setExpandedRows(newExpandedRows);
+  };
+
+  const openLightbox = (images: string[], startIndex: number = 0) => {
+    setCurrentImages(images);
+    setCurrentImageIndex(startIndex);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setCurrentImages([]);
+    setCurrentImageIndex(0);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % currentImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length);
   };
 
   const getStatusBadge = (status: string) => {
@@ -480,6 +509,36 @@ function SupportRequestsPageContent() {
                                            </div>
                                          </div>
                                        </div>
+                                       
+                                       {/* Display Attached Images */}
+                                       {request.attachmentUrls && request.attachmentUrls.length > 0 && (
+                                         <div className="space-y-3 bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                                           <div className="font-medium text-gray-600 text-sm uppercase tracking-wide flex items-center gap-2">
+                                             <Image className="h-4 w-4" />
+                                             Hình ảnh đính kèm ({request.attachmentUrls.length} ảnh)
+                                           </div>
+                                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                             {request.attachmentUrls.map((url, index) => (
+                                               <div key={index} className="relative group">
+                                                 <img
+                                                   src={url}
+                                                   alt={`Hình ảnh ${index + 1}`}
+                                                   className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                                                   onClick={() => openLightbox(request.attachmentUrls!, index)}
+                                                   title="Click để xem ảnh đầy đủ"
+                                                 />
+                                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                                                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                     <div className="bg-white bg-opacity-90 rounded-full p-1">
+                                                       <Image className="h-3 w-3 text-gray-700" />
+                                                     </div>
+                                                   </div>
+                                                 </div>
+                                               </div>
+                                             ))}
+                                           </div>
+                                         </div>
+                                       )}
                                      </div>
                                    ) : (
                                      <div className="text-center py-8 text-gray-500 bg-white rounded-lg shadow-sm border border-gray-200">
@@ -512,6 +571,55 @@ function SupportRequestsPageContent() {
             </CardContent>
           </Card>
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <X className="h-8 w-8" />
+            </button>
+
+            {/* Navigation buttons */}
+            {currentImages.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="max-w-4xl max-h-full p-4">
+              <img
+                src={currentImages[currentImageIndex]}
+                alt={`Hình ảnh ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+
+            {/* Image counter */}
+            {currentImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {currentImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 } 

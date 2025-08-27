@@ -731,6 +731,7 @@ export interface Vehicle {
   brand?: string;
   model?: string;
   color?: string;
+  imageUrls?: string[];
   status: string;
   statusDisplayName?: string;
   monthlyFee?: number;

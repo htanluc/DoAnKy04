@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/lib/auth";
 import ServiceRequestStatusProgress from "@/components/admin/ServiceRequestStatusProgress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Image, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SupportRequestDetail {
   id: number;
@@ -27,6 +28,7 @@ interface SupportRequestDetail {
   completedAt?: string;
   resolutionNotes?: string;
   assignedAt?: string; // Thêm trường assignedAt
+  attachmentUrls?: string[]; // Thêm trường hình ảnh đính kèm
 }
 
 function normalizeStatus(raw?: string) {
@@ -63,6 +65,8 @@ function formatDate(dateStr?: string) {
   return new Date(dateStr).toLocaleString("vi-VN");
 }
 
+// Lightbox functions - sẽ được implement trong component
+
 export default function SupportRequestDetailPage() {
   const { id } = useParams();
   const [data, setData] = useState<SupportRequestDetail | null>(null);
@@ -78,6 +82,32 @@ export default function SupportRequestDetailPage() {
   const [assignError, setAssignError] = useState<string>("");
   const [statusError, setStatusError] = useState<string>("");
   const [statusUpdating, setStatusUpdating] = useState<boolean>(false);
+  
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
+
+  // Lightbox functions
+  const openLightbox = (images: string[], startIndex: number = 0) => {
+    setCurrentImages(images);
+    setCurrentImageIndex(startIndex);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setCurrentImages([]);
+    setCurrentImageIndex(0);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % currentImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length);
+  };
 
   // Load detail
   useEffect(() => {
@@ -192,15 +222,16 @@ export default function SupportRequestDetailPage() {
           categoryName: (item as any).categoryName || "", // Sử dụng categoryName từ backend DTO
           priority: (item as any).priority || "",
           status: (item as any).status || "",
-          assignedTo: (typeof (item as any).assignedTo === 'object') ? ((item as any).assignedTo.username || (item as any).assignedTo.fullName || (item as any).assignedTo.email || "") : ((item as any).assignedTo || ""),
-          staffPhone: (typeof (item as any).assignedTo === 'object') ? (((item as any).assignedTo.phoneNumber || (item as any).assignedTo.phone) || "") : ((item as any).assignedPhone || ""),
+          assignedTo: (item as any).assignedTo && typeof (item as any).assignedTo === 'object' ? ((item as any).assignedTo.username || (item as any).assignedTo.fullName || (item as any).assignedTo.email || "") : ((item as any).assignedTo || ""),
+          staffPhone: (item as any).assignedTo && typeof (item as any).assignedTo === 'object' ? (((item as any).assignedTo.phoneNumber || (item as any).assignedTo.phone) || "") : ((item as any).assignedPhone || ""),
           createdAt: (item as any).createdAt || "", // Sử dụng createdAt từ backend DTO
           completedAt: (item as any).resolvedAt || "", // Sử dụng resolvedAt từ backend DTO
           resolutionNotes: (item as any).resolution || "", // Sử dụng resolution từ backend DTO
           assignedAt: (item as any).assignedAt || "", // Lấy assignedAt từ backend DTO
+          attachmentUrls: (item as any).attachmentUrls || (item as any).attachments || [], // Thêm hình ảnh đính kèm
         });
         setSelectedPriority(pr);
-        const assignedId = (item as any).assignedTo && typeof (item as any).assignedTo === 'object'
+        const assignedId = (item as any).assignedTo && typeof (item as any).assignedTo === 'object' && (item as any).assignedTo.id
           ? (item as any).assignedTo.id
           : "";
         setSelectedStaff(assignedId); // Lấy id từ assignedTo nếu có
@@ -386,6 +417,36 @@ export default function SupportRequestDetailPage() {
                   <div><b>Được giao cho:</b> {data.assignedTo || "Chưa giao"}</div>
                 </div>
               </div>
+              
+              {/* Display Attached Images */}
+              {data.attachmentUrls && data.attachmentUrls.length > 0 && (
+                <div className="p-4 rounded-lg border bg-green-50 border-green-200">
+                  <div className="mb-3 font-semibold text-green-800 flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Hình ảnh đính kèm ({data.attachmentUrls.length} ảnh)
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {data.attachmentUrls.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Hình ảnh ${index + 1}`}
+                          className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-green-300 transition-colors"
+                          onClick={() => openLightbox(data.attachmentUrls!, index)}
+                          title="Click để xem ảnh đầy đủ"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-white bg-opacity-90 rounded-full p-1">
+                              <Image className="h-3 w-3 text-gray-700" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {data.resolutionNotes && <div className="p-4 rounded-lg border bg-white"><b>Kết quả xử lý:</b> {data.resolutionNotes}</div>}
@@ -496,6 +557,55 @@ export default function SupportRequestDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <X className="h-8 w-8" />
+            </button>
+
+            {/* Navigation buttons */}
+            {currentImages.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="max-w-4xl max-h-full p-4">
+              <img
+                src={currentImages[currentImageIndex]}
+                alt={`Hình ảnh ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+
+            {/* Image counter */}
+            {currentImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {currentImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
