@@ -7,6 +7,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supportRequestsApi } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/auth";
+import ServiceRequestStatusProgress from "@/components/admin/ServiceRequestStatusProgress";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Image, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SupportRequestDetail {
   id: number;
@@ -19,10 +23,12 @@ interface SupportRequestDetail {
   priority?: string | number;
   status?: string;
   assignedTo?: string;
+  staffPhone?: string; // Số điện thoại nhân viên được gán
   createdAt?: string;
   completedAt?: string;
   resolutionNotes?: string;
   assignedAt?: string; // Thêm trường assignedAt
+  attachmentUrls?: string[]; // Thêm trường hình ảnh đính kèm
 }
 
 function normalizeStatus(raw?: string) {
@@ -43,17 +49,31 @@ function getStatusBadge(raw?: string) {
   }
 }
 
+// Tô màu theo trạng thái cho phần "Trạng thái & thời gian"
+function getStatusPanelClasses(raw?: string) {
+  const s = normalizeStatus(raw);
+  if (s === "COMPLETED") return { panel: "bg-green-100 border-green-300", accent: "text-green-700" };
+  if (s === "IN_PROGRESS") return { panel: "bg-amber-100 border-amber-300", accent: "text-amber-700" };
+  if (s === "ASSIGNED") return { panel: "bg-indigo-100 border-indigo-300", accent: "text-indigo-700" };
+  if (s === "OPEN") return { panel: "bg-blue-100 border-blue-300", accent: "text-blue-700" };
+  if (s === "CANCELLED") return { panel: "bg-red-100 border-red-300", accent: "text-red-700" };
+  return { panel: "bg-gray-100 border-gray-300", accent: "text-gray-700" };
+}
+
 function formatDate(dateStr?: string) {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleString("vi-VN");
 }
 
+// Lightbox functions - sẽ được implement trong component
+
 export default function SupportRequestDetailPage() {
   const { id } = useParams();
   const [data, setData] = useState<SupportRequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const [staffList, setStaffList] = useState<{ id: number; username: string; email: string }[]>([]);
+  const [staffList, setStaffList] = useState<{ id: number; username: string; email: string; phoneNumber?: string }[]>([]);
   const [assigning, setAssigning] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<number | "">("");
   const [selectedPriority, setSelectedPriority] = useState<number>(1);
@@ -61,6 +81,33 @@ export default function SupportRequestDetailPage() {
 
   const [assignError, setAssignError] = useState<string>("");
   const [statusError, setStatusError] = useState<string>("");
+  const [statusUpdating, setStatusUpdating] = useState<boolean>(false);
+  
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
+
+  // Lightbox functions
+  const openLightbox = (images: string[], startIndex: number = 0) => {
+    setCurrentImages(images);
+    setCurrentImageIndex(startIndex);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setCurrentImages([]);
+    setCurrentImageIndex(0);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % currentImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length);
+  };
 
   // Load detail
   useEffect(() => {
@@ -175,14 +222,19 @@ export default function SupportRequestDetailPage() {
           categoryName: (item as any).categoryName || "", // Sử dụng categoryName từ backend DTO
           priority: (item as any).priority || "",
           status: (item as any).status || "",
-          assignedTo: (item as any).assignedTo || "", // Sử dụng assignedTo từ backend DTO
+          assignedTo: (item as any).assignedTo && typeof (item as any).assignedTo === 'object' ? ((item as any).assignedTo.username || (item as any).assignedTo.fullName || (item as any).assignedTo.email || "") : ((item as any).assignedTo || ""),
+          staffPhone: (item as any).assignedTo && typeof (item as any).assignedTo === 'object' ? (((item as any).assignedTo.phoneNumber || (item as any).assignedTo.phone) || "") : ((item as any).assignedPhone || ""),
           createdAt: (item as any).createdAt || "", // Sử dụng createdAt từ backend DTO
           completedAt: (item as any).resolvedAt || "", // Sử dụng resolvedAt từ backend DTO
           resolutionNotes: (item as any).resolution || "", // Sử dụng resolution từ backend DTO
           assignedAt: (item as any).assignedAt || "", // Lấy assignedAt từ backend DTO
+          attachmentUrls: (item as any).attachmentUrls || (item as any).attachments || [], // Thêm hình ảnh đính kèm
         });
         setSelectedPriority(pr);
-        setSelectedStaff(item.assignedTo?.id ?? ""); // Lấy id từ assignedTo nếu có
+        const assignedId = (item as any).assignedTo && typeof (item as any).assignedTo === 'object' && (item as any).assignedTo.id
+          ? (item as any).assignedTo.id
+          : "";
+        setSelectedStaff(assignedId); // Lấy id từ assignedTo nếu có
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -214,10 +266,27 @@ export default function SupportRequestDetailPage() {
             id: u.id,
             username: u.username,
             email: u.email,
+            phoneNumber: u.phoneNumber || (u.profile?.phoneNumber) || u.phone,
           }))
         );
       });
   }, []);
+
+  // Khi đã có danh sách nhân viên và dữ liệu chi tiết, điền số điện thoại nếu còn thiếu
+  useEffect(() => {
+    if (!data || data.staffPhone) return;
+    try {
+      const assigned = (data as any).assignedTo; // đã map thành string tên hiển thị
+      if (!assigned) return;
+      // Tìm theo username trước, nếu không có, thử theo email
+      const hit = staffList.find(
+        (s) => s.username === assigned || s.email === assigned
+      );
+      if (hit && hit.phoneNumber) {
+        setData((d) => d ? { ...d, staffPhone: hit.phoneNumber } : d);
+      }
+    } catch {}
+  }, [staffList, data]);
 
   const handleAssign = async () => {
     if (!data) {
@@ -240,33 +309,45 @@ export default function SupportRequestDetailPage() {
       const u = staffList.find((s) => s.id === Number(selectedStaff));
       setData((d) => ({ 
         ...d!, 
+        status: "ASSIGNED", // Tự động chuyển sang trạng thái "Đã giao"
         assignedTo: u?.username || "", 
         assignedAt: new Date().toISOString(),
+        staffPhone: u?.phoneNumber || d!.staffPhone || "",
         resolutionNotes: adminNotes || d!.resolutionNotes || ""
       }));
-      alert("Gán nhân viên thành công!");
+      toast({ title: "Thành công", description: "Gán nhân viên thành công" });
     } catch {
       setAssignError("Gán nhân viên thất bại!");
+      toast({ title: "Thất bại", description: "Gán nhân viên thất bại", variant: "destructive" as any });
     } finally {
       setAssigning(false);
     }
   };
 
-  const handleStatusChange = async () => {
+  const handleStatusChange = async (targetStatus: string) => {
     if (!data) {
       setStatusError("Không có dữ liệu yêu cầu hỗ trợ!");
       return;
     }
     setStatusError("");
+    setStatusUpdating(true);
     try {
+      const normalized = normalizeStatus(targetStatus);
       await supportRequestsApi.updateStatus(Number(id), {
-        status: normalizeStatus(data.status),
-        isCompleted: normalizeStatus(data.status) === 'COMPLETED',
+        status: normalized,
+        isCompleted: normalized === 'COMPLETED',
       });
-      setData((d) => ({ ...d!, status: normalizeStatus(data.status) }));
-      alert("Cập nhật trạng thái thành công!");
+      setData((d) => ({ 
+        ...d!, 
+        status: normalized,
+        completedAt: normalized === 'COMPLETED' ? (d!.completedAt || new Date().toISOString()) : d!.completedAt,
+      }));
+      toast({ title: "Thành công", description: "Cập nhật trạng thái thành công" });
     } catch {
       setStatusError("Cập nhật trạng thái thất bại!");
+      toast({ title: "Thất bại", description: "Cập nhật trạng thái thất bại", variant: "destructive" as any });
+    } finally {
+      setStatusUpdating(false);
     }
   };
 
@@ -275,35 +356,104 @@ export default function SupportRequestDetailPage() {
 
   return (
     <AdminLayout title="Chi tiết yêu cầu hỗ trợ">
-      <div className="max-w-2xl mx-auto mt-8">
+      <div className="max-w-5xl mx-auto mt-8 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Yêu cầu #{data.id}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div><b>Cư dân:</b> {data.residentName}</div>
-            <div><b>Số điện thoại:</b> {data.userPhone || "Không có"}</div>
-            <div><b>Tiêu đề / Mô tả:</b> {data.title || data.description}</div>
-            <div><b>Danh mục:</b> {data.categoryName}</div>
+            <ServiceRequestStatusProgress
+              status={data.status || "OPEN"}
+              assignedTo={data.assignedTo}
+              assignedAt={data.assignedAt}
+              completedAt={data.completedAt}
+              staffPhone={data.staffPhone}
+              className="mb-2"
+            />
 
-            <div className="flex items-center gap-2">
-              <b>Ưu tiên hiện tại:</b> {data.priority ?? "-"}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-lg border bg-emerald-100 border-emerald-300">
+                <div className="mb-2 font-semibold text-emerald-800">Thông tin cư dân</div>
+                <div className="space-y-2 text-sm">
+                  <div><b>Cư dân:</b> {data.residentName}</div>
+                  <div><b>Số điện thoại:</b> {data.userPhone || "Không có"}</div>
+                </div>
+              </div>
+              <div className="p-4 rounded-lg border bg-purple-100 border-purple-300">
+                <div className="mb-2 font-semibold text-purple-800">Thông tin yêu cầu</div>
+                <div className="space-y-2 text-sm">
+                  <div><b>Tiêu đề / Mô tả:</b> {data.title || data.description}</div>
+                  <div><b>Danh mục:</b> {data.categoryName}</div>
+                  <div className="flex items-center gap-2"><b>Ưu tiên hiện tại:</b> {data.priority ?? "-"}</div>
+                </div>
+              </div>
+              {(() => {
+                const tone = getStatusPanelClasses(data.status);
+                return (
+                  <div className={`p-4 rounded-lg border ${tone.panel}`}>
+                    <div className="mb-2 font-semibold text-gray-800">Trạng thái & thời gian</div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2"><b>Trạng thái:</b>{getStatusBadge(data.status)}</div>
+                      {data.assignedTo && (
+                        <div className="flex items-center gap-2">
+                          <b>Nhân viên:</b>
+                          <span>{data.assignedTo}</span>
+                          {data.staffPhone && (
+                            <span className={`${tone.accent}`}>• {data.staffPhone}</span>
+                          )}
+                        </div>
+                      )}
+                      <div><b>Ngày tạo:</b> <span className={`${tone.accent}`}>{formatDate(data.createdAt)}</span></div>
+                      {data.completedAt && (
+                        <div><b>Ngày hoàn thành:</b> <span className={`${tone.accent}`}>{formatDate(data.completedAt)}</span></div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="p-4 rounded-lg border bg-amber-100 border-amber-300">
+                <div className="mb-2 font-semibold text-amber-800">Nhân viên phụ trách</div>
+                <div className="space-y-2 text-sm">
+                  <div><b>Được giao cho:</b> {data.assignedTo || "Chưa giao"}</div>
+                </div>
+              </div>
+              
+              {/* Display Attached Images */}
+              {data.attachmentUrls && data.attachmentUrls.length > 0 && (
+                <div className="p-4 rounded-lg border bg-green-50 border-green-200">
+                  <div className="mb-3 font-semibold text-green-800 flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Hình ảnh đính kèm ({data.attachmentUrls.length} ảnh)
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {data.attachmentUrls.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Hình ảnh ${index + 1}`}
+                          className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-green-300 transition-colors"
+                          onClick={() => openLightbox(data.attachmentUrls!, index)}
+                          title="Click để xem ảnh đầy đủ"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-white bg-opacity-90 rounded-full p-1">
+                              <Image className="h-3 w-3 text-gray-700" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <b>Trạng thái:</b>
-              {getStatusBadge(data.status)}
-            </div>
+            {data.resolutionNotes && <div className="p-4 rounded-lg border bg-white"><b>Kết quả xử lý:</b> {data.resolutionNotes}</div>}
 
-            <div><b>Được giao cho:</b> {data.assignedTo || "Chưa giao"}</div>
-            <div><b>Ngày tạo:</b> {formatDate(data.createdAt)}</div>
-            {data.completedAt && <div><b>Ngày hoàn thành:</b> {formatDate(data.completedAt)}</div>}
-            {data.resolutionNotes && <div><b>Kết quả xử lý:</b> {data.resolutionNotes}</div>}
-
-            {/* Phần hiển thị lịch sử gán nhân viên */}
             {data.assignedTo && (
-              <div className="mt-4 p-4 border rounded bg-blue-50">
-                <div className="mb-2 font-semibold text-blue-800">📋 Lịch sử gán nhân viên</div>
+              <div className="mt-2 p-4 border rounded bg-blue-50">
+                <div className="mb-2 font-semibold text-blue-800">📋 Gán nhân viên</div>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Nhân viên được gán:</span>
@@ -311,44 +461,66 @@ export default function SupportRequestDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Thời gian gán:</span>
-                    <span className="text-blue-700">
-                      {data.assignedAt ? formatDate(data.assignedAt) : 'Không xác định'}
-                    </span>
+                    <span className="text-blue-700">{data.assignedAt ? formatDate(data.assignedAt) : 'Không xác định'}</span>
                   </div>
                   {data.resolutionNotes && (
                     <div className="flex items-start gap-2">
                       <span className="font-medium">Ghi chú khi gán:</span>
-                      <span className="text-blue-700 bg-white p-2 rounded border flex-1">
-                        {data.resolutionNotes}
-                      </span>
+                      <span className="text-blue-700 bg-white p-2 rounded border flex-1">{data.resolutionNotes}</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Phần cập nhật trạng thái */}
-            <div className="mt-4 flex items-center gap-2">
-              <select
-                className="border rounded px-2 py-1"
-                value={data.status}
-                onChange={(e) => setData((d) => ({ ...d!, status: e.target.value }))}
-              >
-                <option value="OPEN">Mở</option>
-                <option value="IN_PROGRESS">Đang xử lý</option>
-                <option value="COMPLETED">Hoàn thành</option>
-              </select>
-              <button
-                className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50"
-                onClick={handleStatusChange}
-              >
-                Cập nhật trạng thái
-              </button>
-            </div>
-            {statusError && <div className="text-red-500">{statusError}</div>}
+            <div className="mt-2 p-4 border rounded bg-gray-50">
+              <div className="mb-2 font-semibold">Quản lý yêu cầu</div>
+              <div className="space-y-3">
+                {/* Hiển thị quy trình tự động */}
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-sm text-blue-800">
+                    <strong>Quy trình tự động:</strong> Admin chỉ gán nhân viên, nhân viên tự cập nhật trạng thái
+                  </div>
+                  <div className="mt-2 text-xs text-blue-600">
+                    • <strong>Nhận yêu cầu</strong> → <strong>Đã giao</strong> (khi admin gán nhân viên)<br/>
+                    • <strong>Đang xử lý</strong> (nhân viên tự cập nhật khi bắt đầu)<br/>
+                    • <strong>Hoàn thành</strong> (nhân viên tự cập nhật khi xong)
+                  </div>
+                </div>
+                
+                {/* Thông báo quy trình tự động */}
+                {data.assignedTo && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="text-sm text-blue-800">
+                      <strong>Quy trình tự động:</strong> Nhân viên sẽ tự cập nhật trạng thái
+                    </div>
+                    <div className="mt-2 text-xs text-blue-600">
+                      • <strong>Đã giao</strong> → Nhân viên nhận nhiệm vụ<br/>
+                      • <strong>Đang xử lý</strong> → Nhân viên bắt đầu xử lý<br/>
+                      • <strong>Hoàn thành</strong> → Nhân viên hoàn thành và báo cáo
+                    </div>
+                  </div>
+                )}
 
-            {/* Phần gán nhân viên */}
-            <div className="mt-6 p-4 border rounded bg-gray-50">
+                {/* Chỉ giữ nút Hủy */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleStatusChange('CANCELLED')}
+                    disabled={statusUpdating || normalizeStatus(data.status) === 'CANCELLED'}
+                    className="w-fit"
+                  >
+                    {statusUpdating ? "Đang hủy..." : "Hủy yêu cầu"}
+                  </Button>
+                  <span className="text-xs text-gray-500">
+                    Chỉ có thể hủy yêu cầu khi cần thiết
+                  </span>
+                </div>
+                {statusError && <div className="text-red-500 mt-2">{statusError}</div>}
+              </div>
+            </div>
+
+            <div className="mt-2 p-4 border rounded bg-gray-50">
               <div className="mb-2 font-semibold">Gán cho nhân viên</div>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
@@ -364,17 +536,6 @@ export default function SupportRequestDetailPage() {
                       </option>
                     ))}
                   </select>
-                  {/* <select
-                    className="border rounded px-2 py-1"
-                    value={selectedPriority}
-                    onChange={(e) => setSelectedPriority(Number(e.target.value))}
-                  >
-                    <option value={1}>1 (Cao nhất)</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                    <option value={4}>4</option>
-                    <option value={5}>5 (Thấp nhất)</option>
-                  </select> */}
                 </div>
                 <textarea
                   className="border rounded px-2 py-1 w-full"
@@ -383,19 +544,68 @@ export default function SupportRequestDetailPage() {
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                 />
-                <button
-                  className="bg-blue-600 text-white px-3 py-1 rounded disabled:opacity-50"
+                <Button
+                  className="w-fit"
                   onClick={handleAssign}
                   disabled={!selectedStaff || assigning}
                 >
                   {assigning ? "Đang gán..." : "Gán nhân viên"}
-                </button>
+                </Button>
                 {assignError && <div className="text-red-500">{assignError}</div>}
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <X className="h-8 w-8" />
+            </button>
+
+            {/* Navigation buttons */}
+            {currentImages.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="max-w-4xl max-h-full p-4">
+              <img
+                src={currentImages[currentImageIndex]}
+                alt={`Hình ảnh ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+
+            {/* Image counter */}
+            {currentImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {currentImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

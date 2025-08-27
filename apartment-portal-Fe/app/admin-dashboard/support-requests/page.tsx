@@ -23,10 +23,15 @@ import {
   Eye,
   Filter,
   User,
-  Plus
+  Plus,
+  Image,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { supportRequestsApi } from '@/lib/api';
+import ServiceRequestMiniProgress from '@/components/admin/ServiceRequestMiniProgress';
 
 interface SupportRequest {
   id: string;
@@ -38,8 +43,9 @@ interface SupportRequest {
   priority: string;
   status: string;
   assignedTo: string;
-  assignedAt: string; // Thêm thời gian gán nhân viên
+  // assignedAt: string; // Bỏ thời gian gán nhân viên
   createdAt: string;
+  attachmentUrls?: string[];
 }
 
 export default function SupportRequestsPage() {
@@ -57,6 +63,14 @@ function SupportRequestsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
+
+  const truncateTitle = (title: string, max: number = 20) => {
+    if (!title) return '';
+    return title.length > max ? `${title.slice(0, max)}…` : title;
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -155,13 +169,12 @@ function SupportRequestsPageContent() {
                         item.assignedToUser ||
                         item.assignedToName ||
                         '',
-            assignedAt: item.assignedAt || 
-                         item.assignedDate ||
-                         '',
+            // assignedAt: item.assignedAt || item.assignedDate || '',
             createdAt: item.createdAt || 
                        item.requestDate ||
                        item.dateCreated ||
                        '',
+            attachmentUrls: item.attachmentUrls || item.attachments || [],
           };
         });
         console.log('Mapped data:', mapped); // Debug: xem dữ liệu sau khi map
@@ -181,9 +194,14 @@ function SupportRequestsPageContent() {
 
 
 
-  const filteredSupportRequests = supportRequests.filter(request => {
+  const sortedSupportRequests = [...supportRequests].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return tb - ta; // mới nhất trước
+  });
+
+  const filteredSupportRequests = sortedSupportRequests.filter(request => {
     const matchesSearch = request.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.userPhone.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          request.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || request.status === filterStatus;
@@ -198,6 +216,26 @@ function SupportRequestsPageContent() {
       newExpandedRows.add(requestId);
     }
     setExpandedRows(newExpandedRows);
+  };
+
+  const openLightbox = (images: string[], startIndex: number = 0) => {
+    setCurrentImages(images);
+    setCurrentImageIndex(startIndex);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setCurrentImages([]);
+    setCurrentImageIndex(0);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % currentImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length);
   };
 
   const getStatusBadge = (status: string) => {
@@ -372,15 +410,13 @@ function SupportRequestsPageContent() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('admin.support-requests.resident')}</TableHead>
-                        <TableHead>{t('admin.support-requests.phoneNumber', 'Số điện thoại')}</TableHead>
                         <TableHead>{t('admin.support-requests.supportRequestTitle')}</TableHead>
                         <TableHead>{t('admin.support-requests.category')}</TableHead>
                         <TableHead>{t('admin.support-requests.priority')}</TableHead>
                         <TableHead>{t('admin.support-requests.assignedTo')}</TableHead>
-                        <TableHead>{t('admin.support-requests.assignedAt', 'Thời gian gán')}</TableHead>
+                        {/* Bỏ cột thời gian gán */}
                         <TableHead>{t('admin.support-requests.status')}</TableHead>
                         <TableHead>{t('admin.support-requests.createdAt')}</TableHead>
-                        <TableHead>{t('admin.users.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -406,11 +442,9 @@ function SupportRequestsPageContent() {
                                  </span>
                                </div>
                              </TableCell>
-                             <TableCell>
-                               {request.userPhone || 'Không có'}
-                             </TableCell>
-                             <TableCell className="max-w-xs truncate">
-                               {request.title || t('admin.support-requests.noTitle', 'Không có tiêu đề')}
+                             {/* Cột số điện thoại đã được yêu cầu ẩn */}
+                             <TableCell className="max-w-xs">
+                               {truncateTitle(request.title || t('admin.support-requests.noTitle', 'Không có tiêu đề'))}
                              </TableCell>
                              <TableCell>{getCategoryBadge(request.category || t('admin.support-requests.category.OTHER', 'Khác'))}</TableCell>
                              <TableCell>{getPriorityBadge(request.priority || t('admin.support-requests.priority.MEDIUM', 'Trung bình'))}</TableCell>
@@ -424,50 +458,23 @@ function SupportRequestsPageContent() {
                                  <span className="text-gray-500">{t('admin.support-requests.notAssigned','Chưa giao')}</span>
                                )}
                              </TableCell>
+                             {/* Bỏ ô thời gian gán */}
                              <TableCell>
-                               {request.assignedAt ? (
-                                 <div className="text-sm">
-                                   <div className="font-medium">
-                                     {new Date(request.assignedAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
-                                   </div>
-                                   <div className="text-xs text-gray-500">
-                                     {new Date(request.assignedAt).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', {
-                                       hour: '2-digit',
-                                       minute: '2-digit'
-                                     })}
-                                   </div>
-                                 </div>
-                               ) : (
-                                 <span className="text-gray-400 text-sm">Chưa gán</span>
-                               )}
+                               <div className="flex items-center gap-2">
+                                 {getStatusBadge(request.status || 'PENDING')}
+                                 <ServiceRequestMiniProgress status={request.status} />
+                               </div>
                              </TableCell>
-                             <TableCell>{getStatusBadge(request.status || 'PENDING')}</TableCell>
                              <TableCell>
                                {request.createdAt ? new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US') : 'Không xác định'}
                              </TableCell>
-                             <TableCell>
-                               <div className="flex items-center space-x-2">
-                                 <Link href={`/admin-dashboard/support-requests/${request.id}`}>
-                                   <Button variant="outline" size="sm">
-                                     <Eye className="h-4 w-4" />
-                                   </Button>
-                                 </Link>
-                                 <Link href={`/admin-dashboard/support-requests/edit/${request.id}`}>
-                                   <Button variant="outline" size="sm">
-                                     <Edit className="h-4 w-4" />
-                                   </Button>
-                                 </Link>
-                                 <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                               </div>
-                             </TableCell>
+                             {/* Bỏ cột thao tác */}
                            </TableRow>
                            
                            {/* Expanded row với thông tin chi tiết lịch sử gán nhân viên */}
                            {expandedRows.has(request.id) && (
                              <TableRow>
-                               <TableCell colSpan={10} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+                               <TableCell colSpan={8} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
                                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                                    <div className="flex items-center gap-2 font-semibold text-gray-700 border-b border-blue-200 pb-3">
                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -485,21 +492,7 @@ function SupportRequestsPageContent() {
                                                {request.assignedTo}
                                              </span>
                                            </div>
-                                           <div className="flex items-center gap-3">
-                                             <span className="font-medium text-gray-600">🕒 Thời gian gán:</span>
-                                             <span className="text-gray-700 bg-gray-50 px-3 py-1 rounded">
-                                               {request.assignedAt ? (
-                                                 <>
-                                                   {new Date(request.assignedAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
-                                                   {' '}
-                                                   {new Date(request.assignedAt).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', {
-                                                     hour: '2-digit',
-                                                     minute: '2-digit'
-                                                   })}
-                                                 </>
-                                               ) : t('admin.support-requests.unknown', 'Không xác định')}
-                                             </span>
-                                           </div>
+                                           {/* Bỏ thời gian gán trong chi tiết mở rộng */}
                                          </div>
                                        </div>
                                        
@@ -516,6 +509,36 @@ function SupportRequestsPageContent() {
                                            </div>
                                          </div>
                                        </div>
+                                       
+                                       {/* Display Attached Images */}
+                                       {request.attachmentUrls && request.attachmentUrls.length > 0 && (
+                                         <div className="space-y-3 bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                                           <div className="font-medium text-gray-600 text-sm uppercase tracking-wide flex items-center gap-2">
+                                             <Image className="h-4 w-4" />
+                                             Hình ảnh đính kèm ({request.attachmentUrls.length} ảnh)
+                                           </div>
+                                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                             {request.attachmentUrls.map((url, index) => (
+                                               <div key={index} className="relative group">
+                                                 <img
+                                                   src={url}
+                                                   alt={`Hình ảnh ${index + 1}`}
+                                                   className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                                                   onClick={() => openLightbox(request.attachmentUrls!, index)}
+                                                   title="Click để xem ảnh đầy đủ"
+                                                 />
+                                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                                                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                     <div className="bg-white bg-opacity-90 rounded-full p-1">
+                                                       <Image className="h-3 w-3 text-gray-700" />
+                                                     </div>
+                                                   </div>
+                                                 </div>
+                                               </div>
+                                             ))}
+                                           </div>
+                                         </div>
+                                       )}
                                      </div>
                                    ) : (
                                      <div className="text-center py-8 text-gray-500 bg-white rounded-lg shadow-sm border border-gray-200">
@@ -548,6 +571,55 @@ function SupportRequestsPageContent() {
             </CardContent>
           </Card>
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <X className="h-8 w-8" />
+            </button>
+
+            {/* Navigation buttons */}
+            {currentImages.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="max-w-4xl max-h-full p-4">
+              <img
+                src={currentImages[currentImageIndex]}
+                alt={`Hình ảnh ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+
+            {/* Image counter */}
+            {currentImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {currentImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 } 

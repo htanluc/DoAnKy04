@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ServiceRequest, supportRequestsApi } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import ServiceRequestStatusProgress from "@/components/admin/ServiceRequestStatusProgress";
 
 function StatusBadge({ status }: { status?: string }) {
   const s = (status || "").toUpperCase();
@@ -148,11 +149,27 @@ export default function StaffSupportRequestDetailPage() {
             <CardTitle>Yêu cầu #{request.id}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <ServiceRequestStatusProgress
+              status={request.status || "OPEN"}
+              assignedTo={typeof request.assignedTo === 'string' ? request.assignedTo : (request.assignedTo as any)?.username}
+              assignedAt={request.assignedAt}
+              completedAt={(request as any).completedAt}
+              className="mb-2"
+            />
             <div><b>Cư dân:</b> {request.user?.username || "-"}</div>
             <div><b>Danh mục:</b> {request.category?.categoryName || request.category?.categoryCode || "-"}</div>
             <div><b>Mô tả:</b> {request.description || "-"}</div>
             <div><b>Ưu tiên:</b> {String(request.priority || "-")}</div>
             <div className="flex items-center gap-2"><b>Trạng thái:</b> <StatusBadge status={request.status} /></div>
+            {request.assignedTo && (
+              <div className="flex items-center gap-2">
+                <b>Nhân viên:</b>
+                <span>{typeof request.assignedTo === 'string' ? request.assignedTo : (request.assignedTo as any)?.username}</span>
+                {(request as any).staffPhone && (
+                  <span className="text-blue-700">• {(request as any).staffPhone}</span>
+                )}
+              </div>
+            )}
             <div><b>Ngày tạo:</b> {request.submittedAt ? new Date(request.submittedAt).toLocaleString("vi-VN") : "-"}</div>
             {request.completedAt && <div><b>Hoàn thành:</b> {new Date(request.completedAt).toLocaleString("vi-VN")}</div>}
 

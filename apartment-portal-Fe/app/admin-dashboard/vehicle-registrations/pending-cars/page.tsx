@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Car, ArrowLeft } from 'lucide-react';
 import { vehiclesApi, Vehicle } from '@/lib/api';
+import { getToken } from '@/lib/auth';
 import { useVehicleCapacity } from '@/hooks/use-vehicle-capacity';
 import Link from 'next/link';
 
@@ -20,6 +21,64 @@ export default function PendingCarsPage() {
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [showImageModal, setShowImageModal] = useState<boolean>(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [thumbIndexByVehicle, setThumbIndexByVehicle] = useState<Record<number, number>>({});
+  const [validUrlsByVehicle, setValidUrlsByVehicle] = useState<Record<number, string[]>>({});
+
+  const buildImageUrl = (rawUrl: string): string => {
+    try {
+      const token = getToken() || '';
+      const encoded = encodeURIComponent(rawUrl);
+      return `/api/image-proxy?url=${encoded}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+    } catch {
+      return rawUrl;
+    }
+  };
+
+  const getImageSrc = (rawUrl: string, useProxyFirst = true, cacheBust?: string | number): string => {
+    const cacheParam = cacheBust ? `&v=${cacheBust}` : '';
+    if (useProxyFirst) {
+      const proxy = buildImageUrl(rawUrl) + cacheParam;
+      return proxy;
+    }
+    const url = new URL(rawUrl, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    if (cacheBust) {
+      url.searchParams.set('v', String(cacheBust));
+    }
+    return url.toString();
+  };
+
+  const validateImageUrl = async (rawUrl: string): Promise<string | null> => {
+    const tryList = [getImageSrc(rawUrl, true, Date.now()), getImageSrc(rawUrl, false, Date.now())];
+    for (const url of tryList) {
+      try {
+        const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+        // Some backends return application/octet-stream; accept any OK response
+        if (res.ok) {
+          return url; // valid reachable URL
+        }
+      } catch (err) {
+        console.warn('Validate image failed:', url, err);
+        // ignore and try next
+      }
+    }
+    return null;
+  };
+
+  const validateImagesForVehicle = async (vehicle: Vehicle) => {
+    const urls = (vehicle.imageUrls || []).map(u => (u || '').trim()).filter(Boolean);
+    const results: string[] = [];
+    for (const u of urls) {
+      const valid = await validateImageUrl(u);
+      if (valid) results.push(valid);
+    }
+    setValidUrlsByVehicle(prev => ({ ...prev, [vehicle.id]: results }));
+    // reset thumbnail index if needed
+    if ((thumbIndexByVehicle[vehicle.id] ?? 0) >= results.length) {
+      setThumbIndexByVehicle(prev => ({ ...prev, [vehicle.id]: 0 }));
+    }
+  };
 
   // Danh sách lý do từ chối có sẵn
   const rejectionReasons = [
@@ -197,6 +256,26 @@ export default function PendingCarsPage() {
     }
   };
 
+  const handleViewImages = (vehicle: Vehicle) => {
+    console.log('Opening images for vehicle:', vehicle);
+    console.log('Image URLs:', vehicle.imageUrls);
+    setSelectedVehicle(vehicle);
+    setShowImageModal(true);
+    // kick off validation when opening
+    validateImagesForVehicle(vehicle);
+  };
+
+  const getThumbnailUrl = (vehicle: Vehicle): string | null => {
+    const validated = validUrlsByVehicle[vehicle.id];
+    const fallback = vehicle.imageUrls || [];
+    const source = (validated && validated.length > 0) ? validated : fallback;
+    if (source.length === 0) return null;
+    const idx = thumbIndexByVehicle[vehicle.id] ?? 0;
+    const chosen = source[idx] || source[0];
+    // chosen may already be proxied; if raw, wrap via proxy for consistency
+    return chosen.includes('/api/image-proxy') ? chosen : getImageSrc(chosen, true, Date.now());
+  };
+
   return (
     <AdminLayout title={t('admin.vehicleRegistrations.title', 'Quản lý đăng ký xe')}>
       <div className="space-y-6">
@@ -248,6 +327,7 @@ export default function PendingCarsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Thứ tự</TableHead>
+                    <TableHead>Hình ảnh xe</TableHead>
                     <TableHead>Chủ xe</TableHead>
                     <TableHead>Biển số</TableHead>
                     <TableHead>Màu sắc</TableHead>
@@ -265,6 +345,62 @@ export default function PendingCarsPage() {
                           <span className="text-lg font-bold text-blue-600">#{index + 1}</span>
                           <span className="text-xs text-gray-500">ID: {vehicle.id}</span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {(vehicle.imageUrls && vehicle.imageUrls.length > 0) || (validUrlsByVehicle[vehicle.id]?.length ?? 0) > 0 ? (
+                          <div className="flex justify-center">
+                            <div 
+                              className="cursor-pointer group relative"
+                              onClick={() => handleViewImages(vehicle)}
+                              title="Click để xem tất cả hình ảnh"
+                            >
+                              <img
+                                src={getThumbnailUrl(vehicle) || ''}
+                                alt={`Hình ảnh xe ${vehicle.licensePlate}`}
+                                className="w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm transition-transform group-hover:scale-105 group-hover:shadow-md"
+                                onError={(e) => {
+                                  const img = e.target as HTMLImageElement;
+                                  const validated = validUrlsByVehicle[vehicle.id];
+                                  const urls = (validated && validated.length > 0) ? validated : (vehicle.imageUrls || []);
+                                  const current = thumbIndexByVehicle[vehicle.id] ?? 0;
+                                  const nextIdx = current + 1;
+
+                                  if (nextIdx < urls.length) {
+                                    setThumbIndexByVehicle(prev => ({ ...prev, [vehicle.id]: nextIdx }));
+                                    const nextUrl = urls[nextIdx];
+                                    img.src = nextUrl.includes('/api/image-proxy') ? nextUrl : getImageSrc(nextUrl, true, Date.now());
+                                    return;
+                                  }
+
+                                  img.style.display = 'none';
+                                  img.nextElementSibling?.classList.remove('hidden');
+                                }}
+                                onLoad={() => {
+                                  // no-op
+                                }}
+                              />
+                              {/* Error placeholder, shown when image fails */}
+                              <div className="hidden w-16 h-16 bg-red-50 rounded-lg border border-red-200 flex items-center justify-center text-[10px] text-red-600 px-1 text-center">
+                                Lỗi tải ảnh
+                              </div>
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                                <div className="text-white opacity-0 group-hover:opacity-100 text-xs font-medium">
+                                  Xem tất cả
+                                </div>
+                              </div>
+                              {((validUrlsByVehicle[vehicle.id]?.length ?? vehicle.imageUrls?.length ?? 0) > 1) && (
+                                <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                  {validUrlsByVehicle[vehicle.id]?.length ?? vehicle.imageUrls?.length}
+                                </div>
+                              )}
+                            </div>
+                            
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center text-xs text-gray-500">
+                            Không có ảnh
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="font-medium">{vehicle.userFullName || '-'}</TableCell>
                       <TableCell>{vehicle.licensePlate}</TableCell>
@@ -391,6 +527,175 @@ export default function PendingCarsPage() {
                 >
                   Xác nhận từ chối
                 </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Image Gallery Modal */}
+        {showImageModal && selectedVehicle && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Hình ảnh xe {selectedVehicle.licensePlate}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedVehicle.userFullName} - {selectedVehicle.apartmentUnitNumber}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowImageModal(false);
+                    setSelectedVehicle(null);
+                  }}
+                  className="hover:bg-gray-100"
+                >
+                  ✕
+                </Button>
+              </div>
+
+                             {/* Image Gallery */}
+               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                 {(() => {
+                   const urls = validUrlsByVehicle[selectedVehicle.id] && validUrlsByVehicle[selectedVehicle.id]!.length > 0
+                     ? validUrlsByVehicle[selectedVehicle.id]!
+                     : (selectedVehicle.imageUrls || []);
+                   return urls && urls.length > 0 ? (
+                    <div>
+                      {/* Debug Info */}
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                         <strong>Debug:</strong> Tìm thấy {urls.length} URL hình ảnh
+                        </p>
+                       {urls.map((url, idx) => (
+                         <p key={idx} className="text-xs text-blue-600 mt-1 break-all">
+                           {idx + 1}: {url || '(URL rỗng)'}
+                           {url && (
+                             <>
+                               <br />
+                               {!url.includes('/api/image-proxy') && (
+                                 <>
+                                   <span className="text-[11px] text-blue-700">proxy:</span> {getImageSrc(url.trim(), true)}
+                                 </>
+                               )}
+                             </>
+                           )}
+                         </p>
+                       ))}
+                     </div>
+                     
+                     {/* Image Grid */}
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {urls.map((imageUrl, index) => (
+                         <div key={index} className="relative group">
+                           {imageUrl && imageUrl.trim() ? (
+                             <img
+                               src={imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), true, `${index}-${Date.now()}`)}
+                               alt={`Hình ảnh xe ${selectedVehicle.licensePlate} - ${index + 1}`}
+                               className="w-full h-48 object-cover rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
+                               onClick={() => {
+                                 // Mở hình ảnh full size qua proxy để đảm bảo kèm token
+                                 window.open(imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), true, Date.now()), '_blank');
+                               }}
+                               title="Click để xem full size"
+                               onError={(e) => {
+                                 const img = e.target as HTMLImageElement;
+                                 const isProxy = img.src.includes('/api/image-proxy');
+                                 const attempt = parseInt(img.getAttribute('data-attempt') || '0', 10);
+                                 // Thử tối đa 2 lần: chuyển qua lại proxy/raw, sau đó hiện placeholder lỗi
+                                 if (attempt < 2) {
+                                   img.setAttribute('data-attempt', String(attempt + 1));
+                                   img.src = getImageSrc(imageUrl.trim(), !isProxy, Date.now());
+                                   return;
+                                 }
+                                 // Hết cách: ẩn ảnh và hiện placeholder lỗi
+                                 img.style.display = 'none';
+                                 img.nextElementSibling?.classList.remove('hidden');
+                               }}
+                               onLoad={() => {
+                                 // loaded
+                               }}
+                             />
+                           ) : null}
+                           
+                           {/* Placeholder cho hình ảnh lỗi */}
+                           <div className="hidden w-full h-48 bg-red-50 border-2 border-red-200 rounded-lg flex flex-col items-center justify-center text-red-600">
+                             <div className="text-4xl mb-2">❌</div>
+                             <div className="text-sm font-medium">Lỗi tải hình ảnh</div>
+                             <div className="text-xs text-center mt-1 break-all">
+                               {imageUrl || 'URL rỗng'}
+                             </div>
+                           </div>
+                           
+                           {/* Placeholder cho URL rỗng */}
+                           {(!imageUrl || !imageUrl.trim()) && (
+                             <div className="w-full h-48 bg-gray-100 border-2 border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500">
+                               <div className="text-4xl mb-2">📷</div>
+                               <div className="text-sm font-medium">Không có URL</div>
+                               <div className="text-xs text-center mt-1">
+                                 Hình ảnh {index + 1}
+                               </div>
+                             </div>
+                           )}
+                           
+                           {/* Action links */}
+                           {imageUrl && imageUrl.trim() && (
+                             <div className="mt-1 text-[11px] text-blue-600 flex gap-2">
+                               <a
+                                 className="underline"
+                                 href={imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), true, Date.now())}
+                                 target="_blank"
+                                 rel="noreferrer"
+                               >
+                                 Mở qua proxy
+                               </a>
+                               <a
+                                 className="underline"
+                                 href={imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), false, Date.now())}
+                                 target="_blank"
+                                 rel="noreferrer"
+                               >
+                                 Mở raw
+                               </a>
+                             </div>
+                           )}
+
+                           <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                             {index + 1}/{urls.length}
+                           </div>
+                           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                             <div className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">
+                               Click để xem full size
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="text-center py-12">
+                     <div className="text-gray-400 text-6xl mb-4">📷</div>
+                     <p className="text-gray-600">Không có hình ảnh nào</p>
+                     <p className="text-sm text-gray-500 mt-2">
+                       Vehicle.imageUrls: {JSON.stringify(selectedVehicle.imageUrls)}
+                     </p>
+                   </div>
+                 ); })()}
+               </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+                <div className="text-sm text-gray-600">
+                  Tổng cộng: {selectedVehicle.imageUrls?.length || 0} hình ảnh
+                </div>
+                <div className="text-sm text-gray-500">
+                  Click vào hình ảnh để xem full size
+                </div>
               </div>
             </div>
           </div>

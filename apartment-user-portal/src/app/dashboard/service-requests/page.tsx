@@ -26,10 +26,13 @@ import {
   Settings,
   Upload,
   Image,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { createSupportRequest, fetchMySupportRequests } from '@/lib/api'
 import ImageUpload from '@/components/ui/image-upload'
+import ServiceRequestStatusProgress from '@/components/ServiceRequestStatusProgress'
 
 interface ServiceRequest {
   id: string
@@ -37,13 +40,20 @@ interface ServiceRequest {
   description: string
   category: 'MAINTENANCE' | 'CLEANING' | 'SECURITY' | 'UTILITY' | 'OTHER'
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ASSIGNED'
   createdAt: string
   updatedAt: string
   assignedTo?: string
+  assignedToId?: number
+  assignedToPhone?: string
+  assignedAt?: string
+  completedAt?: string
   estimatedCompletion?: string
   actualCompletion?: string
+  staffPhone?: string
+  resolutionNotes?: string
   comments: Comment[]
+  attachmentUrls?: string[]
 }
 
 interface Comment {
@@ -81,6 +91,42 @@ export default function ServiceRequestsPage() {
   const [uploading, setUploading] = useState(false)
   const [categories, setCategories] = useState<ServiceCategory[]>([])
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [expandedRequests, setExpandedRequests] = useState<Set<string>>(new Set())
+  const [staffPhoneMap, setStaffPhoneMap] = useState<{[key: string]: string}>({})
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentImages, setCurrentImages] = useState<string[]>([])
+
+  const getImageUrl = (rawUrl: string): string => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : ''
+      const cacheBust = Date.now()
+      const params = new URLSearchParams({ url: rawUrl })
+      if (token) params.set('token', token)
+      params.set('_', String(cacheBust))
+      return `/api/image-proxy?${params.toString()}`
+    } catch {
+      return rawUrl
+    }
+  }
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeLightbox()
+      } else if (e.key === 'ArrowRight') {
+        nextImage()
+      } else if (e.key === 'ArrowLeft') {
+        prevImage()
+      }
+    }
+    if (lightboxOpen) {
+      window.addEventListener('keydown', onKeyDown)
+    }
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [lightboxOpen, currentImages])
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -89,6 +135,88 @@ export default function ServiceRequestsPage() {
       try {
         const data = await fetchMySupportRequests()
         setRequests(data)
+        
+        // Lấy số điện thoại của các nhân viên được gán
+        const assignedStaffIds = data
+          .filter((req: any) => req.assignedToId) // Sử dụng assignedToId từ backend
+          .map((req: any) => req.assignedToId)
+          .filter(Boolean) // Loại bỏ null/undefined
+        
+        if (assignedStaffIds.length > 0) {
+          const uniqueStaffIds = Array.from(new Set(assignedStaffIds))
+          const phoneMap: {[key: string]: string} = {}
+          
+          // Lấy thông tin nhân viên từ API
+          for (const staffId of uniqueStaffIds) {
+            try {
+              const token = localStorage.getItem('token')
+              
+              // Thử các API khác nhau để lấy số điện thoại nhân viên
+              let phone = ''
+              
+              // Thử 1: API users (nếu có)
+              try {
+                const res1 = await fetch(`http://localhost:8080/api/users/${staffId}`, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                })
+                if (res1.ok) {
+                  const staffData = await res1.json()
+                  phone = staffData.phoneNumber || staffData.phone || staffData.mobile || ''
+                  console.log(`API users: Đã lấy được số điện thoại nhân viên ${staffId}:`, phone)
+                }
+              } catch (err) {
+                console.log(`API users không hoạt động cho ${staffId}:`, err)
+              }
+              
+              // Thử 2: API admin/users (có thể không có quyền)
+              if (!phone) {
+                try {
+                  const res2 = await fetch(`http://localhost:8080/api/admin/users/${staffId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  })
+                  if (res2.ok) {
+                    const staffData = await res2.json()
+                    phone = staffData.phoneNumber || staffData.phone || staffData.mobile || ''
+                    console.log(`API admin/users: Đã lấy được số điện thoại nhân viên ${staffId}:`, phone)
+                  } else {
+                    console.log(`API admin/users không có quyền cho ${staffId}, status:`, res2.status)
+                  }
+                } catch (err) {
+                  console.log(`API admin/users lỗi cho ${staffId}:`, err)
+                }
+              }
+              
+              // Thử 3: API residents (nếu có)
+              if (!phone) {
+                try {
+                  const res3 = await fetch(`http://localhost:8080/api/admin/residents/${staffId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  })
+                  if (res3.ok) {
+                    const staffData = await res3.json()
+                    phone = staffData.phoneNumber || staffData.phone || staffData.mobile || ''
+                    console.log(`API residents: Đã lấy được số điện thoại nhân viên ${staffId}:`, phone)
+                  } else {
+                    console.log(`API residents không có quyền cho ${staffId}, status:`, res3.status)
+                  }
+                } catch (err) {
+                  console.log(`API residents lỗi cho ${staffId}:`, err)
+                }
+              }
+              
+              if (phone) {
+                phoneMap[String(staffId)] = phone
+              } else {
+                console.log(`Không thể lấy số điện thoại nhân viên ${staffId} từ bất kỳ API nào`)
+              }
+              
+            } catch (err) {
+              console.log('Lỗi tổng quát khi lấy số điện thoại nhân viên:', staffId, err)
+            }
+          }
+          
+          setStaffPhoneMap(phoneMap)
+        }
       } catch (err: any) {
         setError(err.message || 'Lỗi khi lấy yêu cầu hỗ trợ')
       } finally {
@@ -134,6 +262,7 @@ export default function ServiceRequestsPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'PENDING': { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-3 w-3" /> },
+      'ASSIGNED': { color: 'bg-purple-100 text-purple-800', icon: <User className="h-3 w-3" /> },
       'IN_PROGRESS': { color: 'bg-blue-100 text-blue-800', icon: <Wrench className="h-3 w-3" /> },
       'COMPLETED': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
       'CANCELLED': { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-3 w-3" /> }
@@ -147,6 +276,7 @@ export default function ServiceRequestsPage() {
         {config.icon}
         <span className="ml-1">
           {status === 'PENDING' && 'Chờ xử lý'}
+          {status === 'ASSIGNED' && 'Đã giao'}
           {status === 'IN_PROGRESS' && 'Đang xử lý'}
           {status === 'COMPLETED' && 'Hoàn thành'}
           {status === 'CANCELLED' && 'Đã hủy'}
@@ -304,6 +434,36 @@ export default function ServiceRequestsPage() {
   const getPendingRequests = () => requests.filter(r => r.status === 'PENDING').length
   const getInProgressRequests = () => requests.filter(r => r.status === 'IN_PROGRESS').length
   const getCompletedRequests = () => requests.filter(r => r.status === 'COMPLETED').length
+
+  const toggleExpanded = (requestId: string) => {
+    const newExpanded = new Set(expandedRequests);
+    if (newExpanded.has(requestId)) {
+      newExpanded.delete(requestId);
+    } else {
+      newExpanded.add(requestId);
+    }
+    setExpandedRequests(newExpanded);
+  };
+
+  const openLightbox = (images: string[], startIndex: number = 0) => {
+    setCurrentImages(images)
+    setCurrentImageIndex(startIndex)
+    setLightboxOpen(true)
+  }
+
+  const closeLightbox = () => {
+    setLightboxOpen(false)
+    setCurrentImages([])
+    setCurrentImageIndex(0)
+  }
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % currentImages.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length)
+  }
 
   const filteredRequests = requests.filter(request => {
     const title = request.title || ''
@@ -542,7 +702,7 @@ export default function ServiceRequestsPage() {
       )}
 
       {/* Requests List */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {filteredRequests.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
@@ -572,20 +732,101 @@ export default function ServiceRequestsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">{request.description || 'Không có mô tả'}</p>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    {(request.comments || []).length} bình luận
+              
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">{request.description || 'Không có mô tả'}</p>
+                
+                {/* Display Attached Images */}
+                {request.attachmentUrls && request.attachmentUrls.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Image className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Hình ảnh đính kèm ({request.attachmentUrls.length} ảnh):</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {request.attachmentUrls.map((url, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={getImageUrl(url)}
+                            alt={`Hình ảnh ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                            onClick={() => openLightbox(request.attachmentUrls!, index)}
+                            title="Click để xem ảnh đầy đủ"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="bg-white bg-opacity-90 rounded-full p-1">
+                                <Image className="h-4 w-4 text-gray-700" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {request.status === 'PENDING' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCancelRequest(request.id)}
-                    >
-                      Hủy yêu cầu
-                    </Button>
+                )}
+                
+                {/* Debug info */}
+                <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+                  Debug: assignedTo={request.assignedTo || 'undefined'}, 
+                  assignedToId={request.assignedToId || 'N/A'}, 
+                  assignedToPhone={request.assignedToPhone || 'undefined'}, 
+                  staffPhone={request.staffPhone || 'undefined'}, 
+                  staffPhoneMap={JSON.stringify(staffPhoneMap)}
+                </div>
+                
+                {/* Service Request Status Progress */}
+                <ServiceRequestStatusProgress
+                  status={request.status}
+                  assignedTo={request.assignedTo || ''}
+                  assignedAt={request.assignedAt}
+                  completedAt={request.completedAt}
+                  staffPhone={request.assignedToPhone || request.staffPhone || staffPhoneMap[String(request.assignedToId || '')]}
+                  className="w-full"
+                />
+                
+                {/* Comments Section */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                      {(request.comments || []).length} bình luận
+                    </div>
+                    {request.status === 'PENDING' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCancelRequest(request.id)}
+                      >
+                        Hủy yêu cầu
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Show comments if any */}
+                  {request.comments && request.comments.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {request.comments.map((comment, index) => (
+                        <div key={index} className={`p-3 rounded-lg ${
+                          comment.isStaff ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'
+                        }`}>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className={`text-xs font-medium ${
+                              comment.isStaff ? 'text-blue-700' : 'text-gray-700'
+                            }`}>
+                              {comment.isStaff ? '👤 Nhân viên' : '👤 Bạn'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(comment.createdAt).toLocaleString('vi-VN')}
+                            </span>
+                          </div>
+                          <p className={`text-sm ${
+                            comment.isStaff ? 'text-blue-800' : 'text-gray-800'
+                          }`}>
+                            {comment.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -593,6 +834,55 @@ export default function ServiceRequestsPage() {
           ))
         )}
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <X className="h-8 w-8" />
+            </button>
+
+            {/* Navigation buttons */}
+            {currentImages.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="max-w-4xl max-h-full p-4">
+              <img
+                src={getImageUrl(currentImages[currentImageIndex])}
+                alt={`Hình ảnh ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+
+            {/* Image counter */}
+            {currentImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {currentImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 } 
