@@ -36,6 +36,8 @@ public class ServiceRequestMapper {
             serviceRequest.getPriority() != null ? serviceRequest.getPriority().getValue() : null,
             serviceRequest.getStatus() != null ? serviceRequest.getStatus().name() : null,
             serviceRequest.getAssignedTo() != null ? serviceRequest.getAssignedTo().getUsername() : null,
+            serviceRequest.getAssignedTo() != null ? serviceRequest.getAssignedTo().getId() : null,
+            serviceRequest.getAssignedTo() != null ? serviceRequest.getAssignedTo().getPhoneNumber() : null,
             serviceRequest.getResolutionNotes(),
             attachmentUrls,
             imageUrls,

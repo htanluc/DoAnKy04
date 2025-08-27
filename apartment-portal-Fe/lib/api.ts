@@ -748,9 +748,33 @@ export const vehiclesApi = {
     return response.json();
   },
   getPending: async (): Promise<Vehicle[]> => {
-    const response = await api.get('/api/admin/vehicles/pending');
-    if (!response.ok) throw new Error('Lấy xe chờ duyệt thất bại');
-    return response.json();
+    try {
+      const response = await api.get('/api/admin/vehicles/pending');
+      if (!response.ok) {
+        console.error('API Error:', response.status, response.statusText);
+        // Thử fallback: lấy tất cả xe và filter theo status
+        console.log('Trying fallback: get all vehicles and filter by status...');
+        const allVehiclesResponse = await api.get('/api/admin/vehicles');
+        if (allVehiclesResponse.ok) {
+          const allVehicles = await allVehiclesResponse.json();
+          // Filter xe có status PENDING
+          const pendingVehicles = allVehicles.filter((v: any) => 
+            v.status === 'PENDING' || 
+            v.status === 'pending' || 
+            v.status === 'WAITING_APPROVAL' ||
+            v.status === 'waiting_approval'
+          );
+          console.log('Fallback successful, found pending vehicles:', pendingVehicles.length);
+          return pendingVehicles;
+        }
+        throw new Error(`Lấy xe chờ duyệt thất bại (${response.status}: ${response.statusText})`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error in getPending:', error);
+      // Trả về array rỗng thay vì throw error để UI không bị crash
+      return [];
+    }
   },
   getByStatus: async (status: string): Promise<Vehicle[]> => {
     const response = await api.get(`/api/admin/vehicles/status/${status}`);
