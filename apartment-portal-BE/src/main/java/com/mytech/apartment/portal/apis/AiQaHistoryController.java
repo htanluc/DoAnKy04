@@ -20,10 +20,16 @@ import jakarta.validation.Valid;
 public class AiQaHistoryController {
     private final AiQaHistoryService aiQaHistoryService;
     private final OpenAiService openAiService;
+    private final com.mytech.apartment.portal.services.ResidentContextService residentContextService;
 
-    public AiQaHistoryController(AiQaHistoryService aiQaHistoryService, OpenAiService openAiService) {
+    public AiQaHistoryController(
+        AiQaHistoryService aiQaHistoryService,
+        OpenAiService openAiService,
+        com.mytech.apartment.portal.services.ResidentContextService residentContextService
+    ) {
         this.aiQaHistoryService = aiQaHistoryService;
         this.openAiService = openAiService;
+        this.residentContextService = residentContextService;
     }
 
     /**
@@ -38,8 +44,14 @@ public class AiQaHistoryController {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
             Long userId = aiQaHistoryService.getUserIdByUsername(username);
             
-            // Gửi câu hỏi đến AI service
-            AiQaResponse response = openAiService.processQuestion(request.getQuestion(), request.getContext());
+            // Xây dựng context cá nhân hóa từ dữ liệu của user
+            String personalizedContext = residentContextService.buildContextForUsername(username);
+            String mergedContext = (request.getContext() != null && !request.getContext().isBlank())
+                ? (personalizedContext + "\n" + request.getContext())
+                : personalizedContext;
+
+            // Gửi câu hỏi đến AI service kèm context
+            AiQaResponse response = openAiService.processQuestion(request.getQuestion(), mergedContext);
             
             // Lưu lịch sử
             aiQaHistoryService.saveQaHistory(userId, request.getQuestion(), response.getAnswer(), response.getResponseTime());

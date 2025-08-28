@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { createSupportRequest, fetchMySupportRequests } from '@/lib/api'
 import ImageUpload from '@/components/ui/image-upload'
+import ServiceRequestStatusProgress from '@/components/ServiceRequestStatusProgress'
 
 interface ServiceRequest {
   id: string
@@ -37,12 +38,20 @@ interface ServiceRequest {
   description: string
   category: 'MAINTENANCE' | 'CLEANING' | 'SECURITY' | 'UTILITY' | 'OTHER'
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ASSIGNED'
   createdAt: string
   updatedAt: string
   assignedTo?: string
+  assignedToId?: number
+  assignedToPhone?: string
+  assignedAt?: string
+  completedAt?: string
   estimatedCompletion?: string
   actualCompletion?: string
+  staffPhone?: string
+  resolutionNotes?: string
+  imageUrls?: string[]
+  attachmentUrls?: string[]
   comments: Comment[]
 }
 
@@ -81,6 +90,8 @@ export default function ServiceRequestsPage() {
   const [uploading, setUploading] = useState(false)
   const [categories, setCategories] = useState<ServiceCategory[]>([])
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [expandedRequests, setExpandedRequests] = useState<Set<string>>(new Set())
+  const [staffPhoneMap, setStaffPhoneMap] = useState<{[key: string]: string}>({})
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -89,6 +100,17 @@ export default function ServiceRequestsPage() {
       try {
         const data = await fetchMySupportRequests()
         setRequests(data)
+        
+        // Không cần gọi API để lấy số điện thoại nhân viên nữa
+        // Backend đã trả về assignedToPhone trong ServiceRequestDto
+        
+        console.log('Backend đã trả về assignedToPhone cho các yêu cầu:', 
+          data.map((req: any) => ({ 
+            id: req.id, 
+            assignedTo: req.assignedTo, 
+            assignedToPhone: req.assignedToPhone 
+          }))
+        )
       } catch (err: any) {
         setError(err.message || 'Lỗi khi lấy yêu cầu hỗ trợ')
       } finally {
@@ -134,6 +156,7 @@ export default function ServiceRequestsPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'PENDING': { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-3 w-3" /> },
+      'ASSIGNED': { color: 'bg-purple-100 text-purple-800', icon: <User className="h-3 w-3" /> },
       'IN_PROGRESS': { color: 'bg-blue-100 text-blue-800', icon: <Wrench className="h-3 w-3" /> },
       'COMPLETED': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
       'CANCELLED': { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-3 w-3" /> }
@@ -147,6 +170,7 @@ export default function ServiceRequestsPage() {
         {config.icon}
         <span className="ml-1">
           {status === 'PENDING' && 'Chờ xử lý'}
+          {status === 'ASSIGNED' && 'Đã giao'}
           {status === 'IN_PROGRESS' && 'Đang xử lý'}
           {status === 'COMPLETED' && 'Hoàn thành'}
           {status === 'CANCELLED' && 'Đã hủy'}
@@ -304,6 +328,16 @@ export default function ServiceRequestsPage() {
   const getPendingRequests = () => requests.filter(r => r.status === 'PENDING').length
   const getInProgressRequests = () => requests.filter(r => r.status === 'IN_PROGRESS').length
   const getCompletedRequests = () => requests.filter(r => r.status === 'COMPLETED').length
+
+  const toggleExpanded = (requestId: string) => {
+    const newExpanded = new Set(expandedRequests);
+    if (newExpanded.has(requestId)) {
+      newExpanded.delete(requestId);
+    } else {
+      newExpanded.add(requestId);
+    }
+    setExpandedRequests(newExpanded);
+  };
 
   const filteredRequests = requests.filter(request => {
     const title = request.title || ''
@@ -542,7 +576,7 @@ export default function ServiceRequestsPage() {
       )}
 
       {/* Requests List */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {filteredRequests.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
@@ -572,20 +606,121 @@ export default function ServiceRequestsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">{request.description || 'Không có mô tả'}</p>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    {(request.comments || []).length} bình luận
+              
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">{request.description || 'Không có mô tả'}</p>
+                
+                {/* Hiển thị hình ảnh của yêu cầu */}
+                {request.imageUrls && request.imageUrls.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Hình ảnh đính kèm:</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {request.imageUrls.map((imageUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={imageUrl}
+                            alt={`Hình ảnh ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => window.open(imageUrl, '_blank')}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+                              Click để xem lớn
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {request.status === 'PENDING' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCancelRequest(request.id)}
-                    >
-                      Hủy yêu cầu
-                    </Button>
+                )}
+                
+                {/* Hiển thị file đính kèm khác */}
+                {request.attachmentUrls && request.attachmentUrls.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">File đính kèm:</h4>
+                    <div className="space-y-2">
+                      {request.attachmentUrls.map((fileUrl, index) => (
+                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 truncate">
+                              {fileUrl.split('/').pop() || `File ${index + 1}`}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => window.open(fileUrl, '_blank')}
+                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                          >
+                            Tải xuống
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Debug info */}
+                <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+                  Debug: assignedTo={request.assignedTo || 'undefined'}, 
+                  assignedToPhone={request.assignedToPhone || 'undefined'}
+                </div>
+                
+                {/* Service Request Status Progress */}
+                <ServiceRequestStatusProgress
+                  status={request.status}
+                  assignedTo={request.assignedTo || ''}
+                  assignedAt={request.assignedAt}
+                  completedAt={request.completedAt}
+                  staffPhone={request.assignedToPhone || ''}
+                  className="w-full"
+                />
+                
+                {/* Comments Section */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                      {(request.comments || []).length} bình luận
+                    </div>
+                    {request.status === 'PENDING' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCancelRequest(request.id)}
+                      >
+                        Hủy yêu cầu
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Show comments if any */}
+                  {request.comments && request.comments.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {request.comments.map((comment, index) => (
+                        <div key={index} className={`p-3 rounded-lg ${
+                          comment.isStaff ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'
+                        }`}>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className={`text-xs font-medium ${
+                              comment.isStaff ? 'text-blue-700' : 'text-gray-700'
+                            }`}>
+                              {comment.isStaff ? '👤 Nhân viên' : '👤 Bạn'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(comment.createdAt).toLocaleString('vi-VN')}
+                            </span>
+                          </div>
+                          <p className={`text-sm ${
+                            comment.isStaff ? 'text-blue-800' : 'text-gray-800'
+                          }`}>
+                            {comment.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </CardContent>

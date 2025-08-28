@@ -15,6 +15,8 @@ public class ServiceRequestDto {
     private String priority;
     private String status;
     private String assignedTo;
+    private Long assignedToId;
+    private String assignedToPhone;
     private String resolution;
     private List<String> attachmentUrls; // URLs của các file đính kèm
     private List<String> imageUrls; // URLs của các hình ảnh
@@ -47,7 +49,7 @@ public class ServiceRequestDto {
 
     public ServiceRequestDto(Long id, Long userId, String userName, String userPhone, String categoryId, String categoryName,
                            String title, String description, String priority, String status, String assignedTo,
-                           String resolution, List<String> attachmentUrls, List<String> imageUrls,
+                           Long assignedToId, String assignedToPhone, String resolution, List<String> attachmentUrls, List<String> imageUrls,
                            LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {
         this.id = id;
         this.userId = userId;
@@ -60,6 +62,8 @@ public class ServiceRequestDto {
         this.priority = priority;
         this.status = status;
         this.assignedTo = assignedTo;
+        this.assignedToId = assignedToId;
+        this.assignedToPhone = assignedToPhone;
         this.resolution = resolution;
         this.attachmentUrls = attachmentUrls;
         this.imageUrls = imageUrls;
@@ -101,6 +105,12 @@ public class ServiceRequestDto {
 
     public String getAssignedTo() { return assignedTo; }
     public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
+
+    public Long getAssignedToId() { return assignedToId; }
+    public void setAssignedToId(Long assignedToId) { this.assignedToId = assignedToId; }
+
+    public String getAssignedToPhone() { return assignedToPhone; }
+    public void setAssignedToPhone(String assignedToPhone) { this.assignedToPhone = assignedToPhone; }
 
     public String getResolution() { return resolution; }
     public void setResolution(String resolution) { this.resolution = resolution; }

@@ -1,21 +1,27 @@
 package com.mytech.apartment.portal.services;
 
 import com.mytech.apartment.portal.dtos.AiQaResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 @Service
 public class OpenAiService {
+
+    private static final Logger log = LoggerFactory.getLogger(OpenAiService.class);
 
     @Value("${openai.api.key:}")
     private String apiKey;
@@ -48,6 +54,7 @@ public class OpenAiService {
             );
 
         } catch (Exception e) {
+            log.error("OpenAiService.processQuestion error: {}", e.getMessage(), e);
             long responseTime = System.currentTimeMillis() - startTime;
             return new AiQaResponse(
                 "Xin lỗi, có lỗi xảy ra khi xử lý câu hỏi của bạn.",
@@ -104,6 +111,7 @@ public class OpenAiService {
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
+            log.debug("Calling OpenAI: url={}, model={}, tokens={}, temperature={}", apiUrl, model, 500, 0.7);
             ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -125,9 +133,16 @@ public class OpenAiService {
                 }
             }
 
+            log.error("OpenAI response malformed or empty: status={}, body={}",
+                    response.getStatusCode(), response.getBody());
             return "Không thể nhận được phản hồi từ AI. Vui lòng thử lại sau.";
 
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            String body = e.getResponseBodyAsString();
+            log.error("OpenAI API error: status={}, body={}", e.getStatusCode(), body);
+            return "Lỗi khi gọi OpenAI (" + e.getStatusCode().value() + "): " + body;
         } catch (Exception e) {
+            log.error("OpenAI unexpected error: {}", e.getMessage(), e);
             return "Có lỗi xảy ra khi kết nối với AI service: " + e.getMessage();
         }
     }
@@ -140,5 +155,22 @@ public class OpenAiService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Trả về thông tin chẩn đoán cấu hình OpenAI để debug nhanh từ FE/admin.
+     */
+    public Map<String, Object> diagnostics() {
+        Map<String, Object> info = new HashMap<>();
+        info.put("apiUrl", apiUrl);
+        info.put("model", model);
+        info.put("hasApiKey", apiKey != null && !apiKey.isBlank());
+        try {
+            String probe = callOpenAiApi("ping");
+            info.put("probe", probe);
+        } catch (Exception e) {
+            info.put("probe", "error: " + e.getMessage());
+        }
+        return info;
     }
 } 
