@@ -1,0 +1,16 @@
+# Ignore environment files
+apartment-portal-BE/.env
+
+# Node modules and build artifacts (common)
+**/node_modules/
+**/dist/
+**/.next/
+**/build/
+**/.turbo/
+
+# IDE/editor
+.idea/
+.vscode/
+*.iml
+
+

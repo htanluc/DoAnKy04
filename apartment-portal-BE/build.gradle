@@ -41,6 +41,9 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
+    // Tự động load biến từ file .env
+    implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
@@ -72,4 +75,9 @@ tasks.named('test') {
 
 tasks.withType(JavaCompile) {
     options.compilerArgs += ['-parameters']
+}
+
+// Tự động trỏ DOTENV_PATH tới file .env của module khi chạy bootRun
+tasks.named('bootRun') {
+    environment 'DOTENV_PATH', file('.env').exists() ? file('.env').absolutePath : ''
 }

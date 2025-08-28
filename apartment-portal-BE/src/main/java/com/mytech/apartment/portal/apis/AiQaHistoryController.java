@@ -139,4 +139,13 @@ public class AiQaHistoryController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    /**
+     * [EN] Diagnostics for OpenAI configuration
+     * [VI] Chẩn đoán cấu hình OpenAI (kiểm tra có key chưa, model, url)
+     */
+    @GetMapping("/diagnostics")
+    public ResponseEntity<java.util.Map<String, Object>> diagnostics() {
+        return ResponseEntity.ok(openAiService.diagnostics());
+    }
 } 

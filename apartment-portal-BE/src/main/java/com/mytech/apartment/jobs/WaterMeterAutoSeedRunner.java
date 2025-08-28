@@ -38,6 +38,13 @@ public class WaterMeterAutoSeedRunner {
                 return;
             }
 
+            // Nếu đã có dữ liệu năm này thì bỏ qua
+            long existingForYear = waterRepo.countByYear(year);
+            if (existingForYear > 0) {
+                System.out.println("⏭️ WaterMeterAutoSeedRunner: readings for year " + year + " already exist. Skipping.");
+                return;
+            }
+
             System.out.println("DEBUG: WaterMeterAutoSeedRunner - start seeding ZERO readings for year " + year + ", apartments=" + apartments.size());
 
             for (Apartment apt : apartments) {

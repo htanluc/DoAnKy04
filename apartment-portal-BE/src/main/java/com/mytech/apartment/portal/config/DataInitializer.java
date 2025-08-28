@@ -59,6 +59,12 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         System.out.println("🚀 Starting comprehensive data initialization...");
+
+        // Guard: nếu dữ liệu lõi đã tồn tại thì bỏ qua seeding
+        if (roleRepository.count() > 0 || userRepository.count() > 0 || buildingRepository.count() > 0) {
+            System.out.println("⏭️ Data already present. Skipping DataInitializer.");
+            return;
+        }
         
         // PART 1: ROLES & USERS (Enhanced with more realistic data)
         initializeRolesAndUsers();
