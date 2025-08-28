@@ -52,6 +52,7 @@ interface ServiceRequest {
   actualCompletion?: string
   staffPhone?: string
   resolutionNotes?: string
+  imageUrls?: string[]
   comments: Comment[]
   attachmentUrls?: string[]
 }
@@ -464,7 +465,6 @@ export default function ServiceRequestsPage() {
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length)
   }
-
   const filteredRequests = requests.filter(request => {
     const title = request.title || ''
     const description = request.description || ''
@@ -753,13 +753,58 @@ export default function ServiceRequestsPage() {
                             onClick={() => openLightbox(request.attachmentUrls!, index)}
                             title="Click để xem ảnh đầy đủ"
                           />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="bg-white bg-opacity-90 rounded-full p-1">
-                                <Image className="h-4 w-4 text-gray-700" />
-                              </div>
-                            </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Fallback hiển thị hình ảnh nếu chỉ có imageUrls */}
+                {(!request.attachmentUrls || request.attachmentUrls.length === 0) && request.imageUrls && request.imageUrls.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Image className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Hình ảnh đính kèm ({request.imageUrls.length} ảnh):</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {request.imageUrls.map((imageUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={imageUrl}
+                            alt={`Hình ảnh ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                            onClick={() => openLightbox(request.imageUrls!, index)}
+                            title="Click để xem ảnh đầy đủ"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Hiển thị file đính kèm khác */}
+                {request.attachmentUrls && request.attachmentUrls.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">File đính kèm:</h4>
+                    <div className="space-y-2">
+                      {request.attachmentUrls.map((fileUrl, index) => (
+                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 truncate">
+                              {fileUrl.split('/').pop() || `File ${index + 1}`}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => window.open(fileUrl, '_blank')}
+                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                          >
+                            Tải xuống
+                          </button>
                         </div>
                       ))}
                     </div>

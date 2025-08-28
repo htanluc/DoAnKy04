@@ -96,6 +96,8 @@ public class SecurityConfiguration {
               .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
               .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
               .requestMatchers("/api/auth/**").permitAll()
+              // Public diagnostics for AI during development
+              .requestMatchers("/api/ai/ping", "/api/ai/test").permitAll()
               // Cho phép public các endpoint callback/return từ cổng thanh toán
               .requestMatchers("/api/payments/vnpay/return", "/api/payments/vnpay/callback",
                                "/api/payments/momo/callback", "/api/payments/zalopay/callback",

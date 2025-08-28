@@ -222,8 +222,14 @@ export default function SupportRequestDetailPage() {
           categoryName: (item as any).categoryName || "", // Sử dụng categoryName từ backend DTO
           priority: (item as any).priority || "",
           status: (item as any).status || "",
-          assignedTo: (item as any).assignedTo && typeof (item as any).assignedTo === 'object' ? ((item as any).assignedTo.username || (item as any).assignedTo.fullName || (item as any).assignedTo.email || "") : ((item as any).assignedTo || ""),
-          staffPhone: (item as any).assignedTo && typeof (item as any).assignedTo === 'object' ? (((item as any).assignedTo.phoneNumber || (item as any).assignedTo.phone) || "") : ((item as any).assignedPhone || ""),
+          assignedTo:
+            (item as any).assignedTo && typeof (item as any).assignedTo === 'object'
+              ? ((item as any).assignedTo.username || (item as any).assignedTo.fullName || (item as any).assignedTo.email || "")
+              : ((item as any).assignedTo || ""),
+          staffPhone:
+            (item as any).assignedTo && typeof (item as any).assignedTo === 'object'
+              ? (((item as any).assignedTo.phoneNumber || (item as any).assignedTo.phone) || "")
+              : ((item as any).assignedPhone || ""),
           createdAt: (item as any).createdAt || "", // Sử dụng createdAt từ backend DTO
           completedAt: (item as any).resolvedAt || "", // Sử dụng resolvedAt từ backend DTO
           resolutionNotes: (item as any).resolution || "", // Sử dụng resolution từ backend DTO
@@ -231,7 +237,7 @@ export default function SupportRequestDetailPage() {
           attachmentUrls: (item as any).attachmentUrls || (item as any).attachments || [], // Thêm hình ảnh đính kèm
         });
         setSelectedPriority(pr);
-        const assignedId = (item as any).assignedTo && typeof (item as any).assignedTo === 'object' && (item as any).assignedTo.id
+        const assignedId = (item as any).assignedTo && typeof (item as any).assignedTo === 'object'
           ? (item as any).assignedTo.id
           : "";
         setSelectedStaff(assignedId); // Lấy id từ assignedTo nếu có

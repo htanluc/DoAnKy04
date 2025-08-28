@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import EnhancedSidebar from './enhanced-sidebar'
 import EnhancedHeader from './enhanced-header'
+import dynamic from 'next/dynamic'
+
+const DynamicAiChatWidget = dynamic(() => import('../ui/ai-chat-widget'), { ssr: false })
 
 interface EnhancedLayoutProps {
   children: React.ReactNode
@@ -136,6 +139,11 @@ export default function EnhancedLayout({ children, user, resident, apartment, ro
             {children}
           </div>
         </main>
+        {/* Floating AI Chat Widget on the right */}
+        {typeof window !== 'undefined' && (
+          // Lazy load to avoid SSR issues
+          <DynamicAiChatWidget />
+        )}
       </div>
     </div>
   )

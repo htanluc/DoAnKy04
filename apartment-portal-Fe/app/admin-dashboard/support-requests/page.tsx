@@ -72,6 +72,11 @@ function SupportRequestsPageContent() {
     return title.length > max ? `${title.slice(0, max)}…` : title;
   };
 
+  const truncateTitle = (title: string, max: number = 20) => {
+    if (!title) return '';
+    return title.length > max ? `${title.slice(0, max)}…` : title;
+  };
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);

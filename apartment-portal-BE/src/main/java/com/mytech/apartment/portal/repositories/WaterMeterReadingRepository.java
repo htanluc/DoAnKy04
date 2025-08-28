@@ -31,4 +31,7 @@ public interface WaterMeterReadingRepository extends JpaRepository<WaterMeterRea
     List<WaterMeterReading> findAllByReadingDateBetween(LocalDate start, LocalDate end);
 
     List<WaterMeterReading> findAllByApartmentIdOrderByReadingDateDesc(Long apartmentId);
+
+    @Query("select count(w) from WaterMeterReading w where function('year', w.readingDate) = :year")
+    long countByYear(int year);
 }
