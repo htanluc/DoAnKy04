@@ -31,6 +31,9 @@ export interface Vehicle {
   ownerName?: string;
   userId?: number;
   brand?: string;
+  status?: 'APPROVED' | 'PENDING' | 'REJECTED' | string;
+  monthlyFee?: number;
+  createdAt?: string;
 }
 
 export const VEHICLE_TYPE_DISPLAY = {

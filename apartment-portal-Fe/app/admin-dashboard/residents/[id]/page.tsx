@@ -30,8 +30,9 @@ import {
   Car,
   Loader2
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { useResidents, Resident, ApartmentResident } from '@/hooks/use-residents';
+import { useResidents, Resident } from '@/hooks/use-residents';
 import { getResidentIdCard, formatIdCard } from '@/lib/resident-utils';
 import { useApartments, Vehicle, VEHICLE_TYPE_DISPLAY, VEHICLE_TYPE_COLORS } from '@/hooks/use-apartments';
 import { apiFetch } from '@/lib/api';
@@ -48,9 +49,10 @@ export default function ResidentDetailPage() {
     getApartmentsByResidentId,
     clearMessages 
   } = useResidents();
+  const { getApartmentVehicles } = useApartments();
   
   const [resident, setResident] = useState<Resident | null>(null);
-  const [apartmentRelations, setApartmentRelations] = useState<ApartmentResident[]>([]);
+  const [apartmentRelations, setApartmentRelations] = useState<any[]>([]);
   const [loadingApartments, setLoadingApartments] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
@@ -63,12 +65,12 @@ export default function ResidentDetailPage() {
     }
   }, [residentId]);
 
-  // Load vehicles when resident data is available
+  // Load vehicles when resident or apartment relations are available
   useEffect(() => {
     if (resident?.id) {
       loadResidentVehicles();
     }
-  }, [resident]);
+  }, [resident, apartmentRelations]);
 
   const loadResidentDetail = async () => {
     try {
@@ -107,29 +109,30 @@ export default function ResidentDetailPage() {
 
   const loadResidentVehicles = async () => {
     if (!resident?.id) return;
-    
     setLoadingVehicles(true);
     try {
-      // Thử lấy vehicles theo user ID
-      const response = await apiFetch(`/api/admin/vehicles/user/${resident.id}`);
-      if (response.ok) {
-        const vehicleData = await response.json();
-        
-        if (Array.isArray(vehicleData)) {
-          const vehiclesWithMapping = vehicleData.map(vehicle => ({
-            ...vehicle,
-            ownerName: resident.fullName,
-            // Đảm bảo backward compatibility với field mapping
-            type: vehicle.type || vehicle.vehicleType,
-            vehicleType: vehicle.vehicleType || vehicle.type
-          }));
-          setVehicles(vehiclesWithMapping);
-        } else {
-          setVehicles([]);
+      // Ưu tiên lấy xe theo từng căn hộ liên kết của cư dân
+      if (apartmentRelations && apartmentRelations.length > 0) {
+        const all: Vehicle[] = [];
+        for (const relation of apartmentRelations) {
+          if (!relation?.apartmentId) continue;
+          const list = await getApartmentVehicles(Number(relation.apartmentId));
+          if (Array.isArray(list)) {
+            for (const v of list) {
+              all.push({
+                ...v,
+                ownerName: resident.fullName,
+                type: (v as any).type || (v as any).vehicleType,
+                vehicleType: (v as any).vehicleType || (v as any).type,
+              } as Vehicle);
+            }
+          }
         }
-      } else {
-        setVehicles([]);
+        setVehicles(all);
+        return;
       }
+      // Nếu không có căn hộ liên kết, không có xe
+      setVehicles([]);
     } catch (err) {
       console.error('Error loading resident vehicles:', err);
       setVehicles([]);
@@ -181,7 +184,7 @@ export default function ResidentDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return 'Chưa cập nhật';
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
@@ -189,10 +192,38 @@ export default function ResidentDetailPage() {
   if (loading) {
     return (
       <AdminLayout title="Chi tiết cư dân">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Đang tải thông tin cư dân...</p>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-72" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-28" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-40" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-48" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </AdminLayout>
@@ -302,62 +333,76 @@ export default function ResidentDetailPage() {
         </div>
 
         {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <User className="h-6 w-6 text-blue-600" />
+              </div>
               Thông tin cá nhân
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <User className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Họ tên</p>
-                    <p className="font-medium">{resident.fullName}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+                  <div className="p-2 bg-blue-100 rounded-full">
+                    <User className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Họ tên</p>
+                    <p className="text-lg font-semibold text-gray-900">{resident.fullName}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <CreditCard className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">CMND/CCCD</p>
-                    <p className="font-medium">{formatIdCard(getResidentIdCard(resident))}</p>
+                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+                  <div className="p-2 bg-purple-100 rounded-full">
+                    <CreditCard className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">CMND/CCCD</p>
+                    <p className="text-lg font-mono font-semibold text-gray-900">{formatIdCard(getResidentIdCard(resident))}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Số điện thoại</p>
-                    <p className="font-medium">{resident.phoneNumber}</p>
+                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <Phone className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Số điện thoại</p>
+                    <p className="text-lg font-semibold text-gray-900">{resident.phoneNumber}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{resident.email}</p>
+                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+                  <div className="p-2 bg-orange-100 rounded-full">
+                    <Mail className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Email</p>
+                    <p className="text-lg font-semibold text-gray-900 break-all">{resident.email}</p>
                   </div>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Ngày sinh</p>
-                    <p className="font-medium">{formatDate(resident.dateOfBirth)}</p>
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+                  <div className="p-2 bg-indigo-100 rounded-full">
+                    <Calendar className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Ngày sinh</p>
+                    <p className="text-lg font-semibold text-gray-900">{formatDate(resident.dateOfBirth)}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Trạng thái</p>
+                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+                  <div className="p-2 bg-emerald-100 rounded-full">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Trạng thái</p>
                     <div className="mt-1">{getStatusBadge(resident.status)}</div>
                   </div>
                 </div>
@@ -375,15 +420,6 @@ export default function ResidentDetailPage() {
             </CardTitle>
           </CardHeader>
                      <CardContent>
-             {/* Debug Info */}
-             {process.env.NODE_ENV === 'development' && (
-               <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
-                 <div className="font-medium mb-2">🔍 Debug Info:</div>
-                 <div>Resident ID: {residentId}</div>
-                 <div>Relations found: {apartmentRelations.length}</div>
-                 <div>Raw relations: {JSON.stringify(apartmentRelations, null, 2)}</div>
-               </div>
-             )}
              {loadingApartments ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">

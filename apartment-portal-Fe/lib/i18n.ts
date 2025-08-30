@@ -275,6 +275,14 @@ export const translations: Translations = {
     vi: 'Tạo mới',
     en: 'Create New'
   },
+  'admin.action.createStaff': {
+    vi: 'Tạo nhân viên mới',
+    en: 'Create New Staff'
+  },
+  'admin.action.createResident': {
+    vi: 'Tạo cư dân mới',
+    en: 'Create New Resident'
+  },
   'admin.action.edit': {
     vi: 'Chỉnh sửa',
     en: 'Edit'
@@ -381,8 +389,24 @@ export const translations: Translations = {
     vi: 'Danh sách cư dân',
     en: 'Resident List'
   },
+  'admin.users.stats.totalUsers': {
+    vi: 'Tổng số người dùng',
+    en: 'Total Users'
+  },
+  'admin.users.stats.activeUsers': {
+    vi: 'Đang hoạt động',
+    en: 'Active Users'
+  },
+  'admin.users.stats.inactiveUsers': {
+    vi: 'Đã vô hiệu hóa',
+    en: 'Inactive Users'
+  },
   'admin.users.filterRole': { vi: 'Lọc vai trò', en: 'Filter role' },
   'admin.users.filter.all': { vi: 'Tất cả vai trò', en: 'All roles' },
+  'admin.users.filter.allStatus': { vi: 'Tất cả trạng thái', en: 'All statuses' },
+  'admin.users.filterStatus': { vi: 'Lọc trạng thái', en: 'Filter status' },
+  'admin.users.searchPlaceholder': { vi: 'Tìm kiếm tên, email, số ĐT...', en: 'Search name, email, phone...' },
+  'admin.users.emptyHint': { vi: 'Hãy thử thay đổi bộ lọc hoặc tạo người dùng mới', en: 'Try changing filters or create a new user' },
   'admin.users.role.admin': { vi: 'Quản trị', en: 'Admin' },
   'admin.users.role.staff': { vi: 'Nhân viên', en: 'Staff' },
   'admin.users.role.resident': { vi: 'Cư dân', en: 'Resident' },
@@ -467,6 +491,154 @@ export const translations: Translations = {
     vi: 'Họ và tên',
     en: 'Full Name'
   },
+  'admin.users.personalInfo': {
+    vi: 'Thông tin cá nhân',
+    en: 'Personal Information'
+  },
+  'admin.users.details.subtitle': {
+    vi: 'Thông tin chi tiết người dùng',
+    en: 'User detailed information'
+  },
+  'admin.users.notUpdated': {
+    vi: 'Chưa cập nhật',
+    en: 'Not updated'
+  },
+  'admin.users.noRole': {
+    vi: 'Chưa phân quyền',
+    en: 'No role assigned'
+  },
+  'admin.users.status.active': {
+    vi: 'Hoạt động',
+    en: 'Active'
+  },
+  'admin.users.status.inactive': {
+    vi: 'Vô hiệu hóa',
+    en: 'Inactive'
+  },
+  'admin.users.apartment': {
+    vi: 'Căn hộ',
+    en: 'Apartment'
+  },
+  'admin.users.linkedApartments.noDescription': {
+    vi: 'User này chưa được gán vào căn hộ nào trong hệ thống. Bạn có thể liên kết căn hộ từ trang quản lý căn hộ.',
+    en: 'This user has not been assigned to any apartment in the system. You can link apartments from the apartment management page.'
+  },
+  'admin.users.staff.history': {
+    vi: 'Lịch sử nhiệm vụ đã làm',
+    en: 'Task History'
+  },
+  'admin.users.staff.residentName': {
+    vi: 'Tên cư dân',
+    en: 'Resident Name'
+  },
+  'admin.users.staff.category': {
+    vi: 'Danh mục',
+    en: 'Category'
+  },
+  'admin.users.staff.status': {
+    vi: 'Trạng thái',
+    en: 'Status'
+  },
+  'admin.users.staff.createdAt': {
+    vi: 'Ngày tạo',
+    en: 'Created Date'
+  },
+  'admin.users.staff.noTasks': {
+    vi: 'Nhân viên này chưa hoàn thành nhiệm vụ nào',
+    en: 'This staff member has not completed any tasks'
+  },
+  'admin.users.unknown': {
+    vi: 'Không rõ',
+    en: 'Unknown'
+  },
+  'admin.users.noCategory': {
+    vi: 'Không phân loại',
+    en: 'Uncategorized'
+  },
+  'admin.status.completed': {
+    vi: 'Hoàn thành',
+    en: 'Completed'
+  },
+  'admin.supportRequests.none': {
+    vi: 'Chưa có nhiệm vụ đã hoàn thành',
+    en: 'No completed tasks yet'
+  },
+  'admin.users.loadError': {
+    vi: 'Không thể tải dữ liệu',
+    en: 'Failed to load data'
+  },
+  'admin.users.noToken': {
+    vi: 'Không có token xác thực!',
+    en: 'No authentication token!'
+  },
+  'admin.users.deactivate.success': {
+    vi: 'Tài khoản {username} đã được vô hiệu hóa. Email thông báo đã được gửi đến {email} với lý do: "{reason}"',
+    en: 'Account {username} has been deactivated. Notification email has been sent to {email} with reason: "{reason}"'
+  },
+  'admin.users.activate.success': {
+    vi: 'Tài khoản {username} đã được kích hoạt lại!',
+    en: 'Account {username} has been reactivated!'
+  },
+  'admin.users.statusChangeError': {
+    vi: 'Không thể đổi trạng thái người dùng: {error}',
+    en: 'Failed to change user status: {error}'
+  },
+  'admin.users.deactivate.noReason': {
+    vi: 'Bạn phải chọn lý do vô hiệu hóa!',
+    en: 'You must select a deactivation reason!'
+  },
+  'admin.users.unlinkSuccess': {
+    vi: 'Đã hủy liên kết căn hộ.',
+    en: 'Apartment unlinked successfully.'
+  },
+  'admin.users.unlinkError': {
+    vi: 'Không thể hủy liên kết!',
+    en: 'Failed to unlink apartment!'
+  },
+  'admin.users.assignRoleSuccess': {
+    vi: 'Đã gán vai trò cho user.',
+    en: 'Role assigned to user successfully.'
+  },
+  'admin.users.statusUpdateError': {
+    vi: 'Cập nhật trạng thái thất bại: {status} {statusText}',
+    en: 'Failed to update status: {status} {statusText}'
+  },
+  'admin.users.unlinkFailed': {
+    vi: 'Hủy liên kết thất bại',
+    en: 'Failed to unlink'
+  },
+  'admin.users.assignRoleFailed': {
+    vi: 'Gán vai trò thất bại',
+    en: 'Failed to assign role'
+  },
+  'admin.users.assignRoleError': {
+    vi: 'Không thể gán vai trò!',
+    en: 'Failed to assign role!'
+  },
+  'admin.users.removeRoleSuccess': {
+    vi: 'Đã xóa vai trò khỏi user.',
+    en: 'Role removed from user successfully.'
+  },
+  'admin.users.removeRoleError': {
+    vi: 'Không thể xóa vai trò!',
+    en: 'Failed to remove role!'
+  },
+  'admin.users.removeRoleFailed': {
+    vi: 'Xóa vai trò thất bại',
+    en: 'Failed to remove role'
+  },
+  'admin.users.id': {
+    vi: 'ID',
+    en: 'ID'
+  },
+  'admin.users.deactivate.desc': {
+    vi: 'Bạn sắp vô hiệu hóa tài khoản của {username} ({email}). Vui lòng chọn một lý do để gửi thông báo cho cư dân.',
+    en: 'You are about to deactivate the account of {username} ({email}). Please select a reason to notify the resident.'
+  },
+  'admin.users.deactivate.emailNotice': {
+    vi: 'Email thông báo sẽ được gửi tự động đến {email} với lý do đã chọn và hướng dẫn khôi phục tài khoản.',
+    en: 'A notification email will be sent to {email} with the selected reason and instructions to restore the account.'
+  },
 
   // Resident Management
   'admin.residents.title': {
@@ -486,15 +658,6 @@ export const translations: Translations = {
   'admin.residents.columns.status': { vi: 'Trạng Thái', en: 'Status' },
   'admin.residents.columns.actions': { vi: 'Thao Tác', en: 'Actions' },
   'admin.residents.empty': { vi: 'Không tìm thấy cư dân nào', en: 'No residents found' },
-  'admin.residents.create': { vi: 'Thêm Cư Dân', en: 'Add Resident' },
-  'admin.residents.list': {
-    vi: 'Danh sách cư dân',
-    en: 'Resident List'
-  },
-  'admin.residents.create': {
-    vi: 'Tạo cư dân mới',
-    en: 'Create New Resident'
-  },
   'admin.residents.edit': {
     vi: 'Chỉnh sửa cư dân',
     en: 'Edit Resident'
@@ -536,6 +699,140 @@ export const translations: Translations = {
     en: 'Relation to Owner'
   },
 
+  // Resident Stats
+  'admin.residents.stats.total': {
+    vi: 'Tổng số cư dân',
+    en: 'Total Residents'
+  },
+  'admin.residents.stats.totalDesc': {
+    vi: 'Tất cả cư dân trong hệ thống',
+    en: 'All residents in the system'
+  },
+  'admin.residents.stats.active': {
+    vi: 'Cư dân hoạt động',
+    en: 'Active Residents'
+  },
+  'admin.residents.stats.inactive': {
+    vi: 'Cư dân không hoạt động',
+    en: 'Inactive Residents'
+  },
+  'admin.residents.stats.ofTotal': {
+    vi: 'tổng số',
+    en: 'of total'
+  },
+  'admin.residents.id': {
+    vi: 'ID',
+    en: 'ID'
+  },
+  'admin.residents.results': {
+    vi: 'kết quả',
+    en: 'results'
+  },
+  'admin.residents.filter.byStatus': {
+    vi: 'Lọc theo trạng thái',
+    en: 'Filter by status'
+  },
+  'admin.residents.empty.search': {
+    vi: 'Không tìm thấy cư dân nào phù hợp',
+    en: 'No residents found matching your search'
+  },
+  'admin.residents.empty.noData': {
+    vi: 'Chưa có cư dân nào',
+    en: 'No residents yet'
+  },
+  'admin.residents.empty.searchHint': {
+    vi: 'Hãy thử thay đổi từ khóa tìm kiếm hoặc bộ lọc',
+    en: 'Try changing your search terms or filters'
+  },
+  'admin.residents.empty.noDataHint': {
+    vi: 'Bắt đầu bằng cách thêm cư dân đầu tiên vào hệ thống',
+    en: 'Start by adding the first resident to the system'
+  },
+  'admin.residents.delete.confirm': {
+    vi: 'Bạn có chắc chắn muốn xóa cư dân này?',
+    en: 'Are you sure you want to delete this resident?'
+  },
+  'admin.residents.delete.action': {
+    vi: 'Xóa cư dân',
+    en: 'Delete Resident'
+  },
+
+  // Export functionality
+  'admin.action.export': {
+    vi: 'Xuất Excel',
+    en: 'Export Excel'
+  },
+  'admin.export.exporting': {
+    vi: 'Đang xuất...',
+    en: 'Exporting...'
+  },
+  'admin.export.all': {
+    vi: 'Xuất tất cả cư dân',
+    en: 'Export All Residents'
+  },
+  'admin.export.filtered': {
+    vi: 'Xuất cư dân đã lọc',
+    en: 'Export Filtered Residents'
+  },
+  'admin.export.currentPage': {
+    vi: 'Xuất trang hiện tại',
+    en: 'Export Current Page'
+  },
+  'admin.export.stats': {
+    vi: 'Xuất báo cáo thống kê',
+    en: 'Export Statistics Report'
+  },
+  'admin.export.success.title': {
+    vi: 'Xuất Excel thành công',
+    en: 'Excel Export Successful'
+  },
+  'admin.export.success.all': {
+    vi: 'Đã xuất tất cả cư dân ra file Excel',
+    en: 'All residents exported to Excel file'
+  },
+  'admin.export.success.filtered': {
+    vi: 'Đã xuất cư dân đã lọc ra file Excel',
+    en: 'Filtered residents exported to Excel file'
+  },
+  'admin.export.success.page': {
+    vi: 'Đã xuất cư dân trang {page} ra file Excel',
+    en: 'Residents from page {page} exported to Excel file'
+  },
+  'admin.export.success.stats': {
+    vi: 'Đã xuất báo cáo thống kê ra file Excel',
+    en: 'Statistics report exported to Excel file'
+  },
+  'admin.export.error.title': {
+    vi: 'Lỗi xuất Excel',
+    en: 'Excel Export Error'
+  },
+  'admin.export.error.general': {
+    vi: 'Không thể xuất file Excel',
+    en: 'Unable to export Excel file'
+  },
+
+  // Pagination
+  'admin.pagination.showing': {
+    vi: 'Hiển thị {start}-{end} trong tổng số {total} cư dân',
+    en: 'Showing {start}-{end} of {total} residents'
+  },
+  'admin.pagination.first': {
+    vi: 'Trang đầu',
+    en: 'First Page'
+  },
+  'admin.pagination.previous': {
+    vi: 'Trang trước',
+    en: 'Previous Page'
+  },
+  'admin.pagination.next': {
+    vi: 'Trang sau',
+    en: 'Next Page'
+  },
+  'admin.pagination.last': {
+    vi: 'Trang cuối',
+    en: 'Last Page'
+  },
+
   // Apartment Management
   'admin.apartments.title': {
     vi: 'Quản lý căn hộ',
@@ -572,7 +869,23 @@ export const translations: Translations = {
   'admin.apartments.columns.area': { vi: 'Diện Tích (m²)', en: 'Area (m²)' },
   'admin.apartments.columns.status': { vi: 'Trạng Thái', en: 'Status' },
   'admin.apartments.columns.actions': { vi: 'Thao Tác', en: 'Actions' },
-  'admin.apartments.empty': { vi: 'Không tìm thấy căn hộ nào', en: 'No apartments found' },
+  'admin.apartments.results': { vi: 'kết quả', en: 'results' },
+
+  // Apartment Stats
+  'admin.apartments.stats.total': { vi: 'Tổng số căn hộ', en: 'Total Apartments' },
+  'admin.apartments.stats.totalDesc': { vi: 'Tất cả căn hộ trong hệ thống', en: 'All apartments in the system' },
+  'admin.apartments.stats.occupied': { vi: 'Căn hộ có người ở', en: 'Occupied Apartments' },
+  'admin.apartments.stats.vacant': { vi: 'Căn hộ trống', en: 'Vacant Apartments' },
+  'admin.apartments.stats.totalArea': { vi: 'Tổng diện tích', en: 'Total Area' },
+  'admin.apartments.stats.areaDesc': { vi: 'm² - Trung bình', en: 'm² - Average' },
+  'admin.apartments.stats.perApartment': { vi: 'm²/căn', en: 'm²/apartment' },
+  'admin.apartments.stats.ofTotal': { vi: 'tổng số', en: 'of total' },
+
+  // Apartment Empty States
+  'admin.apartments.empty.search': { vi: 'Không tìm thấy căn hộ nào phù hợp', en: 'No apartments found matching your search' },
+  'admin.apartments.empty.noData': { vi: 'Chưa có căn hộ nào', en: 'No apartments yet' },
+  'admin.apartments.empty.searchHint': { vi: 'Hãy thử thay đổi từ khóa tìm kiếm hoặc bộ lọc', en: 'Try changing your search terms or filters' },
+  'admin.apartments.empty.noDataHint': { vi: 'Bắt đầu bằng cách thêm căn hộ đầu tiên vào hệ thống', en: 'Start by adding the first apartment to the system' },
 
   // Apartments detail sections
   'admin.apartments.info.title': { vi: 'Thông tin căn hộ', en: 'Apartment Information' },
@@ -639,6 +952,13 @@ export const translations: Translations = {
   // Filters common
   'admin.filters.searchAndFilter': { vi: 'Tìm kiếm & lọc', en: 'Search & filter' },
 
+  // Common Actions
+  'admin.action.viewDetails': { vi: 'Xem chi tiết', en: 'View Details' },
+  'admin.action.edit': { vi: 'Chỉnh sửa', en: 'Edit' },
+  'admin.action.viewResidents': { vi: 'Xem cư dân', en: 'View Residents' },
+  'admin.action.moreOptions': { vi: 'Thêm tùy chọn', en: 'More Options' },
+  'admin.action.viewPrice': { vi: 'Xem giá thuê', en: 'View Price' },
+
   // Singular apartment edit (legacy keys used in edit page)
   'admin.apartment.edit.title': { vi: 'Chỉnh sửa căn hộ', en: 'Edit apartment' },
   'admin.apartment.edit.loading': { vi: 'Đang tải dữ liệu...', en: 'Loading data...' },
@@ -647,46 +967,6 @@ export const translations: Translations = {
   'admin.apartment.edit.floorNumber': { vi: 'Tầng', en: 'Floor' },
   'admin.apartment.edit.area': { vi: 'Diện tích (m²)', en: 'Area (m²)' },
   'admin.apartment.edit.status': { vi: 'Trạng thái', en: 'Status' },
-  'admin.apartments.number': {
-    vi: 'Số căn hộ',
-    en: 'Apartment Number'
-  },
-  'admin.apartments.floor': {
-    vi: 'Tầng',
-    en: 'Floor'
-  },
-  'admin.apartments.building': {
-    vi: 'Tòa',
-    en: 'Building'
-  },
-  'admin.apartments.apartment': {
-    vi: 'Căn hộ',
-    en: 'Apartment'
-  },
-  'admin.apartments.unitNumber': {
-    vi: 'Số căn hộ',
-    en: 'Unit Number'
-  },
-  'admin.apartments.area': {
-    vi: 'Diện tích',
-    en: 'Area'
-  },
-  'admin.apartments.bedrooms': {
-    vi: 'Số phòng ngủ',
-    en: 'Bedrooms'
-  },
-  'admin.apartments.status': {
-    vi: 'Trạng thái',
-    en: 'Status'
-  },
-  'admin.apartments.owner': {
-    vi: 'Chủ hộ',
-    en: 'Owner'
-  },
-  'admin.apartments.residents': {
-    vi: 'Cư dân',
-    en: 'Residents'
-  },
 
   // Announcement Management
   'admin.announcements.title': {
@@ -1510,6 +1790,10 @@ export const translations: Translations = {
     vi: 'Đang tải...',
     en: 'Loading...'
   },
+  'admin.error': {
+    vi: 'Lỗi',
+    en: 'Error'
+  },
   'admin.error.load': {
     vi: 'Không thể tải dữ liệu',
     en: 'Failed to load data'
@@ -1533,6 +1817,10 @@ export const translations: Translations = {
   'admin.error.delete': {
     vi: 'Không thể xóa dữ liệu',
     en: 'Failed to delete data'
+  },
+  'admin.success': {
+    vi: 'Thành công',
+    en: 'Success'
   },
   'admin.success.save': {
     vi: 'Lưu thành công',
@@ -1587,6 +1875,160 @@ export const translations: Translations = {
   'admin.noData': {
     vi: 'Không có dữ liệu',
     en: 'No data available'
+  },
+
+  // Resident Create Page
+  'admin.residents.create.title': {
+    vi: 'Tạo cư dân mới',
+    en: 'Create New Resident'
+  },
+  'admin.residents.create.subtitle': {
+    vi: 'Thêm thông tin cư dân mới vào hệ thống',
+    en: 'Add new resident information to the system'
+  },
+  'admin.residents.create.info.title': {
+    vi: 'Thông tin cư dân',
+    en: 'Resident Information'
+  },
+  'admin.residents.create.form.fullName': {
+    vi: 'Họ tên',
+    en: 'Full Name'
+  },
+  'admin.residents.create.form.fullName.placeholder': {
+    vi: 'Nhập họ tên đầy đủ',
+    en: 'Enter full name'
+  },
+  'admin.residents.create.form.fullName.required': {
+    vi: 'Họ tên là bắt buộc',
+    en: 'Full name is required'
+  },
+  'admin.residents.create.form.identityNumber': {
+    vi: 'Số CMND/CCCD',
+    en: 'ID Card Number'
+  },
+  'admin.residents.create.form.identityNumber.placeholder': {
+    vi: 'Nhập số CMND/CCCD',
+    en: 'Enter ID card number'
+  },
+  'admin.residents.create.form.identityNumber.required': {
+    vi: 'Số CMND/CCCD là bắt buộc',
+    en: 'ID card number is required'
+  },
+  'admin.residents.create.form.identityNumber.invalid': {
+    vi: 'Số CMND/CCCD không hợp lệ (9 hoặc 12 số)',
+    en: 'Invalid ID card number (9 or 12 digits)'
+  },
+  'admin.residents.create.form.phoneNumber': {
+    vi: 'Số điện thoại',
+    en: 'Phone Number'
+  },
+  'admin.residents.create.form.phoneNumber.placeholder': {
+    vi: 'Nhập số điện thoại',
+    en: 'Enter phone number'
+  },
+  'admin.residents.create.form.phoneNumber.required': {
+    vi: 'Số điện thoại là bắt buộc',
+    en: 'Phone number is required'
+  },
+  'admin.residents.create.form.phoneNumber.invalid': {
+    vi: 'Số điện thoại không hợp lệ',
+    en: 'Invalid phone number'
+  },
+  'admin.residents.create.form.email': {
+    vi: 'Email',
+    en: 'Email'
+  },
+  'admin.residents.create.form.email.placeholder': {
+    vi: 'Nhập địa chỉ email',
+    en: 'Enter email address'
+  },
+  'admin.residents.create.form.email.required': {
+    vi: 'Email là bắt buộc',
+    en: 'Email is required'
+  },
+  'admin.residents.create.form.email.invalid': {
+    vi: 'Email không hợp lệ',
+    en: 'Invalid email'
+  },
+  'admin.residents.create.form.dateOfBirth': {
+    vi: 'Ngày sinh',
+    en: 'Date of Birth'
+  },
+  'admin.residents.create.form.dateOfBirth.required': {
+    vi: 'Ngày sinh là bắt buộc',
+    en: 'Date of birth is required'
+  },
+  'admin.residents.create.form.dateOfBirth.invalid': {
+    vi: 'Ngày sinh không hợp lệ',
+    en: 'Invalid date of birth'
+  },
+  'admin.residents.create.form.required': {
+    vi: 'bắt buộc',
+    en: 'required'
+  },
+  'admin.residents.create.success.redirecting': {
+    vi: 'Đang chuyển hướng về danh sách cư dân...',
+    en: 'Redirecting to residents list...'
+  },
+  'admin.residents.create.loading': {
+    vi: 'Đang tạo...',
+    en: 'Creating...'
+  },
+  'admin.residents.create.submit': {
+    vi: 'Tạo cư dân',
+    en: 'Create Resident'
+  },
+
+  // Pagination
+  'pagination.display': {
+    vi: 'Hiển thị {start}-{end} trong {total}',
+    en: 'Displaying {start}-{end} of {total}'
+  },
+  'pagination.previous': {
+    vi: 'Trước',
+    en: 'Previous'
+  },
+  'pagination.next': {
+    vi: 'Sau',
+    en: 'Next'
+  },
+  'pagination.page': {
+    vi: 'Trang {page}',
+    en: 'Page {page}'
+  },
+  'pagination.goToPage': {
+    vi: 'Đi đến trang {page}',
+    en: 'Go to page {page}'
+  },
+  'pagination.showPerPage': {
+    vi: 'Hiển thị {count} mục mỗi trang',
+    en: 'Show {count} items per page'
+  },
+  'pagination.totalPages': {
+    vi: 'Tổng {total} trang',
+    en: 'Total {total} pages'
+  },
+
+  // UI Pagination Component
+  'pagination.previous.label': {
+    vi: 'Trước',
+    en: 'Previous'
+  },
+  'pagination.next.label': {
+    vi: 'Sau',
+    en: 'Next'
+  },
+  'pagination.previous.ariaLabel': {
+    vi: 'Đi đến trang trước',
+    en: 'Go to previous page'
+  },
+  'pagination.next.ariaLabel': {
+    vi: 'Đi đến trang sau',
+    en: 'Go to next page'
+  },
+  'pagination.morePages': {
+    vi: 'Thêm trang',
+    en: 'More pages'
   }
 }
 
@@ -1599,9 +2041,17 @@ export function t(key: string, language: Language = 'vi'): string {
 export function useLanguage() {
   const { language, setLanguage } = useLanguageContext();
   // Hàm dịch đã bind sẵn
-  const translate = (key: string, fallback?: string) => {
-    const result = translations[key]?.[language]
-    return result || fallback || key
+  const translate = (key: string, fallback?: string, placeholders?: Record<string, string | number>) => {
+    let result = translations[key]?.[language] || fallback || key
+    
+    // Xử lý placeholder nếu có
+    if (placeholders) {
+      Object.entries(placeholders).forEach(([key, value]) => {
+        result = result.replace(new RegExp(`{${key}}`, 'g'), String(value))
+      })
+    }
+    
+    return result
   }
   return { language, setLanguage, t: translate }
 } 

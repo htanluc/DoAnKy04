@@ -18,6 +18,7 @@ public class ApartmentResidentDto {
     private Long apartmentId;
     private Long userId;
     private String apartmentUnitNumber;
+    private String buildingName; // Thêm tên tòa nhà
     private String userFullName;
     private String userEmail;
     private String userPhoneNumber;

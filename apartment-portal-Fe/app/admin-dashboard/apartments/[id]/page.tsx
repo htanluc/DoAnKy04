@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft, Home, Building2, Square, MapPin, AlertCircle, Users, Car, Droplets, Receipt } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import AdminLayout from '@/components/admin/AdminLayout'
@@ -284,67 +284,114 @@ function ApartmentDetailContent() {
 
   return (
     <AdminLayout title={t('admin.apartments.details')}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-8 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen p-6">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
           <div className="flex items-center gap-4">
             <Link href="/admin-dashboard/apartments">
-              <Button variant="ghost">
-                <ArrowLeft className="mr-2 h-4 w-4" /> {t('admin.action.back')}
+              <Button variant="outline" className="border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200">
+                <ArrowLeft className="mr-2 h-5 w-5 text-blue-600" />
+                {t('admin.action.back', 'Quay lại')}
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold">{t('admin.apartments.details')} {apartment.number || (apartment as any).unitNumber || (apartment as any).name || `#${id}`}</h1>
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {t('admin.apartments.details', 'Chi tiết căn hộ')} {apartment.number || (apartment as any).unitNumber || (apartment as any).name || `#${id}`}
+              </h1>
+              <p className="text-gray-600 text-lg mt-1">
+                {t('admin.apartments.detailsDesc', 'Xem thông tin chi tiết và quản lý căn hộ')}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button 
               variant="outline" 
               onClick={loadData}
               disabled={Object.values(loadingStates).some(loading => loading)}
+              className="border-2 border-green-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200"
             >
-              🔄 {t('admin.action.reload')}
+              🔄 {t('admin.action.reload', 'Làm mới')}
             </Button>
-
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.apartments.info.title')}</CardTitle>
+        {/* Apartment Information Card */}
+        <Card className="hover:shadow-xl transition-all duration-300 border-0 bg-white shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl text-gray-800">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Home className="h-6 w-6 text-blue-600" />
+              </div>
+              {t('admin.apartments.info.title', 'Thông tin căn hộ')}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.number')}</p>
-                <p>{apartment.number || (apartment as any).unitNumber || (apartment as any).name || '-'}</p>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Home className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm text-blue-600 font-medium mb-1">{t('admin.apartments.info.number', 'Mã căn hộ')}</p>
+                <p className="text-2xl font-bold text-blue-700">{apartment.number || (apartment as any).unitNumber || (apartment as any).name || '-'}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.building')}</p>
-                <p>{apartment.building || (apartment as any).buildingName || (apartment as any).building || ((apartment as any).buildingId ? `Tòa ${ (apartment as any).buildingId }` : '-')}</p>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Building2 className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm text-purple-600 font-medium mb-1">{t('admin.apartments.info.building', 'Tòa nhà')}</p>
+                <p className="text-2xl font-bold text-purple-700">{apartment.building || (apartment as any).buildingName || (apartment as any).building || ((apartment as any).buildingId ? `Tòa ${ (apartment as any).buildingId }` : '-')}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.floor')}</p>
-                <p>{(apartment as any).floor ?? (apartment as any).floorNumber ?? '-'}</p>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
+                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Square className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm text-emerald-600 font-medium mb-1">{t('admin.apartments.info.area', 'Diện tích')}</p>
+                <p className="text-2xl font-bold text-emerald-700">{(apartment as any).area ?? (apartment as any).areaM2 ?? (apartment as any).squareMeters ?? '-'} m²</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.area')}</p>
-                <p>{(apartment as any).area ?? (apartment as any).areaM2 ?? (apartment as any).squareMeters ?? '-'} m²</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200">
+                <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <MapPin className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm text-amber-600 font-medium mb-1">{t('admin.apartments.info.floor', 'Tầng')}</p>
+                <p className="text-2xl font-bold text-amber-700">{(apartment as any).floor ?? (apartment as any).floorNumber ?? '-'}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t('admin.apartments.info.status')}</p>
-                <Badge>{apartment.status}</Badge>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
+                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <AlertCircle className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm text-red-600 font-medium mb-1">{t('admin.apartments.info.status', 'Trạng thái')}</p>
+                <Badge className="text-lg px-4 py-2 bg-red-500 text-white border-0">{apartment.status}</Badge>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.apartments.residents.manage')}</CardTitle>
+        {/* Residents Management Card */}
+        <Card className="hover:shadow-xl transition-all duration-300 border-0 bg-white shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl text-gray-800">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <Users className="h-6 w-6 text-emerald-600" />
+              </div>
+              {t('admin.apartments.residents.manage', 'Quản lý cư dân')}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             
-            {/* Liên kết cư dân mới */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h3 className="text-lg font-medium mb-4">➕ {t('admin.apartments.residents.linkNew')}</h3>
+            {/* Link New Resident */}
+            <div className="border-2 border-emerald-200 rounded-xl p-6 bg-gradient-to-br from-emerald-50 to-green-50">
+              <h3 className="text-lg font-semibold mb-4 text-emerald-800 flex items-center gap-2">
+                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">+</span>
+                </div>
+                {t('admin.apartments.residents.linkNew', 'Liên kết cư dân mới')}
+              </h3>
               
               {linkingError && (
                 <Alert variant="destructive" className="mb-4">
@@ -415,9 +462,17 @@ function ApartmentDetailContent() {
               </div>
             </div>
             
-            {/* Danh sách cư dân hiện tại */}
+            {/* Current Residents List */}
             <div>
-              <h3 className="text-lg font-medium mb-3">{t('admin.apartments.residents.current')} ({residents.length})</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                {t('admin.apartments.residents.current', 'Cư dân hiện tại')} 
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {residents.length}
+                </span>
+              </h3>
               {loadingStates.residents ? (
                 <div className="flex justify-center py-4">
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -498,9 +553,15 @@ function ApartmentDetailContent() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.apartments.vehicles.title')}</CardTitle>
+        {/* Vehicles Card */}
+        <Card className="hover:shadow-xl transition-all duration-300 border-0 bg-white shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl text-gray-800">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Car className="h-6 w-6 text-amber-600" />
+              </div>
+              {t('admin.apartments.vehicles.title', 'Phương tiện')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {loadingStates.vehicles ? (
@@ -579,9 +640,15 @@ function ApartmentDetailContent() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.apartments.water.title')}</CardTitle>
+        {/* Water Meters Card */}
+        <Card className="hover:shadow-xl transition-all duration-300 border-0 bg-white shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl text-gray-800">
+              <div className="p-2 bg-cyan-100 rounded-lg">
+                <Droplets className="h-6 w-6 text-cyan-600" />
+              </div>
+              {t('admin.apartments.water.title', 'Chỉ số nước')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {loadingStates.waterMeters ? (
@@ -615,10 +682,16 @@ function ApartmentDetailContent() {
           </CardContent>
         </Card>
 
+        {/* Latest Invoice Card */}
         {latestInvoice && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('admin.apartments.invoice.latest')}</CardTitle>
+          <Card className="hover:shadow-xl transition-all duration-300 border-0 bg-white shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl text-gray-800">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Receipt className="h-6 w-6 text-green-600" />
+                </div>
+                {t('admin.apartments.invoice.latest', 'Hóa đơn gần nhất')}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -646,21 +719,7 @@ function ApartmentDetailContent() {
           </Card>
         )}
 
-        {/* Debug Information */}
-        {debugInfo.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1 text-sm font-mono bg-gray-100 p-3 rounded max-h-60 overflow-y-auto">
-                {debugInfo.map((info, index) => (
-                  <div key={index}>{info}</div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
       </div>
     </AdminLayout>
   )
