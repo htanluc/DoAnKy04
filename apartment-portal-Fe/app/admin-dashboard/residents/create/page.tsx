@@ -17,9 +17,11 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useResidents, CreateResidentRequest } from '@/hooks/use-residents';
+import { useLanguage } from '@/lib/i18n';
 
 export default function CreateResidentPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { loading, error, success, createResident, clearMessages } = useResidents();
   
   const [formData, setFormData] = useState<CreateResidentRequest>({
@@ -51,35 +53,35 @@ export default function CreateResidentPage() {
     const errors: {[key: string]: string} = {};
     
     if (!formData.fullName.trim()) {
-      errors.fullName = 'Họ tên là bắt buộc';
+      errors.fullName = t('admin.residents.create.form.fullName.required', 'Họ tên là bắt buộc');
     }
     
     if (!formData.identityNumber.trim()) {
-      errors.identityNumber = 'Số CMND/CCCD là bắt buộc';
+      errors.identityNumber = t('admin.residents.create.form.identityNumber.required', 'Số CMND/CCCD là bắt buộc');
     } else if (!/^\d{9}(\d{3})?$/.test(formData.identityNumber)) {
-      errors.identityNumber = 'Số CMND/CCCD không hợp lệ (9 hoặc 12 số)';
+      errors.identityNumber = t('admin.residents.create.form.identityNumber.invalid', 'Số CMND/CCCD không hợp lệ (9 hoặc 12 số)');
     }
     
     if (!formData.phoneNumber.trim()) {
-      errors.phoneNumber = 'Số điện thoại là bắt buộc';
+      errors.phoneNumber = t('admin.residents.create.form.phoneNumber.required', 'Số điện thoại là bắt buộc');
     } else if (!/^(0|\+84)[0-9]{9,10}$/.test(formData.phoneNumber)) {
-      errors.phoneNumber = 'Số điện thoại không hợp lệ';
+      errors.phoneNumber = t('admin.residents.create.form.phoneNumber.invalid', 'Số điện thoại không hợp lệ');
     }
     
     if (!formData.email.trim()) {
-      errors.email = 'Email là bắt buộc';
+      errors.email = t('admin.residents.create.form.email.required', 'Email là bắt buộc');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Email không hợp lệ';
+      errors.email = t('admin.residents.create.form.email.invalid', 'Email không hợp lệ');
     }
     
     if (!formData.dateOfBirth) {
-      errors.dateOfBirth = 'Ngày sinh là bắt buộc';
+      errors.dateOfBirth = t('admin.residents.create.form.dateOfBirth.required', 'Ngày sinh là bắt buộc');
     } else {
       const birthDate = new Date(formData.dateOfBirth);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();
       if (age < 0 || age > 120) {
-        errors.dateOfBirth = 'Ngày sinh không hợp lệ';
+        errors.dateOfBirth = t('admin.residents.create.form.dateOfBirth.invalid', 'Ngày sinh không hợp lệ');
       }
     }
     
@@ -105,20 +107,20 @@ export default function CreateResidentPage() {
   };
 
   return (
-    <AdminLayout title="Tạo cư dân mới">
+    <AdminLayout title={t('admin.residents.create.title', 'Tạo cư dân mới')}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4">
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Quay lại
+            {t('admin.action.back', 'Quay lại')}
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Tạo cư dân mới
+              {t('admin.residents.create.title', 'Tạo cư dân mới')}
             </h2>
             <p className="text-gray-600">
-              Thêm thông tin cư dân mới vào hệ thống
+              {t('admin.residents.create.subtitle', 'Thêm thông tin cư dân mới vào hệ thống')}
             </p>
           </div>
         </div>
@@ -135,7 +137,7 @@ export default function CreateResidentPage() {
           <Alert className="border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              {success}. Đang chuyển hướng về danh sách cư dân...
+              {success}. {t('admin.residents.create.success.redirecting', 'Đang chuyển hướng về danh sách cư dân...')}
             </AlertDescription>
           </Alert>
         )}
@@ -145,7 +147,7 @@ export default function CreateResidentPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Thông tin cư dân
+              {t('admin.residents.create.info.title', 'Thông tin cư dân')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -154,14 +156,14 @@ export default function CreateResidentPage() {
                 {/* Full Name */}
                 <div className="space-y-2">
                   <Label htmlFor="fullName">
-                    Họ tên <span className="text-red-500">*</span>
+                    {t('admin.residents.create.form.fullName', 'Họ tên')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="fullName"
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => handleInputChange('fullName', e.target.value)}
-                    placeholder="Nhập họ tên đầy đủ"
+                    placeholder={t('admin.residents.create.form.fullName.placeholder', 'Nhập họ tên đầy đủ')}
                     className={formErrors.fullName ? 'border-red-500' : ''}
                   />
                   {formErrors.fullName && (
@@ -172,14 +174,14 @@ export default function CreateResidentPage() {
                 {/* Identity Number */}
                 <div className="space-y-2">
                   <Label htmlFor="identityNumber">
-                    Số CMND/CCCD <span className="text-red-500">*</span>
+                    {t('admin.residents.create.form.identityNumber', 'Số CMND/CCCD')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="identityNumber"
                     type="text"
                     value={formData.identityNumber}
                     onChange={(e) => handleInputChange('identityNumber', e.target.value)}
-                    placeholder="Nhập số CMND/CCCD"
+                    placeholder={t('admin.residents.create.form.identityNumber.placeholder', 'Nhập số CMND/CCCD')}
                     className={formErrors.identityNumber ? 'border-red-500' : ''}
                   />
                   {formErrors.identityNumber && (
@@ -190,14 +192,14 @@ export default function CreateResidentPage() {
                 {/* Phone Number */}
                 <div className="space-y-2">
                   <Label htmlFor="phoneNumber">
-                    Số điện thoại <span className="text-red-500">*</span>
+                    {t('admin.residents.create.form.phoneNumber', 'Số điện thoại')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="phoneNumber"
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    placeholder="Nhập số điện thoại"
+                    placeholder={t('admin.residents.create.form.phoneNumber.placeholder', 'Nhập số điện thoại')}
                     className={formErrors.phoneNumber ? 'border-red-500' : ''}
                   />
                   {formErrors.phoneNumber && (
@@ -208,14 +210,14 @@ export default function CreateResidentPage() {
                 {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email">
-                    Email <span className="text-red-500">*</span>
+                    {t('admin.residents.create.form.email', 'Email')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="Nhập địa chỉ email"
+                    placeholder={t('admin.residents.create.form.email.placeholder', 'Nhập địa chỉ email')}
                     className={formErrors.email ? 'border-red-500' : ''}
                   />
                   {formErrors.email && (
@@ -226,7 +228,7 @@ export default function CreateResidentPage() {
                 {/* Date of Birth */}
                 <div className="space-y-2">
                   <Label htmlFor="dateOfBirth">
-                    Ngày sinh <span className="text-red-500">*</span>
+                    {t('admin.residents.create.form.dateOfBirth', 'Ngày sinh')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="dateOfBirth"
@@ -249,7 +251,7 @@ export default function CreateResidentPage() {
                   onClick={() => router.back()}
                   disabled={loading}
                 >
-                  Hủy
+                  {t('admin.action.cancel', 'Hủy')}
                 </Button>
                 <Button 
                   type="submit" 
@@ -259,12 +261,12 @@ export default function CreateResidentPage() {
                   {loading ? (
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Đang tạo...</span>
+                      <span>{t('admin.residents.create.loading', 'Đang tạo...')}</span>
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
                       <Save className="h-4 w-4" />
-                      <span>Tạo cư dân</span>
+                      <span>{t('admin.residents.create.submit', 'Tạo cư dân')}</span>
                     </div>
                   )}
                 </Button>

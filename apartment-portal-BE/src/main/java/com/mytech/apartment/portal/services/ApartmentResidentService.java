@@ -18,6 +18,7 @@ import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.enums.RelationType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
+import com.mytech.apartment.portal.repositories.BuildingRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
 
 @Service
@@ -35,6 +36,9 @@ public class ApartmentResidentService {
 
     @Autowired
     private ApartmentResidentMapper apartmentResidentMapper;
+    
+    @Autowired
+    private BuildingRepository buildingRepository;
 
     // Tạo mối quan hệ mới giữa user và apartment
     public ApartmentResidentDto createApartmentResident(ApartmentResidentCreateRequest request) {
@@ -85,9 +89,25 @@ public class ApartmentResidentService {
     // Lấy tất cả căn hộ của một user
     public List<ApartmentResidentDto> getApartmentsByUser(Long userId) {
         List<ApartmentResident> apartments = apartmentResidentRepository.findByUser_Id(userId);
-        return apartments.stream()
+        List<ApartmentResidentDto> dtos = apartments.stream()
                 .map(apartmentResidentMapper::toDto)
                 .toList();
+        
+        // Enrich với thông tin building
+        for (ApartmentResidentDto dto : dtos) {
+            if (dto.getApartmentId() != null) {
+                // Lấy apartment để có buildingId
+                Apartment apartment = apartmentRepository.findById(dto.getApartmentId()).orElse(null);
+                if (apartment != null && apartment.getBuildingId() != null) {
+                    // Lấy tên building
+                    buildingRepository.findById(apartment.getBuildingId()).ifPresent(building -> {
+                        dto.setBuildingName(building.getBuildingName());
+                    });
+                }
+            }
+        }
+        
+        return dtos;
     }
 
     // Lấy căn hộ theo loại quan hệ
