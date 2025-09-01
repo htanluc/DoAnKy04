@@ -198,7 +198,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                   <span className="h-4 w-4 rounded-[4px] bg-[hsl(var(--brand-green))] inline-block" />
                   <span className="h-4 w-4 rounded-[4px] bg-[hsl(var(--brand-blue))] inline-block" />
                 </div>
-                <div className="font-semibold text-sm text-sidebar-foreground/80">FPT Apartment Admin</div>
+                <div className="font-semibold text-sm text-sidebar-foreground/80">{t('admin.brand.title', 'FPT Apartment Admin')}</div>
               </div>
               <div className="mt-3 h-[3px] rounded-full fpt-tricolor-bar" />
             </div>
@@ -216,13 +216,13 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                 <SidebarGroupLabel
                   onClick={() => toggleGroup(section.key)}
                   className="relative pl-3 text-xs uppercase tracking-wide text-sidebar-foreground/60 cursor-pointer select-none before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-1.5 before:rounded-full before:bg-[var(--group-accent)]">
-                  {t(section.label, section.key === 'overview' ? 'Tổng quan' : 
-                     section.key === 'people' ? 'Người & Căn hộ' :
-                     section.key === 'comms' ? 'Truyền thông' :
-                     section.key === 'facilities' ? 'Tiện ích' :
-                     section.key === 'finance' ? 'Tài chính' :
-                     section.key === 'support' ? 'Hỗ trợ' :
-                     section.key === 'reports' ? 'Báo cáo' : 'Khác')}
+                  {t(section.label, section.key === 'overview' ? t('admin.groups.overview', 'Tổng quan') : 
+                     section.key === 'people' ? t('admin.groups.people', 'Người & Căn hộ') :
+                     section.key === 'comms' ? t('admin.groups.comms', 'Truyền thông') :
+                     section.key === 'facilities' ? t('admin.groups.facilities', 'Tiện ích') :
+                     section.key === 'finance' ? t('admin.groups.finance', 'Tài chính') :
+                     section.key === 'support' ? t('admin.groups.support', 'Hỗ trợ') :
+                     section.key === 'reports' ? t('admin.groups.reports', 'Báo cáo') : t('admin.groups.other', 'Khác'))}
                 </SidebarGroupLabel>
                 <SidebarGroupAction asChild>
                   <button
@@ -243,36 +243,36 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                           <SidebarMenuButton
                             asChild
                             isActive={!!active}
-                            tooltip={t(item.label, item.label.includes('users') ? 'Quản lý người dùng' :
-                                       item.label.includes('residents') ? 'Quản lý cư dân' :
-                                       item.label.includes('apartments') ? 'Quản lý căn hộ' :
-                                       item.label.includes('announcements') ? 'Quản lý thông báo' :
-                                       item.label.includes('events') ? 'Quản lý sự kiện' :
-                                       item.label.includes('facilities') ? 'Quản lý tiện ích' :
-                                       item.label.includes('invoices') ? 'Quản lý hóa đơn' :
-                                       item.label.includes('feedbacks') ? 'Quản lý phản hồi' :
-                                       item.label.includes('support-requests') ? 'Quản lý yêu cầu hỗ trợ' :
-                                       item.label.includes('vehicle-registrations') ? 'Quản lý đăng ký xe' :
-                                       item.label.includes('reports') ? 'Quản lý báo cáo' :
-                                       item.label.includes('history') ? 'Lịch sử AI Q&A' : 'Chức năng')}
+                            tooltip={t(item.label, item.label.includes('users') ? t('admin.users.title', 'Quản lý người dùng') :
+                                       item.label.includes('residents') ? t('admin.residents.title', 'Quản lý cư dân') :
+                                       item.label.includes('apartments') ? t('admin.apartments.title', 'Quản lý căn hộ') :
+                                       item.label.includes('announcements') ? t('admin.announcements.title', 'Quản lý thông báo') :
+                                       item.label.includes('events') ? t('admin.events.title', 'Quản lý sự kiện') :
+                                       item.label.includes('facilities') ? t('admin.facilities.title', 'Quản lý tiện ích') :
+                                       item.label.includes('invoices') ? t('admin.invoices.title', 'Quản lý hóa đơn') :
+                                       item.label.includes('feedbacks') ? t('admin.feedbacks.title', 'Quản lý phản hồi') :
+                                       item.label.includes('support-requests') ? t('admin.support-requests.title', 'Quản lý yêu cầu hỗ trợ') :
+                                       item.label.includes('vehicle-registrations') ? t('admin.vehicle-registrations.title', 'Quản lý đăng ký xe') :
+                                       item.label.includes('reports') ? t('admin.reports.title', 'Quản lý báo cáo') :
+                                       item.label.includes('history') ? t('admin.history.title', 'Lịch sử AI Q&A') : t('admin.function', 'Chức năng'))}
                             className="relative border-l-2 border-transparent hover:border-[var(--group-accent)] data-[active=true]:border-[var(--group-accent)] data-[active=true]:bg-[var(--group-accent)]/10 data-[active=true]:text-[var(--group-accent)]"
                           >
                             <Link href={item.href} className="flex items-center gap-3 w-full truncate">
                               <span className="h-6 w-6 grid place-items-center rounded-md bg-[var(--group-accent)]/10 text-[var(--group-accent)]">
                                 {item.icon}
                               </span>
-                              <span className="truncate block w-full text-left">{t(item.label, item.label.includes('users') ? 'Quản lý người dùng' :
-                                       item.label.includes('residents') ? 'Quản lý cư dân' :
-                                       item.label.includes('apartments') ? 'Quản lý căn hộ' :
-                                       item.label.includes('announcements') ? 'Quản lý thông báo' :
-                                       item.label.includes('events') ? 'Quản lý sự kiện' :
-                                       item.label.includes('facilities') ? 'Quản lý tiện ích' :
-                                       item.label.includes('invoices') ? 'Quản lý hóa đơn' :
-                                       item.label.includes('feedbacks') ? 'Quản lý phản hồi' :
-                                       item.label.includes('support-requests') ? 'Quản lý yêu cầu hỗ trợ' :
-                                       item.label.includes('vehicle-registrations') ? 'Quản lý đăng ký xe' :
-                                       item.label.includes('reports') ? 'Quản lý báo cáo' :
-                                       item.label.includes('history') ? 'Lịch sử AI Q&A' : 'Chức năng')}</span>
+                              <span className="truncate block w-full text-left">{t(item.label, item.label.includes('users') ? t('admin.users.title', 'Quản lý người dùng') :
+                                       item.label.includes('residents') ? t('admin.residents.title', 'Quản lý cư dân') :
+                                       item.label.includes('apartments') ? t('admin.apartments.title', 'Quản lý căn hộ') :
+                                       item.label.includes('announcements') ? t('admin.announcements.title', 'Quản lý thông báo') :
+                                       item.label.includes('events') ? t('admin.events.title', 'Quản lý sự kiện') :
+                                       item.label.includes('facilities') ? t('admin.facilities.title', 'Quản lý tiện ích') :
+                                       item.label.includes('invoices') ? t('admin.invoices.title', 'Quản lý hóa đơn') :
+                                       item.label.includes('feedbacks') ? t('admin.feedbacks.title', 'Quản lý phản hồi') :
+                                       item.label.includes('support-requests') ? t('admin.support-requests.title', 'Quản lý yêu cầu hỗ trợ') :
+                                       item.label.includes('vehicle-registrations') ? t('admin.vehicle-registrations.title', 'Quản lý đăng ký xe') :
+                                       item.label.includes('reports') ? t('admin.reports.title', 'Quản lý báo cáo') :
+                                       item.label.includes('history') ? t('admin.history.title', 'Lịch sử AI Q&A') : t('admin.function', 'Chức năng'))}</span>
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -312,12 +312,12 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Chọn loại</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('admin.quickCreate.selectType', 'Chọn loại')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/announcements/create')}>Thông báo</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/events/create')}>Sự kiện</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/invoices/create')}>Hóa đơn</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/users/create')}>Người dùng</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/announcements/create')}>{t('admin.announcements.title', 'Thông báo')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/events/create')}>{t('admin.events.title', 'Sự kiện')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/invoices/create')}>{t('admin.invoices.title', 'Hóa đơn')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/admin-dashboard/users/create')}>{t('admin.users.title', 'Người dùng')}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <LanguageSwitcher />

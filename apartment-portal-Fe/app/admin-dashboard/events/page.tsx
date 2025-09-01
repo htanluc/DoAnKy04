@@ -92,6 +92,21 @@ function EventsPageContent() {
     }
   };
 
+  // Định nghĩa getEventStatus trước khi sử dụng
+  const getEventStatus = (event: Event) => {
+    const now = new Date();
+    const startTime = new Date(event.startTime);
+    const endTime = new Date(event.endTime);
+    
+    if (now < startTime) {
+      return 'UPCOMING';
+    } else if (now >= startTime && now <= endTime) {
+      return 'ONGOING';
+    } else {
+      return 'COMPLETED';
+    }
+  };
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,20 +126,6 @@ function EventsPageContent() {
   const totalPages = Math.max(1, Math.ceil(sortedEvents.length / pageSize));
   const startIdx = (currentPage - 1) * pageSize;
   const pageEvents = sortedEvents.slice(startIdx, startIdx + pageSize);
-
-  const getEventStatus = (event: Event) => {
-    const now = new Date();
-    const startTime = new Date(event.startTime);
-    const endTime = new Date(event.endTime);
-    
-    if (now < startTime) {
-      return 'UPCOMING';
-    } else if (now >= startTime && now <= endTime) {
-      return 'ONGOING';
-    } else {
-      return 'COMPLETED';
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -204,7 +205,7 @@ function EventsPageContent() {
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Lọc theo trạng thái"
+                  aria-label={t('admin.events.filter.status', 'Lọc theo trạng thái')}
                 >
                   <option value="all">{t('admin.events.status.all', 'Tất cả trạng thái')}</option>
                   <option value="UPCOMING">{t('admin.events.status.UPCOMING', 'Sắp diễn ra')}</option>

@@ -559,3 +559,206 @@ function getRoleNames(user: any): string[] {
   }
   return user.roles.map((role: any) => String(role));
 }
+
+// ==================== ANNOUNCEMENTS EXPORT ====================
+
+export interface AnnouncementExcelData {
+  'ID': number;
+  'Tiêu đề': string;
+  'Nội dung': string;
+  'Loại thông báo': string;
+  'Ngày tạo': string;
+  'Trạng thái': string;
+}
+
+/**
+ * Xuất dữ liệu thông báo ra file Excel
+ */
+export function exportAnnouncementsToExcel(
+  announcements: any[],
+  options: ExcelExportOptions = {}
+): void {
+  const {
+    fileName = `danh-sach-thong-bao-${new Date().toISOString().split('T')[0]}`,
+    sheetName = 'Thông Báo',
+    includeHeaders = true
+  } = options;
+
+  try {
+    // Chuẩn bị dữ liệu cho Excel
+    const excelData: AnnouncementExcelData[] = announcements.map(announcement => ({
+      'ID': announcement.id,
+      'Tiêu đề': announcement.title || '',
+      'Nội dung': announcement.content || '',
+      'Loại thông báo': getAnnouncementTypeText(announcement.type),
+      'Ngày tạo': formatDate(announcement.createdAt || new Date()),
+      'Trạng thái': announcement.isActive ? 'Hoạt động' : 'Không hoạt động'
+    }));
+
+    // Tạo workbook mới
+    const workbook = XLSX.utils.book_new();
+    
+    // Tạo worksheet từ dữ liệu
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // Thiết lập độ rộng cột tự động
+    const columnWidths = [
+      { wch: 8 },   // ID
+      { wch: 40 },  // Tiêu đề
+      { wch: 60 },  // Nội dung
+      { wch: 20 },  // Loại thông báo
+      { wch: 15 },  // Ngày tạo
+      { wch: 15 }   // Trạng thái
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    // Thêm worksheet vào workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Xuất file
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+
+    console.log(`Đã xuất Excel thành công: ${fileName}.xlsx`);
+  } catch (error) {
+    console.error('Lỗi khi xuất Excel:', error);
+    throw new Error('Không thể xuất file Excel. Vui lòng thử lại.');
+  }
+}
+
+/**
+ * Xuất dữ liệu thông báo đã lọc ra file Excel
+ */
+export function exportFilteredAnnouncementsToExcel(
+  announcements: any[],
+  searchTerm: string,
+  filterType: string,
+  options: ExcelExportOptions = {}
+): void {
+  const {
+    fileName = `thong-bao-da-loc-${new Date().toISOString().split('T')[0]}`,
+    sheetName = 'Thông Báo Đã Lọc',
+    includeHeaders = true
+  } = options;
+
+  // Tạo tên file mô tả
+  let descriptiveFileName = fileName;
+  if (searchTerm) {
+    descriptiveFileName += `-tim-kiem-${searchTerm}`;
+  }
+  if (filterType !== 'all') {
+    descriptiveFileName += `-loai-${filterType}`;
+  }
+
+  try {
+    // Chuẩn bị dữ liệu cho Excel
+    const excelData: AnnouncementExcelData[] = announcements.map(announcement => ({
+      'ID': announcement.id,
+      'Tiêu đề': announcement.title || '',
+      'Nội dung': announcement.content || '',
+      'Loại thông báo': getAnnouncementTypeText(announcement.type),
+      'Ngày tạo': formatDate(announcement.createdAt || new Date()),
+      'Trạng thái': announcement.isActive ? 'Hoạt động' : 'Không hoạt động'
+    }));
+
+    // Tạo workbook mới
+    const workbook = XLSX.utils.book_new();
+    
+    // Tạo worksheet từ dữ liệu
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // Thiết lập độ rộng cột tự động
+    const columnWidths = [
+      { wch: 8 },   // ID
+      { wch: 40 },  // Tiêu đề
+      { wch: 60 },  // Nội dung
+      { wch: 20 },  // Loại thông báo
+      { wch: 15 },  // Ngày tạo
+      { wch: 15 }   // Trạng thái
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    // Thêm worksheet vào workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Xuất file
+    XLSX.writeFile(workbook, `${descriptiveFileName}.xlsx`);
+
+    console.log(`Đã xuất Excel thành công: ${descriptiveFileName}.xlsx`);
+  } catch (error) {
+    console.error('Lỗi khi xuất Excel:', error);
+    throw new Error('Không thể xuất file Excel. Vui lòng thử lại.');
+  }
+}
+
+/**
+ * Xuất thống kê thông báo ra file Excel
+ */
+export function exportAnnouncementsStatsToExcel(
+  announcements: any[],
+  options: ExcelExportOptions = {}
+): void {
+  const {
+    fileName = `thong-ke-thong-bao-${new Date().toISOString().split('T')[0]}`,
+    sheetName = 'Thống Kê Thông Báo',
+    includeHeaders = true
+  } = options;
+
+  try {
+    // Tính toán thống kê
+    const total = announcements.length;
+    const active = announcements.filter(a => a.isActive).length;
+    const urgent = announcements.filter(a => a.type === 'URGENT').length;
+    const news = announcements.filter(a => a.type === 'NEWS').length;
+    const regular = announcements.filter(a => a.type === 'REGULAR').length;
+
+    // Dữ liệu thống kê
+    const statsData = [
+      { 'Chỉ số': 'Tổng số thông báo', 'Giá trị': total },
+      { 'Chỉ số': 'Đang hoạt động', 'Giá trị': active },
+      { 'Chỉ số': 'Khẩn cấp', 'Giá trị': urgent },
+      { 'Chỉ số': 'Tin tức', 'Giá trị': news },
+      { 'Chỉ số': 'Thường', 'Giá trị': regular },
+      { 'Chỉ số': 'Tỷ lệ hoạt động', 'Giá trị': total > 0 ? `${((active / total) * 100).toFixed(1)}%` : '0%' },
+      { 'Chỉ số': 'Tỷ lệ khẩn cấp', 'Giá trị': total > 0 ? `${((urgent / total) * 100).toFixed(1)}%` : '0%' }
+    ];
+
+    // Tạo workbook mới
+    const workbook = XLSX.utils.book_new();
+    
+    // Tạo worksheet từ dữ liệu thống kê
+    const worksheet = XLSX.utils.json_to_sheet(statsData);
+
+    // Thiết lập độ rộng cột
+    worksheet['!cols'] = [
+      { wch: 25 },  // Chỉ số
+      { wch: 15 }   // Giá trị
+    ];
+
+    // Thêm worksheet vào workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Xuất file
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+
+    console.log(`Đã xuất thống kê thông báo Excel thành công: ${fileName}.xlsx`);
+  } catch (error) {
+    console.error('Lỗi khi xuất thống kê thông báo Excel:', error);
+    throw new Error('Không thể xuất file thống kê Excel. Vui lòng thử lại.');
+  }
+}
+
+/**
+ * Chuyển đổi loại thông báo sang text tiếng Việt
+ */
+function getAnnouncementTypeText(type: string): string {
+  switch (type) {
+    case 'NEWS':
+      return 'Tin tức';
+    case 'REGULAR':
+      return 'Thường';
+    case 'URGENT':
+      return 'Khẩn cấp';
+    default:
+      return type || 'Không xác định';
+  }
+}

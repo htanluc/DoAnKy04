@@ -950,7 +950,6 @@ export const translations: Translations = {
   'admin.invoices.status.UNPAID': { vi: 'Chưa thanh toán', en: 'Unpaid' },
 
   // Filters common
-  'admin.filters.searchAndFilter': { vi: 'Tìm kiếm & lọc', en: 'Search & filter' },
 
   // Common Actions
   'admin.action.viewDetails': { vi: 'Xem chi tiết', en: 'View Details' },
@@ -1047,6 +1046,49 @@ export const translations: Translations = {
   'admin.announcements.deleteError': { vi: 'Không thể xóa thông báo', en: 'Unable to delete announcement' },
   'admin.announcements.confirmDelete': { vi: 'Bạn có chắc chắn muốn xóa thông báo này?', en: 'Are you sure you want to delete this announcement?' },
 
+  // Announcement Stats Cards
+  'admin.announcements.total': { vi: 'Tổng số', en: 'Total' },
+  'admin.announcements.active': { vi: 'Đang hoạt động', en: 'Active' },
+  'admin.announcements.urgent': { vi: 'Khẩn cấp', en: 'Urgent' },
+  'admin.announcements.news': { vi: 'Tin tức', en: 'News' },
+
+  // Admin Filters
+  'admin.filters.searchAndFilter': { vi: 'Tìm kiếm & lọc', en: 'Search & Filter' },
+  'admin.filters.type': { vi: 'Loại thông báo', en: 'Announcement Type' },
+
+  // Admin Sort
+  'admin.sort.by': { vi: 'Sắp xếp theo', en: 'Sort by' },
+  'admin.sort.createdAt': { vi: 'Ngày tạo', en: 'Creation Date' },
+  'admin.sort.title': { vi: 'Tiêu đề', en: 'Title' },
+  'admin.sort.type': { vi: 'Loại', en: 'Type' },
+
+  // Admin View Mode
+  'admin.view.mode': { vi: 'Chế độ xem', en: 'View Mode' },
+  'admin.view.table': { vi: 'Bảng', en: 'Table' },
+  'admin.view.grid': { vi: 'Lưới', en: 'Grid' },
+
+  // Admin Results
+  'admin.results.showing': { vi: 'Hiển thị', en: 'Showing' },
+  'admin.results.of': { vi: 'trong tổng số', en: 'of' },
+
+  // Admin Actions
+  'admin.refresh': { vi: 'Làm mới', en: 'Refresh' },
+  'admin.export': { vi: 'Xuất Excel', en: 'Export Excel' },
+  'admin.loading': { vi: 'Đang tải...', en: 'Loading...' },
+  'admin.view': { vi: 'Xem chi tiết', en: 'View Details' },
+  'admin.edit': { vi: 'Chỉnh sửa', en: 'Edit' },
+  'admin.delete': { vi: 'Xóa', en: 'Delete' },
+
+  // Admin Export
+  'admin.export.stats': { vi: 'Xuất thống kê', en: 'Export Stats' },
+  'admin.export.data': { vi: 'Xuất dữ liệu', en: 'Export Data' },
+
+  // Admin Announcements Additional
+  'admin.announcements.noResults': { vi: 'Không tìm thấy thông báo', en: 'No announcements found' },
+  'admin.announcements.noResultsDesc': { vi: 'Không có thông báo nào khớp với tiêu chí tìm kiếm của bạn', en: 'No announcements match your search criteria' },
+  'admin.announcements.createFirst': { vi: 'Tạo thông báo đầu tiên', en: 'Create first announcement' },
+  'admin.announcements.results': { vi: 'kết quả', en: 'results' },
+
   // Event Management
   'admin.events.title': {
     vi: 'Quản lý sự kiện',
@@ -1105,10 +1147,12 @@ export const translations: Translations = {
     en: 'Current Participants'
   },
   'admin.events.searchPlaceholder': { vi: 'Tìm kiếm theo tên, mô tả, địa điểm...', en: 'Search by name, description, location...' },
+  'admin.events.status.all': { vi: 'Tất cả trạng thái', en: 'All statuses' },
   'admin.events.status.UPCOMING': { vi: 'Sắp diễn ra', en: 'Upcoming' },
   'admin.events.status.ONGOING': { vi: 'Đang diễn ra', en: 'Ongoing' },
   'admin.events.status.COMPLETED': { vi: 'Đã kết thúc', en: 'Completed' },
   'admin.events.status.CANCELLED': { vi: 'Đã hủy', en: 'Cancelled' },
+  'admin.events.filter.status': { vi: 'Lọc theo trạng thái', en: 'Filter by status' },
 
   // Facility Management
   'admin.facilities.title': {

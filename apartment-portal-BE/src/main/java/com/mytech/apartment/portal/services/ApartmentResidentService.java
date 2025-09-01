@@ -17,9 +17,11 @@ import com.mytech.apartment.portal.models.ApartmentResidentId;
 import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.models.enums.RelationType;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
+import com.mytech.apartment.portal.exceptions.ApartmentResidentException;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.BuildingRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.utils.MessageUtils;
 
 @Service
 @Transactional
@@ -44,14 +46,14 @@ public class ApartmentResidentService {
     public ApartmentResidentDto createApartmentResident(ApartmentResidentCreateRequest request) {
         // Kiểm tra apartment và user có tồn tại không
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy căn hộ"));
+                .orElseThrow(() -> new ApartmentResidentException(MessageUtils.getMessage("apartment.not.found")));
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new ApartmentResidentException(MessageUtils.getMessage("user.not.found")));
 
         // Kiểm tra mối quan hệ đã tồn tại chưa
         if (apartmentResidentRepository.existsByUser_IdAndApartment_Id(request.getUserId(), request.getApartmentId())) {
-            throw new RuntimeException("Mối quan hệ này đã tồn tại");
+            throw new ApartmentResidentException(MessageUtils.getMessage("relationship.already.exists"));
         }
 
         // Tạo mối quan hệ mới
@@ -140,7 +142,7 @@ public class ApartmentResidentService {
     // Cập nhật mối quan hệ
     public ApartmentResidentDto updateApartmentResident(Long apartmentId, Long userId, ApartmentResidentCreateRequest request) {
         ApartmentResident existing = apartmentResidentRepository.findByApartment_IdAndUser_Id(apartmentId, userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy mối quan hệ"));
+                .orElseThrow(() -> new ApartmentResidentException(MessageUtils.getMessage("relationship.not.found")));
 
         existing.setRelationType(request.getRelationType());
         existing.setMoveInDate(request.getMoveInDate());

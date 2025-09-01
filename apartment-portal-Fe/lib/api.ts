@@ -68,6 +68,18 @@ export const api = {
   }),
 }
 
+// Users API
+export const usersApi = {
+  // Get user by ID
+  getById: async (id: number): Promise<any> => {
+    const response = await api.get(`/api/admin/users/${id}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch user');
+    }
+    return response.json();
+  },
+};
+
 // Error handling utility
 export const handleApiError = (error: any): string => {
   if (error.response) {
@@ -96,6 +108,8 @@ export interface Announcement {
   type: AnnouncementType;
   targetAudience: TargetAudience;
   createdBy: number;
+  creatorName?: string; // Tên người tạo
+  creatorEmail?: string; // Email người tạo
   isActive: boolean;
   createdAt: string;
 }
