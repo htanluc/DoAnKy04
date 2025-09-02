@@ -28,4 +28,5 @@ public class Facility {
     private String otherDetails;
     private Double usageFee;
     private String openingHours;
+    private Boolean isVisible = true; // Trường để ẩn/hiển thị tiện ích, mặc định là true
 } 

@@ -17,12 +17,12 @@ public class FacilityController {
     private FacilityService facilityService;
 
     /**
-     * Get all facilities (Public - for residents)
-     * Lấy danh sách tất cả tiện ích (Công khai - cho cư dân)
+     * Get visible facilities (Public - for residents)
+     * Lấy danh sách tiện ích hiển thị (Công khai - cho cư dân)
      */
     @GetMapping("/facilities")
-    public List<FacilityDto> getAllFacilitiesForResident() {
-        return facilityService.getAllFacilities();
+    public List<FacilityDto> getVisibleFacilitiesForResident() {
+        return facilityService.getVisibleFacilities();
     }
 
     /**
@@ -73,6 +73,20 @@ public class FacilityController {
     public ResponseEntity<FacilityDto> updateFacility(@PathVariable("id") Long id, @RequestBody FacilityUpdateRequest request) {
         try {
             FacilityDto updatedFacility = facilityService.updateFacility(id, request);
+            return ResponseEntity.ok(updatedFacility);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Toggle facility visibility (Admin only)
+     * Bật/tắt hiển thị tiện ích (Chỉ admin)
+     */
+    @PutMapping("/admin/facilities/{id}/toggle-visibility")
+    public ResponseEntity<FacilityDto> toggleFacilityVisibility(@PathVariable("id") Long id) {
+        try {
+            FacilityDto updatedFacility = facilityService.toggleFacilityVisibility(id);
             return ResponseEntity.ok(updatedFacility);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();

@@ -555,10 +555,6 @@ export const translations: Translations = {
     vi: 'Không phân loại',
     en: 'Uncategorized'
   },
-  'admin.status.completed': {
-    vi: 'Hoàn thành',
-    en: 'Completed'
-  },
   'admin.supportRequests.none': {
     vi: 'Chưa có nhiệm vụ đã hoàn thành',
     en: 'No completed tasks yet'
@@ -626,18 +622,6 @@ export const translations: Translations = {
   'admin.users.removeRoleFailed': {
     vi: 'Xóa vai trò thất bại',
     en: 'Failed to remove role'
-  },
-  'admin.users.id': {
-    vi: 'ID',
-    en: 'ID'
-  },
-  'admin.users.deactivate.desc': {
-    vi: 'Bạn sắp vô hiệu hóa tài khoản của {username} ({email}). Vui lòng chọn một lý do để gửi thông báo cho cư dân.',
-    en: 'You are about to deactivate the account of {username} ({email}). Please select a reason to notify the resident.'
-  },
-  'admin.users.deactivate.emailNotice': {
-    vi: 'Email thông báo sẽ được gửi tự động đến {email} với lý do đã chọn và hướng dẫn khôi phục tài khoản.',
-    en: 'A notification email will be sent to {email} with the selected reason and instructions to restore the account.'
   },
 
   // Resident Management
@@ -720,10 +704,6 @@ export const translations: Translations = {
     vi: 'tổng số',
     en: 'of total'
   },
-  'admin.residents.id': {
-    vi: 'ID',
-    en: 'ID'
-  },
   'admin.residents.results': {
     vi: 'kết quả',
     en: 'results'
@@ -758,10 +738,6 @@ export const translations: Translations = {
   },
 
   // Export functionality
-  'admin.action.export': {
-    vi: 'Xuất Excel',
-    en: 'Export Excel'
-  },
   'admin.export.exporting': {
     vi: 'Đang xuất...',
     en: 'Exporting...'
@@ -871,6 +847,12 @@ export const translations: Translations = {
   'admin.apartments.columns.actions': { vi: 'Thao Tác', en: 'Actions' },
   'admin.apartments.results': { vi: 'kết quả', en: 'results' },
 
+  // Commonly used short apartment labels
+  'admin.apartments.building': { vi: 'Tòa', en: 'Building' },
+  'admin.apartments.floor': { vi: 'Tầng', en: 'Floor' },
+  'admin.apartments.unitNumber': { vi: 'Mã căn hộ', en: 'Unit Number' },
+  'admin.apartments.apartment': { vi: 'Căn hộ', en: 'Apartment' },
+
   // Apartment Stats
   'admin.apartments.stats.total': { vi: 'Tổng số căn hộ', en: 'Total Apartments' },
   'admin.apartments.stats.totalDesc': { vi: 'Tất cả căn hộ trong hệ thống', en: 'All apartments in the system' },
@@ -953,7 +935,6 @@ export const translations: Translations = {
 
   // Common Actions
   'admin.action.viewDetails': { vi: 'Xem chi tiết', en: 'View Details' },
-  'admin.action.edit': { vi: 'Chỉnh sửa', en: 'Edit' },
   'admin.action.viewResidents': { vi: 'Xem cư dân', en: 'View Residents' },
   'admin.action.moreOptions': { vi: 'Thêm tùy chọn', en: 'More Options' },
   'admin.action.viewPrice': { vi: 'Xem giá thuê', en: 'View Price' },
@@ -1075,12 +1056,10 @@ export const translations: Translations = {
   'admin.refresh': { vi: 'Làm mới', en: 'Refresh' },
   'admin.export': { vi: 'Xuất Excel', en: 'Export Excel' },
   'admin.loading': { vi: 'Đang tải...', en: 'Loading...' },
-  'admin.view': { vi: 'Xem chi tiết', en: 'View Details' },
   'admin.edit': { vi: 'Chỉnh sửa', en: 'Edit' },
   'admin.delete': { vi: 'Xóa', en: 'Delete' },
 
   // Admin Export
-  'admin.export.stats': { vi: 'Xuất thống kê', en: 'Export Stats' },
   'admin.export.data': { vi: 'Xuất dữ liệu', en: 'Export Data' },
 
   // Admin Announcements Additional
@@ -1175,6 +1154,14 @@ export const translations: Translations = {
     vi: 'Chỉnh sửa tiện ích',
     en: 'Edit Facility'
   },
+  'admin.facilities.editDesc': {
+    vi: 'Cập nhật thông tin tiện ích',
+    en: 'Update facility information'
+  },
+  'admin.facilities.info': {
+    vi: 'Thông tin tiện ích',
+    en: 'Facility Information'
+  },
   'admin.facilities.details': {
     vi: 'Chi tiết tiện ích',
     en: 'Facility Details'
@@ -1215,6 +1202,95 @@ export const translations: Translations = {
   'admin.facilities.recent.bookingTime': { vi: 'Thời gian đặt', en: 'Booking time' },
   'admin.facilities.recent.numPeople': { vi: 'Số người', en: 'People' },
   'admin.facilities.recent.status': { vi: 'Trạng thái', en: 'Status' },
+
+  // Facility Statistics
+  'admin.facilities.stats.total': { vi: 'Tổng tiện ích', en: 'Total Facilities' },
+  'admin.facilities.stats.totalDesc': { vi: 'Tiện ích trong hệ thống', en: 'Facilities in the system' },
+  'admin.facilities.stats.location': { vi: 'Có vị trí', en: 'Has Location' },
+  'admin.facilities.stats.locationDesc': { vi: 'Tiện ích có vị trí', en: 'Facilities with location' },
+  'admin.facilities.stats.capacity': { vi: 'Tổng sức chứa', en: 'Total Capacity' },
+  'admin.facilities.stats.capacityDesc': { vi: 'Người có thể sử dụng', en: 'People who can use' },
+  'admin.facilities.stats.avgFee': { vi: 'Phí trung bình', en: 'Average Fee' },
+  'admin.facilities.stats.avgFeeDesc': { vi: 'Phí sử dụng trung bình', en: 'Average usage fee' },
+
+  // Facility Actions
+  'admin.facilities.exportCSV': { vi: 'Xuất CSV', en: 'Export CSV' },
+  'admin.facilities.exportExcel': { vi: 'Xuất Excel', en: 'Export Excel' },
+  'admin.facilities.worksheetName': { vi: 'Tiện ích', en: 'Facilities' },
+
+  // Facility Filters
+  'admin.facilities.searchPlaceholder': { vi: 'Tìm kiếm theo tên, mô tả, vị trí...', en: 'Search by name, description, location...' },
+  'admin.facilities.capacity.all': { vi: 'Tất cả sức chứa', en: 'All capacities' },
+  'admin.facilities.capacity.small': { vi: 'Nhỏ (1-20)', en: 'Small (1-20)' },
+  'admin.facilities.capacity.medium': { vi: 'Trung bình (21-50)', en: 'Medium (21-50)' },
+  'admin.facilities.capacity.large': { vi: 'Lớn (>50)', en: 'Large (>50)' },
+
+  // Facility Table
+
+  'admin.facilities.location': { vi: 'Vị trí', en: 'Location' },
+  'admin.facilities.otherDetails': { vi: 'Chi tiết khác', en: 'Other Details' },
+  'admin.facilities.count': { vi: 'tiện ích', en: 'facilities' },
+  'admin.facilities.noDescription': { vi: 'Không có mô tả', en: 'No description' },
+  'admin.facilities.noLocation': { vi: 'Không có vị trí', en: 'No location' },
+  'admin.facilities.noDetails': { vi: 'Không có chi tiết', en: 'No details' },
+  'admin.facilities.visible': { vi: 'Hiển thị', en: 'Visible' },
+  'admin.facilities.hidden': { vi: 'Ẩn', en: 'Hidden' },
+  'admin.facilities.show': { vi: 'Hiện', en: 'Show' },
+  'admin.facilities.hide': { vi: 'Ẩn', en: 'Hide' },
+
+  // Facility Bulk Actions
+  'admin.facilities.selected': { vi: 'tiện ích đã chọn', en: 'facilities selected' },
+  'admin.facilities.deselect': { vi: 'Bỏ chọn', en: 'Deselect' },
+  'admin.facilities.bulkDelete': { vi: 'Xóa đã chọn', en: 'Delete Selected' },
+
+  // Facility Empty States
+  'admin.facilities.noResults': { vi: 'Không tìm thấy tiện ích', en: 'No facilities found' },
+  'admin.facilities.noResultsDesc': { vi: 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm', en: 'Try changing filters or search keywords' },
+  'admin.facilities.noData': { vi: 'Chưa có tiện ích nào', en: 'No facilities yet' },
+  'admin.facilities.noDataDesc': { vi: 'Bắt đầu bằng cách tạo tiện ích đầu tiên', en: 'Start by creating the first facility' },
+
+  // Facility Confirmations
+  'admin.facilities.confirmDelete': { vi: 'Bạn có chắc chắn muốn xóa tiện ích này?', en: 'Are you sure you want to delete this facility?' },
+  'admin.facilities.confirmBulkDelete': { vi: 'Bạn có chắc chắn muốn xóa {count} tiện ích đã chọn?', en: 'Are you sure you want to delete {count} selected facilities?' },
+
+  // Facility Success Messages
+  'admin.facilities.deleteSuccess': { vi: 'Đã xóa tiện ích thành công', en: 'Facility deleted successfully' },
+  'admin.facilities.visibilityToggleSuccess': { vi: 'Đã cập nhật trạng thái hiển thị', en: 'Visibility status updated' },
+  'admin.facilities.bulkDeleteSuccess': { vi: 'Đã xóa các tiện ích đã chọn', en: 'Selected facilities deleted' },
+  'admin.facilities.exportSuccess': { vi: 'Đã xuất dữ liệu thành công', en: 'Data exported successfully' },
+  'admin.facilities.excelExportSuccess': { vi: 'Đã xuất Excel thành công', en: 'Excel exported successfully' },
+
+  // Facility Warning Messages
+  'admin.facilities.selectToDelete': { vi: 'Vui lòng chọn tiện ích để xóa', en: 'Please select facilities to delete' },
+
+  // Admin Filters
+  'admin.filters.clear': { vi: 'Xóa bộ lọc', en: 'Clear Filters' },
+
+  // Admin Pagination
+  'admin.pagination.itemsPerPage': { vi: 'Hiển thị:', en: 'Show:' },
+  'admin.pagination.pageSize.5': { vi: '5', en: '5' },
+  'admin.pagination.pageSize.10': { vi: '10', en: '10' },
+  'admin.pagination.pageSize.20': { vi: '20', en: '20' },
+  'admin.pagination.pageSize.50': { vi: '50', en: '50' },
+  'admin.pagination.of': { vi: 'của', en: 'of' },
+  'admin.pagination.results': { vi: 'kết quả', en: 'results' },
+
+  // Admin Actions
+  'admin.action.actions': { vi: 'Thao tác', en: 'Actions' },
+
+  // Admin Success Messages
+  'admin.success.delete': { vi: 'Thành công', en: 'Success' },
+  'admin.success.update': { vi: 'Thành công', en: 'Success' },
+  'admin.success.export': { vi: 'Thành công', en: 'Success' },
+
+  // Admin Error Messages
+  'admin.error.update': { vi: 'Lỗi', en: 'Error' },
+
+  // Admin Warning Messages
+  'admin.warning': { vi: 'Cảnh báo', en: 'Warning' },
+
+  // Admin Common
+  'admin.common.locale': { vi: 'vi-VN', en: 'en-US' },
 
   // Invoice Management
   'admin.invoices.title': {
@@ -1269,7 +1345,6 @@ export const translations: Translations = {
     vi: 'Trạng thái',
     en: 'Status'
   },
-  'admin.invoices.status.PAID': { vi: 'Đã thanh toán', en: 'Paid' },
   'admin.invoices.status.PENDING': { vi: 'Chờ thanh toán', en: 'Pending' },
   'admin.invoices.status.OVERDUE': { vi: 'Quá hạn', en: 'Overdue' },
   'admin.invoices.status.CANCELLED': { vi: 'Đã hủy', en: 'Cancelled' },
@@ -1349,7 +1424,6 @@ export const translations: Translations = {
     vi: 'Tháng',
     en: 'Month'
   },
-  'admin.yearly-billing.exists': { vi: 'Đã có cấu hình (không thể tạo lại)', en: 'Configuration exists (cannot create again)' },
   'admin.yearly-billing.notExists': { vi: 'Chưa có cấu hình (có thể tạo)', en: 'No configuration yet (can create)' },
   'admin.yearly-billing.existsDetail': { vi: 'Năm {year} đã có cấu hình phí dịch vụ. Không thể tạo lại. Vui lòng chọn năm khác hoặc dùng tab Cấu hình phí.', en: 'Year {year} already has a fee configuration. Cannot create again. Please choose another year or use the Fee Configuration tab.' },
   'admin.yearly-billing.description': { vi: 'Tạo biểu phí cấu hình cho tất cả căn hộ trong năm {year}. Hệ thống chỉ tạo cấu hình phí dịch vụ (không tạo hóa đơn).', en: 'Create fee configuration for all apartments in {year}. The system only creates configurations (no invoices).' },
@@ -1385,9 +1459,6 @@ export const translations: Translations = {
     vi: 'Phí gửi xe (VND/tháng)',
     en: 'Parking Fee (VND/month)'
   },
-  'admin.yearly-billing.parking.motorcycle': { vi: 'Phí xe máy (VND/xe/tháng)', en: 'Motorcycle fee (VND/vehicle/month)' },
-  'admin.yearly-billing.parking.car4': { vi: 'Phí xe 4 chỗ (VND/xe/tháng)', en: '4-seat car fee (VND/vehicle/month)' },
-  'admin.yearly-billing.parking.car7': { vi: 'Phí xe 7 chỗ (VND/xe/tháng)', en: '7-seat car fee (VND/vehicle/month)' },
   'admin.yearly-billing.parking.motorcycle.label': { vi: 'Phí xe máy', en: 'Motorcycle fee' },
   'admin.yearly-billing.parking.car4.label': { vi: 'Phí xe 4 chỗ', en: '4-seat car fee' },
   'admin.yearly-billing.parking.car7.label': { vi: 'Phí xe 7 chỗ', en: '7-seat car fee' },
@@ -1637,8 +1708,6 @@ export const translations: Translations = {
   'admin.support-requests.tab.support': { vi: 'Yêu cầu hỗ trợ', en: 'Support requests' },
   'admin.support-requests.tab.vehicles': { vi: 'Đăng ký xe (chờ duyệt)', en: 'Vehicle registrations (pending)' },
   'admin.support-requests.notAssigned': { vi: 'Chưa giao', en: 'Not assigned' },
-  'admin.support-requests.status.ASSIGNED': { vi: 'Đã giao', en: 'Assigned' },
-  'admin.support-requests.status.IN_PROGRESS': { vi: 'Đang xử lý', en: 'In progress' },
   'admin.support-requests.vehicles.pendingTitle': { vi: 'Đăng ký xe chờ duyệt', en: 'Pending vehicle registrations' },
   'admin.support-requests.vehicles.loading': { vi: 'Đang tải...', en: 'Loading...' },
   'admin.support-requests.vehicles.empty': { vi: 'Không có đăng ký xe chờ duyệt', en: 'No pending vehicle registrations' },
@@ -1779,27 +1848,26 @@ export const translations: Translations = {
   'admin.facility-bookings.columns.status': { vi: 'Trạng thái', en: 'Status' },
   'admin.facility-bookings.columns.actions': { vi: 'Thao tác', en: 'Actions' },
   'admin.status.all': { vi: 'Tất cả trạng thái', en: 'All statuses' },
+  // Filters generic
+  // 'admin.filters.searchAndFilter' đã khai báo phía trên
+  'admin.filters.statusLabel': { vi: 'Trạng thái:', en: 'Status:' },
+  // Export generic
+  'admin.export.excel': { vi: 'Xuất Excel', en: 'Export Excel' },
+  // Counter label generic
+  'admin.counter.bookings': { vi: 'đặt chỗ', en: 'bookings' },
 
   // Support Requests
-  'admin.support-requests.list': { vi: 'Danh sách yêu cầu hỗ trợ', en: 'Support Request List' },
-  'admin.support-requests.listDesc': { vi: 'Quản lý tất cả yêu cầu hỗ trợ của cư dân', en: 'Manage all resident support requests' },
   'admin.support-requests.searchPlaceholder': { vi: 'Tìm kiếm theo cư dân, tiêu đề, mô tả...', en: 'Search by resident, title, description...' },
 
   // Water meter
   'admin.waterMeter.title': { vi: 'Danh sách chỉ số nước', en: 'Water meter list' },
   'admin.billing-config.title': { vi: 'Cấu Hình Phí', en: 'Billing Configuration' },
   'admin.billing-config.subtitle': { vi: 'Quản lý cấu hình phí dịch vụ cho từng tháng/năm', en: 'Manage service fee configuration per month/year' },
-  'admin.billing-config.existing': { vi: 'Cấu hình phí dịch vụ cho {month}/{year} đã tồn tại. Bạn có thể chỉnh sửa.', en: 'Fee configuration for {month}/{year} already exists. You can edit it.' },
-  'admin.billing-config.missing': { vi: 'Chưa có cấu hình phí dịch vụ cho {month}/{year}. Vui lòng tạo cấu hình mới.', en: 'No fee configuration for {month}/{year}. Please create a new one.' },
   'admin.billing-config.current': { vi: 'Cấu Hình Hiện Tại', en: 'Current Configuration' },
   'admin.billing-config.new': { vi: 'Cấu Hình Mới', en: 'New Configuration' },
   'admin.billing-config.history': { vi: 'Lịch Sử', en: 'History' },
   'admin.billing-config.currentMonth': { vi: 'Cấu Hình Phí Tháng', en: 'Fee Configuration Month' },
   'admin.billing-config.create': { vi: 'Tạo Cấu Hình Phí Mới', en: 'Create New Fee Configuration' },
-  'admin.facility-bookings.list': {
-    vi: 'Danh sách đặt tiện ích',
-    en: 'Facility Booking List'
-  },
   'admin.facility-bookings.details': {
     vi: 'Chi tiết đặt tiện ích',
     en: 'Facility Booking Details'
@@ -1830,10 +1898,6 @@ export const translations: Translations = {
   },
 
   // Loading and Error States
-  'admin.loading': {
-    vi: 'Đang tải...',
-    en: 'Loading...'
-  },
   'admin.error': {
     vi: 'Lỗi',
     en: 'Error'
@@ -1869,10 +1933,6 @@ export const translations: Translations = {
   'admin.success.save': {
     vi: 'Lưu thành công',
     en: 'Saved successfully'
-  },
-  'admin.success.delete': {
-    vi: 'Xóa thành công',
-    en: 'Deleted successfully'
   },
   'admin.confirm.delete': {
     vi: 'Bạn có chắc chắn muốn xóa?',
@@ -1915,6 +1975,23 @@ export const translations: Translations = {
   'admin.facilities.createError': { vi: 'Không thể tạo tiện ích', en: 'Unable to create facility' },
   'admin.facilities.editError': { vi: 'Không thể cập nhật cơ sở vật chất', en: 'Unable to update facility' },
   'admin.facilities.editIncomplete': { vi: 'Vui lòng điền đầy đủ thông tin', en: 'Please fill in all required information' },
+  'admin.facilities.editSuccess': { vi: 'Đã cập nhật cơ sở vật chất', en: 'Facility updated successfully' },
+  'admin.facilities.editLoading': { vi: 'Đang tải...', en: 'Loading...' },
+  'admin.facilities.notFound': { vi: 'Không tìm thấy cơ sở vật chất', en: 'Facility not found' },
+  'admin.facilities.notFoundTitle': { vi: 'Không tìm thấy cơ sở vật chất', en: 'Facility not found' },
+  'admin.facilities.notFoundDescription': { vi: 'Cơ sở vật chất bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.', en: 'The facility you are looking for does not exist or has been deleted.' },
+  
+  // Facility Placeholder Keys
+  'admin.facilities.name.placeholder': { vi: 'Nhập tên tiện ích', en: 'Enter facility name' },
+  'admin.facilities.description.placeholder': { vi: 'Nhập mô tả tiện ích', en: 'Enter facility description' },
+  'admin.facilities.location.placeholder': { vi: 'Nhập vị trí tiện ích (ví dụ: Tầng 1, Khu A)', en: 'Enter facility location (e.g., Floor 1, Area A)' },
+  'admin.facilities.capacity.placeholder': { vi: 'Nhập sức chứa tối đa', en: 'Enter maximum capacity' },
+  'admin.facilities.openingHours.placeholder': { vi: 'Nhập giờ mở cửa (ví dụ: 06:00-22:00)', en: 'Enter opening hours (e.g., 06:00-22:00)' },
+  'admin.facilities.otherDetails.placeholder': { vi: 'Nhập thông tin bổ sung (quy định sử dụng, v.v.)', en: 'Enter additional information (usage rules, etc.)' },
+  'admin.facilities.usageFee.placeholder': { vi: 'Nhập phí sử dụng (nếu có)', en: 'Enter usage fee (if any)' },
+  'admin.facilities.visibility': { vi: 'Trạng thái hiển thị', en: 'Visibility Status' },
+  'admin.facilities.visibilityDesc': { vi: 'Tiện ích bị ẩn sẽ không hiển thị cho cư dân khi họ xem danh sách tiện ích', en: 'Hidden facilities will not be visible to residents when they view the facility list' },
+  
   'admin.error.incomplete': { vi: 'Thiếu thông tin', en: 'Incomplete information' },
   'admin.noData': {
     vi: 'Không có dữ liệu',
