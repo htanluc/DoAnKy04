@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
-import { 
-  facilitiesApi, 
-  Facility, 
-  FacilityCreateRequest, 
-  FacilityUpdateRequest 
-} from '@/lib/api';
+import { facilitiesApi, Facility, FacilityCreateRequest, FacilityUpdateRequest } from '@/lib/api';
 
 interface UseFacilitiesReturn {
   facilities: Facility[];
@@ -13,6 +8,7 @@ interface UseFacilitiesReturn {
   createFacility: (data: FacilityCreateRequest) => Promise<void>;
   updateFacility: (id: number, data: FacilityUpdateRequest) => Promise<void>;
   deleteFacility: (id: number) => Promise<void>;
+  toggleFacilityVisibility: (id: number) => Promise<void>;
   fetchFacilities: () => Promise<void>;
 }
 
@@ -63,6 +59,23 @@ export const useFacilities = (): UseFacilitiesReturn => {
     }
   };
 
+  const toggleFacilityVisibility = async (id: number) => {
+    setError(null);
+    try {
+      const updatedFacility = await facilitiesApi.toggleVisibility(id);
+      setFacilities(prev => 
+        prev.map(facility => 
+          facility.id === id 
+            ? updatedFacility
+            : facility
+        )
+      );
+    } catch (err) {
+      setError('Failed to toggle facility visibility');
+      throw err;
+    }
+  };
+
   const deleteFacility = async (id: number) => {
     setError(null);
     try {
@@ -85,6 +98,7 @@ export const useFacilities = (): UseFacilitiesReturn => {
     createFacility,
     updateFacility,
     deleteFacility,
+    toggleFacilityVisibility,
     fetchFacilities,
   };
 }; 

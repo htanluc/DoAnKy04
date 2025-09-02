@@ -13,4 +13,5 @@ public class FacilityDto {
     private Double usageFee;
     private String openingHours;
     private String status;
+    private Boolean isVisible;
 } 

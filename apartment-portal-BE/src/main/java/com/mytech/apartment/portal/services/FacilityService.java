@@ -27,6 +27,12 @@ public class FacilityService {
                 .collect(Collectors.toList());
     }
 
+    public List<FacilityDto> getVisibleFacilities() {
+        return facilityRepository.findByIsVisibleTrue().stream()
+                .map(facilityMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     public Optional<FacilityDto> getFacilityById(Long id) {
         return facilityRepository.findById(id).map(facilityMapper::toDto);
     }
@@ -39,6 +45,7 @@ public class FacilityService {
         facility.setCapacity(request.getCapacity());
         facility.setOtherDetails(request.getOtherDetails());
         facility.setUsageFee(request.getUsageFee());
+        facility.setIsVisible(request.getIsVisible() != null ? request.getIsVisible() : true);
 
         Facility savedFacility = facilityRepository.save(facility);
         return facilityMapper.toDto(savedFacility);
@@ -63,6 +70,9 @@ public class FacilityService {
         if (request.getUsageFee() != null) {
             facility.setUsageFee(request.getUsageFee());
         }
+        if (request.getIsVisible() != null) {
+            facility.setIsVisible(request.getIsVisible());
+        }
 
         Facility updatedFacility = facilityRepository.save(facility);
         return facilityMapper.toDto(updatedFacility);
@@ -73,5 +83,16 @@ public class FacilityService {
             throw new RuntimeException("Facility not found with id " + id);
         }
         facilityRepository.deleteById(id);
+    }
+
+    public FacilityDto toggleFacilityVisibility(Long id) {
+        Facility facility = facilityRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Facility not found with id " + id));
+        
+        // Toggle visibility
+        facility.setIsVisible(!facility.getIsVisible());
+        
+        Facility updatedFacility = facilityRepository.save(facility);
+        return facilityMapper.toDto(updatedFacility);
     }
 } 

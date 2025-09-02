@@ -183,6 +183,7 @@ export interface Facility {
   otherDetails: string;
   usageFee: number; // number thay vì string|null
   openingHours?: string;
+  isVisible?: boolean; // Trường để ẩn/hiển thị tiện ích
 }
 
 // FacilityBooking
@@ -455,6 +456,15 @@ export const facilitiesApi = {
     }
   },
 
+  // Toggle facility visibility
+  toggleVisibility: async (id: number): Promise<Facility> => {
+    const response = await api.put(`/api/admin/facilities/${id}/toggle-visibility`);
+    if (!response.ok) {
+      throw new Error('Failed to toggle facility visibility');
+    }
+    return response.json();
+  },
+
   // Delete facility
   delete: async (id: number): Promise<void> => {
     const response = await api.delete(`/api/admin/facilities/${id}`);
@@ -585,6 +595,7 @@ export interface FacilityCreateRequest {
   otherDetails: string;
   usageFee: number;
   openingHours?: string;
+  isVisible?: boolean;
 }
 
 export interface FacilityUpdateRequest {
@@ -595,6 +606,7 @@ export interface FacilityUpdateRequest {
   otherDetails?: string;
   usageFee?: number;
   openingHours?: string;
+  isVisible?: boolean;
 }
 
 // FEEDBACK TYPES

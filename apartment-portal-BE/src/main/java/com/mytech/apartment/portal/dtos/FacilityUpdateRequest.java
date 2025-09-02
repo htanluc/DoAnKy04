@@ -6,6 +6,7 @@ public class FacilityUpdateRequest {
     private Integer capacity;
     private String otherDetails;
     private Double usageFee;
+    private Boolean isVisible;
 
     // Constructors
     public FacilityUpdateRequest() {}
@@ -32,4 +33,7 @@ public class FacilityUpdateRequest {
 
     public Double getUsageFee() { return usageFee; }
     public void setUsageFee(Double usageFee) { this.usageFee = usageFee; }
+
+    public Boolean getIsVisible() { return isVisible; }
+    public void setIsVisible(Boolean isVisible) { this.isVisible = isVisible; }
 } 

@@ -18,8 +18,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
-  Edit, 
-  Trash2, 
   Eye,
   Filter,
   Calculator,
@@ -48,6 +46,8 @@ function InvoicesPageContent() {
   const { generateMonthlyInvoices, clearMessages } = useYearlyBilling();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const [genYear, setGenYear] = useState(new Date().getFullYear());
   const [genMonth, setGenMonth] = useState(new Date().getMonth() + 1);
   const [genLoading, setGenLoading] = useState(false);
@@ -61,7 +61,7 @@ function InvoicesPageContent() {
 
   const filteredInvoices = invoices.filter(invoice => {
     const apartment = apartments.find(apt => apt.id === invoice.apartmentId) as ApiApartment | undefined;
-         const apartmentInfo = apartment ? `${t('admin.apartments.building')} ${apartment.buildingId} - ${t('admin.apartments.floor')} ${apartment.floorNumber} - ${t('admin.apartments.unitNumber')}` : `${t('admin.apartments.apartment')} ${invoice.apartmentId}`;
+         const apartmentInfo = apartment ? (apartment.unitNumber || `${t('admin.apartments.apartment')} ${apartment.id}`) : `${t('admin.apartments.apartment')} ${invoice.apartmentId}`;
     
     const matchesSearch = invoice.id.toString().includes(searchTerm.toLowerCase()) ||
                          invoice.apartmentId.toString().includes(searchTerm.toLowerCase()) ||
@@ -69,6 +69,15 @@ function InvoicesPageContent() {
     const matchesStatus = filterStatus === 'all' || invoice.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedInvoices = filteredInvoices.slice(startIndex, startIndex + pageSize);
+  useEffect(() => {
+    // Reset to first page when filters/search change
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -436,9 +445,9 @@ function InvoicesPageContent() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredInvoices.map((invoice) => {
+                          {pagedInvoices.map((invoice) => {
                             const apartment = apartments.find(apt => apt.id === invoice.apartmentId) as ApiApartment | undefined;
-                            const apartmentInfo = apartment ? `${t('admin.apartments.building')} ${apartment.buildingId} - ${t('admin.apartments.floor')} ${apartment.floorNumber} - ${t('admin.apartments.unitNumber')}` : `${t('admin.apartments.apartment')} ${invoice.apartmentId}`;
+                            const apartmentInfo = apartment ? (apartment.unitNumber || `${t('admin.apartments.apartment')} ${apartment.id}`) : `${t('admin.apartments.apartment')} ${invoice.apartmentId}`;
                             
                             return (
                               <TableRow key={invoice.id}>
@@ -448,7 +457,6 @@ function InvoicesPageContent() {
                                 <TableCell>
                                   <div>
                                     <div className="font-medium">{apartmentInfo}</div>
-                                    <div className="text-sm text-gray-500">{t('admin.invoices.period')}: {invoice.billingPeriod}</div>
                                   </div>
                                 </TableCell>
                                 <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
@@ -463,14 +471,7 @@ function InvoicesPageContent() {
                                         <Eye className="h-4 w-4" />
                                       </Button>
                                     </Link>
-                                    <Link href={`/admin-dashboard/invoices/edit/${invoice.id}`}>
-                                      <Button variant="outline" size="sm">
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                    </Link>
-                                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    {/* Edit and Delete actions removed as requested */}
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -478,6 +479,32 @@ function InvoicesPageContent() {
                           })}
                         </TableBody>
                       </Table>
+                      {/* Pagination Controls */}
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          {t('pagination.display', 'Hiển thị {start}-{end} trong {total}')
+                            .replace('{start}', String(Math.min(filteredInvoices.length, startIndex + 1)))
+                            .replace('{end}', String(Math.min(filteredInvoices.length, startIndex + pagedInvoices.length)))
+                            .replace('{total}', String(filteredInvoices.length))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="border rounded px-3 py-1 text-sm disabled:opacity-50"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          >
+                            {t('pagination.previous', 'Trước')}
+                          </button>
+                          <span className="text-sm">{currentPage}/{totalPages}</span>
+                          <button
+                            className="border rounded px-3 py-1 text-sm disabled:opacity-50"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          >
+                            {t('pagination.next', 'Sau')}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </CardContent>
