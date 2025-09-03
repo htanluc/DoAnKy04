@@ -516,6 +516,85 @@ export function exportUsersStatsToExcel(
   }
 }
 
+// ==================== INVOICES EXPORT ====================
+
+export interface InvoiceExcelData {
+  'ID': number;
+  'Căn hộ': string;
+  'Kỳ hóa đơn': string;
+  'Số tiền': string | number;
+  'Ngày đến hạn': string;
+  'Trạng thái': string;
+}
+
+/**
+ * Xuất danh sách hóa đơn (đã lọc) ra Excel
+ */
+export function exportInvoicesToExcel(
+  invoices: any[],
+  apartments: any[],
+  language: 'vi' | 'en' = 'vi',
+  options: ExcelExportOptions = {}
+): void {
+  const {
+    fileName = `danh-sach-hoa-don-${new Date().toISOString().split('T')[0]}`,
+    sheetName = 'Hóa Đơn',
+  } = options;
+
+  try {
+    const locale = language === 'vi' ? 'vi-VN' : 'en-US';
+
+    const findApartmentUnit = (apartmentId: number): string => {
+      const apt = apartments.find((a: any) => a.id === apartmentId);
+      if (!apt) return `Apartment ${apartmentId}`;
+      return apt.unitNumber || `Apartment ${apt.id}`;
+    };
+
+    const formatCurrency = (amount: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'VND' }).format(amount || 0);
+    const formatDate = (date: string) => new Date(date).toLocaleDateString(locale);
+
+    const data: InvoiceExcelData[] = invoices.map(inv => ({
+      'ID': inv.id,
+      'Căn hộ': findApartmentUnit(inv.apartmentId),
+      'Kỳ hóa đơn': inv.billingPeriod || '',
+      'Số tiền': formatCurrency(inv.totalAmount || 0),
+      'Ngày đến hạn': inv.dueDate ? formatDate(inv.dueDate) : '',
+      'Trạng thái': mapInvoiceStatusText(inv.status),
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    worksheet['!cols'] = [
+      { wch: 8 },   // ID
+      { wch: 20 },  // Căn hộ
+      { wch: 12 },  // Kỳ hóa đơn
+      { wch: 18 },  // Số tiền
+      { wch: 14 },  // Ngày đến hạn
+      { wch: 15 },  // Trạng thái
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  } catch (error) {
+    console.error('Lỗi xuất Excel hóa đơn:', error);
+    throw new Error('Không thể xuất file Excel hóa đơn. Vui lòng thử lại.');
+  }
+}
+
+function mapInvoiceStatusText(status: string): string {
+  switch (status) {
+    case 'PAID':
+      return 'Đã thanh toán';
+    case 'PENDING':
+      return 'Chờ thanh toán';
+    case 'OVERDUE':
+      return 'Quá hạn';
+    case 'CANCELLED':
+      return 'Đã hủy';
+    default:
+      return status || 'Không xác định';
+  }
+}
+
 /**
  * Chuyển đổi trạng thái sang text tiếng Việt
  */

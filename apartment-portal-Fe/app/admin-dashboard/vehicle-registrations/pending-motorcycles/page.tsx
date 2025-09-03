@@ -112,9 +112,16 @@ export default function PendingMotorcyclesPage() {
     if (!config && buildingId !== 26) {
       config = getConfigByBuilding(26);
     }
+
+    // Nếu vẫn không có, dùng cấu hình hoạt động đầu tiên
+    if (!config) {
+      const active = (configs || []).find(c => c.isActive);
+      if (active) config = active as any;
+    }
     
     if (!config || !config.isActive) {
-      return true; // Không có cấu hình thì cho phép duyệt
+      // Không có cấu hình hoặc cấu hình tắt: không cho duyệt để an toàn
+      return false;
     }
 
     // Kiểm tra loại xe
@@ -154,6 +161,12 @@ export default function PendingMotorcyclesPage() {
     
     if (!config && buildingId !== 26) {
       config = getConfigByBuilding(26);
+    }
+
+    // Fallback cấu hình hoạt động đầu tiên để hiển thị số liệu
+    if (!config) {
+      const active = (configs || []).find(c => c.isActive);
+      if (active) config = active as any;
     }
     
     if (!config) {
@@ -297,27 +310,12 @@ export default function PendingMotorcyclesPage() {
                       </TableCell>
                       <TableCell>
                         {(() => {
-                          const capacityInfo = getVehicleCapacityInfo(vehicle);
-                          if (!capacityInfo) return <span className="text-muted-foreground">-</span>;
-                         
-                          const isFull = capacityInfo.current >= capacityInfo.max;
+                          const info = getVehicleCapacityInfo(vehicle);
+                          if (!info) return <span className="text-muted-foreground">-</span>;
                           return (
-                            <div className="text-sm">
-                              <div className="flex items-center gap-2">
-                                <span>{capacityInfo.current}/{capacityInfo.max}</span>
-                                {isFull ? (
-                                  <Badge variant="destructive" className="text-xs">
-                                    Đã đầy
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="default" className="text-xs">
-                                    Còn {capacityInfo.remaining} chỗ
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {capacityInfo.label}
-                              </div>
+                            <div className="min-w-[160px] flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">{info.label}</span>
+                              <span className="font-medium">{info.current}/{info.max}</span>
                             </div>
                           );
                         })()}

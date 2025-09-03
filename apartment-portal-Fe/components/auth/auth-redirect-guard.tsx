@@ -34,7 +34,7 @@ export default function AuthRedirectGuard({ children }: { children: React.ReactN
           router.replace('/login');
         }
       } else {
-        router.replace('/dashboard'); // fallback
+        router.replace('/admin-dashboard'); // fallback to admin dashboard
       }
     }
   }, [router]);

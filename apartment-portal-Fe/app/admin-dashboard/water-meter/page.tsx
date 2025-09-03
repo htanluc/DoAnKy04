@@ -21,6 +21,10 @@ export default function WaterMeterListPage() {
   // Lấy danh sách các tháng có trong dữ liệu (từ tất cả dữ liệu, không phụ thuộc vào tháng đang chọn)
   const [allReadings, setAllReadings] = useState<any[]>([]);
   
+  // State cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  
   // Load tất cả dữ liệu khi component mount
   useEffect(() => {
     const loadAllReadings = async () => {
@@ -67,6 +71,17 @@ export default function WaterMeterListPage() {
       (r.apartmentName || "").toLowerCase().includes(search.toLowerCase()))
   );
 
+  // Logic phân trang
+  const totalPages = Math.ceil(filteredReadings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedReadings = filteredReadings.slice(startIndex, endIndex);
+
+  // Reset về trang 1 khi thay đổi tìm kiếm hoặc tháng
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedMonth]);
+
   const handleEditClick = (r: any) => {
     const rowKey = r.readingId ?? `${r.apartmentId}-${r.readingMonth}`;
     setEditId(rowKey);
@@ -103,13 +118,36 @@ export default function WaterMeterListPage() {
     }
   };
 
+  // Kiểm tra xem tháng đã có dữ liệu chưa
+  const monthHasData = (month: string) => {
+    return allReadings.some(r => r.readingMonth === month);
+  };
+
   const handleGenerate = async () => {
+    // Kiểm tra nếu tháng đã có dữ liệu
+    if (monthHasData(startMonth)) {
+      setGenError(t('admin.waterMeter.cannotGenerate'));
+      return;
+    }
+
     setGenLoading(true);
     setGenError(null);
     setGenSuccess(null);
     try {
       await bulkGenerate(startMonth);
       setGenSuccess(t('admin.waterMeter.generateSuccess'));
+      // Reload all readings sau khi tạo thành công
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const res = await fetch('http://localhost:8080/api/admin/water-readings', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAllReadings(data);
+      }
     } catch (err: any) {
       setGenError(err.message);
     } finally {
@@ -148,12 +186,21 @@ export default function WaterMeterListPage() {
               className="border px-2 py-1 rounded"
             />
             <button
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              className={`px-4 py-2 rounded ${
+                monthHasData(startMonth) 
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
               onClick={handleGenerate}
-              disabled={genLoading || !startMonth}
+              disabled={genLoading || !startMonth || monthHasData(startMonth)}
             >
               {genLoading ? t('admin.waterMeter.generating') : t('admin.waterMeter.generate')}
             </button>
+            {startMonth && monthHasData(startMonth) && (
+              <span className="text-orange-600 text-sm font-medium">
+                {t('admin.waterMeter.monthExists')}
+              </span>
+            )}
           </div>
         </div>
         {genError && <p className="text-red-500 mb-2">{genError}</p>}
@@ -176,6 +223,7 @@ export default function WaterMeterListPage() {
               <div className="flex gap-4 text-sm">
                 <span className="text-gray-600">{t('admin.waterMeter.totalApts')} <span className="font-bold">{filteredReadings.length}</span></span>
                 <span className="text-green-600">{t('admin.waterMeter.totalConsumption')} <span className="font-bold">{filteredReadings.reduce((sum, r) => sum + (r.consumption || (r.currentReading - r.previousReading)), 0)} m³</span></span>
+                <span className="text-blue-600">{t('admin.waterMeter.pagination.showing')} <span className="font-bold">{startIndex + 1}-{Math.min(endIndex, filteredReadings.length)}</span> {t('admin.waterMeter.pagination.of')} <span className="font-bold">{filteredReadings.length}</span> {t('admin.waterMeter.pagination.entries')}</span>
                 <button 
                   onClick={() => handleMonthChange("")}
                   className="text-sm bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
@@ -188,80 +236,121 @@ export default function WaterMeterListPage() {
         )}
         
         {selectedMonth && (
-          <table className="w-full border">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1">{t('admin.waterMeter.table.apartment')}</th>
-              <th className="border px-2 py-1">{t('admin.waterMeter.table.month')}</th>
-              <th className="border px-2 py-1">{t('admin.waterMeter.table.prev')}</th>
-              <th className="border px-2 py-1">{t('admin.waterMeter.table.current')}</th>
-              <th className="border px-2 py-1">{t('admin.waterMeter.table.consumption')}</th>
-              <th className="border px-2 py-1">{t('admin.waterMeter.table.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredReadings.map((r: any) => {
-              const rowKey = r.readingId ?? `${r.apartmentId}-${r.readingMonth}`;
-              return (
-              <tr key={rowKey}>
-                <td className="border px-2 py-1">{r.apartmentName || r.apartmentId}</td>
-                <td className="border px-2 py-1">{r.readingMonth}</td>
-                <td className="border px-2 py-1">{r.previousReading}</td>
-                <td className="border px-2 py-1">
-                  {editId === rowKey ? (
-                    <input
-                      type="number"
-                      name="currentReading"
-                      value={editForm.currentReading ?? ""}
-                      onChange={handleEditChange}
-                      className="border px-1 py-0.5 w-20"
-                    />
-                  ) : (
-                    r.currentReading
-                  )}
-                </td>
-                <td className="border px-2 py-1">
-                  <span className="font-medium text-blue-600">
-                    {r.consumption || (r.currentReading - r.previousReading)}
+          <>
+            <table className="w-full border">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.apartment')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.month')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.prev')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.current')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.consumption')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.actions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedReadings.map((r: any) => {
+                  const rowKey = r.readingId ?? `${r.apartmentId}-${r.readingMonth}`;
+                  return (
+                    <tr key={rowKey}>
+                      <td className="border px-2 py-1">{r.apartmentName || r.apartmentId}</td>
+                      <td className="border px-2 py-1">{r.readingMonth}</td>
+                      <td className="border px-2 py-1">{r.previousReading}</td>
+                      <td className="border px-2 py-1">
+                        {editId === rowKey ? (
+                          <input
+                            type="number"
+                            name="currentReading"
+                            value={editForm.currentReading ?? ""}
+                            onChange={handleEditChange}
+                            className="border px-1 py-0.5 w-20"
+                          />
+                        ) : (
+                          r.currentReading
+                        )}
+                      </td>
+                      <td className="border px-2 py-1">
+                        <span className="font-medium text-blue-600">
+                          {r.consumption || (r.currentReading - r.previousReading)}
+                        </span>
+                      </td>
+                      <td className="border px-2 py-1">
+                        {editId === rowKey ? (
+                          <>
+                            <button
+                              className="bg-green-600 text-white px-2 py-1 rounded mr-2"
+                              onClick={() => handleEditSave(rowKey, r)}
+                            >
+                              {t('admin.waterMeter.btn.save')}
+                            </button>
+                            <button
+                              className="bg-gray-400 text-white px-2 py-1 rounded mr-2"
+                              onClick={() => setEditId(null)}
+                            >
+                              {t('admin.waterMeter.btn.cancel')}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="bg-blue-600 text-white px-2 py-1 rounded mr-2"
+                              onClick={() => handleEditClick(r)}
+                            >
+                              {t('admin.waterMeter.btn.edit')}
+                            </button>
+                            <button
+                              className="bg-red-600 text-white px-2 py-1 rounded"
+                              onClick={() => handleDelete(r.readingId)}
+                            >
+                              {t('admin.waterMeter.btn.delete')}
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            
+            {/* Phân trang */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  {t('admin.waterMeter.pagination.showing')} {startIndex + 1}-{Math.min(endIndex, filteredReadings.length)} {t('admin.waterMeter.pagination.of')} {filteredReadings.length} {t('admin.waterMeter.pagination.entries')}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === 1 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {t('admin.waterMeter.pagination.previous')}
+                  </button>
+                  
+                  <span className="px-3 py-1 bg-gray-100 rounded">
+                    {currentPage} / {totalPages}
                   </span>
-                </td>
-                <td className="border px-2 py-1">
-                  {editId === rowKey ? (
-                    <>
-                      <button
-                        className="bg-green-600 text-white px-2 py-1 rounded mr-2"
-                        onClick={() => handleEditSave(rowKey, r)}
-                      >
-                        {t('admin.waterMeter.btn.save')}
-                      </button>
-                      <button
-                        className="bg-gray-400 text-white px-2 py-1 rounded mr-2"
-                        onClick={() => setEditId(null)}
-                      >
-                        {t('admin.waterMeter.btn.cancel')}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="bg-blue-600 text-white px-2 py-1 rounded mr-2"
-                        onClick={() => handleEditClick(r)}
-                      >
-                        {t('admin.waterMeter.btn.edit')}
-                      </button>
-                      <button
-                        className="bg-red-600 text-white px-2 py-1 rounded"
-                        onClick={() => handleDelete(r.readingId)}
-                      >
-                        {t('admin.waterMeter.btn.delete')}
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            );})}
-          </tbody>
-        </table>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === totalPages 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {t('admin.waterMeter.pagination.next')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </AdminLayout>

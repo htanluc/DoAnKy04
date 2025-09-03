@@ -7,8 +7,12 @@ import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.services.SmartActivityLogService;
 import com.mytech.apartment.portal.services.InvoiceService;
 import com.mytech.apartment.portal.services.MonthlyFeeService;
+import com.mytech.apartment.portal.services.EmailService;
+import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
+import com.mytech.apartment.portal.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +29,10 @@ public class InvoiceController {
     private final InvoiceService invoiceService;
     private final SmartActivityLogService smartActivityLogService;
     private final List<MonthlyFeeService> feeServices;
+    private final EmailService emailService;
+    private final ApartmentResidentRepository apartmentResidentRepository;
+    private final UserRepository userRepository;
+    private final com.mytech.apartment.portal.services.InvoicePdfService invoicePdfService;
 
     @GetMapping("/api/invoices/by-apartments")
     public List<InvoiceDto> getByApartments(@RequestParam List<Long> aptIds) {
@@ -34,6 +42,71 @@ public class InvoiceController {
     @GetMapping("/api/admin/invoices/by-apartments")
     public List<InvoiceDto> getByApartmentsAdmin(@RequestParam List<Long> aptIds) {
         return invoiceService.getInvoicesByApartmentIds(aptIds);
+    }
+
+    /**
+     * [EN] Send invoice email to apartment primary resident
+     * [VI] Gửi email hóa đơn cho cư dân chính của căn hộ
+     */
+    @PostMapping("/api/admin/invoices/{id}/send-email")
+    public ResponseEntity<Map<String, Object>> sendInvoiceEmail(@PathVariable("id") Long id) {
+        try {
+            var invoiceOpt = invoiceService.getInvoiceById(id);
+            if (invoiceOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            var dto = invoiceOpt.get();
+            Long apartmentId = dto.getApartmentId();
+
+            // Lấy tất cả cư dân thuộc căn hộ
+            var residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
+            var emails = residents.stream()
+                    .map(link -> userRepository.findById(link.getUserId()))
+                    .filter(java.util.Optional::isPresent)
+                    .map(opt -> opt.get().getEmail())
+                    .filter(e -> e != null && !e.isBlank())
+                    .distinct()
+                    .toList();
+
+            if (emails.isEmpty()) {
+                Map<String, Object> res = new HashMap<>();
+                res.put("success", false);
+                res.put("message", "Không tìm thấy email cư dân để gửi hóa đơn");
+                return ResponseEntity.badRequest().body(res);
+            }
+
+            String subject = String.format("Hóa đơn căn hộ #%d - Kỳ %s", dto.getApartmentId(), dto.getBillingPeriod());
+            String html = String.format(
+                    "<h3>Hóa đơn kỳ %s</h3>" +
+                    "<p>Căn hộ: %d</p>" +
+                    "<p>Ngày phát hành: %s</p>" +
+                    "<p>Đến hạn: %s</p>" +
+                    "<p>Tổng tiền: %,.0f VND</p>",
+                    dto.getBillingPeriod(), dto.getApartmentId(), dto.getIssueDate(), dto.getDueDate(), dto.getTotalAmount() == null ? 0.0 : dto.getTotalAmount());
+
+            // Tạo PDF đính kèm
+            byte[] pdfBytes = invoicePdfService.generateInvoicePdf(dto);
+
+            // Gửi async, trả về ngay
+            emails.forEach(email -> {
+                try {
+                    emailService.sendHtmlWithAttachment(email, subject, html, "invoice_" + id + ".pdf", pdfBytes);
+                    smartActivityLogService.logSmartActivity(ActivityActionType.SEND_EMAIL, "Gửi email hóa đơn #%d tới %s", id, email);
+                } catch (Exception ignore) {}
+            });
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", String.format("Đang gửi email hóa đơn tới %d cư dân", emails.size()));
+            response.put("recipients", emails);
+            return ResponseEntity.accepted().body(response);
+        } catch (Exception e) {
+            Map<String, Object> res = new HashMap<>();
+            res.put("success", false);
+            res.put("message", "Lỗi gửi email: " + e.getMessage());
+            return ResponseEntity.status(500).body(res);
+        }
     }
 
     /**
@@ -240,15 +313,18 @@ public class InvoiceController {
      * [EN] Download invoice PDF
      * [VI] Tải hóa đơn PDF
      */
-    @GetMapping("/api/invoices/{id}/download")
-    public ResponseEntity<String> downloadInvoice(@PathVariable("id") Long invoiceId) {
+    @GetMapping(value = "/api/invoices/{id}/download", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadInvoice(@PathVariable("id") Long invoiceId) {
         try {
-            // TODO: Implement PDF generation
-            // Log download activity (smart logging)
-            smartActivityLogService.logSmartActivity(ActivityActionType.DOWNLOAD_INVOICE, 
-                "Tải hóa đơn #%d", invoiceId);
-            
-            return ResponseEntity.ok("PDF content would be here");
+            var dtoOpt = invoiceService.getInvoiceById(invoiceId);
+            if (dtoOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            var pdf = invoicePdfService.generateInvoicePdf(dtoOpt.get());
+            smartActivityLogService.logSmartActivity(ActivityActionType.DOWNLOAD_INVOICE, "Tải hóa đơn #%d", invoiceId);
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=invoice_" + invoiceId + ".pdf")
+                    .body(pdf);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
         }

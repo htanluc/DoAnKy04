@@ -16,6 +16,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 import { 
   Search, 
   Edit, 
@@ -27,7 +28,13 @@ import {
   Image,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  UserCheck,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { supportRequestsApi } from '@/lib/api';
@@ -66,8 +73,12 @@ function SupportRequestsPageContent() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentImages, setCurrentImages] = useState<string[]>([]);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
-  const truncateTitle = (title: string, max: number = 20) => {
+  const truncateTitle = (title: string, max: number = 10) => {
     if (!title) return '';
     return title.length > max ? `${title.slice(0, max)}…` : title;
   };
@@ -208,6 +219,18 @@ function SupportRequestsPageContent() {
     return matchesSearch && matchesStatus;
   });
 
+  // Pagination logic
+  const totalItems = filteredSupportRequests.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentSupportRequests = filteredSupportRequests.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
   const toggleExpandedRow = (requestId: string) => {
     const newExpandedRows = new Set(expandedRows);
     if (newExpandedRows.has(requestId)) {
@@ -317,10 +340,58 @@ function SupportRequestsPageContent() {
   if (loading) {
     return (
       <AdminLayout title={t('admin.support-requests.title')}>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">{t('admin.loading')}</p>
+        <div className="space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white p-6 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                </div>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Search and Filter Skeleton */}
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="bg-white rounded-lg border border-gray-200">
+            <div className="p-4 border-b border-gray-200">
+              <div className="h-6 w-48 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="p-4">
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-3 w-1/2 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </AdminLayout>
@@ -333,7 +404,7 @@ function SupportRequestsPageContent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-[hsl(var(--brand-blue))]">
+            <h2 className="text-2xl font-bold text-gray-900">
               {t('admin.support-requests.list', 'Danh sách yêu cầu hỗ trợ')}
             </h2>
             <p className="text-gray-600">
@@ -345,6 +416,53 @@ function SupportRequestsPageContent() {
               <Plus className="h-4 w-4" />
               <span>{t('admin.action.create', 'Tạo mới')}</span>
             </Button>
+          </div>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm font-medium text-gray-600">{t('admin.support-requests.stats.total', 'Tổng yêu cầu')}</div>
+              <MessageSquare className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{totalItems}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {searchTerm || filterStatus !== 'all' ? t('admin.support-requests.stats.filtered', 'Kết quả lọc') : t('admin.support-requests.stats.all', 'Tất cả yêu cầu')}
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm font-medium text-gray-600">{t('admin.support-requests.stats.pending', 'Chờ xử lý')}</div>
+              <Clock className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {filteredSupportRequests.filter(r => r.status === 'PENDING').length}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">{t('admin.support-requests.stats.pendingDesc', 'Cần xử lý ngay')}</div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm font-medium text-gray-600">{t('admin.support-requests.stats.inProgress', 'Đang xử lý')}</div>
+              <UserCheck className="h-5 w-5 text-orange-600" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {filteredSupportRequests.filter(r => r.status === 'IN_PROGRESS').length}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">{t('admin.support-requests.stats.inProgressDesc', 'Đang được xử lý')}</div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm font-medium text-gray-600">{t('admin.support-requests.stats.completed', 'Hoàn thành')}</div>
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {filteredSupportRequests.filter(r => r.status === 'COMPLETED').length}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">{t('admin.support-requests.stats.completedDesc', 'Đã hoàn thành')}</div>
           </div>
         </div>
 
@@ -396,31 +514,44 @@ function SupportRequestsPageContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>{t('admin.support-requests.list','Danh sách yêu cầu hỗ trợ')} ({filteredSupportRequests.length})</span>
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <span>{t('admin.support-requests.list','Danh sách yêu cầu hỗ trợ')}</span>
+                <Badge variant="secondary" className="ml-2">
+                  {totalItems} {totalItems === 1 ? t('admin.support-requests.request', 'yêu cầu') : t('admin.support-requests.requests', 'yêu cầu')}
+                </Badge>
+              </div>
             </CardTitle>
           </CardHeader>
-            <CardContent>
-              {filteredSupportRequests.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">{t('admin.noData')}</p>
-                </div>
-              ) : (
+          <CardContent className="p-0">
+            {filteredSupportRequests.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-900 mb-2">{t('admin.support-requests.noData', 'Không có yêu cầu hỗ trợ nào')}</p>
+                <p className="text-sm text-gray-600">
+                  {searchTerm || filterStatus !== 'all' 
+                    ? t('admin.support-requests.noResults', 'Không tìm thấy yêu cầu phù hợp với bộ lọc của bạn')
+                    : t('admin.support-requests.noDataDesc', 'Chưa có yêu cầu hỗ trợ nào từ cư dân')
+                  }
+                </p>
+              </div>
+            ) : (
+              <>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('admin.support-requests.resident')}</TableHead>
-                        <TableHead>{t('admin.support-requests.supportRequestTitle')}</TableHead>
-                        <TableHead>{t('admin.support-requests.category')}</TableHead>
-                        <TableHead>{t('admin.support-requests.priority')}</TableHead>
-                        <TableHead>{t('admin.support-requests.assignedTo')}</TableHead>
-                        {/* Bỏ cột thời gian gán */}
-                        <TableHead>{t('admin.support-requests.status')}</TableHead>
-                        <TableHead>{t('admin.support-requests.createdAt')}</TableHead>
+                        <TableHead className="font-semibold min-w-[200px]">{t('admin.support-requests.resident')}</TableHead>
+                        <TableHead className="font-semibold min-w-[200px]">{t('admin.support-requests.supportRequestTitle')}</TableHead>
+                        <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.category')}</TableHead>
+                        <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.priority')}</TableHead>
+                        <TableHead className="font-semibold min-w-[150px]">{t('admin.support-requests.assignedTo')}</TableHead>
+                        <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.status')}</TableHead>
+                        {/* Created At moved to expanded details */}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                       {filteredSupportRequests.map((request) => (
+                       {currentSupportRequests.map((request) => (
                          <React.Fragment key={request.id}>
                            <TableRow 
                              className="cursor-pointer hover:bg-gray-50"
@@ -437,14 +568,38 @@ function SupportRequestsPageContent() {
                                  >
                                    {expandedRows.has(request.id) ? '▼' : '▶'}
                                  </button>
-                                 <span className="hover:text-blue-600 transition-colors duration-200">
-                                   {request.residentName || t('admin.support-requests.unknown', 'Không xác định')}
-                                 </span>
+                                 <div className="flex items-center space-x-2">
+                                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                     <span className="text-sm font-medium text-blue-600">
+                                       {(request.residentName || 'Ẩn danh').charAt(0).toUpperCase()}
+                                     </span>
+                                   </div>
+                                   <div>
+                                     <p className="font-medium text-gray-900">
+                                       {request.residentName || t('admin.support-requests.unknown', 'Không xác định')}
+                                     </p>
+                                     {request.userPhone && (
+                                       <p className="text-xs text-gray-500">{request.userPhone}</p>
+                                     )}
+                                   </div>
+                                 </div>
                                </div>
                              </TableCell>
-                             {/* Cột số điện thoại đã được yêu cầu ẩn */}
                              <TableCell className="max-w-xs">
-                               {truncateTitle(request.title || t('admin.support-requests.noTitle', 'Không có tiêu đề'))}
+                               <div className="max-w-xs">
+                                 <p className="text-sm text-gray-900 overflow-hidden" style={{
+                                   display: '-webkit-box',
+                                   WebkitLineClamp: 2,
+                                   WebkitBoxOrient: 'vertical'
+                                 }}>
+                                   {request.title || t('admin.support-requests.noTitle', 'Không có tiêu đề')}
+                                 </p>
+                                 {request.description && (
+                                   <p className="text-xs text-gray-500 mt-1">
+                                     {request.description.length > 10 ? `${request.description.slice(0, 10)}…` : request.description}
+                                   </p>
+                                 )}
+                               </div>
                              </TableCell>
                              <TableCell>{getCategoryBadge(request.category || t('admin.support-requests.category.OTHER', 'Khác'))}</TableCell>
                              <TableCell>{getPriorityBadge(request.priority || t('admin.support-requests.priority.MEDIUM', 'Trung bình'))}</TableCell>
@@ -465,9 +620,6 @@ function SupportRequestsPageContent() {
                                  <ServiceRequestMiniProgress status={request.status} />
                                </div>
                              </TableCell>
-                             <TableCell>
-                               {request.createdAt ? new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US') : 'Không xác định'}
-                             </TableCell>
                              {/* Bỏ cột thao tác */}
                            </TableRow>
                            
@@ -478,21 +630,28 @@ function SupportRequestsPageContent() {
                                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                                    <div className="flex items-center gap-2 font-semibold text-gray-700 border-b border-blue-200 pb-3">
                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                     📋 Chi tiết lịch sử gán nhân viên
+                                     📋 {t('admin.support-requests.assignmentHistory', 'Chi tiết lịch sử gán nhân viên')}
                                    </div>
                                    
                                    {request.assignedTo ? (
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div className="space-y-3 bg-white p-4 rounded-lg shadow-sm border border-blue-100">
-                                         <div className="font-medium text-gray-600 text-sm uppercase tracking-wide">Thông tin gán</div>
+                                         <div className="font-medium text-gray-600 text-sm uppercase tracking-wide">{t('admin.support-requests.assignmentInfo', 'Thông tin gán')}</div>
                                          <div className="space-y-3">
                                            <div className="flex items-center gap-3">
-                                             <span className="font-medium text-gray-600">👤 Nhân viên:</span>
+                                             <span className="font-medium text-gray-600">👤 {t('admin.support-requests.staff', 'Nhân viên')}:</span>
                                              <span className="text-blue-700 font-semibold bg-blue-50 px-3 py-1 rounded-full">
-                                               {request.assignedTo}
+                                               {request.assignedTo || t('admin.support-requests.notAssigned','Chưa giao')}
                                              </span>
                                            </div>
-                                           {/* Bỏ thời gian gán trong chi tiết mở rộng */}
+                                           <div className="flex items-center gap-3">
+                                             <span className="font-medium text-gray-600">🕒 {t('admin.support-requests.createdAt', 'Thời gian tạo')}:</span>
+                                             <span className="text-gray-700">
+                                               {request.createdAt
+                                                 ? `${new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')} ${new Date(request.createdAt).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`
+                                                 : t('admin.support-requests.unknown', 'Không xác định')}
+                                             </span>
+                                           </div>
                                          </div>
                                        </div>
                                        
@@ -500,11 +659,11 @@ function SupportRequestsPageContent() {
                                          <div className="font-medium text-gray-600 text-sm uppercase tracking-wide">{t('admin.support-requests.currentStatus', 'Trạng thái hiện tại')}</div>
                                          <div className="space-y-3">
                                            <div className="flex items-center gap-3">
-                                             <span className="font-medium text-gray-600">📊 Trạng thái:</span>
+                                             <span className="font-medium text-gray-600">📊 {t('admin.support-requests.status', 'Trạng thái')}:</span>
                                              {getStatusBadge(request.status || 'PENDING')}
                                            </div>
                                            <div className="flex items-center gap-3">
-                                             <span className="font-medium text-gray-600">⚡ Mức ưu tiên:</span>
+                                             <span className="font-medium text-gray-600">⚡ {t('admin.support-requests.priority', 'Mức ưu tiên')}:</span>
                                              {getPriorityBadge(request.priority || t('admin.support-requests.priority.MEDIUM', 'Trung bình'))}
                                            </div>
                                          </div>
@@ -515,17 +674,17 @@ function SupportRequestsPageContent() {
                                          <div className="space-y-3 bg-white p-4 rounded-lg shadow-sm border border-blue-100">
                                            <div className="font-medium text-gray-600 text-sm uppercase tracking-wide flex items-center gap-2">
                                              <Image className="h-4 w-4" />
-                                             Hình ảnh đính kèm ({request.attachmentUrls.length} ảnh)
+                                             {t('admin.support-requests.attachments', 'Hình ảnh đính kèm')} ({request.attachmentUrls.length} {t('admin.support-requests.images', 'ảnh')})
                                            </div>
                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                              {request.attachmentUrls.map((url, index) => (
                                                <div key={index} className="relative group">
                                                  <img
                                                    src={url}
-                                                   alt={`Hình ảnh ${index + 1}`}
+                                                   alt={t('admin.support-requests.imageAlt', 'Hình ảnh') + ` ${index + 1}`}
                                                    className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
                                                    onClick={() => openLightbox(request.attachmentUrls!, index)}
-                                                   title="Click để xem ảnh đầy đủ"
+                                                   title={t('admin.support-requests.clickToView', 'Click để xem ảnh đầy đủ')}
                                                  />
                                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -562,14 +721,26 @@ function SupportRequestsPageContent() {
                                </TableCell>
                              </TableRow>
                            )}
-                         </React.Fragment>
-                       ))}
+                        </React.Fragment>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalItems}
+                  />
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Lightbox Modal */}
@@ -606,7 +777,7 @@ function SupportRequestsPageContent() {
             <div className="max-w-4xl max-h-full p-4">
               <img
                 src={currentImages[currentImageIndex]}
-                alt={`Hình ảnh ${currentImageIndex + 1}`}
+                alt={t('admin.support-requests.imageAlt', 'Hình ảnh') + ` ${currentImageIndex + 1}`}
                 className="max-w-full max-h-full object-contain rounded-lg"
               />
             </div>
@@ -622,4 +793,4 @@ function SupportRequestsPageContent() {
       )}
     </AdminLayout>
   );
-} 
+}

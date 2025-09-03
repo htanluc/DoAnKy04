@@ -169,9 +169,15 @@ export default function PendingCarsPage() {
     if (!config && buildingId !== 26) {
       config = getConfigByBuilding(26);
     }
+
+    // Nếu vẫn không có, dùng cấu hình hoạt động đầu tiên (fallback an toàn chỉ để hiển thị/kiểm tra)
+    if (!config) {
+      const active = (configs || []).find(c => c.isActive);
+      if (active) config = active as any;
+    }
     
     if (!config || !config.isActive) {
-      return true; // Không có cấu hình thì cho phép duyệt
+      return false; // Không có cấu hình hoặc cấu hình tắt: không cho duyệt để an toàn
     }
 
     // Kiểm tra loại xe
@@ -210,6 +216,12 @@ export default function PendingCarsPage() {
     
     if (!config && buildingId !== 26) {
       config = getConfigByBuilding(26);
+    }
+
+    // Fallback: dùng cấu hình hoạt động đầu tiên để luôn hiển thị số liệu
+    if (!config) {
+      const active = (configs || []).find(c => c.isActive);
+      if (active) config = active as any;
     }
     
     if (!config) {
@@ -378,14 +390,12 @@ export default function PendingCarsPage() {
             </div>
           </div>
 
-          {/* Giới hạn xe */}
+          {/* Giới hạn xe: chỉ hiển thị số lượng hiện tại/tối đa */}
           {capacityInfo && (
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">Giới hạn xe:</span>
-                <Badge variant={isFull ? "destructive" : "default"}>
-                  {isFull ? "Đã đầy" : `Còn ${capacityInfo.remaining} chỗ`}
-                </Badge>
+                <span className="text-muted-foreground">{capacityInfo.label}</span>
+                <span className="font-semibold">{capacityInfo.current}/{capacityInfo.max}</span>
               </div>
             </div>
           )}
@@ -573,6 +583,7 @@ export default function PendingCarsPage() {
                             {vehicle.color || '-'}
                           </TableCell>
                           <TableCell className="font-mono text-sm">{vehicle.apartmentUnitNumber || '-'}</TableCell>
+                          {/* Thời gian đăng ký */}
                           <TableCell>
                             <div className="text-sm">
                               <div className="font-medium">
@@ -584,31 +595,23 @@ export default function PendingCarsPage() {
                                   minute: '2-digit'
                                 }) : '-'}
                               </div>
+                              {vehicle.updatedAt && vehicle.updatedAt !== vehicle.createdAt && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                  Cập nhật: {new Date(vehicle.updatedAt).toLocaleDateString('vi-VN')} {new Date(vehicle.updatedAt).toLocaleTimeString('vi-VN', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
                             {(() => {
-                              const capacityInfo = getVehicleCapacityInfo(vehicle);
-                              if (!capacityInfo) return <span className="text-muted-foreground">-</span>;
-                             
-                              const isFull = capacityInfo.current >= capacityInfo.max;
+                              const info = getVehicleCapacityInfo(vehicle);
+                              if (!info) return <span className="text-muted-foreground">-</span>;
                               return (
-                                <div className="text-sm">
-                                  <div className="flex items-center gap-2">
-                                    <span>{capacityInfo.current}/{capacityInfo.max}</span>
-                                    {isFull ? (
-                                      <Badge variant="destructive" className="text-xs">
-                                        Đã đầy
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="default" className="text-xs">
-                                        Còn {capacityInfo.remaining} chỗ
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {capacityInfo.label}
-                                  </div>
+                                <div className="min-w-[100px] text-right text-sm" title={info.label}>
+                                  <span className="font-medium">{info.current}/{info.max}</span>
                                 </div>
                               );
                             })()}
