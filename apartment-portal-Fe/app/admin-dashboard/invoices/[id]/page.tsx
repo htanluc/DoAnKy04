@@ -27,6 +27,8 @@ import {
 import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { useApartments } from '@/hooks/use-apartments';
 import { useLanguage } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useRef } from 'react';
 
 interface InvoiceItem {
   id: number;
@@ -56,8 +58,9 @@ interface Invoice {
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const invoiceId = parseInt(params.id as string);
+  const printRef = useRef<HTMLDivElement | null>(null);
   
   const { getInvoiceById, loading, error } = useYearlyBilling();
   const { apartments, getApartmentById } = useApartments();
@@ -97,6 +100,32 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  const handlePrint = () => {
+    // In toàn trang; đơn giản và tương thích trình duyệt (người dùng có thể lưu PDF)
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    // Dùng print dialog để lưu PDF (không cần lib ngoài)
+    handlePrint();
+  };
+
+  const handleSendEmail = async () => {
+    try {
+      const res = await api.post(`/api/admin/invoices/${invoiceId}/send-email`);
+      if (res.ok) {
+        alert(t('admin.invoices.emailSent','Đã gửi email hóa đơn.'));
+      } else {
+        const err = await res.json();
+        alert(err.message || t('admin.invoices.emailFailed','Gửi email thất bại'));
+      }
+    } catch (e) {
+      alert(t('admin.invoices.emailFailed','Gửi email thất bại'));
+    }
+  };
+
   // Also react to apartments list becoming available
   useEffect(() => {
     if (invoice && !apartmentCode) {
@@ -106,12 +135,12 @@ export default function InvoiceDetailPage() {
   }, [apartments, invoice]);
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'paid':
+    switch (status.toUpperCase()) {
+      case 'PAID':
         return 'bg-green-100 text-green-800';
-      case 'unpaid':
-        return 'bg-red-100 text-red-800';
-      case 'overdue':
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'OVERDUE':
         return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -119,12 +148,12 @@ export default function InvoiceDetailPage() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'paid':
+    switch (status.toUpperCase()) {
+      case 'PAID':
         return <CheckCircle className="h-4 w-4" />;
-      case 'unpaid':
+      case 'PENDING':
         return <Clock className="h-4 w-4" />;
-      case 'overdue':
+      case 'OVERDUE':
         return <AlertCircle className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
@@ -159,27 +188,27 @@ export default function InvoiceDetailPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
       style: 'currency',
       currency: 'VND'
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
+    return new Date(dateString).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
-      month: 'long',
+      month: '2-digit',
       day: 'numeric'
     });
   };
 
   if (loading) {
     return (
-      <AdminLayout title="Chi tiết hóa đơn">
+      <AdminLayout title={t('admin.invoices.details','Chi tiết hóa đơn')}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Đang tải thông tin hóa đơn...</p>
+            <p className="text-gray-600">{t('admin.invoices.loadingDetail','Đang tải thông tin hóa đơn...')}</p>
           </div>
         </div>
       </AdminLayout>
@@ -188,7 +217,7 @@ export default function InvoiceDetailPage() {
 
   if (error) {
     return (
-      <AdminLayout title="Chi tiết hóa đơn">
+      <AdminLayout title={t('admin.invoices.details','Chi tiết hóa đơn')}>
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
@@ -199,18 +228,18 @@ export default function InvoiceDetailPage() {
 
   if (!invoice) {
     return (
-      <AdminLayout title="Chi tiết hóa đơn">
+      <AdminLayout title={t('admin.invoices.details','Chi tiết hóa đơn')}>
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Không tìm thấy hóa đơn với ID {invoiceId}</AlertDescription>
+          <AlertDescription>{t('admin.invoices.notFound','Không tìm thấy hóa đơn')} #{invoiceId}</AlertDescription>
         </Alert>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title={`Chi tiết hóa đơn #${invoice.id}`}>
-      <div className="container mx-auto p-6">
+    <AdminLayout title={`${t('admin.invoices.details','Chi tiết hóa đơn')} #${invoice.id}`}>
+      <div className="container mx-auto p-6" ref={printRef}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -220,11 +249,11 @@ export default function InvoiceDetailPage() {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Quay lại
+              {t('admin.action.back','Quay lại')}
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Chi tiết hóa đơn #{invoice.id}</h1>
-              <p className="text-gray-600">Kỳ thanh toán: {invoice.billingPeriod}</p>
+              <h1 className="text-2xl font-bold">{t('admin.invoices.details','Chi tiết hóa đơn')} #{invoice.id}</h1>
+              <p className="text-gray-600">{t('admin.invoices.period','Kỳ')}: {invoice.billingPeriod}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -234,18 +263,18 @@ export default function InvoiceDetailPage() {
               onClick={loadInvoiceDetail}
               disabled={loading}
             >
-              {loading ? 'Đang tải...' : 'Tải lại'}
+              {loading ? t('admin.loading','Đang tải...') : t('admin.action.reload','Tải lại')}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setDebugInfo(!debugInfo)}
             >
-              Debug
+              {t('admin.debug.title','Debug')}
             </Button>
             <Badge className={`flex items-center gap-2 ${getStatusColor(invoice.status)}`}>
               {getStatusIcon(invoice.status)}
-              {invoice.status}
+              {t(`admin.invoices.status.${invoice.status}` as any, invoice.status)}
             </Badge>
           </div>
         </div>
@@ -257,7 +286,7 @@ export default function InvoiceDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Thông tin hóa đơn
+                  {t('admin.invoices.details','Chi tiết hóa đơn')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -266,14 +295,14 @@ export default function InvoiceDetailPage() {
                   <div className="flex items-center gap-3">
                     <Building className="h-5 w-5 text-blue-600" />
                     <div>
-                      <p className="text-sm text-gray-600">Mã căn hộ</p>
+                      <p className="text-sm text-gray-600">{t('admin.apartments.apartmentCode','Mã căn hộ')}</p>
                       <p className="font-semibold">
                         {apartmentCode 
                           || invoice.unitNumber 
                           || (invoice as any).apartmentUnitNumber 
                           || invoice.apartmentNumber 
                           || (invoice as any).unit 
-                          || `Căn hộ ${invoice.apartmentId}`}
+                          || `${t('admin.apartments.apartment','Căn hộ')} ${invoice.apartmentId}`}
                       </p>
                       {invoice.buildingId && (
                         <p className="text-xs text-gray-500">
@@ -291,7 +320,7 @@ export default function InvoiceDetailPage() {
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-purple-600" />
                     <div>
-                      <p className="text-sm text-gray-600">Ngày phát hành</p>
+                      <p className="text-sm text-gray-600">{t('admin.invoices.issueDate','Ngày phát hành')}</p>
                       <p className="font-semibold">{formatDate(invoice.issueDate)}</p>
                     </div>
                   </div>
@@ -299,7 +328,7 @@ export default function InvoiceDetailPage() {
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-orange-600" />
                     <div>
-                      <p className="text-sm text-gray-600">Hạn thanh toán</p>
+                      <p className="text-sm text-gray-600">{t('admin.invoices.dueDate','Ngày đến hạn')}</p>
                       <p className="font-semibold">{formatDate(invoice.dueDate)}</p>
                     </div>
                   </div>
@@ -309,12 +338,12 @@ export default function InvoiceDetailPage() {
 
                 {/* Chi tiết các khoản phí */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Chi tiết các khoản phí</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t('admin.invoices.items.title','Chi tiết các khoản phí')}</h3>
                   <div className="space-y-3">
                     {invoice.items.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
                         <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                        <p>Chưa có chi tiết phí</p>
+                        <p>{t('admin.invoices.items.empty','Chưa có chi tiết phí')}</p>
                       </div>
                     ) : (
                       invoice.items.map((item, index) => {
@@ -395,7 +424,7 @@ export default function InvoiceDetailPage() {
                                   {formatCurrency(vehicleItem.amount)}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  Khoản phí #{vehicleItem.id}
+                                  {t('admin.invoices.items.itemLabel','Khoản phí')} #{vehicleItem.id}
                                 </p>
                               </div>
                             </div>
@@ -429,7 +458,7 @@ export default function InvoiceDetailPage() {
                                 {formatCurrency(item.amount)}
                               </p>
                               <p className="text-xs text-gray-500">
-                                Khoản phí #{item.id || index + 1}
+                                {t('admin.invoices.items.itemLabel','Khoản phí')} #{item.id || index + 1}
                               </p>
                             </div>
                           </div>
@@ -446,8 +475,8 @@ export default function InvoiceDetailPage() {
                   <div className="flex items-center gap-3">
                     <DollarSign className="h-6 w-6 text-blue-600" />
                     <div>
-                      <p className="text-lg font-semibold">Tổng cộng</p>
-                      <p className="text-sm text-gray-600">Tất cả các khoản phí</p>
+                      <p className="text-lg font-semibold">{t('admin.invoices.total','Tổng cộng')}</p>
+                      <p className="text-sm text-gray-600">{t('admin.invoices.totalDesc','Tất cả các khoản phí')}</p>
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-blue-600">
@@ -463,30 +492,30 @@ export default function InvoiceDetailPage() {
             {/* Tóm tắt */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Tóm tắt</CardTitle>
+                <CardTitle className="text-lg">{t('admin.summary.title','Tóm tắt')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Mã hóa đơn:</span>
+                  <span className="text-gray-600">{t('admin.summary.invoiceId','Mã hóa đơn')}:</span>
                   <span className="font-semibold">#{invoice.id}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Kỳ thanh toán:</span>
+                  <span className="text-gray-600">{t('admin.invoices.period','Kỳ')}:</span>
                   <span className="font-semibold">{invoice.billingPeriod}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Số khoản phí:</span>
+                  <span className="text-gray-600">{t('admin.invoices.items.count','Số khoản phí')}:</span>
                   <span className="font-semibold">{invoice.items.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Trạng thái:</span>
+                  <span className="text-gray-600">{t('admin.invoices.status','Trạng thái')}:</span>
                   <Badge className={getStatusColor(invoice.status)}>
-                    {invoice.status}
+                    {t(`admin.invoices.status.${invoice.status}` as any, invoice.status)}
                   </Badge>
                 </div>
                 {invoice.createdAt && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Ngày tạo:</span>
+                    <span className="text-gray-600">{t('admin.createdAt','Ngày tạo')}:</span>
                     <span className="font-semibold text-sm">
                       {formatDate(invoice.createdAt)}
                     </span>
@@ -494,7 +523,7 @@ export default function InvoiceDetailPage() {
                 )}
                 {invoice.updatedAt && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Cập nhật:</span>
+                    <span className="text-gray-600">{t('admin.updatedAt','Cập nhật')}:</span>
                     <span className="font-semibold text-sm">
                       {formatDate(invoice.updatedAt)}
                     </span>
@@ -506,20 +535,20 @@ export default function InvoiceDetailPage() {
             {/* Hành động */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Hành động</CardTitle>
+                <CardTitle className="text-lg">{t('admin.actions.title','Hành động')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" onClick={handleDownloadPdf}>
                   <FileText className="h-4 w-4 mr-2" />
-                  Tải PDF
+                  {t('admin.actions.downloadPdf','Tải PDF')}
                 </Button>
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" onClick={handleSendEmail}>
                   <FileText className="h-4 w-4 mr-2" />
-                  Gửi email
+                  {t('admin.actions.sendEmail','Gửi email')}
                 </Button>
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" onClick={handlePrint}>
                   <FileText className="h-4 w-4 mr-2" />
-                  In hóa đơn
+                  {t('admin.actions.printInvoice','In hóa đơn')}
                 </Button>
               </CardContent>
             </Card>
@@ -530,7 +559,7 @@ export default function InvoiceDetailPage() {
         {debugInfo && (
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle className="text-lg text-orange-600">Debug Information</CardTitle>
+              <CardTitle className="text-lg text-orange-600">{t('admin.debug.title','Debug')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="bg-gray-100 p-4 rounded-lg">

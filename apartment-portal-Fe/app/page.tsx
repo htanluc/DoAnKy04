@@ -1,29 +1,14 @@
-import AuthGuard from "@/components/auth/auth-guard"
-import AdminLayout from "@/components/admin/AdminLayout"
-import DashboardHeader from "@/components/dashboard-header"
-import DashboardStats from "@/components/dashboard-stats"
-import ResidentOverview from "@/components/resident-overview"
-import BillingOverview from "@/components/billing-overview"
-import RecentActivities from "@/components/recent-activities"
-import UpcomingEvents from "@/components/upcoming-events"
+import AuthRedirectGuard from "@/components/auth/auth-redirect-guard"
 
-export default function DashboardPage() {
+export default function HomePage() {
   return (
-    <AuthGuard>
-      <AdminLayout title={"Tổng quan hệ thống"}>
-        <div className="space-y-8">
-          <DashboardHeader />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <DashboardStats />
-          </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <ResidentOverview />
-            <BillingOverview />
-            <RecentActivities />
-            <UpcomingEvents />
-          </div>
+    <AuthRedirectGuard>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Đang chuyển hướng...</p>
         </div>
-      </AdminLayout>
-    </AuthGuard>
+      </div>
+    </AuthRedirectGuard>
   )
 }

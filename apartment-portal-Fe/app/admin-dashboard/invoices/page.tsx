@@ -30,6 +30,7 @@ import { useApartments } from '@/hooks/use-apartments';
 import { useInvoices } from '@/hooks/use-invoices';
 import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { Apartment as ApiApartment } from '@/lib/api';
+import { exportInvoicesToExcel } from '@/lib/excel-export';
 
 export default function InvoicesPage() {
   return (
@@ -46,6 +47,8 @@ function InvoicesPageContent() {
   const { generateMonthlyInvoices, clearMessages } = useYearlyBilling();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
   const [genYear, setGenYear] = useState(new Date().getFullYear());
@@ -67,17 +70,37 @@ function InvoicesPageContent() {
                          invoice.apartmentId.toString().includes(searchTerm.toLowerCase()) ||
                          apartmentInfo.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || invoice.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    
+    // Filter by month and year using billingPeriod
+    const billingPeriod = invoice.billingPeriod || '';
+    const expectedPeriod = `${filterYear}-${String(filterMonth).padStart(2, '0')}`;
+    const matchesMonth = billingPeriod === expectedPeriod;
+    
+    // Debug: Log first few invoices to check billingPeriod format
+    if (invoice.id <= 3) {
+      console.log(`Invoice ${invoice.id}: billingPeriod="${billingPeriod}", expected="${expectedPeriod}", matches=${matchesMonth}`);
+    }
+    
+    return matchesSearch && matchesStatus && matchesMonth;
   });
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / pageSize));
   const startIndex = (currentPage - 1) * pageSize;
   const pagedInvoices = filteredInvoices.slice(startIndex, startIndex + pageSize);
+  // All-time aggregates (not filtered by month/year)
+  const allInvoices = invoices;
+  const allTotalAmount = allInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+  const allPaidInvoices = allInvoices.filter(inv => inv.status === 'PAID');
+  const allPaidAmount = allPaidInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+  const allPendingInvoices = allInvoices.filter(inv => inv.status === 'PENDING');
+  const allPendingAmount = allPendingInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+  const allOverdueInvoices = allInvoices.filter(inv => inv.status === 'OVERDUE');
+  const allOverdueAmount = allOverdueInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
   useEffect(() => {
     // Reset to first page when filters/search change
     setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  }, [searchTerm, filterStatus, filterYear, filterMonth]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -120,7 +143,18 @@ function InvoicesPageContent() {
       setGenMessage(res.message || t('admin.success.save'));
       await fetchInvoices();
     } else {
-      setGenMessage(t('admin.error.save'));
+      // Hiển thị thông báo lỗi chi tiết hơn
+      let errorMessage = t('admin.error.save');
+      if (res?.message) {
+        if (res.message.includes('chk_invoice_amount') || res.message.includes('constraint')) {
+          errorMessage = `Không thể tạo hóa đơn cho tháng ${genMonth}/${genYear}. Lý do: Chưa có biểu phí dịch vụ cho tháng này. Vui lòng tạo cấu hình phí dịch vụ trước khi tạo hóa đơn.`;
+        } else if (res.message.includes('Service fee config not found') || res.message.includes('Chưa có cấu hình phí dịch vụ')) {
+          errorMessage = `Không thể tạo hóa đơn cho tháng ${genMonth}/${genYear}. Lý do: Chưa có cấu hình phí dịch vụ. Vui lòng tạo biểu phí trước.`;
+        } else {
+          errorMessage = res.message;
+        }
+      }
+      setGenMessage(errorMessage);
     }
     setGenLoading(false);
   };
@@ -214,9 +248,25 @@ function InvoicesPageContent() {
                 {blockBatchCreate && (
                   <span className="text-red-600">{t('admin.invoices.generateMonthly.existsWarning').replace('{month}', String(genMonth)).replace('{year}', String(genYear)).replace('{count}', String(invoicesInSelectedPeriod.length))} {t('admin.invoices.generateMonthly.cannotBatch')}</span>
                 )}
-                                 {genMessage && !blockBatchCreate && (
-                   <span className="text-green-600">{genMessage}</span>
-                 )}
+                {genMessage && !blockBatchCreate && (
+                  <div className={`p-3 rounded-md ${genMessage.includes('Không thể tạo hóa đơn') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                    <div className={`${genMessage.includes('Không thể tạo hóa đơn') ? 'text-red-800' : 'text-green-800'}`}>
+                      {genMessage}
+                    </div>
+                    {genMessage.includes('Chưa có biểu phí') && (
+                      <div className="mt-2 text-sm text-red-700">
+                        <strong>Hướng dẫn:</strong>
+                        <ol className="list-decimal list-inside mt-1 space-y-1">
+                          <li>Vào tab "Tạo biểu phí"</li>
+                          <li>Chọn "Tạo cấu hình phí dịch vụ"</li>
+                          <li>Chọn năm {genYear} và tháng {genMonth}</li>
+                          <li>Nhập các mức phí và nhấn "Tạo cấu hình"</li>
+                          <li>Quay lại tab này để tạo hóa đơn</li>
+                        </ol>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -234,6 +284,15 @@ function InvoicesPageContent() {
                     {t('admin.invoices.listDesc')}
                   </p>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => exportInvoicesToExcel(filteredInvoices, apartments, language)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {t('admin.export.excel', 'Xuất Excel')}
+                  </Button>
+                </div>
               </div>
 
                                                            {/* Statistics Cards - Số lượng */}
@@ -243,7 +302,8 @@ function InvoicesPageContent() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600">{t('admin.invoices.stats.totalInvoices')}</p>
-                          <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
+                          <p className="text-2xl font-bold text-gray-900">{filteredInvoices.length}</p>
+                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
                         </div>
                         <Calculator className="h-8 w-8 text-blue-600" />
                       </div>
@@ -255,8 +315,9 @@ function InvoicesPageContent() {
                         <div>
                           <p className="text-sm font-medium text-gray-600">{t('admin.invoices.stats.paidInvoices')}</p>
                           <p className="text-2xl font-bold text-green-600">
-                            {invoices.filter(inv => inv.status === 'PAID').length}
+                            {filteredInvoices.filter(inv => inv.status === 'PAID').length}
                           </p>
+                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
                         </div>
                         <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
                           <div className="h-4 w-4 bg-green-600 rounded-full"></div>
@@ -270,8 +331,9 @@ function InvoicesPageContent() {
                         <div>
                           <p className="text-sm font-medium text-gray-600">{t('admin.invoices.stats.pendingInvoices')}</p>
                           <p className="text-2xl font-bold text-yellow-600">
-                            {invoices.filter(inv => inv.status === 'PENDING').length}
+                            {filteredInvoices.filter(inv => inv.status === 'PENDING').length}
                           </p>
+                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
                         </div>
                         <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
                           <div className="h-4 w-4 bg-yellow-600 rounded-full"></div>
@@ -285,8 +347,9 @@ function InvoicesPageContent() {
                         <div>
                           <p className="text-sm font-medium text-gray-600">{t('admin.invoices.stats.overdueInvoices')}</p>
                           <p className="text-2xl font-bold text-red-600">
-                            {invoices.filter(inv => inv.status === 'OVERDUE').length}
+                            {filteredInvoices.filter(inv => inv.status === 'OVERDUE').length}
                           </p>
+                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
                         </div>
                         <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
                           <div className="h-4 w-4 bg-red-600 rounded-full"></div>
@@ -303,10 +366,10 @@ function InvoicesPageContent() {
                        <div className="text-center">
                          <p className="text-sm font-medium text-blue-600 mb-1">{t('admin.invoices.stats.totalAmount')}</p>
                          <p className="text-xl font-bold text-blue-800">
-                           {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
+                           {formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
                          </p>
                                                     <p className="text-xs text-blue-600 mt-1">
-                           {invoices.length} {t('admin.invoices.stats.invoices')}
+                           {filteredInvoices.length} {t('admin.invoices.stats.invoices')} - Tháng {filterMonth}/{filterYear}
                          </p>
                        </div>
                      </CardContent>
@@ -317,13 +380,13 @@ function InvoicesPageContent() {
                        <div className="text-center">
                          <p className="text-sm font-medium text-green-600 mb-1">{t('admin.invoices.stats.paidAmount')}</p>
                          <p className="text-xl font-bold text-green-800">
-                           {formatCurrency(invoices
+                           {formatCurrency(filteredInvoices
                              .filter(inv => inv.status === 'PAID')
                              .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
                            )}
                          </p>
                                                     <p className="text-xs text-green-600 mt-1">
-                           {invoices.filter(inv => inv.status === 'PAID').length} {t('admin.invoices.stats.invoices')}
+                           {filteredInvoices.filter(inv => inv.status === 'PAID').length} {t('admin.invoices.stats.invoices')} - Tháng {filterMonth}/{filterYear}
                          </p>
                        </div>
                      </CardContent>
@@ -334,13 +397,13 @@ function InvoicesPageContent() {
                        <div className="text-center">
                          <p className="text-sm font-medium text-yellow-600 mb-1">{t('admin.invoices.stats.unpaidAmount')}</p>
                          <p className="text-xl font-bold text-yellow-800">
-                           {formatCurrency(invoices
+                           {formatCurrency(filteredInvoices
                              .filter(inv => inv.status === 'PENDING')
                              .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
                            )}
                          </p>
                                                     <p className="text-xs text-yellow-600 mt-1">
-                           {invoices.filter(inv => inv.status === 'PENDING').length} {t('admin.invoices.stats.invoices')}
+                           {filteredInvoices.filter(inv => inv.status === 'PENDING').length} {t('admin.invoices.stats.invoices')} - Tháng {filterMonth}/{filterYear}
                          </p>
                        </div>
                      </CardContent>
@@ -351,13 +414,13 @@ function InvoicesPageContent() {
                        <div className="text-center">
                          <p className="text-sm font-medium text-red-600 mb-1">{t('admin.invoices.stats.overdueAmount')}</p>
                          <p className="text-xl font-bold text-red-800">
-                           {formatCurrency(invoices
+                           {formatCurrency(filteredInvoices
                              .filter(inv => inv.status === 'OVERDUE')
                              .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
                            )}
                          </p>
                                                     <p className="text-xs text-red-600 mt-1">
-                           {invoices.filter(inv => inv.status === 'OVERDUE').length} {t('admin.invoices.stats.invoices')}
+                           {filteredInvoices.filter(inv => inv.status === 'OVERDUE').length} {t('admin.invoices.stats.invoices')} - Tháng {filterMonth}/{filterYear}
                          </p>
                        </div>
                      </CardContent>
@@ -370,42 +433,118 @@ function InvoicesPageContent() {
                      <div className="text-center">
                        <p className="text-lg font-medium text-indigo-100 mb-2">{t('admin.invoices.stats.grandTotal')}</p>
                        <p className="text-2xl font-bold">
-                         {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
+                         {formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
                        </p>
                        <p className="text-sm text-indigo-200 mt-1">
-                         {t('admin.invoices.stats.grandTotalDesc')}
+                         {filteredInvoices.length} hóa đơn - Tháng {filterMonth}/{filterYear}
                        </p>
                      </div>
                    </CardContent>
                  </Card>
 
+                {/* Lũy kế từ trước tới nay */}
+                <div className="space-y-4 mt-4">
+                  <h4 className="text-lg font-semibold text-gray-900">Lũy kế từ trước tới nay</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-gray-600">Tổng tiền hóa đơn</p>
+                          <p className="text-xl font-bold text-gray-900">{formatCurrency(allTotalAmount)}</p>
+                          <p className="text-xs text-gray-500">{allInvoices.length} hóa đơn</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-green-600">Đã thanh toán</p>
+                          <p className="text-xl font-bold text-green-700">{formatCurrency(allPaidAmount)}</p>
+                          <p className="text-xs text-green-600">{allPaidInvoices.length} hóa đơn</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-yellow-600">Chưa thanh toán</p>
+                          <p className="text-xl font-bold text-yellow-700">{formatCurrency(allPendingAmount)}</p>
+                          <p className="text-xs text-yellow-600">{allPendingInvoices.length} hóa đơn</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-red-600">Quá hạn</p>
+                          <p className="text-xl font-bold text-red-700">{formatCurrency(allOverdueAmount)}</p>
+                          <p className="text-xs text-red-600">{allOverdueInvoices.length} hóa đơn</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
               {/* Search and Filter */}
               <Card>
                 <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                       <Input
-                         placeholder={t('admin.invoices.searchPlaceholder')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                         <Input
+                           placeholder={t('admin.invoices.searchPlaceholder')}
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Filter className="h-4 w-4 text-gray-400" />
+                        <select
+                          title={t('admin.invoices.filter.title')}
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                          className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                        >
+                          <option value="all">{t('admin.invoices.filter.all')}</option>
+                          <option value="PAID">{t('admin.invoices.status.PAID')}</option>
+                          <option value="PENDING">{t('admin.invoices.status.PENDING')}</option>
+                          <option value="OVERDUE">{t('admin.invoices.status.OVERDUE')}</option>
+                          <option value="CANCELLED">{t('admin.invoices.status.CANCELLED')}</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Filter className="h-4 w-4 text-gray-400" />
-                      <select
-                        title={t('admin.invoices.filter.title')}
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-                      >
-                        <option value="all">{t('admin.invoices.filter.all')}</option>
-                        <option value="PAID">{t('admin.invoices.status.PAID')}</option>
-                        <option value="PENDING">{t('admin.invoices.status.PENDING')}</option>
-                        <option value="OVERDUE">{t('admin.invoices.status.OVERDUE')}</option>
-                        <option value="CANCELLED">{t('admin.invoices.status.CANCELLED')}</option>
-                      </select>
+                    
+                    {/* Month and Year Filter */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">Lọc theo tháng:</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={filterYear}
+                          onChange={(e) => setFilterYear(parseInt(e.target.value))}
+                          className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                        >
+                          {Array.from({length: 11}, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <span className="text-gray-500">/</span>
+                        <select
+                          value={filterMonth}
+                          onChange={(e) => setFilterMonth(parseInt(e.target.value))}
+                          className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                        >
+                          {Array.from({length: 12}, (_, i) => i + 1).map(month => (
+                            <option key={month} value={month}>Tháng {month}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Hiển thị: {filteredInvoices.length} hóa đơn
+                      </div>
                     </div>
                   </div>
                 </CardContent>

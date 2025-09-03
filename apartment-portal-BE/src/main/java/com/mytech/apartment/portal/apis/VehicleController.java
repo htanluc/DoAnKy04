@@ -161,6 +161,11 @@ public class VehicleController {
             @RequestBody Map<String, String> request) {
         VehicleStatus status = VehicleStatus.valueOf(request.get("status"));
         String rejectionReason = request.get("rejectionReason");
+        if (status == VehicleStatus.REJECTED) {
+            if (rejectionReason == null || rejectionReason.isBlank()) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
         VehicleDto vehicle = vehicleService.updateVehicleStatus(id, status, rejectionReason);
 
         // Log activity: Update vehicle status

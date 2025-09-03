@@ -13,6 +13,7 @@ public enum ActivityActionType {
     CREATE_INVOICE,
     UPDATE_INVOICE,
     DELETE_INVOICE,
+    SEND_EMAIL,
     
     // Vehicle Management
     REGISTER_VEHICLE,
@@ -74,6 +75,7 @@ public enum ActivityActionType {
             case DOWNLOAD_INVOICE: return "Tải hóa đơn";
             case PAY_INVOICE: return "Thanh toán hóa đơn";
             case REGISTER_VEHICLE: return "Đăng ký xe";
+            case SEND_EMAIL: return "Gửi email";
             case UPDATE_VEHICLE: return "Cập nhật thông tin xe";
             case DELETE_VEHICLE: return "Xóa thông tin xe";
             case CREATE_FACILITY_BOOKING: return "Đặt tiện ích";

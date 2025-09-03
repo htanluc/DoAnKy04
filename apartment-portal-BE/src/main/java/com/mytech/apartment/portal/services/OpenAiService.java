@@ -97,7 +97,12 @@ public class OpenAiService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(apiKey);
+            // Chuẩn hóa API key: loại bỏ tiền tố "Bearer " nếu người dùng đã cấu hình kèm theo
+            String token = apiKey.trim();
+            if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
+                token = token.substring(7).trim();
+            }
+            headers.setBearerAuth(token);
 
             Map<String, Object> message = new HashMap<>();
             message.put("role", "user");
@@ -140,7 +145,11 @@ public class OpenAiService {
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             String body = e.getResponseBodyAsString();
             log.error("OpenAI API error: status={}, body={}", e.getStatusCode(), body);
-            return "Lỗi khi gọi OpenAI (" + e.getStatusCode().value() + "): " + body;
+            int status = e.getStatusCode().value();
+            if (status == 401 || status == 403) {
+                return "Xác thực OpenAI thất bại (" + status + "). Vui lòng kiểm tra OPENAI_API_KEY và quyền truy cập model.";
+            }
+            return "Lỗi khi gọi OpenAI (" + status + "): " + body;
         } catch (Exception e) {
             log.error("OpenAI unexpected error: {}", e.getMessage(), e);
             return "Có lỗi xảy ra khi kết nối với AI service: " + e.getMessage();

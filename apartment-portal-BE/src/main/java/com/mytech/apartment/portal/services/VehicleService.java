@@ -121,10 +121,13 @@ public class VehicleService {
     public VehicleDto updateVehicleStatus(Long id, VehicleStatus status, String rejectionReason) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy xe"));
-        vehicle.setStatus(status);
         if (status == VehicleStatus.REJECTED) {
+            if (rejectionReason == null || rejectionReason.isBlank()) {
+                throw new RuntimeException("Vui lòng nhập lý do khi từ chối đăng ký xe");
+            }
             vehicle.setRejectionReason(rejectionReason);
         }
+        vehicle.setStatus(status);
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
 
         // Gửi email thông báo cho chủ xe nếu có email

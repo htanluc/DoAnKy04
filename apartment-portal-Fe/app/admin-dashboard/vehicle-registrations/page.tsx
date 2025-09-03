@@ -92,6 +92,8 @@ export default function VehicleRegistrationsPage() {
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [cancelling, setCancelling] = useState<boolean>(false);
+  const [cancelReason, setCancelReason] = useState<string>('');
+  const [cancelError, setCancelError] = useState<string>('');
 
   // Load pending vehicles
   useEffect(() => {
@@ -204,12 +206,21 @@ export default function VehicleRegistrationsPage() {
         console.log('✅ Found config for building 26, using it instead');
       }
     }
+
+    // Fallback: dùng cấu hình hoạt động đầu tiên để không khóa hành động khi bãi còn chỗ
+    if (!config) {
+      const active = (configs || []).find(c => c.isActive);
+      if (active) {
+        console.log('ℹ️ Using first active config as fallback');
+        config = active as any;
+      }
+    }
     
     console.log('🏢 Building config for ID', buildingId, ':', config);
     
     if (!config || !config.isActive) {
-      console.log('❌ No config or inactive, allowing approval');
-      return true; // Không có cấu hình thì cho phép duyệt
+      console.log('❌ No config or inactive, disallow approval');
+      return false; // Không có cấu hình hoặc cấu hình tắt: không cho duyệt/khôi phục
     }
 
     // Kiểm tra loại xe
@@ -290,6 +301,15 @@ export default function VehicleRegistrationsPage() {
         console.log('✅ Found config for building 26, using it instead');
       }
     }
+
+    // Fallback: dùng cấu hình hoạt động đầu tiên để luôn hiển thị số liệu
+    if (!config) {
+      const active = (configs || []).find(c => c.isActive);
+      if (active) {
+        console.log('ℹ️ Using first active config as fallback for display');
+        config = active as any;
+      }
+    }
     
     console.log('🏢 Building config for ID', buildingId, ':', config);
     
@@ -354,6 +374,8 @@ export default function VehicleRegistrationsPage() {
     if (!rejectingId) return;
     try {
       await vehiclesApi.updateStatus(rejectingId, 'REJECTED', rejectionReason);
+      // Gửi mail thông báo lý do từ chối
+      try { await vehiclesApi.notifyCancellation(rejectingId, rejectionReason); } catch {}
       // Remove from pending list
       setVehicles(prev => prev.filter(v => v.id !== rejectingId));
       setFilteredVehicles(prev => prev.filter(v => v.id !== rejectingId));
@@ -374,13 +396,21 @@ export default function VehicleRegistrationsPage() {
     if (!cancelId) return;
     try {
       setCancelling(true);
-      await vehiclesApi.delete(cancelId);
-      // Remove from all vehicles list
-      setAllVehicles(prev => prev.filter(v => v.id !== cancelId));
-      setFilteredAllVehicles(prev => prev.filter(v => v.id !== cancelId));
+      if (!cancelReason.trim()) {
+        setCancelError('Vui lòng nhập lý do hủy.');
+        setCancelling(false);
+        return;
+      }
+      await vehiclesApi.updateStatus(cancelId, 'REJECTED', cancelReason);
+      try { await vehiclesApi.notifyCancellation(cancelId, cancelReason); } catch {}
+      // Cập nhật trạng thái về REJECTED để mục chuyển sang tab Từ chối
+      setAllVehicles(prev => prev.map(v => v.id === cancelId ? { ...v, status: 'REJECTED', statusDisplayName: 'Từ chối' } : v));
+      setFilteredAllVehicles(prev => prev.map(v => v.id === cancelId ? { ...v, status: 'REJECTED', statusDisplayName: 'Từ chối' } : v));
       // Close modal
       setShowCancelModal(false);
       setCancelId(null);
+      setCancelReason('');
+      setCancelError('');
     } catch (error) {
       console.error('Error cancelling vehicle:', error);
     } finally {
@@ -388,10 +418,33 @@ export default function VehicleRegistrationsPage() {
     }
   };
 
+  const handleRestore = async (id: number) => {
+    try {
+      // Kiểm tra sức chứa trước khi khôi phục
+      const vehicle = allVehicles.find(v => v.id === id);
+      if (vehicle && !canApproveVehicle(vehicle)) {
+        if (typeof window !== 'undefined') {
+          window.alert('Bãi xe đã đầy hoặc cấu hình không cho phép. Không thể khôi phục.');
+        }
+        return;
+      }
+      // Khôi phục và cho vào bãi xe ngay: đặt trạng thái APPROVED
+      await vehiclesApi.updateStatus(id, 'APPROVED');
+      // Cập nhật danh sách tất cả xe
+      setAllVehicles(prev => prev.map(v => v.id === id ? { ...v, status: 'APPROVED', statusDisplayName: 'Đã duyệt' } : v));
+      setFilteredAllVehicles(prev => prev.map(v => v.id === id ? { ...v, status: 'APPROVED', statusDisplayName: 'Đã duyệt' } : v));
+      // Bảo đảm không thêm vào danh sách pending
+      setVehicles(prev => prev.filter(v => v.id !== id));
+      setFilteredVehicles(prev => prev.filter(v => v.id !== id));
+    } catch (error) {
+      console.error('Error restoring vehicle:', error);
+    }
+  };
+
   const pendingCount = vehicles.length;
   const approvedCount = allVehicles.filter(v => v.status === 'APPROVED').length;
   const rejectedCount = allVehicles.filter(v => v.status === 'REJECTED').length;
-  const totalCount = allVehicles.length;
+  const totalCount = approvedCount; // Chỉ tính xe đã duyệt ở tab Tất cả
 
   return (
     <AdminLayout title={t('admin.vehicleRegistrations.title', 'Quản lý đăng ký xe')}>
@@ -514,7 +567,7 @@ export default function VehicleRegistrationsPage() {
                   <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
                 ) : (
                   <Table>
-                                         <TableHeader>
+                     <TableHeader>
                        <TableRow>
                          <TableHead>Chủ xe</TableHead>
                          <TableHead>Loại xe</TableHead>
@@ -527,7 +580,9 @@ export default function VehicleRegistrationsPage() {
                        </TableRow>
                      </TableHeader>
                     <TableBody>
-                      {filteredAllVehicles.map((vehicle) => (
+                      {filteredAllVehicles
+                        .filter(v => v.status === 'APPROVED')
+                        .map((vehicle) => (
                         <TableRow key={vehicle.id}>
                           <TableCell className="font-medium">{vehicle.userFullName || '-'}</TableCell>
                           <TableCell>
@@ -563,16 +618,28 @@ export default function VehicleRegistrationsPage() {
                            <TableCell>{getStatusBadge(vehicle.status, vehicle.statusDisplayName)}</TableCell>
                            <TableCell>
                             <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => {
-                                  setCancelId(vehicle.id);
-                                  setShowCancelModal(true);
-                                }}
-                              >
-                                Hủy đăng ký
-                              </Button>
+                              {vehicle.status !== 'REJECTED' ? (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    setCancelId(vehicle.id);
+                                    setShowCancelModal(true);
+                                  }}
+                                >
+                                  Hủy đăng ký
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRestore(vehicle.id)}
+                                  disabled={!canApproveVehicle(vehicle)}
+                                  title={canApproveVehicle(vehicle) ? 'Khôi phục' : 'Không thể khôi phục - Bãi xe đã đầy hoặc cấu hình không hoạt động'}
+                                >
+                                  Khôi phục
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -663,6 +730,7 @@ export default function VehicleRegistrationsPage() {
                       <TableHead>Căn hộ</TableHead>
                       <TableHead>Thời gian đăng ký</TableHead>
                       <TableHead>Trạng thái</TableHead>
+                      <TableHead>Hành động</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -702,6 +770,18 @@ export default function VehicleRegistrationsPage() {
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(vehicle.status, vehicle.statusDisplayName)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleRestore(vehicle.id)}
+                              disabled={!canApproveVehicle(vehicle)}
+                              title={canApproveVehicle(vehicle) ? 'Khôi phục' : 'Không thể khôi phục - Bãi xe đã đầy hoặc không có cấu hình hoạt động'}
+                            >
+                              Khôi phục
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -737,6 +817,21 @@ export default function VehicleRegistrationsPage() {
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
               <h3 className="text-lg font-semibold mb-2">Nhập lý do từ chối</h3>
+              <div className="space-y-2 mb-2">
+                <div className="text-sm text-gray-600">Lý do nhanh:</div>
+                <div className="flex flex-wrap gap-2">
+                  {['Khách Hàng Yêu Cầu', 'Chậm thanh toán'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className="px-2 py-1 text-xs rounded border hover:bg-gray-50"
+                      onClick={() => setRejectionReason(prev => prev ? `${prev}\n${preset}` : preset)}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <textarea
                 className="w-full border rounded p-2 h-28"
                 value={rejectionReason}
@@ -761,8 +856,33 @@ export default function VehicleRegistrationsPage() {
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
               <h3 className="text-lg font-semibold mb-2">Xác nhận hủy đăng ký xe</h3>
-              <p className="text-gray-600 mb-4">Bạn có chắc chắn muốn hủy đăng ký xe này không?</p>
-              <div className="flex justify-end gap-2">
+              <p className="text-gray-600 mb-2">Bạn có chắc chắn muốn hủy đăng ký xe này không?</p>
+              <div className="space-y-2 mb-2">
+                <div className="text-sm text-gray-600">Chọn lý do nhanh:</div>
+                <div className="flex flex-wrap gap-2">
+                  {['Khách Hàng Yêu Cầu', 'Chậm thanh toán'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className="px-2 py-1 text-xs rounded border hover:bg-gray-50"
+                      onClick={() => {
+                        setCancelReason(prev => prev ? `${prev}\n${preset}` : preset);
+                        setCancelError('');
+                      }}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <textarea
+                className={`w-full border rounded p-2 h-28 ${cancelError ? 'border-red-500' : ''}`}
+                value={cancelReason}
+                onChange={(e) => { setCancelReason(e.target.value); setCancelError(''); }}
+                placeholder="Nhập lý do hủy đăng ký..."
+              />
+              {cancelError && <div className="text-sm text-red-600 mt-1">{cancelError}</div>}
+              <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={() => setShowCancelModal(false)}>Hủy</Button>
                 <Button
                   variant="destructive"

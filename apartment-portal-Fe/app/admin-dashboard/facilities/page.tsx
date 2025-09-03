@@ -27,7 +27,6 @@ import {
   Filter,
   MapPin,
   XCircle,
-  Download,
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
@@ -102,36 +101,7 @@ function FacilitiesPageContent() {
     }
   };
 
-  const exportToCSV = () => {
-    const headers = ['ID', 'Tên', 'Mô tả', 'Vị trí', 'Sức chứa', 'Phí sử dụng', 'Chi tiết khác'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredFacilities.map(f => [
-        f.id,
-        `"${f.name}"`,
-        `"${f.description || ''}"`,
-        `"${f.location || ''}"`,
-        f.capacity,
-        f.usageFee || 0,
-        `"${f.otherDetails || ''}"`
-      ].join(','))
-    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `facilities_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast({
-      title: t('admin.success.export', 'Thành công'),
-      description: t('admin.facilities.exportSuccess', 'Đã xuất dữ liệu thành công'),
-    });
-  };
 
   const exportToExcel = () => {
     // Prepare data for Excel
@@ -302,14 +272,6 @@ function FacilitiesPageContent() {
             <p className="text-gray-600 mt-2">{t('admin.facilities.listDesc', 'Quản lý tất cả tiện ích trong chung cư')}</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              onClick={exportToCSV}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              {t('admin.facilities.exportCSV', 'Xuất CSV')}
-            </Button>
             <Button 
               variant="outline" 
               onClick={exportToExcel}

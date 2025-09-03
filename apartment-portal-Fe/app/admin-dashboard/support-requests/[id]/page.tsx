@@ -339,7 +339,8 @@ export default function SupportRequestDetailPage() {
     setStatusUpdating(true);
     try {
       const normalized = normalizeStatus(targetStatus);
-      await supportRequestsApi.updateStatus(Number(id), {
+      // Dành cho Admin: dùng endpoint adminUpdateStatus để đảm bảo quyền
+      await supportRequestsApi.adminUpdateStatus(Number(id), {
         status: normalized,
         isCompleted: normalized === 'COMPLETED',
       });
@@ -508,58 +509,62 @@ export default function SupportRequestDetailPage() {
                   </div>
                 )}
 
-                {/* Chỉ giữ nút Hủy */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleStatusChange('CANCELLED')}
-                    disabled={statusUpdating || normalizeStatus(data.status) === 'CANCELLED'}
-                    className="w-fit"
-                  >
-                    {statusUpdating ? "Đang hủy..." : "Hủy yêu cầu"}
-                  </Button>
-                  <span className="text-xs text-gray-500">
-                    Chỉ có thể hủy yêu cầu khi cần thiết
-                  </span>
-                </div>
+                {/* Nút Hủy: ẩn khi đã COMPLETED */}
+                {normalizeStatus(data.status) !== 'COMPLETED' && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleStatusChange('CANCELLED')}
+                      disabled={statusUpdating || normalizeStatus(data.status) === 'CANCELLED'}
+                      className="w-fit"
+                    >
+                      {statusUpdating ? "Đang hủy..." : "Hủy yêu cầu"}
+                    </Button>
+                    <span className="text-xs text-gray-500">
+                      Chỉ có thể hủy yêu cầu khi cần thiết
+                    </span>
+                  </div>
+                )}
                 {statusError && <div className="text-red-500 mt-2">{statusError}</div>}
               </div>
             </div>
 
-            <div className="mt-2 p-4 border rounded bg-gray-50">
-              <div className="mb-2 font-semibold">Gán cho nhân viên</div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <select
-                    className="border rounded px-2 py-1 flex-1"
-                    value={selectedStaff}
-                    onChange={(e) => setSelectedStaff(e.target.value === "" ? "" : Number(e.target.value))}
+            {normalizeStatus(data.status) !== 'COMPLETED' && (
+              <div className="mt-2 p-4 border rounded bg-gray-50">
+                <div className="mb-2 font-semibold">Gán cho nhân viên</div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="border rounded px-2 py-1 flex-1"
+                      value={selectedStaff}
+                      onChange={(e) => setSelectedStaff(e.target.value === "" ? "" : Number(e.target.value))}
+                    >
+                      <option value="">Chọn nhân viên</option>
+                      {staffList.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.username} ({s.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <textarea
+                    className="border rounded px-2 py-1 w-full"
+                    rows={3}
+                    placeholder="Ghi chú của admin (tuỳ chọn)"
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                  />
+                  <Button
+                    className="w-fit"
+                    onClick={handleAssign}
+                    disabled={!selectedStaff || assigning}
                   >
-                    <option value="">Chọn nhân viên</option>
-                    {staffList.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.username} ({s.email})
-                      </option>
-                    ))}
-                  </select>
+                    {assigning ? "Đang gán..." : "Gán nhân viên"}
+                  </Button>
+                  {assignError && <div className="text-red-500">{assignError}</div>}
                 </div>
-                <textarea
-                  className="border rounded px-2 py-1 w-full"
-                  rows={3}
-                  placeholder="Ghi chú của admin (tuỳ chọn)"
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                />
-                <Button
-                  className="w-fit"
-                  onClick={handleAssign}
-                  disabled={!selectedStaff || assigning}
-                >
-                  {assigning ? "Đang gán..." : "Gán nhân viên"}
-                </Button>
-                {assignError && <div className="text-red-500">{assignError}</div>}
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

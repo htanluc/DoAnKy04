@@ -44,6 +44,9 @@ public class FeedbackController {
     @GetMapping("/admin/feedbacks/{id}")
     public ResponseEntity<FeedbackDto> getFeedbackById(@PathVariable("id") Long id) {
         FeedbackDto feedback = feedbackService.getFeedbackById(id);
+        if (feedback == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(feedback);
     }
 

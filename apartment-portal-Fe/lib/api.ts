@@ -702,6 +702,19 @@ export const supportRequestsApi = {
     if (!response.ok) throw new Error('Cập nhật yêu cầu hỗ trợ thất bại');
     return response.json();
   },
+  // Cập nhật trạng thái (admin)
+  adminUpdateStatus: async (
+    id: number,
+    data: { status: string; resolutionNotes?: string; isCompleted?: boolean; rating?: number }
+  ) => {
+    const payload = {
+      ...data,
+      isCompleted: typeof data.isCompleted === 'boolean' ? data.isCompleted : data.status === 'COMPLETED'
+    };
+    const response = await api.put(`/api/admin/support-requests/${id}/status`, payload);
+    if (!response.ok) throw new Error('Cập nhật trạng thái (admin) thất bại');
+    return response.json();
+  },
   // Xóa yêu cầu hỗ trợ (admin)
   delete: async (id: number): Promise<void> => {
     const response = await api.delete(`/api/admin/support-requests/${id}`);
@@ -839,8 +852,8 @@ export const vehiclesApi = {
     return response.json();
   },
   // Gửi email thông báo cho người dùng khi hủy/gỡ đăng ký xe
-  notifyCancellation: async (id: number): Promise<void> => {
-    const response = await api.post(`/api/admin/vehicles/${id}/notify-cancel`, {});
+  notifyCancellation: async (id: number, reason?: string): Promise<void> => {
+    const response = await api.post(`/api/admin/vehicles/${id}/notify-cancel`, reason ? { reason } : {});
     if (!response.ok) throw new Error('Gửi email thông báo hủy đăng ký xe thất bại');
   },
   delete: async (id: number): Promise<void> => {
