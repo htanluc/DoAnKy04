@@ -113,7 +113,13 @@ public class AuthService {
     public void changePassword(ChangePasswordRequest request) {
         // Lấy user hiện tại từ security context
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-        Optional<User> userOpt = userRepository.findByUsername(currentUsername);
+        // Security đang set username = phoneNumber khi đăng nhập
+        // Vì dữ liệu cũ có thể chưa đồng bộ trường username, ta ưu tiên tìm theo phoneNumber
+        Optional<User> userOpt = userRepository.findByPhoneNumber(currentUsername);
+        if (!userOpt.isPresent()) {
+            // Fallback: thử tìm theo username để đảm bảo tương thích dữ liệu
+            userOpt = userRepository.findByUsername(currentUsername);
+        }
         
         if (!userOpt.isPresent()) {
             throw new RuntimeException("Không tìm thấy tài khoản");
