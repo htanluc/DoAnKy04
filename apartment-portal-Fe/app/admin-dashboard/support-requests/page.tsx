@@ -686,7 +686,7 @@ function SupportRequestsPageContent() {
                                                    onClick={() => openLightbox(request.attachmentUrls!, index)}
                                                    title={t('admin.support-requests.clickToView', 'Click để xem ảnh đầy đủ')}
                                                  />
-                                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center pointer-events-none">
                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                                      <div className="bg-white bg-opacity-90 rounded-full p-1">
                                                        <Image className="h-3 w-3 text-gray-700" />
@@ -774,11 +774,11 @@ function SupportRequestsPageContent() {
             )}
 
             {/* Image */}
-            <div className="max-w-4xl max-h-full p-4">
+            <div className="p-4">
               <img
                 src={currentImages[currentImageIndex]}
                 alt={t('admin.support-requests.imageAlt', 'Hình ảnh') + ` ${currentImageIndex + 1}`}
-                className="max-w-full max-h-full object-contain rounded-lg"
+                className="max-w-[90vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg"
               />
             </div>
 

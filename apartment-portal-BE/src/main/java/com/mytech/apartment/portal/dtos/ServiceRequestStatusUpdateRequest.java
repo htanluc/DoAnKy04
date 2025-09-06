@@ -18,6 +18,5 @@ public class ServiceRequestStatusUpdateRequest {
     @Max(value = 5, message = "Rating must be between 1 and 5")
     private Integer rating; // Đánh giá 1-5 (sau khi hoàn thành)
     
-    @NotNull(message = "Thời gian hoàn thành không được để trống")
     private Boolean isCompleted; // true nếu hoàn thành
 } 
