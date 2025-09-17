@@ -55,6 +55,8 @@ interface ServiceRequest {
   imageUrls?: string[]
   comments: Comment[]
   attachmentUrls?: string[]
+  beforeImages?: string[]
+  afterImages?: string[]
 }
 
 interface Comment {
@@ -781,6 +783,46 @@ export default function ServiceRequestsPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Hình ảnh Trước/Sau nếu có */}
+                {(request.beforeImages && request.beforeImages.length > 0) || (request.afterImages && request.afterImages.length > 0) ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Image className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Hình ảnh Trước / Sau</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm font-semibold mb-2">Trước</div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {(request.beforeImages || []).map((url, index) => (
+                            <img
+                              key={index}
+                              src={getImageUrl(url)}
+                              alt={`Trước ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                              onClick={() => openLightbox((request.beforeImages || []).map(getImageUrl), index)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold mb-2">Sau</div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {(request.afterImages || []).map((url, index) => (
+                            <img
+                              key={index}
+                              src={getImageUrl(url)}
+                              alt={`Sau ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                              onClick={() => openLightbox((request.afterImages || []).map(getImageUrl), index)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 
                 {/* Hiển thị file đính kèm khác */}
                 {request.attachmentUrls && request.attachmentUrls.length > 0 && (

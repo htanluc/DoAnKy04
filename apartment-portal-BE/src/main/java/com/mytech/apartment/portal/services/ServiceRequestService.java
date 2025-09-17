@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -193,6 +192,14 @@ public class ServiceRequestService {
         // Cập nhật đánh giá nếu có
         if (request.getRating() != null) {
             serviceRequest.setRating(request.getRating());
+        }
+
+        // Cập nhật hình ảnh trước/sau nếu có
+        if (request.getBeforeImages() != null && !request.getBeforeImages().isEmpty()) {
+            serviceRequest.setBeforeImages(convertListToJson(request.getBeforeImages()));
+        }
+        if (request.getAfterImages() != null && !request.getAfterImages().isEmpty()) {
+            serviceRequest.setAfterImages(convertListToJson(request.getAfterImages()));
         }
 
         // Cập nhật thời gian hoàn thành nếu hoàn thành

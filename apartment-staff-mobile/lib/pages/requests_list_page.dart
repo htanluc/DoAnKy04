@@ -6,6 +6,7 @@ import '../models/service_request.dart';
 import 'requests_by_status_page.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
+import 'water_reading_page.dart';
 
 class RequestsListPage extends StatefulWidget {
   const RequestsListPage({super.key});
@@ -70,7 +71,7 @@ class _RequestsListPageState extends State<RequestsListPage> {
     try {
       final user = await AuthService.getUser();
       final staffId = (user?['id'] as num?)?.toInt();
-      if (staffId == null) throw Exception('Không tìm thấy staffId');
+      if (staffId == null) throw Exception('staffId not found');
       String? name = user != null ? _extractStaffName(user) : null;
       if (mounted && name != null) {
         setState(() => _staffName = name);
@@ -142,7 +143,7 @@ class _RequestsListPageState extends State<RequestsListPage> {
             ),
             Expanded(
               child: Text(
-                _staffName ?? 'Lê Văn Staff',
+                _staffName ?? 'Staff',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context)
@@ -155,7 +156,7 @@ class _RequestsListPageState extends State<RequestsListPage> {
         ),
         actions: [
           IconButton(
-              tooltip: 'Làm mới',
+              tooltip: 'Refresh',
               onPressed: _load,
               icon: const Icon(Icons.refresh)),
           PopupMenuButton<String>(
@@ -171,7 +172,7 @@ class _RequestsListPageState extends State<RequestsListPage> {
               }
             },
             itemBuilder: (context) => const [
-              PopupMenuItem(value: 'logout', child: Text('Đăng xuất')),
+              PopupMenuItem(value: 'logout', child: Text('Log out')),
             ],
           ),
         ],
@@ -185,43 +186,26 @@ class _RequestsListPageState extends State<RequestsListPage> {
           NavigationDestination(
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
-              label: 'Trang chủ'),
+              label: 'Home'),
           NavigationDestination(
-              icon: Icon(Icons.work_outline),
-              selectedIcon: Icon(Icons.work),
-              label: 'Công việc'),
-          NavigationDestination(
-              icon: Icon(Icons.insights_outlined),
-              selectedIcon: Icon(Icons.insights),
-              label: 'Thống kê'),
+              icon: Icon(Icons.water_drop_outlined),
+              selectedIcon: Icon(Icons.water_drop),
+              label: 'Water readings'),
           NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
-              label: 'Cá nhân'),
+              label: 'Profile'),
         ],
-        onDestinationSelected: (i) async {
-          if (i == 3) {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            await Navigator.of(context)
+        onDestinationSelected: (i) {
+          if (i == 2) {
+            Navigator.of(context)
                 .push(MaterialPageRoute(builder: (_) => const ProfilePage()));
-            return;
-          }
-          if (i != 0) {
-            // Tránh snackbar còn treo khi chuyển trang
-            if (mounted) {
-              await showDialog<void>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Thông báo'),
-                  content: const Text('Tính năng đang phát triển'),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Đóng')),
-                  ],
-                ),
-              );
-            }
+          } else if (i == 1) {
+            Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const WaterReadingPage()));
+          } else if (i != 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Feature under development')));
           }
         },
       ),
@@ -232,18 +216,18 @@ class _RequestsListPageState extends State<RequestsListPage> {
     if (_error != null && _items.isEmpty) {
       return _StatePlaceholder(
         icon: Icons.wifi_off,
-        title: 'Không thể tải dữ liệu',
-        message: 'Kiểm tra kết nối mạng và thử lại.',
-        actionText: 'Thử lại',
+        title: 'Unable to load data',
+        message: 'Check your network connection and try again.',
+        actionText: 'Retry',
         onAction: _load,
       );
     }
     if (_items.isEmpty) {
       return _StatePlaceholder(
         icon: Icons.inbox,
-        title: 'Không có dữ liệu',
-        message: 'Kéo xuống để làm mới danh sách.',
-        actionText: 'Làm mới',
+        title: 'No data',
+        message: 'Pull down to refresh the list.',
+        actionText: 'Refresh',
         onAction: _load,
       );
     }
@@ -282,11 +266,11 @@ class _RequestsListPageState extends State<RequestsListPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Tổng quan công việc',
+              const Text('Work summary',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               _MetricPill(
-                  label: 'Hoàn thành (7 ngày)',
+                  label: 'Completed (7 days)',
                   value: '$completedLast7Days',
                   color: const Color(0xFF5CB034),
                   compact: true),
@@ -306,7 +290,7 @@ class _RequestsListPageState extends State<RequestsListPage> {
               : Theme.of(context).colorScheme.onSurface);
       final double iconSize = key == 'CANCELLED' ? 28 : 32;
       final int? count = counts[key];
-      final String subtitle = count == null ? '' : '$count yêu cầu';
+      final String subtitle = count == null ? '' : '$count requests';
 
       return InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -378,23 +362,23 @@ class _RequestsListPageState extends State<RequestsListPage> {
                 crossAxisSpacing: 14,
                 childAspectRatio: 1.1,
                 children: [
-                  gridItem('ALL', 'Tất cả',
-                      Theme.of(context).colorScheme.primary, Icons.list_alt),
-                  gridItem('OPEN', 'Mở', const Color(0xFFF37021),
+                  gridItem('ALL', 'All', Theme.of(context).colorScheme.primary,
+                      Icons.list_alt),
+                  gridItem('OPEN', 'Open', const Color(0xFFF37021),
                       Icons.playlist_add_check_circle_outlined),
-                  gridItem('ASSIGNED', 'Đã giao', const Color(0xFF0072BC),
+                  gridItem('ASSIGNED', 'Assigned', const Color(0xFF0072BC),
                       Icons.assignment_ind_outlined),
-                  gridItem('IN_PROGRESS', 'Đang xử lý', const Color(0xFF0072BC),
-                      Icons.pending_actions_outlined),
-                  gridItem('COMPLETED', 'Hoàn thành', const Color(0xFF5CB034),
+                  gridItem('IN_PROGRESS', 'In progress',
+                      const Color(0xFF0072BC), Icons.pending_actions_outlined),
+                  gridItem('COMPLETED', 'Completed', const Color(0xFF5CB034),
                       Icons.check_circle_outline),
-                  gridItem('CANCELLED', 'Đã huỷ', Colors.grey,
+                  gridItem('CANCELLED', 'Cancelled', Colors.grey,
                       Icons.cancel_outlined),
                 ],
               ),
               const SizedBox(height: 32),
               Text(
-                'Gợi ý: chạm vào thẻ để xem danh sách theo trạng thái',
+                'Tip: tap a card to view requests by status',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -478,7 +462,7 @@ class _StatePlaceholder extends StatelessWidget {
           children: [
             Icon(icon, size: 64, color: Theme.of(context).colorScheme.outline),
             const SizedBox(height: 12),
-            const Text('Không có dữ liệu',
+            const Text('No data',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(message,

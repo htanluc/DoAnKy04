@@ -28,6 +28,10 @@ public class ServiceRequest {
     private String description;
     private String imageAttachment;
     private String attachmentUrls; // JSON string for multiple attachment URLs
+    // JSON string danh sách URL ảnh chụp trước khi sửa
+    private String beforeImages;
+    // JSON string danh sách URL ảnh chụp sau khi sửa
+    private String afterImages;
     private LocalDateTime submittedAt;
 
     @ManyToOne

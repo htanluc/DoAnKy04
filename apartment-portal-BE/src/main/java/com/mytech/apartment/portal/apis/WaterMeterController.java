@@ -13,7 +13,7 @@ import com.mytech.apartment.portal.services.WaterMeterService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/admin/water-readings")
+@RequestMapping("/api")
 @Validated
 public class WaterMeterController {
 
@@ -24,7 +24,7 @@ public class WaterMeterController {
     }
 
     // 1. Create or Update (upsert) via POST (tương tự addReading)
-    @PostMapping
+    @PostMapping("/admin/water-readings")
     public ResponseEntity<WaterMeterReadingDto> createOrUpdateReading(
             @Valid @RequestBody WaterMeterReadingDto dto
     ) {
@@ -33,13 +33,13 @@ public class WaterMeterController {
     }
 
     // 2. Read all readings
-    @GetMapping
+    @GetMapping("/admin/water-readings")
     public ResponseEntity<List<WaterMeterReadingDto>> listAll() {
         return ResponseEntity.ok(waterMeterService.getAllReadings());
     }
 
     // 2.1. Read readings by specific month
-    @GetMapping("/by-month")
+    @GetMapping("/admin/water-readings/by-month")
     public ResponseEntity<List<WaterMeterReadingDto>> getReadingsByMonth(
             @RequestParam("month") String month
     ) {
@@ -47,7 +47,7 @@ public class WaterMeterController {
     }
 
     // 3. Read one by ID
-    @GetMapping("/{id}")
+    @GetMapping("/admin/water-readings/{id}")
     public ResponseEntity<WaterMeterReadingDto> getById(@PathVariable("id") Long id) {
         return waterMeterService.getReadingById(id)
                 .map(ResponseEntity::ok)
@@ -55,7 +55,7 @@ public class WaterMeterController {
     }
 
     // 4. Full replace via PUT
-    @PutMapping("/{id}")
+    @PutMapping("/admin/water-readings/{id}")
     public ResponseEntity<WaterMeterReadingDto> replaceReading(
             @PathVariable("id") Long id,
             @Valid @RequestBody WaterMeterReadingDto dto
@@ -65,7 +65,7 @@ public class WaterMeterController {
     }
 
     // 5. Partial update via PATCH
-    @PatchMapping("/{id}")
+    @PatchMapping("/admin/water-readings/{id}")
     public ResponseEntity<WaterMeterReadingDto> patchReading(@PathVariable("id") Long id,
             @RequestBody Map<String, Object> updates
     ) {
@@ -74,14 +74,14 @@ public class WaterMeterController {
     }
 
     // 6. Delete by ID
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/admin/water-readings/{id}")
     public ResponseEntity<Void> deleteReading(@PathVariable("id") Long id) {
         waterMeterService.deleteReading(id);
         return ResponseEntity.noContent().build();
     }
 
     // 7. Generate readings for a new month
-    @PostMapping("/generate")
+    @PostMapping("/admin/water-readings/generate")
     public ResponseEntity<Map<String, String>> generateReadings(@RequestParam("startMonth") String startMonth) {
         try {
             waterMeterService.generateHistory(startMonth);
@@ -94,6 +94,37 @@ public class WaterMeterController {
                 "success", "false", 
                 "error", e.getMessage()
             ));
+        }
+    }
+
+    // 8. STAFF: Lookup latest by apartmentCode (unitNumber)
+    @GetMapping("/staff/water-readings/lookup")
+    public ResponseEntity<?> lookupByApartmentCode(@RequestParam("apartmentCode") String apartmentCode) {
+        try {
+            var data = waterMeterService.lookupByApartmentCode(apartmentCode);
+            return ResponseEntity.ok(Map.of("success", true, "message", "OK", "data", data));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage(), "data", null));
+        }
+    }
+
+    // 9. STAFF: Submit reading by apartmentCode
+    @PostMapping("/staff/water-readings")
+    public ResponseEntity<?> staffSubmit(@RequestBody Map<String, Object> body) {
+        try {
+            String code = String.valueOf(body.get("apartmentCode"));
+            Number readingNum = (Number) body.get("currentReading");
+            java.time.LocalDate date = null;
+            Object readingAt = body.get("readingAt");
+            if (readingAt instanceof String s && s.length() >= 10) {
+                date = java.time.LocalDate.parse(s.substring(0,10));
+            }
+            var dto = waterMeterService.createFromApartmentCode(code,
+                readingNum != null ? new java.math.BigDecimal(readingNum.toString()) : null,
+                date);
+            return ResponseEntity.ok(Map.of("success", true, "data", dto));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 }

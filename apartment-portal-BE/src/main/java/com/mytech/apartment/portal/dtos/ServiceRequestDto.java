@@ -20,6 +20,8 @@ public class ServiceRequestDto {
     private String resolution;
     private List<String> attachmentUrls; // URLs của các file đính kèm
     private List<String> imageUrls; // URLs của các hình ảnh
+    private List<String> beforeImages; // Ảnh chụp trước khi sửa
+    private List<String> afterImages;  // Ảnh chụp sau khi sửa
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime resolvedAt;
@@ -50,6 +52,7 @@ public class ServiceRequestDto {
     public ServiceRequestDto(Long id, Long userId, String userName, String userPhone, String categoryId, String categoryName,
                            String title, String description, String priority, String status, String assignedTo,
                            Long assignedToId, String assignedToPhone, String resolution, List<String> attachmentUrls, List<String> imageUrls,
+                           List<String> beforeImages, List<String> afterImages,
                            LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {
         this.id = id;
         this.userId = userId;
@@ -67,6 +70,8 @@ public class ServiceRequestDto {
         this.resolution = resolution;
         this.attachmentUrls = attachmentUrls;
         this.imageUrls = imageUrls;
+        this.beforeImages = beforeImages;
+        this.afterImages = afterImages;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.resolvedAt = resolvedAt;
@@ -129,4 +134,10 @@ public class ServiceRequestDto {
 
     public List<String> getImageUrls() { return imageUrls; }
     public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+
+    public List<String> getBeforeImages() { return beforeImages; }
+    public void setBeforeImages(List<String> beforeImages) { this.beforeImages = beforeImages; }
+
+    public List<String> getAfterImages() { return afterImages; }
+    public void setAfterImages(List<String> afterImages) { this.afterImages = afterImages; }
 } 

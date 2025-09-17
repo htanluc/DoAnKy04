@@ -22,4 +22,8 @@ public interface WaterMeterService {
 
     // nếu scheduler cần:
     void generateHistory(String period);
+
+    // STAFF helpers
+    Map<String, Object> lookupByApartmentCode(String apartmentCode);
+    WaterMeterReadingDto createFromApartmentCode(String apartmentCode, java.math.BigDecimal currentReading, java.time.LocalDate readingDate);
 }

@@ -29,6 +29,8 @@ interface SupportRequestDetail {
   resolutionNotes?: string;
   assignedAt?: string; // Thêm trường assignedAt
   attachmentUrls?: string[]; // Thêm trường hình ảnh đính kèm
+  beforeImages?: string[];
+  afterImages?: string[];
 }
 
 function normalizeStatus(raw?: string) {
@@ -454,6 +456,46 @@ export default function SupportRequestDetailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Ảnh Trước/Sau nếu có */}
+              {((data as any).beforeImages && (data as any).beforeImages.length > 0) || ((data as any).afterImages && (data as any).afterImages.length > 0) ? (
+                <div className="p-4 rounded-lg border bg-white border-gray-200">
+                  <div className="mb-3 font-semibold text-gray-800 flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Hình ảnh Trước / Sau
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm font-semibold mb-2">Trước</div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {(((data as any).beforeImages) || []).map((url: string, index: number) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Trước ${index + 1}`}
+                            className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                            onClick={() => openLightbox((((data as any).beforeImages) || []), index)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold mb-2">Sau</div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {(((data as any).afterImages) || []).map((url: string, index: number) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Sau ${index + 1}`}
+                            className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                            onClick={() => openLightbox((((data as any).afterImages) || []), index)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {data.resolutionNotes && <div className="p-4 rounded-lg border bg-white"><b>Kết quả xử lý:</b> {data.resolutionNotes}</div>}
