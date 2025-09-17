@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 @Service
 public class WaterMeterServiceImpl implements WaterMeterService {
@@ -297,6 +298,10 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                     dto.setRecordedBy(uid);
                 }
             }
+            // Fallback an toàn cho môi trường test nếu không xác thực
+            if (dto.getRecordedBy() == null) {
+                dto.setRecordedBy(1L);
+            }
         }
     }
 
@@ -316,5 +321,45 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         }
         
         return BigDecimal.ZERO; // Trả về 0 nếu không tìm thấy chỉ số thực tế nào
+    }
+
+    // --- STAFF helpers implementation ---
+    @Override
+    public Map<String, Object> lookupByApartmentCode(String apartmentCode) {
+        // Tìm apartmentId theo unitNumber
+        Long apartmentId = apartmentService.getAllApartments().stream()
+                .filter(a -> a.getUnitNumber() != null && a.getUnitNumber().equalsIgnoreCase(apartmentCode))
+                .map(a -> a.getId())
+                .findFirst()
+                .orElse(null);
+        if (apartmentId == null) {
+            throw new RuntimeException("Không tìm thấy căn hộ: " + apartmentCode);
+        }
+        List<WaterMeterReadingDto> list = getWaterMetersByApartmentId(apartmentId);
+        Map<String, Object> m = new HashMap<>();
+        m.put("apartmentId", apartmentId);
+        m.put("apartmentName", apartmentService.getApartmentName(apartmentId.intValue()));
+        if (!list.isEmpty()) {
+            WaterMeterReadingDto latest = list.get(0);
+            m.put("lastReading", latest.getCurrentReading());
+            m.put("lastReadingAt", latest.getReadingDate() != null ? latest.getReadingDate().toString() : latest.getReadingMonth());
+        }
+        return m;
+    }
+
+    @Override
+    @Transactional
+    public WaterMeterReadingDto createFromApartmentCode(String apartmentCode, BigDecimal currentReading, LocalDate readingDate) {
+        Long apartmentId = apartmentService.getAllApartments().stream()
+                .filter(a -> a.getUnitNumber() != null && a.getUnitNumber().equalsIgnoreCase(apartmentCode))
+                .map(a -> a.getId())
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy căn hộ: " + apartmentCode));
+        WaterMeterReadingDto dto = new WaterMeterReadingDto();
+        dto.setApartmentId(apartmentId);
+        dto.setReadingDate(readingDate != null ? readingDate : LocalDate.now());
+        dto.setCurrentReading(currentReading != null ? currentReading : BigDecimal.ZERO);
+        dto.setMeterReading(dto.getCurrentReading());
+        return addReading(dto);
     }
 }

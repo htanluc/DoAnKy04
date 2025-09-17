@@ -45,5 +45,14 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow camera access to scan apartment QR codes</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow access to photo library to pick QR images</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+  </dict>
 </dict>
 </plist>

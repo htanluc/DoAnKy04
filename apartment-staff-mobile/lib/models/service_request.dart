@@ -16,6 +16,8 @@ class ServiceRequestModel {
   final int? assignedToId;
   final String? assignedToName;
   final String? assignedToPhone;
+  final List<String> beforeImages;
+  final List<String> afterImages;
 
   ServiceRequestModel({
     required this.id,
@@ -35,6 +37,8 @@ class ServiceRequestModel {
     this.assignedToId,
     this.assignedToName,
     this.assignedToPhone,
+    this.beforeImages = const [],
+    this.afterImages = const [],
   });
 
   factory ServiceRequestModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +82,12 @@ class ServiceRequestModel {
       assignedToPhone: json['assignedToPhone'] as String? ??
           ((json['assignedTo'] as Map<String, dynamic>?)?['phoneNumber']
               as String?),
+      beforeImages:
+          (json['beforeImages'] as List?)?.whereType<String>().toList() ??
+              const <String>[],
+      afterImages:
+          (json['afterImages'] as List?)?.whereType<String>().toList() ??
+              const <String>[],
     );
   }
 

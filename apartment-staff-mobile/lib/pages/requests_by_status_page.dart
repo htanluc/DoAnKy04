@@ -22,17 +22,17 @@ class _RequestsByStatusPageState extends State<RequestsByStatusPage> {
   String _titleForStatus(String s) {
     switch (s.toUpperCase()) {
       case 'OPEN':
-        return 'Mở';
+        return 'Open';
       case 'ASSIGNED':
-        return 'Đã giao';
+        return 'Assigned';
       case 'IN_PROGRESS':
-        return 'Đang xử lý';
+        return 'In progress';
       case 'COMPLETED':
-        return 'Hoàn thành';
+        return 'Completed';
       case 'CANCELLED':
-        return 'Đã huỷ';
+        return 'Cancelled';
       default:
-        return 'Tất cả';
+        return 'All';
     }
   }
 
@@ -42,7 +42,7 @@ class _RequestsByStatusPageState extends State<RequestsByStatusPage> {
       _error = null;
     });
 
-    // Load từ cache trước
+    // Load from cache first
     final cached = await DbService.loadAssignedRequests();
     if (mounted && cached.isNotEmpty) {
       setState(() {
@@ -64,7 +64,7 @@ class _RequestsByStatusPageState extends State<RequestsByStatusPage> {
     try {
       final user = await AuthService.getUser();
       final staffId = (user?['id'] as num?)?.toInt();
-      if (staffId == null) throw Exception('Không tìm thấy staffId');
+      if (staffId == null) throw Exception('staffId not found');
       final list = await ApiService.getAssignedRequests(staffId);
       await DbService.saveAssignedRequests(list.cast<Map<String, dynamic>>());
       if (mounted) {
@@ -104,7 +104,7 @@ class _RequestsByStatusPageState extends State<RequestsByStatusPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Yêu cầu • ${_titleForStatus(status)}'),
+        title: Text('Requests • ${_titleForStatus(status)}'),
         actions: [
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
         ],
@@ -119,18 +119,18 @@ class _RequestsByStatusPageState extends State<RequestsByStatusPage> {
     if (_error != null && _items.isEmpty) {
       return _StatePlaceholder(
         icon: Icons.wifi_off,
-        title: 'Không thể tải dữ liệu',
-        message: 'Kiểm tra kết nối mạng và thử lại.',
-        actionText: 'Thử lại',
+        title: 'Unable to load data',
+        message: 'Check your network connection and try again.',
+        actionText: 'Retry',
         onAction: _load,
       );
     }
     if (filtered.isEmpty) {
       return _StatePlaceholder(
         icon: Icons.inbox,
-        title: 'Không có yêu cầu',
-        message: 'Hãy kéo xuống để làm mới dữ liệu.',
-        actionText: 'Làm mới',
+        title: 'No requests',
+        message: 'Pull down to refresh.',
+        actionText: 'Refresh',
         onAction: _load,
       );
     }

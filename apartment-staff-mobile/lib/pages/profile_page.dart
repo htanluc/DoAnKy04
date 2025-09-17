@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'water_reading_page.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -25,6 +27,15 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _load();
     _syncProfileIfMissing();
+  }
+
+  Future<void> _logout() async {
+    await AuthService.logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   Future<void> _load() async {
@@ -64,13 +75,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (newP.trim().length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mật khẩu mới phải từ 6 ký tự')),
+        const SnackBar(
+            content: Text('New password must be at least 6 characters')),
       );
       return;
     }
     if (newP != reP) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Xác nhận mật khẩu không khớp')),
+        const SnackBar(content: Text('Password confirmation does not match')),
       );
       return;
     }
@@ -80,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
       await ApiService.changePassword(oldP, newP);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đổi mật khẩu thành công')),
+        const SnackBar(content: Text('Password changed successfully')),
       );
       setState(() {
         _showChange = false;
@@ -156,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final dobText = _formatDate(dob);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Cá nhân')),
+      appBar: AppBar(title: const Text('Profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -218,37 +230,37 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Thông tin chi tiết
+            // Details
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Thông tin tài khoản',
+                    const Text('Account information',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
                     _InfoRow(
                         icon: Icons.badge_outlined,
-                        label: 'Trạng thái',
+                        label: 'Status',
                         value: status ?? '-'),
                     _InfoRow(
                         icon: Icons.event,
-                        label: 'Ngày tạo',
+                        label: 'Created at',
                         value: createdAtText),
                     _InfoRow(
                         icon: Icons.perm_identity,
-                        label: 'CMND/CCCD',
+                        label: 'ID card',
                         value: idCard ?? '-'),
                     _InfoRow(
                         icon: Icons.cake_outlined,
-                        label: 'Ngày sinh',
+                        label: 'Date of birth',
                         value: dobText),
                     if (roles.isNotEmpty)
                       _InfoRow(
                           icon: Icons.shield_outlined,
-                          label: 'Vai trò',
+                          label: 'Roles',
                           value: roles.join(', ')),
                   ],
                 ),
@@ -262,7 +274,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? null
                   : () => setState(() => _showChange = !_showChange),
               icon: const Icon(Icons.lock_reset),
-              label: Text(_showChange ? 'Đóng đổi mật khẩu' : 'Đổi mật khẩu'),
+              label: Text(
+                  _showChange ? 'Close password change' : 'Change password'),
             ),
 
             if (_showChange) ...[
@@ -280,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       controller: _oldCtrl,
                       obscureText: _ob1,
                       decoration: InputDecoration(
-                        labelText: 'Mật khẩu hiện tại',
+                        labelText: 'Current password',
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -294,7 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       controller: _newCtrl,
                       obscureText: _ob2,
                       decoration: InputDecoration(
-                        labelText: 'Mật khẩu mới',
+                        labelText: 'New password',
                         prefixIcon: const Icon(Icons.vpn_key_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -308,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       controller: _confirmCtrl,
                       obscureText: _ob3,
                       decoration: InputDecoration(
-                        labelText: 'Xác nhận mật khẩu mới',
+                        labelText: 'Confirm new password',
                         prefixIcon: const Icon(Icons.vpn_key_rounded),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -332,7 +345,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       _confirmCtrl.clear();
                                     });
                                   },
-                            child: const Text('Hủy'),
+                            child: const Text('Cancel'),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -346,7 +359,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2),
                                   )
-                                : const Text('Lưu'),
+                                : const Text('Save'),
                           ),
                         ),
                       ],
@@ -355,28 +368,35 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ],
+
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _loading ? null : _logout,
+              icon: const Icon(Icons.logout),
+              label: const Text('Log out'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red.shade700,
+                side: BorderSide(color: Colors.red.shade300),
+              ),
+            ),
           ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: 3,
+        selectedIndex: 2,
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
-              label: 'Trang chủ'),
+              label: 'Home'),
           NavigationDestination(
-              icon: Icon(Icons.work_outline),
-              selectedIcon: Icon(Icons.work),
-              label: 'Công việc'),
-          NavigationDestination(
-              icon: Icon(Icons.insights_outlined),
-              selectedIcon: Icon(Icons.insights),
-              label: 'Thống kê'),
+              icon: Icon(Icons.water_drop_outlined),
+              selectedIcon: Icon(Icons.water_drop),
+              label: 'Water readings'),
           NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
-              label: 'Cá nhân'),
+              label: 'Profile'),
         ],
         onDestinationSelected: (i) async {
           if (i == 0) {
@@ -385,16 +405,22 @@ class _ProfilePageState extends State<ProfilePage> {
             }
             return;
           }
-          if (i != 3) {
+          if (i == 1) {
+            if (!mounted) return;
+            await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const WaterReadingPage()));
+            return;
+          }
+          if (i != 2) {
             await showDialog<void>(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: const Text('Thông báo'),
-                content: const Text('Tính năng đang phát triển'),
+                title: const Text('Notice'),
+                content: const Text('Feature under development'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(ctx).pop(),
-                    child: const Text('Đóng'),
+                    child: const Text('Close'),
                   ),
                 ],
               ),

@@ -76,13 +76,13 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Đăng nhập nhân viên',
+                  'Staff login',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Vui lòng đăng nhập để tiếp tục',
+                  'Please sign in to continue',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: cs.onSurfaceVariant),
                 ),
@@ -91,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
-                    labelText: 'Số điện thoại',
+                    labelText: 'Phone number',
                     prefixIcon: Icon(Icons.phone_rounded),
                   ),
                 ),
@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _passCtrl,
                   obscureText: _obscure,
                   decoration: InputDecoration(
-                    labelText: 'Mật khẩu',
+                    labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline_rounded),
                     suffixIcon: IconButton(
                       onPressed: () => setState(() => _obscure = !_obscure),
@@ -143,13 +143,13 @@ class _LoginPageState extends State<LoginPage> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.login),
-                    label: const Text('Đăng nhập'),
+                    label: const Text('Sign in'),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: _loading ? null : () {},
-                  child: const Text('Quên mật khẩu?'),
+                  child: const Text('Forgot password?'),
                 )
               ],
             ),

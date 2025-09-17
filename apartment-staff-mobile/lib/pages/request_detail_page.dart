@@ -4,6 +4,7 @@ import '../models/service_request.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'image_viewer_page.dart';
+import 'package:image_picker/image_picker.dart';
 // Chat đã được loại bỏ theo yêu cầu
 
 class RequestDetailPage extends StatefulWidget {
@@ -18,6 +19,9 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
   late ServiceRequestModel _req;
   // Đã bỏ ghi chú và chat theo yêu cầu
   String _status = 'OPEN';
+  final List<String> _beforeUrls = [];
+  final List<String> _afterUrls = [];
+  bool _uploading = false;
 
   @override
   void initState() {
@@ -54,10 +58,17 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
 
   Future<void> _saveStatus() async {
     try {
-      await ApiService.updateStatus(_req.id, _status);
+      await ApiService.updateStatus(
+        _req.id,
+        _status,
+        beforeImages:
+            _beforeUrls.isNotEmpty ? List<String>.from(_beforeUrls) : null,
+        afterImages:
+            _afterUrls.isNotEmpty ? List<String>.from(_afterUrls) : null,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cập nhật trạng thái thành công')),
+        const SnackBar(content: Text('Status updated successfully')),
       );
       setState(() {});
     } catch (e) {
@@ -66,6 +77,51 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
         SnackBar(content: Text('Lỗi: $e')),
       );
     }
+  }
+
+  Future<void> _pickAndUpload({required bool isBefore}) async {
+    final picker = ImagePicker();
+    final picked =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null) return;
+    setState(() => _uploading = true);
+    try {
+      final url = await ApiService.uploadServiceRequestFile(picked.path,
+          fileName: picked.name, contentType: 'image/jpeg');
+      setState(() {
+        if (isBefore) {
+          _beforeUrls.add(url);
+        } else {
+          _afterUrls.add(url);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Upload lỗi: $e')));
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Widget _thumb(String url) {
+    final u = ApiService.normalizeFileUrl(url);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        u,
+        width: 70,
+        height: 70,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: 70,
+          height: 70,
+          alignment: Alignment.center,
+          color: Colors.grey.shade200,
+          child: const Icon(Icons.broken_image_outlined),
+        ),
+      ),
+    );
   }
 
   Future<void> _setStatusSequential(String target) async {
@@ -86,24 +142,24 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
 
   Future<bool> _showConfirmDialog(String target) async {
     final statusNames = {
-      'IN_PROGRESS': 'Đang xử lý',
-      'COMPLETED': 'Hoàn thành'
+      'IN_PROGRESS': 'In progress',
+      'COMPLETED': 'Completed'
     };
 
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Xác nhận'),
+            title: const Text('Confirm'),
             content: Text(
-                'Bạn có chắc chắn muốn chuyển trạng thái sang "${statusNames[target]}"?'),
+                'Are you sure you want to change the status to "${statusNames[target]}"?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Hủy'),
+                child: const Text('Cancel'),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Xác nhận'),
+                child: const Text('Confirm'),
               ),
             ],
           ),
@@ -115,7 +171,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
     final phoneNumber = _req.residentPhone ?? '';
     if (phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không có số điện thoại')),
+        const SnackBar(content: Text('No phone number')),
       );
       return;
     }
@@ -133,7 +189,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
           webOnlyWindowName: '_self',
         );
       } else {
-        throw Exception('Không thể mở ứng dụng gọi điện');
+        throw Exception('Unable to open the dialer application');
       }
     } catch (e) {
       if (!mounted) return;
@@ -143,7 +199,8 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
         await launchUrl(dialUri);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể mở ứng dụng gọi điện')),
+          const SnackBar(
+              content: Text('Unable to open the dialer application')),
         );
       }
     }
@@ -153,7 +210,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
     final urls = _req.imageUrls.map(ApiService.normalizeFileUrl).toList();
     if (urls.isEmpty) {
       return Text(
-        'Không có hình ảnh đính kèm',
+        'No attachments',
         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
       );
     }
@@ -202,7 +259,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Yêu cầu #${_req.id}'),
+        title: Text('Request #${_req.id}'),
         elevation: 0,
         backgroundColor: cs.surface,
       ),
@@ -213,7 +270,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
         foregroundColor: Colors.white,
         elevation: 4,
         icon: const Icon(Icons.phone, size: 22),
-        label: const Text('Liên hệ cư dân'),
+        label: const Text('Contact resident'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: SingleChildScrollView(
@@ -221,7 +278,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header với tiến trình
+            // Header with progress
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20.0),
@@ -239,7 +296,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Thanh tiến trình
+                  // Progress bar
                   _StatusProgress(
                     current: _status,
                     onStepTap: (index) async {
@@ -254,7 +311,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
 
             // Bỏ thẻ nhân viên phụ trách theo yêu cầu
 
-            // Thông tin yêu cầu
+            // Request information
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20.0),
@@ -272,7 +329,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tiêu đề section
+                  // Section title
                   Row(
                     children: [
                       Container(
@@ -285,7 +342,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Chi tiết yêu cầu',
+                        'Request details',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -296,7 +353,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Mô tả yêu cầu
+                  // Request description
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16.0),
@@ -309,7 +366,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                       ),
                     ),
                     child: Text(
-                      _req.description ?? 'Không có mô tả',
+                      _req.description ?? 'No description',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -320,17 +377,17 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Thông tin cư dân
+                  // Resident information
                   _InfoRow(
                     icon: Icons.person,
-                    label: 'Tên cư dân',
+                    label: 'Resident name',
                     value: _req.residentName ?? '-',
                   ),
                   const SizedBox(height: 16),
 
-                  // Thông tin yêu cầu
+                  // Request information
                   _InfoSection(
-                    title: 'Thông tin yêu cầu',
+                    title: 'Request information',
                     icon: Icons.info_outline,
                     children: [
                       Row(
@@ -338,7 +395,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                           Expanded(
                             child: _InfoRow(
                               icon: Icons.category,
-                              label: 'Danh mục',
+                              label: 'Category',
                               value: _req.categoryName ?? '-',
                             ),
                           ),
@@ -346,7 +403,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                           Expanded(
                             child: _InfoRow(
                               icon: Icons.priority_high,
-                              label: 'Mức độ ưu tiên',
+                              label: 'Priority',
                               value: _req.priority ?? '-',
                               valueColor: _getPriorityColor(_req.priority),
                             ),
@@ -358,13 +415,13 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
 
                   const SizedBox(height: 16),
 
-                  // Bỏ phần Nhân viên phụ trách theo yêu cầu
+                  // Removed assignee card by request
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // Hình ảnh đính kèm (nếu có)
+            // Attachments (if any)
             if ((_req.imageUrls).isNotEmpty) ...[
               Container(
                 width: double.infinity,
@@ -388,7 +445,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                         Icon(Icons.image_outlined, size: 18, color: cs.primary),
                         const SizedBox(width: 8),
                         Text(
-                          'Hình ảnh',
+                          'Images',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -404,6 +461,110 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
               ),
               const SizedBox(height: 20),
             ],
+
+            // Before/After images section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.shadow.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.compare_outlined,
+                            size: 18, color: cs.primary),
+                        const SizedBox(width: 8),
+                        Text('Before / After',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface)),
+                      ]),
+                      if (_uploading)
+                        const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Before',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                ..._beforeUrls.map(_thumb),
+                                OutlinedButton.icon(
+                                  onPressed: _uploading
+                                      ? null
+                                      : () => _pickAndUpload(isBefore: true),
+                                  icon: const Icon(Icons.add_a_photo_outlined,
+                                      size: 18),
+                                  label: const Text('Thêm'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('After',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                ..._afterUrls.map(_thumb),
+                                OutlinedButton.icon(
+                                  onPressed: _uploading
+                                      ? null
+                                      : () => _pickAndUpload(isBefore: false),
+                                  icon: const Icon(Icons.add_a_photo_outlined,
+                                      size: 18),
+                                  label: const Text('Thêm'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
             const SizedBox(height: 20),
           ],
@@ -554,7 +715,7 @@ class _StatusProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final step = _index(current);
-    final titles = const ['Nhận yêu cầu', 'Đang xử lý', 'Hoàn thành'];
+    final titles = const ['Accepted', 'In progress', 'Completed'];
     final icons = const [
       Icons.check_circle_outline,
       Icons.handyman_outlined,

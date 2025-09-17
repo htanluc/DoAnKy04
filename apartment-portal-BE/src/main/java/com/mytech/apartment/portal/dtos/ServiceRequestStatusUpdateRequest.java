@@ -2,7 +2,6 @@ package com.mytech.apartment.portal.dtos;
 
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 
@@ -19,4 +18,8 @@ public class ServiceRequestStatusUpdateRequest {
     private Integer rating; // Đánh giá 1-5 (sau khi hoàn thành)
     
     private Boolean isCompleted; // true nếu hoàn thành
+
+    // Danh sách URL ảnh trước/sau khi sửa (đã upload qua API upload)
+    private java.util.List<String> beforeImages;
+    private java.util.List<String> afterImages;
 } 

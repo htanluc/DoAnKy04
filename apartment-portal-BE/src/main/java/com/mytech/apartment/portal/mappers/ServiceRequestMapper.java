@@ -23,6 +23,8 @@ public class ServiceRequestMapper {
         // Parse attachments
         List<String> attachmentUrls = parseJsonToList(serviceRequest.getAttachmentUrls());
         List<String> imageUrls = parseJsonToList(serviceRequest.getImageAttachment());
+        List<String> beforeImages = parseJsonToList(serviceRequest.getBeforeImages());
+        List<String> afterImages = parseJsonToList(serviceRequest.getAfterImages());
 
         return new ServiceRequestDto(
             serviceRequest.getId(),
@@ -41,6 +43,8 @@ public class ServiceRequestMapper {
             serviceRequest.getResolutionNotes(),
             attachmentUrls,
             imageUrls,
+            beforeImages,
+            afterImages,
             serviceRequest.getSubmittedAt(),
             serviceRequest.getAssignedAt(),
             serviceRequest.getCompletedAt()

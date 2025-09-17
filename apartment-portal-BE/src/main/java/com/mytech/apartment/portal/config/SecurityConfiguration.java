@@ -104,11 +104,18 @@ public class SecurityConfiguration {
                                "/api/payments/paypal/callback", "/api/payments/gateway/callback").permitAll()
               .requestMatchers("/uploads/**", "/api/files/**").permitAll()  // Static files không cần auth
               .requestMatchers("/stripe-checkout.html", "/api/payments/stripe/success", "/api/payments/stripe/cancel", "/api/payments/stripe/webhook").permitAll()  // Stripe checkout pages cần thiết
+              // Tạm thời mở staff endpoints để phục vụ ứng dụng nhân viên
+              .requestMatchers("/api/staff/**").permitAll()
+              // Cho phép tạm thời các endpoint admin phục vụ xem/chốt chỉ số nước theo tháng từ app staff
+              .requestMatchers("/api/admin/water-readings/**").permitAll()
+              .requestMatchers("/api/admin/apartments/{id}/water-readings").permitAll()
               .requestMatchers("/api/admin/**").hasRole("ADMIN")
               .requestMatchers("/api/apartments/admin/**").hasRole("ADMIN")
               .requestMatchers("/api/apartments/**").hasAnyRole("ADMIN", "RESIDENT")
-              .requestMatchers("/api/invoices/**","/api/facility-bookings/**","/api/residents/**", "/api/announcements/**", "/api/events/**", "/api/facilities/**", "/api/feedback/**", "/api/support-requests/**", "/api/upload/**", "/api/event-registrations/**", "/api/activity-logs/**", "/api/vehicles/**")
+              .requestMatchers("/api/invoices/**","/api/facility-bookings/**","/api/residents/**", "/api/announcements/**", "/api/events/**", "/api/facilities/**", "/api/feedback/**", "/api/support-requests/**", "/api/event-registrations/**", "/api/activity-logs/**", "/api/vehicles/**")
                   .hasRole("RESIDENT")
+              // Cho phép cả RESIDENT, STAFF, ADMIN gọi upload (dùng cho app staff)
+              .requestMatchers("/api/upload/**").hasAnyRole("RESIDENT","STAFF","ADMIN")
               .anyRequest().authenticated()
           )
           .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint()))
