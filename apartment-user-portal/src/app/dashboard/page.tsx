@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { SkeletonStats, SkeletonActivity } from '@/components/ui/skeleton'
 import { useResponsive } from '@/hooks/use-responsive'
+import { SuspenseWrapper } from '@/components/lazy/lazy-components'
 import { 
   Home, 
   Receipt, 
@@ -74,7 +75,7 @@ interface ApartmentInfo {
   floor?: number
 }
 
-export default function DashboardPage() {
+const DashboardPage = React.memo(() => {
   const { isMobile, isTablet, isDesktop } = useResponsive()
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
@@ -117,14 +118,14 @@ export default function DashboardPage() {
     fetchData()
   }, [])
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
     }).format(amount)
-  }
+  }, [])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
@@ -133,9 +134,9 @@ export default function DashboardPage() {
     if (diffInMinutes < 60) return `${diffInMinutes} phút trước`
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`
     return date.toLocaleDateString('vi-VN')
-  }
+  }, [])
 
-  const getActivityIcon = (type: string) => {
+  const getActivityIcon = useCallback((type: string) => {
     switch (type) {
       case 'invoice': return <Receipt className="h-4 w-4" />
       case 'announcement': return <Bell className="h-4 w-4" />
@@ -146,9 +147,9 @@ export default function DashboardPage() {
       case 'facility_booking': return <Coffee className="h-4 w-4" />
       default: return <Activity className="h-4 w-4" />
     }
-  }
+  }, [])
 
-  const getStatusBadge = (status?: string) => {
+  const getStatusBadge = useCallback((status?: string) => {
     const config = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-3 w-3" /> },
       completed: { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> },
@@ -164,7 +165,7 @@ export default function DashboardPage() {
         <span className="ml-1 capitalize">{status}</span>
       </span>
     )
-  }
+  }, [])
 
   if (isLoading) {
     return (
@@ -465,5 +466,9 @@ export default function DashboardPage() {
       </div>
     </div>
   )
-} 
+})
+
+DashboardPage.displayName = 'DashboardPage'
+
+export default DashboardPage 
   

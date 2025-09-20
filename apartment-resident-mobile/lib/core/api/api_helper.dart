@@ -73,6 +73,28 @@ class ApiHelper {
         .timeout(const Duration(seconds: 25));
   }
 
+  static Future<http.Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? query,
+  }) async {
+    final headers = await _getAuthHeaders();
+    final uri = Uri.parse('${ApiService.baseUrl}$path');
+    final uriWithQuery = query != null
+        ? uri.replace(
+            queryParameters: query.map((k, v) => MapEntry(k, v.toString())),
+          )
+        : uri;
+
+    return http
+        .patch(
+          uriWithQuery,
+          headers: headers,
+          body: data != null ? jsonEncode(data) : null,
+        )
+        .timeout(const Duration(seconds: 25));
+  }
+
   static Future<http.Response> delete(
     String path, {
     dynamic data,

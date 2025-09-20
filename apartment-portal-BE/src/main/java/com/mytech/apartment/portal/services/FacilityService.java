@@ -28,7 +28,8 @@ public class FacilityService {
     }
 
     public List<FacilityDto> getVisibleFacilities() {
-        return facilityRepository.findByIsVisibleTrue().stream()
+        // Trả về tất cả facilities (cho residents xem tất cả tiện ích có sẵn)
+        return facilityRepository.findAll().stream()
                 .map(facilityMapper::toDto)
                 .collect(Collectors.toList());
     }

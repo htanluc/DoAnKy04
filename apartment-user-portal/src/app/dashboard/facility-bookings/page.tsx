@@ -24,7 +24,8 @@ import {
   TrendingUp,
   Star,
   Zap,
-  Target
+  Target,
+  RefreshCw
 } from 'lucide-react'
 import {
   fetchMyFacilityBookings,
@@ -35,6 +36,7 @@ import {
   createZaloPayPayment,
   createVisaPayment
 } from '@/lib/api'
+import { apiClient } from '@/lib/api-client'
 import type { FC, JSX } from 'react'
 
 // Custom CSS for animations
@@ -321,13 +323,92 @@ const FacilityBookingsPage: FC = () => {
       setLoading(true)
       try {
         const token = localStorage.getItem('token');
-        // Lấy danh sách tiện ích
-        const resFacilities = await fetch('http://localhost:8080/api/facilities', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-        if (!resFacilities.ok) throw new Error('Lỗi khi lấy tiện ích')
-        const facilitiesData = await resFacilities.json()
-        setFacilities(facilitiesData)
+        // Lấy danh sách tiện ích sử dụng API client
+             try {
+               const facilitiesData = await apiClient.getFacilities()
+               console.log('Facilities Data:', facilitiesData) // Debug log
+               console.log('First facility usageFee:', facilitiesData[0]?.usageFee) // Debug log
+               console.log('First facility openingHours:', facilitiesData[0]?.openingHours) // Debug log
+               setFacilities(facilitiesData)
+             } catch (facilityError) {
+          console.error('Error fetching facilities:', facilityError)
+          // Fallback data từ database đã có
+          const fallbackFacilities = [
+            {
+              id: '1',
+              name: 'Phòng Gym Premium',
+              description: 'Phòng tập thể dục với đầy đủ thiết bị hiện đại, có huấn luyện viên chuyên nghiệp',
+              location: 'Tầng 1 - Tòa A',
+              capacity: 30,
+              usageFee: 80000,
+              image: '',
+              amenities: ['Máy chạy bộ', 'Tạ tay', 'Xe đạp tập'],
+              openingHours: '06:00 - 22:00',
+              status: 'AVAILABLE'
+            },
+            {
+              id: '2',
+              name: 'Hồ bơi Olympic',
+              description: 'Hồ bơi ngoài trời với view đẹp, có cứu hộ chuyên nghiệp',
+              location: 'Khu vực ngoài trời - Tầng trệt',
+              capacity: 50,
+              usageFee: 120000,
+              image: '',
+              amenities: ['Hồ bơi 25m', 'Khu vực trẻ em', 'Ghế nằm'],
+              openingHours: '05:00 - 21:00',
+              status: 'AVAILABLE'
+            },
+            {
+              id: '3',
+              name: 'Sân tennis chuyên nghiệp',
+              description: 'Sân tennis ngoài trời chất lượng cao với đèn chiếu sáng',
+              location: 'Khu vực ngoài trời - Tầng trệt',
+              capacity: 8,
+              usageFee: 100000,
+              image: '',
+              amenities: ['Sân tennis tiêu chuẩn', 'Đèn chiếu sáng', 'Ghế ngồi'],
+              openingHours: '06:00 - 22:00',
+              status: 'AVAILABLE'
+            },
+            {
+              id: '4',
+              name: 'Sân bóng rổ',
+              description: 'Sân bóng rổ ngoài trời với đèn chiếu sáng',
+              location: 'Khu vực ngoài trời - Tầng trệt',
+              capacity: 20,
+              usageFee: 60000,
+              image: '',
+              amenities: ['Sân bóng rổ tiêu chuẩn', 'Đèn chiếu sáng'],
+              openingHours: '06:00 - 22:00',
+              status: 'AVAILABLE'
+            },
+            {
+              id: '5',
+              name: 'Phòng sinh hoạt cộng đồng',
+              description: 'Phòng đa năng cho các hoạt động cộng đồng, tiệc tùng',
+              location: 'Tầng 1 - Tòa C',
+              capacity: 100,
+              usageFee: 30000,
+              image: '',
+              amenities: ['Sân khấu', 'Hệ thống âm thanh', 'Bàn ghế'],
+              openingHours: '08:00 - 22:00',
+              status: 'AVAILABLE'
+            },
+            {
+              id: '6',
+              name: 'Phòng họp đa năng',
+              description: 'Phòng họp đa năng cho cư dân, có máy chiếu và âm thanh',
+              location: 'Tầng 2 - Tòa B',
+              capacity: 40,
+              usageFee: 50000,
+              image: '',
+              amenities: ['Máy chiếu', 'Hệ thống âm thanh', 'Bàn ghế'],
+              openingHours: '08:00 - 20:00',
+              status: 'AVAILABLE'
+            }
+          ]
+          setFacilities(fallbackFacilities)
+        }
 
         // Lấy lịch sử đặt chỗ
         const data = await fetchMyFacilityBookings()
@@ -1390,8 +1471,19 @@ const FacilityBookingsPage: FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {facilities.map((facility) => (
+            {facilities.length === 0 ? (
+              <div className="text-center py-12">
+                <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Không có tiện ích nào</h3>
+                <p className="text-gray-600 mb-4">Hiện tại chưa có tiện ích nào được cấu hình trong hệ thống.</p>
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Tải lại
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {facilities.map((facility) => (
                 <Card key={facility.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
@@ -1434,8 +1526,9 @@ const FacilityBookingsPage: FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

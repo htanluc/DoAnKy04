@@ -1,0 +1,109 @@
+{
+  "name": "Trải Nghiệm Căn Hộ FPT",
+  "short_name": "FPT Apartment",
+  "description": "Hệ thống quản lý căn hộ thông minh - Trải nghiệm sống tiện nghi và hiện đại",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "vi",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Xem tổng quan căn hộ",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/dashboard-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Hóa đơn",
+      "short_name": "Hóa đơn",
+      "description": "Xem và thanh toán hóa đơn",
+      "url": "/dashboard/invoices",
+      "icons": [{ "src": "/icons/invoice-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Đặt tiện ích",
+      "short_name": "Tiện ích",
+      "description": "Đặt các tiện ích chung cư",
+      "url": "/dashboard/facility-bookings",
+      "icons": [{ "src": "/icons/facility-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Sự kiện",
+      "short_name": "Sự kiện",
+      "description": "Xem các sự kiện sắp tới",
+      "url": "/dashboard/events",
+      "icons": [{ "src": "/icons/event-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard trên desktop"
+    },
+    {
+      "src": "/screenshots/dashboard-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Dashboard trên mobile"
+    }
+  ]
+}

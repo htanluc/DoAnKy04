@@ -407,4 +407,40 @@ public class FacilityBookingController {
             return ResponseEntity.status(500).body("Lỗi xử lý callback: " + e.getMessage());
         }
     }
+
+    /**
+     * Cập nhật trạng thái thanh toán cho booking
+     */
+    @PatchMapping("/{bookingId}/payment")
+    public ResponseEntity<?> updatePaymentStatus(
+            @PathVariable Long bookingId,
+            @RequestBody Map<String, Object> paymentData) {
+        try {
+            String paymentStatus = (String) paymentData.get("paymentStatus");
+            String paymentMethod = (String) paymentData.get("paymentMethod");
+            Double totalCost = paymentData.get("totalCost") != null ? 
+                Double.valueOf(paymentData.get("totalCost").toString()) : null;
+            String transactionId = (String) paymentData.get("transactionId");
+
+            FacilityBookingDto updatedBooking = facilityBookingService.updatePaymentStatus(
+                bookingId, paymentStatus, paymentMethod, totalCost, transactionId);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Cập nhật trạng thái thanh toán thành công",
+                "booking", updatedBooking
+            ));
+            
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "message", "Lỗi cập nhật trạng thái thanh toán: " + e.getMessage()
+            ));
+        }
+    }
 } 

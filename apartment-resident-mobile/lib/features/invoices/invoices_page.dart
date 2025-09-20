@@ -72,8 +72,9 @@ Future<List<_Invoice>> _fetchInvoices() async {
   final raw = jsonDecode(resp.body);
   final list = ApiHelper.extractList(raw);
   return list.whereType<Object>().map((e) {
-    if (e is! Map)
+    if (e is! Map) {
       return _Invoice(id: 0, billingPeriod: '', totalAmount: 0, status: '');
+    }
     final m = Map<String, dynamic>.from(e);
     return _Invoice(
       id: ((m['id'] ?? m['invoiceId'] ?? 0) as num).toInt(),
