@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Bell, Menu, X, LogOut, Building2, Clock, User, Settings, Search, Sparkles, Star, Heart, Zap, Target, Award, Shield, Coffee, Wrench, MapPin, Flame, TrendingUp, Sun, Moon, Wifi, Battery, Signal, Cloud, CloudRain
+  Bell, Menu, X, LogOut, Building2, Clock, User, Settings, Search, Sparkles, Star, Heart, Zap, Target, Award, Shield, Coffee, Wrench, MapPin, Flame, TrendingUp, Sun, Moon
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,6 @@ export default function EnhancedHeader({
   const [showNotifications, setShowNotifications] = useState(false)
   const [recentNotifications, setRecentNotifications] = useState<any[]>([])
   const [isMobile, setIsMobile] = useState(false)
-  const [weather, setWeather] = useState({ temp: 25, condition: 'sunny' })
   const [isCondensed, setIsCondensed] = useState(false)
   const router = useRouter()
   const headerRef = useState<HTMLElement | null>(null)[0] as any
@@ -83,13 +82,6 @@ export default function EnhancedHeader({
       setCurrentTime(new Date())
     }, 1000) // Update time every second
 
-    // Simulate weather update
-    const weatherInterval = setInterval(() => {
-      const newTemp = Math.floor(Math.random() * (35 - 20 + 1)) + 20 // 20-35°C
-      const conditions = ['sunny', 'cloudy', 'rainy']
-      const newCondition = conditions[Math.floor(Math.random() * conditions.length)]
-      setWeather({ temp: newTemp, condition: newCondition })
-    }, 60000) // Update weather every minute
 
     // Listen for storage changes (e.g., logout from another tab)
     const handleStorageChange = (event: StorageEvent) => {
@@ -108,7 +100,6 @@ export default function EnhancedHeader({
 
     return () => {
       clearInterval(interval)
-      clearInterval(weatherInterval)
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('resize', updateHeaderHeight)
@@ -159,14 +150,6 @@ export default function EnhancedHeader({
     return date.toLocaleDateString('vi-VN')
   }
 
-  const getWeatherIcon = () => {
-    switch (weather.condition) {
-      case 'sunny': return <Sun className="h-4 w-4 text-yellow-500" />
-      case 'cloudy': return <Cloud className="h-4 w-4 text-gray-500" />
-      case 'rainy': return <CloudRain className="h-4 w-4 text-blue-500" />
-      default: return <Sun className="h-4 w-4 text-yellow-500" />
-    }
-  }
 
   return (
     <>
@@ -208,25 +191,11 @@ export default function EnhancedHeader({
             </div>
           </div>
 
-          {/* Center Section - Weather & Time */}
-          <div className={cn("items-center space-x-6", isCondensed ? "hidden" : "hidden lg:flex") }>
-            <div className={cn(
-              "flex items-center space-x-2 px-4 py-2 rounded-xl shadow-sm",
-              isDarkMode 
-                ? "bg-slate-800/70 text-slate-200" 
-                : "bg-white/70 text-gray-700"
-            )}>
-              {getWeatherIcon()}
-              <span className="text-sm font-medium">{weather.temp}°C</span>
-            </div>
+          {/* Center Section - Time Only */}
+          <div className={cn("items-center", isCondensed ? "hidden" : "hidden lg:flex") }>
             <div className="flex items-center space-x-2 px-4 py-2 bg-brand-gradient rounded-xl text-white shadow-lg">
               <Clock className="h-4 w-4" />
               <span className="text-sm font-medium">{formatTime(currentTime)}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Wifi className="h-4 w-4 text-green-500" />
-              <Battery className="h-4 w-4 text-green-500" />
-              <Signal className="h-4 w-4 text-green-500" />
             </div>
           </div>
 

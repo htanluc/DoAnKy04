@@ -70,7 +70,11 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Status updated successfully')),
       );
-      setState(() {});
+      setState(() {
+        // Sau khi lưu vào DB, xóa danh sách ảnh chờ để tránh lưu trùng
+        _beforeUrls.clear();
+        _afterUrls.clear();
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,7 +102,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Upload lỗi: $e')));
+          .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -524,7 +528,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                                       : () => _pickAndUpload(isBefore: true),
                                   icon: const Icon(Icons.add_a_photo_outlined,
                                       size: 18),
-                                  label: const Text('Thêm'),
+                                  label: const Text('Add'),
                                 ),
                               ],
                             ),
@@ -552,7 +556,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                                       : () => _pickAndUpload(isBefore: false),
                                   icon: const Icon(Icons.add_a_photo_outlined,
                                       size: 18),
-                                  label: const Text('Thêm'),
+                                  label: const Text('Add'),
                                 ),
                               ],
                             ),
@@ -560,6 +564,20 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Builder(builder: (context) {
+                      final hasPending =
+                          _beforeUrls.isNotEmpty || _afterUrls.isNotEmpty;
+                      return FilledButton.icon(
+                        onPressed:
+                            _uploading || !hasPending ? null : _saveStatus,
+                        icon: const Icon(Icons.save_outlined, size: 18),
+                        label: const Text('Save attachments'),
+                      );
+                    }),
                   ),
                 ],
               ),

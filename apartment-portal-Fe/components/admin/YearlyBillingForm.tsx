@@ -225,7 +225,10 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="motorcycleFee">{t('admin.yearly-billing.parkingFee','Phí gửi xe (VND/tháng)')}</Label>
+                          <Label htmlFor="motorcycleFee" className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">🛵</span>
+                            {t('admin.yearly-billing.parking.motorcycle.label','Phí xe máy')} (VND/tháng)
+                          </Label>
                           <input
                             id="motorcycleFee"
                             type="number"
@@ -239,7 +242,10 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="car4SeatsFee">{t('admin.yearly-billing.parkingFee','Phí gửi xe (VND/tháng)')}</Label>
+                          <Label htmlFor="car4SeatsFee" className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">🚗</span>
+                            {t('admin.yearly-billing.parking.car4.label','Phí xe 4 chỗ')} (VND/tháng)
+                          </Label>
                           <input
                             id="car4SeatsFee"
                             type="number"
@@ -253,7 +259,10 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="car7SeatsFee">{t('admin.yearly-billing.parkingFee','Phí gửi xe (VND/tháng)')}</Label>
+                          <Label htmlFor="car7SeatsFee" className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">🚐</span>
+                            {t('admin.yearly-billing.parking.car7.label','Phí xe 7 chỗ')} (VND/tháng)
+                          </Label>
                           <input
                             id="car7SeatsFee"
                             type="number"
@@ -287,21 +296,30 @@ export default function YearlyBillingForm({ apartments = [] }: YearlyBillingForm
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">{t('admin.invoices.feeType.VEHICLE_FEE','Phí gửi xe')}:</span>
+                            <span className="font-medium flex items-center gap-2">
+                              <span>🛵</span>
+                              {t('admin.yearly-billing.parking.motorcycle.label','Phí gửi xe máy')}:
+                            </span>
                             <span className="text-green-600 font-semibold">
                               {formatNumber(form.motorcycleFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                               <span className="text-xs text-gray-500 ml-2">({form.motorcycleFee})</span>
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">{t('admin.yearly-billing.parking.car4.label','Phí xe 4 chỗ')}:</span>
+                            <span className="font-medium flex items-center gap-2">
+                              <span>🚗</span>
+                              {t('admin.yearly-billing.parking.car4.label','Phí xe 4 chỗ')}:
+                            </span>
                             <span className="text-green-600 font-semibold">
                               {formatNumber(form.car4SeatsFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                               <span className="text-xs text-gray-500 ml-2">({form.car4SeatsFee})</span>
                             </span>
                           </div>
                           <div className="flex justify-between items-center md:col-span-2">
-                            <span className="font-medium">{t('admin.yearly-billing.parking.car7.label','Phí xe 7 chỗ')}:</span>
+                            <span className="font-medium flex items-center gap-2">
+                              <span>🚐</span>
+                              {t('admin.yearly-billing.parking.car7.label','Phí xe 7 chỗ')}:
+                            </span>
                             <span className="text-green-600 font-semibold">
                               {formatNumber(form.car7SeatsFee)} <span className="whitespace-nowrap">{t('admin.units.perVehiclePerMonth','đ/xe/tháng')}</span>
                               <span className="text-xs text-gray-500 ml-2">({form.car7SeatsFee})</span>

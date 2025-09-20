@@ -79,7 +79,6 @@ export default function SupportRequestDetailPage() {
   const [assigning, setAssigning] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<number | "">("");
   const [selectedPriority, setSelectedPriority] = useState<number>(1);
-  const [adminNotes, setAdminNotes] = useState<string>("");
 
   const [assignError, setAssignError] = useState<string>("");
   const [statusError, setStatusError] = useState<string>("");
@@ -312,7 +311,6 @@ export default function SupportRequestDetailPage() {
         assignedToUserId: Number(selectedStaff),
         serviceCategory: data.categoryCode!,
         priority: selectedPriority,
-        adminNotes: adminNotes,
       });
       const u = staffList.find((s) => s.id === Number(selectedStaff));
       setData((d) => ({ 
@@ -321,7 +319,7 @@ export default function SupportRequestDetailPage() {
         assignedTo: u?.username || "", 
         assignedAt: new Date().toISOString(),
         staffPhone: u?.phoneNumber || d!.staffPhone || "",
-        resolutionNotes: adminNotes || d!.resolutionNotes || ""
+        resolutionNotes: d!.resolutionNotes || ""
       }));
       toast({ title: "Thành công", description: "Gán nhân viên thành công" });
     } catch {
@@ -589,13 +587,6 @@ export default function SupportRequestDetailPage() {
                       ))}
                     </select>
                   </div>
-                  <textarea
-                    className="border rounded px-2 py-1 w-full"
-                    rows={3}
-                    placeholder="Ghi chú của admin (tuỳ chọn)"
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                  />
                   <Button
                     className="w-fit"
                     onClick={handleAssign}

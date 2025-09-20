@@ -21,9 +21,22 @@ class _SplashPageState extends State<SplashPage> {
     final token = await AuthService.getToken();
     if (!mounted) return;
     if (token != null && token.isNotEmpty) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const RequestsListPage()),
-      );
+      final isStaff = await AuthService.isStaff();
+      if (!mounted) return;
+      if (isStaff) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const RequestsListPage()),
+        );
+      } else {
+        await AuthService.logout();
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tài khoản không có quyền Staff')),
+        );
+      }
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),

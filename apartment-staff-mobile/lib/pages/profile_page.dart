@@ -237,7 +237,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Account information',
+                    const Text('Account Information',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
@@ -247,15 +247,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         value: status ?? '-'),
                     _InfoRow(
                         icon: Icons.event,
-                        label: 'Created at',
+                        label: 'Created At',
                         value: createdAtText),
                     _InfoRow(
                         icon: Icons.perm_identity,
-                        label: 'ID card',
+                        label: 'ID Card',
                         value: idCard ?? '-'),
                     _InfoRow(
                         icon: Icons.cake_outlined,
-                        label: 'Date of birth',
+                        label: 'Date of Birth',
                         value: dobText),
                     if (roles.isNotEmpty)
                       _InfoRow(
@@ -275,7 +275,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   : () => setState(() => _showChange = !_showChange),
               icon: const Icon(Icons.lock_reset),
               label: Text(
-                  _showChange ? 'Close password change' : 'Change password'),
+                  _showChange ? 'Close Password Change' : 'Change Password'),
             ),
 
             if (_showChange) ...[
@@ -293,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       controller: _oldCtrl,
                       obscureText: _ob1,
                       decoration: InputDecoration(
-                        labelText: 'Current password',
+                        labelText: 'Current Password',
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -307,7 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       controller: _newCtrl,
                       obscureText: _ob2,
                       decoration: InputDecoration(
-                        labelText: 'New password',
+                        labelText: 'New Password',
                         prefixIcon: const Icon(Icons.vpn_key_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -321,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       controller: _confirmCtrl,
                       obscureText: _ob3,
                       decoration: InputDecoration(
-                        labelText: 'Confirm new password',
+                        labelText: 'Confirm New Password',
                         prefixIcon: const Icon(Icons.vpn_key_rounded),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -373,7 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
             OutlinedButton.icon(
               onPressed: _loading ? null : _logout,
               icon: const Icon(Icons.logout),
-              label: const Text('Log out'),
+              label: const Text('Log Out'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red.shade700,
                 side: BorderSide(color: Colors.red.shade300),

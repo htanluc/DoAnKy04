@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giới thiệu - Smart Building Management System</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f5f7fb; color: #2c3e50; }
+        .hero {
+            background: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
+            color: white; padding: 60px 20px; text-align: center;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        h1 { margin: 0 0 10px 0; font-size: 2.4rem; }
+        .subtitle { opacity: .95; font-size: 1.1rem; }
+        .card { background: white; border-radius: 14px; padding: 24px; box-shadow: 0 10px 24px rgba(0,0,0,.06); margin: 20px 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+        .pill { display: inline-block; padding: 6px 12px; background: #eef2ff; color: #3730a3; border-radius: 999px; font-weight: 600; margin: 4px 6px 0 0; }
+        .btn { display: inline-block; padding: 12px 18px; background: #0ea5e9; color: white; border-radius: 10px; text-decoration: none; font-weight: 600; box-shadow: 0 8px 16px rgba(14,165,233,.25); }
+        .btn:hover { background: #0284c7; }
+        .muted { color: #64748b; }
+        header.nav { background: white; border-bottom: 1px solid #e5e7eb; }
+        header.nav .wrap { max-width: 1100px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+        nav a { color: #334155; text-decoration: none; font-weight: 600; margin-left: 16px; }
+        nav a:hover { color: #0ea5e9; }
+        footer { text-align: center; padding: 28px 20px; color: #64748b; }
+    </style>
+    <link rel="icon" href="apartment-portal-Fe/public/logo.svg">
+</head>
+<body>
+    <header class="nav">
+        <div class="wrap">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:#0ea5e9;color:white;font-weight:800;">SB</span>
+                <strong>Smart Building</strong>
+            </div>
+            <nav>
+                <a href="presentation.html">Trang thuyết trình</a>
+                <a href="#tai-lieu">Tài liệu</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h1>Giới thiệu dự án</h1>
+        <p class="subtitle">Smart Building Management System - Hệ thống quản lý tòa nhà thông minh, hiện đại và mở rộng.</p>
+    </section>
+
+    <main class="container">
+        <div class="card">
+            <h2>Mục tiêu & phạm vi</h2>
+            <p class="muted">Dự án hướng tới việc số hóa toàn bộ hoạt động quản lý chung cư: cư dân, căn hộ, tiện ích, hóa đơn, thanh toán, sự kiện và hỗ trợ. Hệ thống phục vụ 3 nhóm người dùng: Cư dân, Nhân viên, Quản trị viên.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Kiến trúc</h3>
+                <p class="muted">Modular Monolith trên Spring Boot 3.2 (Java 20), 2 cổng Frontend Next.js (Admin/User) và Mobile Flutter cho nhân viên.</p>
+                <div>
+                    <span class="pill">Spring Boot 3.2</span>
+                    <span class="pill">Next.js 15/14</span>
+                    <span class="pill">Flutter</span>
+                    <span class="pill">MySQL 8.x</span>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Tính năng nổi bật</h3>
+                <ul class="muted">
+                    <li>Quản lý cư dân, căn hộ, tiện ích, đặt chỗ</li>
+                    <li>Hóa đơn định kỳ, chỉ số nước, thanh toán Stripe/VNPay</li>
+                    <li>Thông báo, sự kiện, realtime qua WebSocket</li>
+                    <li>Đa ngôn ngữ (vi/en), bảo mật JWT + RBAC</li>
+                </ul>
+            </div>
+            <div class="card" id="tai-lieu">
+                <h3>Tài liệu dự án</h3>
+                <p class="muted">Tải và xem tài liệu tổng hợp dự án nhóm 1:</p>
+                <p>
+                    <a class="btn" href="GROUP1_Smart_Building_Management_System.docx">Tải tài liệu GROUP1_Smart_Building_Management_System.docx</a>
+                </p>
+                <p class="muted" style="margin-top:10px;">Hoặc xem file nén kèm: <a href="GROUP1_Smart_Building_Management_System.zip">GROUP1_Smart_Building_Management_System.zip</a></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Liên kết nhanh</h3>
+            <p>
+                <a href="apartment-portal-BE/README.md">Backend README</a> •
+                <a href="apartment-portal-Fe/README-ANNOUNCEMENTS-EVENTS-FACILITIES.md">Admin Portal Docs</a> •
+                <a href="apartment-user-portal/ENHANCED_UI_GUIDE.md">User Portal UI Guide</a>
+            </p>
+        </div>
+    </main>
+
+    <footer>
+        © 2025 Smart Building Management System
+    </footer>
+</body>
+</html>
+

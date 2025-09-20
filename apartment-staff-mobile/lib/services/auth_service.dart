@@ -28,4 +28,36 @@ class AuthService {
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
   }
+
+  static Future<List<String>> getRoles() async {
+    final user = await getUser();
+    if (user == null) return const <String>[];
+    final possibleKeys = ['roles', 'authorities', 'role', 'userRoles'];
+    final result = <String>[];
+    for (final key in possibleKeys) {
+      final v = user[key];
+      if (v is List) {
+        for (final item in v) {
+          if (item is String) {
+            result.add(item);
+          } else if (item is Map<String, dynamic>) {
+            final name = item['name']?.toString();
+            if (name != null) result.add(name);
+            final code = item['code']?.toString();
+            if (code != null) result.add(code);
+            final authority = item['authority']?.toString();
+            if (authority != null) result.add(authority);
+          }
+        }
+      } else if (v is String) {
+        result.add(v);
+      }
+    }
+    return result.map((e) => e.toUpperCase()).toSet().toList();
+  }
+
+  static Future<bool> isStaff() async {
+    final roles = await getRoles();
+    return roles.any((r) => r.contains('STAFF'));
+  }
 }

@@ -1,0 +1,339 @@
+================================================================================
+          DANH SÁCH CÁC PHẦN CẦN CẬP NHẬT TRONG TÀI LIỆU
+          GROUP1_Smart_Building_Management_System.docx
+================================================================================
+
+Ngày cập nhật: 18/09/2025
+Người phân tích: AI Assistant
+
+================================================================================
+1. KIẾN TRÚC HỆ THỐNG (REVIEW 2)
+================================================================================
+
+1.1 PHẦN CẦN THAY ĐỔI:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 2 Architecture & Design
+   - Mục: 1.3 Overall system architecture
+   - Mục: 1.4 Microservices architecture diagram
+   - Mục: 1.5 Microservices details
+
+1.2 NỘI DUNG CẬP NHẬT:
+   [THAY ĐỔI] Từ: "Microservices architecture diagram"
+   [THÀNH]: "Modular Monolith Architecture Diagram"
+
+   [THAY ĐỔI] Từ: "6 separate microservices (MAIN, REALTIME, FACILITY, REPORTING, PAYMENT, SECURITY)"
+   [THÀNH]: "Single Spring Boot application with modular structure"
+
+1.3 LÝ DO THAY ĐỔI:
+   - Thực tế project là monolithic Spring Boot application
+   - Không có 6 services riêng biệt như mô tả
+
+================================================================================
+2. MOBILE APPLICATIONS
+================================================================================
+
+2.1 PHẦN CẦN THÊM:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 3 Database & GUI Design
+   - Mục: 2.2 Mobile App interface
+
+2.2 NỘI DUNG THÊM MỚI:
+   [THÊM MỚI] Phần "2.2.3 Staff Mobile App Interface"
+
+   2.2.3 Staff Mobile App Interface
+   **Layout:** Full-screen native mobile interface
+   **Components:**
+     - App logo and staff information at top
+     - Navigation drawer with main functions
+     - Service request list with priority indicators
+     - Request detail view with image support
+     - Real-time notification system
+
+   **UX:**
+     - Material Design 3 compliance
+     - Offline capability for critical features
+     - QR code scanning for facility check-ins
+     - Image upload for maintenance documentation
+
+   **Key Screens:**
+     - Login screen
+     - Dashboard with pending requests
+     - Service request details and processing
+     - Facility management
+     - Profile and settings
+
+2.3 LÝ DO THÊM:
+   - Thực tế có 2 mobile apps: Staff app (Flutter) + Resident portal (Web)
+
+================================================================================
+3. DATABASE ENTITIES (REVIEW 3)
+================================================================================
+
+3.1 PHẦN CẦN MỞ RỘNG:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 3 Database & GUI Design
+   - Mục: 1.1 List of main entities
+   - Mục: 1.2 ERD (Entity-Relationship Diagram)
+
+3.2 ENTITIES MỚI CẦN THÊM:
+
+   **Core Entities (8 entities gốc - GIỮ NGUYÊN):**
+   1. Users - Quản lý đăng nhập và vai trò
+   2. Apartments - Thông tin chi tiết căn hộ
+   3. Residents - Thông tin cá nhân và liên lạc cư dân
+   4. Facilities - Danh mục cơ sở vật chất
+   5. Bookings - Quản lý đặt chỗ sử dụng
+   6. Invoices - Hóa đơn định kỳ và phí dịch vụ
+   7. Announcements - Thông báo từ ban quản lý
+   8. SupportTickets - Yêu cầu hỗ trợ và bảo trì
+
+   **Entities BỔ SUNG (17 entities mới):**
+   9. Building - Quản lý tòa nhà
+   10. Event - Sự kiện trong tòa nhà
+   11. EventRegistration - Đăng ký tham gia sự kiện
+   12. Vehicle - Quản lý phương tiện
+   13. VehicleCapacityConfig - Cấu hình sức chứa phương tiện
+   14. WaterMeterReading - Chỉ số đồng hồ nước
+   15. PaymentTransaction - Giao dịch thanh toán
+   16. ActivityLog - Nhật ký hoạt động hệ thống
+   17. AiQaHistory - Lịch sử hỏi đáp AI
+   18. Feedback - Phản hồi từ cư dân
+   19. FeedbackCategory - Danh mục phản hồi
+   20. EmailVerificationToken - Token xác thực email
+   21. RefreshToken - Token làm mới đăng nhập
+   22. ServiceFeeConfig - Cấu hình phí dịch vụ
+   23. FacilityCheckIn - Check-in cơ sở vật chất
+   24. Role - Vai trò người dùng
+   25. ServiceCategory - Danh mục dịch vụ
+
+3.3 RELATIONSHIPS MỚI CẦN THÊM:
+   - Building 1:N Apartments
+   - Event 1:N EventRegistration
+   - Vehicle N:1 VehicleCapacityConfig
+   - WaterMeterReading N:1 Apartment
+   - ActivityLog N:1 User
+   - Feedback N:1 FeedbackCategory
+
+================================================================================
+4. TECHNOLOGIES VERSION
+================================================================================
+
+4.1 PHẦN CẦN CẬP NHẬT:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 2 Architecture & Design
+   - Mục: 1.2 Detailed roles of each tier + technologies used
+
+4.2 CHI TIẾT CẬP NHẬT:
+
+   **Backend Technologies:**
+   [THAY ĐỔI] Từ: "Spring Boot 3.x, Java 17+"
+   [THÀNH]: "Spring Boot 3.2.0, Java 20"
+
+   **Frontend Technologies:**
+   [THAY ĐỔI] Từ: "React.js 18+, TypeScript 5+"
+   [THÀNH]: "Admin Portal: Next.js 15.2.4, React 19, TypeScript 5.8.3"
+           "User Portal: Next.js 14.0.4, React 18.2.0, TypeScript 5.8.3"
+
+   **Mobile Technologies:**
+   [THAY ĐỔI] Từ: "Flutter 3.x, Dart 3+"
+   [THÀNH]: "Flutter 3.5.0, Dart 3.5.0"
+
+   **Database:**
+   [GIỮ NGUYÊN]: "MySQL 8.x"
+
+   **Additional Libraries:**
+   [THÊM MỚI]: "Stripe Java SDK 25.9.0 (Payment)"
+   [THÊM MỚI]: "VNPay Integration (Additional payment gateway)"
+   [THÊM MỚI]: "OpenAI Java SDK (AI features)"
+   [THÊM MỚI]: "WebSocket with STOMP (Real-time communications)"
+   [THÊM MỚI]: "i18n support (Internationalization)"
+
+================================================================================
+5. PAYMENT INTEGRATION
+================================================================================
+
+5.1 PHẦN CẦN MỞ RỘNG:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 2 Architecture & Design
+   - Mục: 1.5 Microservices details (PAYMENT SERVICE)
+
+5.2 NỘI DUNG THÊM MỚI:
+
+   **Payment Gateways:**
+   - Stripe Payment Gateway (International payments)
+   - VNPay Integration (Domestic Vietnamese payments)
+
+   **Payment Features:**
+   - Multiple payment methods support
+   - Secure payment processing
+   - Payment transaction logging
+   - Refund processing capabilities
+   - Payment status tracking
+
+================================================================================
+6. ADDITIONAL FEATURES
+================================================================================
+
+6.1 PHẦN CẦN THÊM:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 1 Problem Definition & Requirement
+   - Mục: 3.2 Functional requirements
+
+6.2 TÍNH NĂNG MỚI CẦN THÊM:
+
+   **AI Integration:**
+   - OpenAI-powered Q&A system
+   - Automated responses for common queries
+   - Smart suggestion system
+
+   **Water Meter Management:**
+   - Water meter reading tracking
+   - Monthly water consumption calculation
+   - Water bill generation
+
+   **Events Management:**
+   - Building event organization
+   - Event registration system
+   - Event notification system
+
+   **Vehicle Management:**
+   - Vehicle registration and tracking
+   - Parking capacity management
+   - Vehicle access control
+
+   **Advanced Security:**
+   - Email verification system
+   - JWT refresh token mechanism
+   - Role-based access control (RBAC)
+   - Security monitoring and logging
+
+   **Internationalization:**
+   - Multi-language support (Vietnamese/English)
+   - Localized date and currency formatting
+   - RTL language support preparation
+
+================================================================================
+7. FUNCTIONAL REQUIREMENTS (MỞ RỘNG)
+================================================================================
+
+7.1 PHẦN CẦN MỞ RỘNG:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 1 Problem Definition & Requirement
+   - Mục: 3.2 Functional requirements
+
+7.2 YÊU CẦU MỚI CẦN THÊM:
+
+   **AI Features:**
+   - AI-powered customer support chatbot
+   - Automated query analysis and responses
+   - Knowledge base management
+
+   **Water Management:**
+   - Water meter reading input and validation
+   - Consumption calculation and reporting
+   - Water bill integration with main billing system
+
+   **Events & Community:**
+   - Event creation and management
+   - Resident registration for events
+   - Event calendar and notifications
+
+   **Vehicle & Parking:**
+   - Vehicle registration management
+   - Parking space allocation
+   - Capacity limit enforcement
+
+   **Feedback System:**
+   - Resident feedback collection
+   - Feedback categorization and analysis
+   - Response and resolution tracking
+
+================================================================================
+8. NON-FUNCTIONAL REQUIREMENTS (CẬP NHẬT)
+================================================================================
+
+8.1 PHẦN CẦN CẬP NHẬT:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Trang: Review 1 Problem Definition & Requirement
+   - Mục: 3.1 Non-functional requirements
+
+8.2 CHI TIẾT CẬP NHẬT:
+
+   **Performance:**
+   [THÊM]: "Support for AI processing workloads"
+   [THÊM]: "Real-time WebSocket connections for 1000+ concurrent users"
+
+   **Security:**
+   [THÊM]: "Email verification for account security"
+   [THÊM]: "JWT refresh token rotation"
+   [THÊM]: "SQL injection prevention"
+   [THÊM]: "XSS protection"
+
+   **Usability:**
+   [THÊM]: "Multi-language support (i18n)"
+   [THÊM]: "Progressive Web App capabilities"
+   [THÊM]: "Offline functionality for critical features"
+
+================================================================================
+9. PROJECT STRUCTURE
+================================================================================
+
+9.1 PHẦN CẦN THÊM:
+   - File: GROUP1_Smart_Building_Management_System.docx
+   - Mục: Phần giới thiệu hoặc Appendix
+
+9.2 CẤU TRÚC PROJECT THỰC TẾ:
+
+   ```
+   apartment-portal-BE/           # Spring Boot Backend
+   ├── src/main/java/com/mytech/apartment/portal/
+   │   ├── apis/                   # REST Controllers
+   │   ├── services/              # Business Logic
+   │   ├── models/                # JPA Entities
+   │   ├── repositories/          # Data Access Layer
+   │   ├── dtos/                  # Data Transfer Objects
+   │   ├── config/                # Configuration Classes
+   │   └── security/              # Security Components
+   └── uploads/                   # File Storage
+
+   apartment-portal-Fe/           # Next.js Admin Dashboard
+   ├── app/                       # Next.js App Router
+   ├── components/                # React Components
+   ├── lib/                       # Utilities & API clients
+   └── public/                    # Static Assets
+
+   apartment-staff-mobile/        # Flutter Staff App
+   ├── lib/
+   │   ├── pages/                 # App Screens
+   │   ├── services/              # API Services
+   │   └── models/                # Data Models
+
+   apartment-user-portal/         # Next.js Resident Portal
+   ├── src/                       # React Components
+   ├── public/                    # Static Assets
+   └── package.json
+   ```
+
+================================================================================
+10. CHECKLIST CẬP NHẬT TÀI LIỆU
+================================================================================
+
+[ ] 1. Cập nhật kiến trúc từ Microservices → Monolithic
+[ ] 2. Thêm phần Staff Mobile App
+[ ] 3. Mở rộng Database Entities (25+ entities)
+[ ] 4. Cập nhật Technology Stack versions
+[ ] 5. Thêm VNPay payment integration
+[ ] 6. Thêm các tính năng mới (AI, Water Meter, Events, etc.)
+[ ] 7. Mở rộng Functional Requirements
+[ ] 8. Cập nhật Non-functional Requirements
+[ ] 9. Thêm Project Structure
+[ ] 10. Cập nhật tất cả diagrams và screenshots
+[ ] 11. Review và proofread toàn bộ document
+[ ] 12. Tạo bản PDF final
+
+================================================================================
+KẾT THÚC TÀI LIỆU HƯỚNG DẪN CẬP NHẬT
+================================================================================
+
+Lưu ý: Các thay đổi này dựa trên phân tích code thực tế của project.
+Đảm bảo test tất cả tính năng trước khi cập nhật tài liệu chính thức.
