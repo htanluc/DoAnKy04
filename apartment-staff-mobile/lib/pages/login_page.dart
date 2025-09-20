@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import 'requests_list_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -29,11 +30,22 @@ class _LoginPageState extends State<LoginPage> {
         _passCtrl.text,
       );
       if (!mounted) return;
-      // ignore: avoid_print
-      print('[LoginPage] Login success, navigating to RequestsListPage');
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const RequestsListPage()),
-      );
+      final isStaff = await AuthService.isStaff();
+      if (!mounted) return;
+      if (isStaff) {
+        // ignore: avoid_print
+        print(
+            '[LoginPage] Login success (STAFF), navigating to RequestsListPage');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const RequestsListPage()),
+        );
+      } else {
+        await AuthService.logout();
+        if (!mounted) return;
+        setState(() {
+          _error = 'Tài khoản không có quyền Staff';
+        });
+      }
     } catch (e) {
       // ignore: avoid_print
       print('[LoginPage] Login error: $e');
@@ -76,13 +88,13 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Staff login',
+                  'Staff Login',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Please sign in to continue',
+                  'Please sign in to continue.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: cs.onSurfaceVariant),
                 ),
@@ -143,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.login),
-                    label: const Text('Sign in'),
+                    label: const Text('Sign In'),
                   ),
                 ),
                 const SizedBox(height: 12),

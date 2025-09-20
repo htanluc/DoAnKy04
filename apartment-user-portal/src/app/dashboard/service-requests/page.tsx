@@ -475,6 +475,9 @@ export default function ServiceRequestsPage() {
     const matchesStatus = filterStatus === 'all' || request.status === filterStatus
     const matchesCategory = filterCategory === 'all' || request.category === filterCategory
     return matchesSearch && matchesStatus && matchesCategory
+  }).sort((a, b) => {
+    // Sắp xếp theo thứ tự mới nhất (createdAt giảm dần)
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
 
   if (loading) {
@@ -497,24 +500,26 @@ export default function ServiceRequestsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-gray-900">Yêu cầu dịch vụ</h1>
           <p className="text-gray-600">Quản lý các yêu cầu hỗ trợ và dịch vụ</p>
         </div>
-        <Button 
-          onClick={() => setShowCreateForm(true)}
-          className="flex items-center space-x-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Tạo yêu cầu mới</span>
-        </Button>
+        <div className="flex-shrink-0 w-full lg:w-auto">
+          <Button 
+            onClick={() => setShowCreateForm(true)}
+            className="flex items-center justify-center space-x-2 w-full lg:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Tạo yêu cầu mới</span>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-stagger">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-stagger">
         <Card className="hover-lift transition-smooth">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng yêu cầu</CardTitle>
@@ -562,7 +567,7 @@ export default function ServiceRequestsPage() {
           <CardTitle>Bộ lọc</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium">Tìm kiếm</label>
               <Input
@@ -609,8 +614,8 @@ export default function ServiceRequestsPage() {
 
       {/* Create Form Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Tạo yêu cầu dịch vụ mới</CardTitle>
             </CardHeader>
@@ -632,7 +637,7 @@ export default function ServiceRequestsPage() {
                   rows={4}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Danh mục</label>
                   <select
@@ -745,7 +750,7 @@ export default function ServiceRequestsPage() {
                       <Image className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">Hình ảnh đính kèm ({request.attachmentUrls.length} ảnh):</span>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                       {request.attachmentUrls.map((url, index) => (
                         <div key={index} className="relative group">
                           <img
@@ -768,7 +773,7 @@ export default function ServiceRequestsPage() {
                       <Image className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">Hình ảnh đính kèm ({request.imageUrls.length} ảnh):</span>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                       {request.imageUrls.map((imageUrl, index) => (
                         <div key={index} className="relative group">
                           <img
@@ -791,10 +796,10 @@ export default function ServiceRequestsPage() {
                       <Image className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">Hình ảnh Trước / Sau</span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <div className="text-sm font-semibold mb-2">Trước</div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {(request.beforeImages || []).map((url, index) => (
                             <img
                               key={index}
@@ -808,7 +813,7 @@ export default function ServiceRequestsPage() {
                       </div>
                       <div>
                         <div className="text-sm font-semibold mb-2">Sau</div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {(request.afterImages || []).map((url, index) => (
                             <img
                               key={index}
@@ -824,44 +829,6 @@ export default function ServiceRequestsPage() {
                   </div>
                 ) : null}
                 
-                {/* Hiển thị file đính kèm khác */}
-                {request.attachmentUrls && request.attachmentUrls.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-700">File đính kèm:</h4>
-                    <div className="space-y-2">
-                      {request.attachmentUrls.map((fileUrl, index) => (
-                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-700 truncate">
-                              {fileUrl.split('/').pop() || `File ${index + 1}`}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => window.open(fileUrl, '_blank')}
-                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                          >
-                            Tải xuống
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Debug info */}
-                <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
-                  Debug: assignedTo={request.assignedTo || 'undefined'}, 
-                  assignedToId={request.assignedToId || 'N/A'}, 
-                  assignedToPhone={request.assignedToPhone || 'undefined'}, 
-                  staffPhone={request.staffPhone || 'undefined'}, 
-                  staffPhoneMap={JSON.stringify(staffPhoneMap)}
-                </div>
-                
                 {/* Service Request Status Progress */}
                 <ServiceRequestStatusProgress
                   status={request.status}
@@ -872,12 +839,9 @@ export default function ServiceRequestsPage() {
                   className="w-full"
                 />
                 
-                {/* Comments Section */}
+                {/* Action Section */}
                 <div className="border-t pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
-                      {(request.comments || []).length} bình luận
-                    </div>
+                  <div className="flex items-center justify-end">
                     {request.status === 'PENDING' && (
                       <Button
                         variant="outline"
@@ -888,33 +852,6 @@ export default function ServiceRequestsPage() {
                       </Button>
                     )}
                   </div>
-                  
-                  {/* Show comments if any */}
-                  {request.comments && request.comments.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {request.comments.map((comment, index) => (
-                        <div key={index} className={`p-3 rounded-lg ${
-                          comment.isStaff ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'
-                        }`}>
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className={`text-xs font-medium ${
-                              comment.isStaff ? 'text-blue-700' : 'text-gray-700'
-                            }`}>
-                              {comment.isStaff ? '👤 Nhân viên' : '👤 Bạn'}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(comment.createdAt).toLocaleString('vi-VN')}
-                            </span>
-                          </div>
-                          <p className={`text-sm ${
-                            comment.isStaff ? 'text-blue-800' : 'text-gray-800'
-                          }`}>
-                            {comment.content}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>

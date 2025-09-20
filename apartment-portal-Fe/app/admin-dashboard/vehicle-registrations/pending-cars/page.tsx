@@ -731,27 +731,6 @@ export default function PendingCarsPage() {
                     : (selectedVehicle.imageUrls || []);
                   return urls && urls.length > 0 ? (
                    <div>
-                     {/* Debug Info */}
-                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                       <p className="text-sm text-blue-800">
-                        <strong>Debug:</strong> Tìm thấy {urls.length} URL hình ảnh
-                       </p>
-                      {urls.map((url, idx) => (
-                        <p key={idx} className="text-xs text-blue-600 mt-1 break-all">
-                          {idx + 1}: {url || '(URL rỗng)'}
-                          {url && (
-                            <>
-                              <br />
-                              {!url.includes('/api/image-proxy') && (
-                                <>
-                                  <span className="text-[11px] text-blue-700">proxy:</span> {getImageSrc(url.trim(), true)}
-                                </>
-                              )}
-                            </>
-                          )}
-                        </p>
-                      ))}
-                    </div>
                     
                     {/* Image Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -807,27 +786,6 @@ export default function PendingCarsPage() {
                             </div>
                           )}
                           
-                          {/* Action links */}
-                          {imageUrl && imageUrl.trim() && (
-                            <div className="mt-1 text-[11px] text-blue-600 flex gap-2">
-                              <a
-                                className="underline"
-                                href={imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), true, Date.now())}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Mở qua proxy
-                              </a>
-                              <a
-                                className="underline"
-                                href={imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), false, Date.now())}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Mở raw
-                              </a>
-                            </div>
-                          )}
 
                           <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
                             {index + 1}/{urls.length}
