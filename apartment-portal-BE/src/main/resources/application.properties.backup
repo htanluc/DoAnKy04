@@ -1,0 +1,125 @@
+spring.application.name=appartmentdb
+#qitn ifzn bjsn oabq
+# Database Configuration
+spring.datasource.url=jdbc:mysql://localhost:3306/ApartmentDB?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+spring.datasource.username=root
+spring.datasource.password=123456
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA Configuration - Tạo schema và dữ liệu mẫu bằng file complete-schema.sql
+spring.jpa.defer-datasource-initialization=true
+spring.sql.init.mode=never
+spring.sql.init.continue-on-error=true
+# Các giá trị có thể sử dụng cho spring.jpa.hibernate.ddl-auto:
+# - create-drop: Tạo schema mới và xóa khi ứng dụng dừng (chỉ dùng cho development)
+# - create: Tạo schema mới mỗi lần khởi động (chỉ dùng cho development)
+# - update: Cập nhật schema nếu có thay đổi (có thể dùng cho development)
+# - validate: Chỉ kiểm tra schema có khớp với entity không (dùng cho production)
+# - none: Không làm gì với schema (dùng cho production)
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+spring.jpa.properties.hibernate.jdbc.time_zone=Asia/Ho_Chi_Minh
+
+# SQL Initialization Configuration - Sử dụng complete-schema.sql để tạo bảng và thêm dữ liệu
+spring.sql.init.schema-locations=classpath:complete-schema.sql
+spring.sql.init.encoding=UTF-8
+
+# Server Configuration
+server.port=8080
+server.address=0.0.0.0
+
+# JWT Configuration
+jwt.secret=Z3hsK2J1RDV4QXpVN2c1RjJkMk5OamR3YWxBbldIQ3E=
+jwt.expirationMs=3600000
+
+# Logging Configuration
+logging.level.com.mytech.apartment.portal=INFO
+logging.level.org.springframework.security=INFO
+logging.level.org.springframework.web=INFO
+logging.level.org.hibernate.SQL=WARN
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=WARN
+
+# Hiển thị log với format dễ đọc
+logging.pattern.console=%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+
+# Mail Configuration
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=thucdang2205@gmail.com
+spring.mail.password=fhoh mahs utmp cemu
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.default-encoding=UTF-8
+
+# Frontend URLs - Support both admin and user portals
+app.admin-frontend-url=http://localhost:3000
+app.user-frontend-url=http://localhost:3001
+
+# Payment Gateway Configuration - Sử dụng environment variables cho production
+# MoMo Configuration
+payment.momo.endpoint=${MOMO_ENDPOINT:https://test-payment.momo.vn/v2/gateway/api/create}
+payment.momo.partner-code=${MOMO_PARTNER_CODE:MOMO}
+payment.momo.access-key=${MOMO_ACCESS_KEY:klm05TvNBzhg7h7j}
+payment.momo.secret-key=${MOMO_SECRET_KEY:at67qH6mk8w5Y1nAyMoYKMWACiEi2BSa}
+
+# VNPay Configuration
+payment.vnpay.endpoint=${VNPAY_ENDPOINT:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+payment.vnpay.tmn-code=${VNPAY_TMN_CODE:XHXOSV1S}
+payment.vnpay.hash-secret=${VNPAY_HASH_SECRET:MDD4SQTSTNP6QMSI06N8ICLNQN5HAZG1}
+
+# ZaloPay Configuration
+payment.zalopay.endpoint=${ZALOPAY_ENDPOINT:https://sandbox.zalopay.com.vn/v001/tpe/createorder}
+payment.zalopay.app-id=${ZALOPAY_APP_ID:2553}
+payment.zalopay.key1=${ZALOPAY_KEY1:PcG4aMSk3ryJbqNhG8SfA2QfnUZbNxI6}
+payment.zalopay.key2=${ZALOPAY_KEY2:kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz}
+
+# PayPal Configuration
+payment.paypal.client-id=${PAYPAL_CLIENT_ID:Abc123def456ghi789jkl012mno345pqr678stu901vwx234yz}
+payment.paypal.client-secret=${PAYPAL_CLIENT_SECRET:EFG456hij789klm012nop345qrs678tuv901wxy234zab567cde890fgh}
+payment.paypal.mode=${PAYPAL_MODE:sandbox}
+payment.paypal.return-url=${PAYPAL_RETURN_URL:http://localhost:3001/payment/success}
+payment.paypal.cancel-url=${PAYPAL_CANCEL_URL:http://localhost:3001/payment/cancel}
+
+# Stripe Configuration (for Visa/Mastercard)
+payment.stripe.publishable-key=${STRIPE_PUBLISHABLE_KEY:pk_test_51RrjcHHuyyZZuQuBDOaHrdvePlWEFLmBdA3ZWyFAQslEgm5TpPdDijIX0d1zKhp6zYBoZDiDxTQ1eqx9l0pK8MTY00elGt4nHf}
+payment.stripe.secret-key=${STRIPE_SECRET_KEY:sk_test_51RrjcHHuyyZZuQuBOQ7mi9U60fwLFz8gqZowfipNbh6NU9VQ0FfdWzfglKYiVgCawzzXm1nGGWkhFJIQKjMf5Z5C001Adrwsp2}
+payment.stripe.webhook-secret=${STRIPE_WEBHOOK_SECRET:whsec_ACTUAL_SECRET_FROM_STRIPE_DASHBOARD}
+payment.stripe.success-url=${STRIPE_SUCCESS_URL:http://localhost:8080/api/payments/stripe/success}
+payment.stripe.cancel-url=${STRIPE_CANCEL_URL:http://localhost:8080/api/payments/stripe/cancel}
+
+# General Payment Configuration
+# Base URL for FE payment pages; specific paths are appended per gateway
+payment.return.url=http://localhost:3001/payment
+payment.currency=VND
+payment.timeout=300000
+
+# File Upload Configuration
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=50MB
+spring.servlet.multipart.enabled=true
+
+# Internationalization (i18n) Configuration
+spring.messages.basename=messages
+spring.messages.encoding=UTF-8
+spring.messages.fallback-to-system-locale=false
+spring.messages.use-code-as-default-message=true
+
+# Cloudinary Configuration (Uncomment when ready to use Cloudinary)
+# cloudinary.cloud-name=Root
+# cloudinary.api-key=491298989386762
+# cloudinary.api-secret=n0e8dCBvtyq4iSk25BBwjwBIVUg
+
+# Load environment overrides from local .env.properties if present
+spring.config.import=optional:file:.env.properties
+
+# Actuator Configuration for Monitoring
+management.endpoints.web.exposure.include=health,info,metrics,prometheus
+management.endpoint.health.show-details=always
+management.metrics.export.prometheus.enabled=true
+management.metrics.tags.application=apartment-portal
+openai.api.key=${OPENAI_API_KEY:}
+openai.api.url=${OPENAI_API_URL:https://api.openai.com/v1/chat/completions}
+openai.model=${OPENAI_MODEL:gpt-3.5-turbo}

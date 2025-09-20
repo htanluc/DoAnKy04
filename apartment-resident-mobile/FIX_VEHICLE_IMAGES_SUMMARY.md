@@ -80,3 +80,4 @@ Sau khi sửa để có thể xem hình ảnh xe máy thì không hoạt động
 - API base URL: `http://10.0.2.2:8080` (cho Android emulator)
 - Nếu backend chạy trên port khác, cập nhật trong `app_config.dart`
 - Debug logs chỉ hiển thị trong debug mode
+

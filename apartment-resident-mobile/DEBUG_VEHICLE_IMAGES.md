@@ -76,3 +76,6 @@ defaultValue: 'http://10.0.2.2:YOUR_PORT',
 2. **Backend down** - Hiển thị error message và nút retry
 3. **Hình ảnh lỗi** - Hiển thị icon broken_image
 4. **API timeout** - Hiển thị fallback data
+
+
+

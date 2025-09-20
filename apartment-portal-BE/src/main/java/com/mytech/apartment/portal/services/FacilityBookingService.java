@@ -19,9 +19,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.HashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class FacilityBookingService {
+    private static final Logger log = LoggerFactory.getLogger(FacilityBookingService.class);
+    
     @Autowired
     private FacilityBookingRepository facilityBookingRepository;
 
@@ -118,22 +122,46 @@ public class FacilityBookingService {
         double totalCost = usageFee * hours * numberOfPeople;
         booking.setTotalCost(totalCost);
         
-        // Set payment status
-        booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PENDING);
+        // Set payment status from request
+        if (request.getPaymentStatus() != null && "PAID".equals(request.getPaymentStatus())) {
+            // Chuyển status từ PENDING thành CONFIRMED khi thanh toán
+            booking.setStatus(FacilityBookingStatus.CONFIRMED);
+            booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PAID);
+            
+            // Convert payment method string to enum
+            if (request.getPaymentMethod() != null) {
+                try {
+                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.valueOf(request.getPaymentMethod()));
+                } catch (IllegalArgumentException e) {
+                    // Default to MOMO if invalid payment method
+                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.MOMO);
+                }
+            }
+            
+            booking.setPaymentDate(LocalDateTime.now());
+            // Set totalCost from request if provided
+            if (request.getTotalCost() != null) {
+                booking.setTotalCost(request.getTotalCost());
+            }
+        } else {
+            booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PENDING);
+        }
 
         FacilityBooking savedBooking = facilityBookingRepository.save(booking);
         
-        // Tạo QR code cho booking mới
-        String qrCode = "FACILITY_" + savedBooking.getId() + "_" + System.currentTimeMillis();
-        LocalDateTime expiresAt = savedBooking.getBookingTime().plusMinutes(savedBooking.getDuration()).plusHours(1);
-        
-        savedBooking.setQrCode(qrCode);
-        savedBooking.setQrExpiresAt(expiresAt);
-        savedBooking.setMaxCheckins(savedBooking.getNumberOfPeople());
-        savedBooking.setCheckedInCount(0);
-        
-        FacilityBooking updatedBooking = facilityBookingRepository.save(savedBooking);
-        return facilityBookingMapper.toDto(updatedBooking);
+        // Chỉ tạo QR code khi đã thanh toán
+        if (savedBooking.getPaymentStatus() == com.mytech.apartment.portal.models.enums.PaymentStatus.PAID) {
+            String qrCode = "FACILITY_" + savedBooking.getId() + "_" + System.currentTimeMillis();
+            LocalDateTime expiresAt = savedBooking.getBookingTime().plusMinutes(savedBooking.getDuration()).plusHours(1);
+            
+            savedBooking.setQrCode(qrCode);
+            savedBooking.setQrExpiresAt(expiresAt);
+            savedBooking.setMaxCheckins(savedBooking.getNumberOfPeople());
+            savedBooking.setCheckedInCount(0);
+            
+            savedBooking = facilityBookingRepository.save(savedBooking);
+        }
+        return facilityBookingMapper.toDto(savedBooking);
     }
 
     public Optional<FacilityBookingDto> updateFacilityBooking(Long id, FacilityBookingCreateRequest request) {
@@ -433,5 +461,82 @@ public class FacilityBookingService {
         }
 
         return facilityBookingMapper.toDto(saved);
+    }
+
+    /**
+     * Cập nhật trạng thái thanh toán cho booking
+     */
+    public FacilityBookingDto updatePaymentStatus(
+            Long bookingId,
+            String paymentStatus,
+            String paymentMethod,
+            Double totalCost,
+            String transactionId) {
+        
+        log.info("DEBUG: Updating payment status for booking ID: {}", bookingId);
+        log.info("DEBUG: Payment status: {}, method: {}, cost: {}", paymentStatus, paymentMethod, totalCost);
+        
+        FacilityBooking booking;
+        try {
+            booking = facilityBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy booking với ID: " + bookingId));
+                
+            log.info("DEBUG: Found booking: {} - {}", booking.getId(), booking.getFacility() != null ? booking.getFacility().getName() : "Unknown");
+        } catch (Exception e) {
+            log.error("DEBUG: Error finding booking: {}", e.getMessage(), e);
+            throw e;
+        }
+
+        // Cập nhật trạng thái booking thành CONFIRMED khi thanh toán thành công
+        if ("PAID".equals(paymentStatus)) {
+            // Chuyển status từ PENDING thành CONFIRMED
+            booking.setStatus(com.mytech.apartment.portal.models.enums.FacilityBookingStatus.CONFIRMED);
+            
+            // Set payment info
+            booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PAID);
+            
+            // Convert payment method string to enum
+            if (paymentMethod != null) {
+                try {
+                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.valueOf(paymentMethod));
+                } catch (IllegalArgumentException e) {
+                    // Default to MOMO if invalid payment method
+                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.MOMO);
+                }
+            }
+            
+            booking.setPaymentDate(LocalDateTime.now());
+            if (totalCost != null) {
+                booking.setTotalCost(totalCost);
+            }
+            if (transactionId != null) {
+                booking.setTransactionId(transactionId);
+            }
+
+            // Tạo QR code sau khi thanh toán thành công
+            String qrCode = "FACILITY_" + booking.getId() + "_" + System.currentTimeMillis();
+            
+            // Tính thời gian hết hạn QR code - sử dụng bookingTime và endTime
+            LocalDateTime expiresAt;
+            if (booking.getBookingTime() != null && booking.getEndTime() != null) {
+                expiresAt = booking.getEndTime().plusHours(1);
+            } else if (booking.getBookingTime() != null && booking.getDuration() != null) {
+                // Fallback: tính endTime từ bookingTime + duration
+                expiresAt = booking.getBookingTime().plusMinutes(booking.getDuration()).plusHours(1);
+            } else {
+                // Fallback cuối cùng nếu không có thời gian
+                expiresAt = LocalDateTime.now().plusDays(1);
+            }
+
+            booking.setQrCode(qrCode);
+            booking.setQrExpiresAt(expiresAt);
+            booking.setMaxCheckins(booking.getNumberOfPeople());
+            booking.setCheckedInCount(0);
+
+            log.info("QR code generated for booking {}: {}", booking.getId(), qrCode);
+        }
+
+        FacilityBooking savedBooking = facilityBookingRepository.save(booking);
+        return facilityBookingMapper.toDto(savedBooking);
     }
 } 

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/auth/login_page.dart';
 import 'features/dashboard/dashboard_page.dart';
-import 'features/invoices/invoices_page.dart';
+import 'features/invoices/ui/invoices_screen.dart';
 import 'features/facility_bookings/facility_bookings_page.dart';
 import 'features/events/events_page.dart';
 import 'features/announcements/announcements_page.dart';
@@ -12,6 +12,7 @@ import 'features/service_requests/service_requests_page.dart';
 import 'features/profile/profile_page.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/vehicles/ui/vehicles_screen.dart';
+import 'features/facilities/ui/facilities_screen.dart';
 
 void main() {
   runApp(ProviderScope(child: const MainApp()));
@@ -48,13 +49,14 @@ class MainApp extends StatelessWidget {
         '/': (context) => const AuthGate(),
         '/login': (context) => const LoginPage(),
         '/dashboard': (context) => const DashboardPage(),
-        '/invoices': (context) => const InvoicesPage(),
+        '/invoices': (context) => const InvoicesScreen(),
         '/facility-bookings': (context) => const FacilityBookingsPage(),
         '/events': (context) => const EventsPage(),
         '/announcements': (context) => const AnnouncementsPage(),
         '/service-requests': (context) => const ServiceRequestsPage(),
         '/profile': (context) => const ProfilePage(),
         '/vehicles': (context) => const VehiclesScreen(),
+        '/facilities': (context) => const FacilitiesScreen(),
       },
     );
   }

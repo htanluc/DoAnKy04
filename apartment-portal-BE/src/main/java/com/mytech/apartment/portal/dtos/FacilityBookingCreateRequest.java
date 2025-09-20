@@ -27,6 +27,12 @@ public class FacilityBookingCreateRequest {
     @NotNull(message = "numberOfPeople không được để trống")
     @Min(value = 1, message = "Số người phải lớn hơn 0")
     private Integer numberOfPeople;
+    
+    // Payment fields
+    private String paymentStatus;
+    private String paymentMethod;
+    private Double totalCost;
+    private String transactionId;
 
     // Constructors
     public FacilityBookingCreateRequest() {}
@@ -63,4 +69,17 @@ public class FacilityBookingCreateRequest {
     
     public Integer getNumberOfPeople() { return numberOfPeople; }
     public void setNumberOfPeople(Integer numberOfPeople) { this.numberOfPeople = numberOfPeople; }
+
+    // Payment getters and setters
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public Double getTotalCost() { return totalCost; }
+    public void setTotalCost(Double totalCost) { this.totalCost = totalCost; }
+
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
 } 
