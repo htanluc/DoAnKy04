@@ -286,6 +286,7 @@ CREATE TABLE IF NOT EXISTS service_requests (
     category BIGINT NOT NULL,
     description TEXT,
     image_attachment VARCHAR(255),
+    attachment_urls TEXT,
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     assigned_to BIGINT,
     assigned_at TIMESTAMP,

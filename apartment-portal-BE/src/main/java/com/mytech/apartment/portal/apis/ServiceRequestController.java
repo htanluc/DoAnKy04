@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
@@ -142,19 +143,26 @@ public class ServiceRequestController {
         }
     }
 
-    /** Upload file cho service request */
+    /** Upload files cho service request */
     @PostMapping("/upload/service-request")
-    public ResponseEntity<ApiResponse<String>> uploadServiceRequestFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse<List<String>>> uploadServiceRequestFiles(@RequestParam("files") List<MultipartFile> files) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) {
                 return ResponseEntity.status(401).build();
             }
             
-            String imageUrl = fileUploadService.uploadServiceRequestImage(file);
-            return ResponseEntity.ok(ApiResponse.success("Upload file thành công", imageUrl));
+            List<String> imageUrls = new ArrayList<>();
+            for (MultipartFile file : files) {
+                if (!file.isEmpty()) {
+                    String imageUrl = fileUploadService.uploadServiceRequestImage(file);
+                    imageUrls.add(imageUrl);
+                }
+            }
+            
+            return ResponseEntity.ok(ApiResponse.success("Upload files thành công", imageUrls));
         } catch (IOException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi upload file: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi upload files: " + e.getMessage()));
         }
     }
 

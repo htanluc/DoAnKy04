@@ -23,6 +23,7 @@ public class ServiceRequestCreateRequest {
     private String priority;
     
     private List<String> attachmentUrls; // URLs của các file đã upload
+    private List<String> imageAttachment; // URLs của các hình ảnh đã upload
 
     // Constructors
     public ServiceRequestCreateRequest() {}
@@ -62,4 +63,7 @@ public class ServiceRequestCreateRequest {
 
     public List<String> getAttachmentUrls() { return attachmentUrls; }
     public void setAttachmentUrls(List<String> attachmentUrls) { this.attachmentUrls = attachmentUrls; }
+
+    public List<String> getImageAttachment() { return imageAttachment; }
+    public void setImageAttachment(List<String> imageAttachment) { this.imageAttachment = imageAttachment; }
 } 

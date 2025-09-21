@@ -84,17 +84,15 @@ public class ServiceRequestService {
             // Convert List to JSON string
             String attachmentJson = convertListToJson(request.getAttachmentUrls());
             serviceRequest.setAttachmentUrls(attachmentJson);
-            
-            // Separate images for backward compatibility
-            List<String> imageUrls = request.getAttachmentUrls().stream()
-                    .filter(this::isImageUrl)
-                    .collect(Collectors.toList());
-            if (!imageUrls.isEmpty()) {
-                serviceRequest.setImageAttachment(convertListToJson(imageUrls));
-            }
         }
         
-        serviceRequest.setStatus(ServiceRequestStatus.OPEN);
+        // Xử lý imageAttachment riêng biệt
+        if (request.getImageAttachment() != null && !request.getImageAttachment().isEmpty()) {
+            String imageJson = convertListToJson(request.getImageAttachment());
+            serviceRequest.setImageAttachment(imageJson);
+        }
+        
+        serviceRequest.setStatus(ServiceRequestStatus.PENDING);
         serviceRequest.setSubmittedAt(LocalDateTime.now());
 
         ServiceRequest savedServiceRequest = serviceRequestRepository.save(serviceRequest);
