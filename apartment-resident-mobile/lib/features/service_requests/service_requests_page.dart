@@ -93,7 +93,7 @@ Future<List<_ServiceRequest>> _fetchMyRequests() async {
   final raw = jsonDecode(resp.body);
   final list = ApiHelper.extractList(raw);
   return list.whereType<Object>().map((e) {
-    if (e is! Map)
+    if (e is! Map) {
       return _ServiceRequest(
         id: '',
         title: '',
@@ -102,6 +102,7 @@ Future<List<_ServiceRequest>> _fetchMyRequests() async {
         status: '',
         createdAt: '',
       );
+    }
     final m = Map<String, dynamic>.from(e);
     return _ServiceRequest(
       id: (m['id'] ?? m['requestId'] ?? '').toString(),

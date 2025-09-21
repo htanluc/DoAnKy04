@@ -1201,7 +1201,7 @@ public class DataInitializer implements CommandLineRunner {
             
             // Determine status based on index
             ServiceRequestStatus status;
-            if (i < 5) status = ServiceRequestStatus.OPEN;
+            if (i < 5) status = ServiceRequestStatus.PENDING;
             else if (i < 10) status = ServiceRequestStatus.IN_PROGRESS;
             else if (i < 15) status = ServiceRequestStatus.COMPLETED;
             else status = ServiceRequestStatus.CANCELLED;

@@ -2,8 +2,12 @@ package com.mytech.apartment.portal.models.enums;
 
 public enum ServiceCategoryType {
     ELECTRICITY,
-    PLUMBING,
+    WATER,
     CLEANING,
     SECURITY,
+    HVAC,
+    ELEVATOR,
+    GARDENING,
+    IT,
     OTHER
 } 

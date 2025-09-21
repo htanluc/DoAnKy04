@@ -4,5 +4,6 @@ public enum FacilityBookingStatus {
     PENDING,
     CONFIRMED,
     REJECTED,
+    CANCELLED,
     COMPLETED
 } 

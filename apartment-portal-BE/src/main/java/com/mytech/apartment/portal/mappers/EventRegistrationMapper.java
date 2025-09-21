@@ -21,6 +21,10 @@ public class EventRegistrationMapper {
         }
         dto.setRegisteredAt(entity.getRegisteredAt());
         dto.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
+        dto.setQrCode(entity.getQrCode());
+        dto.setQrExpiresAt(entity.getQrExpiresAt());
+        dto.setCheckedIn(entity.getCheckedIn());
+        dto.setCheckedInAt(entity.getCheckedInAt());
         return dto;
     }
 } 

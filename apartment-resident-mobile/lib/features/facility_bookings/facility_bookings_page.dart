@@ -17,6 +17,8 @@ class FacilityBookingsPage extends ConsumerStatefulWidget {
 }
 
 class _FacilityBookingsPageState extends ConsumerState<FacilityBookingsPage> {
+  String _selectedFilter = 'Tất cả'; // Default filter
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +42,28 @@ class _FacilityBookingsPageState extends ConsumerState<FacilityBookingsPage> {
         backgroundColor: const Color(0xFF1976D2), // FPT Blue
         elevation: 0,
         actions: [
+          // Filter dropdown
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list, color: Colors.white),
+            onSelected: (String value) {
+              setState(() {
+                _selectedFilter = value;
+              });
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(value: 'Tất cả', child: Text('Tất cả')),
+              const PopupMenuItem(
+                value: 'Chờ thanh toán',
+                child: Text('Chờ thanh toán'),
+              ),
+              const PopupMenuItem(
+                value: 'Đã xác nhận',
+                child: Text('Đã xác nhận'),
+              ),
+              const PopupMenuItem(value: 'Đã hủy', child: Text('Đã hủy')),
+              const PopupMenuItem(value: 'Từ chối', child: Text('Từ chối')),
+            ],
+          ),
           IconButton(
             onPressed: () => ref.invalidate(myBookingsProvider),
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -123,7 +147,10 @@ class _FacilityBookingsPageState extends ConsumerState<FacilityBookingsPage> {
     WidgetRef ref,
     List<FacilityBooking> bookings,
   ) {
-    if (bookings.isEmpty) {
+    // Áp dụng filter
+    List<FacilityBooking> filteredBookings = _filterBookings(bookings);
+
+    if (filteredBookings.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -135,15 +162,19 @@ class _FacilityBookingsPageState extends ConsumerState<FacilityBookingsPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Chưa có đặt chỗ nào',
+              _selectedFilter == 'Tất cả'
+                  ? 'Chưa có đặt chỗ nào'
+                  : 'Không có đặt chỗ ${_selectedFilter.toLowerCase()}',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Hãy đặt tiện ích đầu tiên của bạn',
-              style: TextStyle(color: Colors.grey),
+            Text(
+              _selectedFilter == 'Tất cả'
+                  ? 'Hãy đặt tiện ích đầu tiên của bạn'
+                  : 'Hãy thử chọn bộ lọc khác',
+              style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -166,9 +197,9 @@ class _FacilityBookingsPageState extends ConsumerState<FacilityBookingsPage> {
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: bookings.length,
+        itemCount: filteredBookings.length,
         itemBuilder: (context, index) {
-          final booking = bookings[index];
+          final booking = filteredBookings[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: BookingCard(
@@ -181,6 +212,29 @@ class _FacilityBookingsPageState extends ConsumerState<FacilityBookingsPage> {
         },
       ),
     );
+  }
+
+  /// Filter bookings theo trạng thái được chọn
+  List<FacilityBooking> _filterBookings(List<FacilityBooking> bookings) {
+    if (_selectedFilter == 'Tất cả') {
+      return bookings;
+    }
+
+    return bookings.where((booking) {
+      switch (_selectedFilter) {
+        case 'Chờ thanh toán':
+          return booking.status.toUpperCase() == 'PENDING';
+        case 'Đã xác nhận':
+          return booking.status.toUpperCase() == 'CONFIRMED' ||
+              booking.status.toUpperCase() == 'APPROVED';
+        case 'Đã hủy':
+          return booking.status.toUpperCase() == 'CANCELLED';
+        case 'Từ chối':
+          return booking.status.toUpperCase() == 'REJECTED';
+        default:
+          return true;
+      }
+    }).toList();
   }
 
   void _navigateToFacilities(BuildContext context) {

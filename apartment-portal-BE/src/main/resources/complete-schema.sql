@@ -144,6 +144,10 @@ CREATE TABLE IF NOT EXISTS event_registrations (
     user_id BIGINT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'REGISTERED',
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    qr_code VARCHAR(255),
+    qr_expires_at TIMESTAMP,
+    checked_in BOOLEAN DEFAULT FALSE,
+    checked_in_at TIMESTAMP,
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -155,7 +159,7 @@ CREATE TABLE IF NOT EXISTS facility_bookings (
     user_id BIGINT NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
     duration INT,
@@ -286,6 +290,7 @@ CREATE TABLE IF NOT EXISTS service_requests (
     category BIGINT NOT NULL,
     description TEXT,
     image_attachment VARCHAR(255),
+    attachment_urls TEXT,
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     assigned_to BIGINT,
     assigned_at TIMESTAMP,

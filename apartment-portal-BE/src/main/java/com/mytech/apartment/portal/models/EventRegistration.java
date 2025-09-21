@@ -31,4 +31,16 @@ public class EventRegistration {
 
     @Column(nullable = false)
     private EventRegistrationStatus status; // REGISTERED, CANCELLED...
+    
+    @Column(name = "qr_code")
+    private String qrCode;
+    
+    @Column(name = "qr_expires_at")
+    private LocalDateTime qrExpiresAt;
+    
+    @Column(name = "checked_in", nullable = false)
+    private Boolean checkedIn = false;
+    
+    @Column(name = "checked_in_at")
+    private LocalDateTime checkedInAt;
 }

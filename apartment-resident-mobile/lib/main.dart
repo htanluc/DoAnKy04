@@ -6,9 +6,10 @@ import 'features/auth/login_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/invoices/ui/invoices_screen.dart';
 import 'features/facility_bookings/facility_bookings_page.dart';
-import 'features/events/events_page.dart';
+import 'features/events/ui/events_screen.dart';
 import 'features/announcements/announcements_page.dart';
-import 'features/service_requests/service_requests_page.dart';
+import 'features/service_requests/ui/requests_screen.dart';
+import 'features/service_requests/debug_image_test.dart';
 import 'features/profile/profile_page.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/vehicles/ui/vehicles_screen.dart';
@@ -51,9 +52,10 @@ class MainApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardPage(),
         '/invoices': (context) => const InvoicesScreen(),
         '/facility-bookings': (context) => const FacilityBookingsPage(),
-        '/events': (context) => const EventsPage(),
+        '/events': (context) => const EventsScreen(),
         '/announcements': (context) => const AnnouncementsPage(),
-        '/service-requests': (context) => const ServiceRequestsPage(),
+        '/service-requests': (context) => const ServiceRequestsScreen(),
+        '/debug-image-test': (context) => const DebugImageTest(),
         '/profile': (context) => const ProfilePage(),
         '/vehicles': (context) => const VehiclesScreen(),
         '/facilities': (context) => const FacilitiesScreen(),

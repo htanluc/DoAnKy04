@@ -24,6 +24,7 @@ import com.mytech.apartment.portal.repositories.EventRegistrationRepository;
 import java.util.Optional;
 import com.mytech.apartment.portal.models.enums.EventRegistrationStatus;
 import java.util.ArrayList;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api") // Root path for event registrations
@@ -373,6 +374,68 @@ public class EventRegistrationController {
             }
             
             return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Endpoint để tạo QR code cho sự kiện đã đăng ký
+    @PostMapping("/event-registrations/{eventId}/qr-code")
+    public ResponseEntity<Map<String, Object>> generateQrCode(@PathVariable("eventId") Long eventId) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).body(Map.of("error", "Authentication failed"));
+            }
+            
+            String username = auth.getName();
+            Long userId = userService.getUserIdByPhoneNumber(username);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "User not found"));
+            }
+            
+            // Kiểm tra sự kiện có tồn tại không
+            Optional<Event> eventOpt = eventRepository.findById(eventId);
+            if (!eventOpt.isPresent()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
+            }
+            
+            Event event = eventOpt.get();
+            
+            // Kiểm tra user đã đăng ký sự kiện chưa
+            Optional<EventRegistration> registrationOpt = registrationRepository.findByEventIdAndUserId(eventId, userId);
+            if (!registrationOpt.isPresent()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Registration not found"));
+            }
+            
+            EventRegistration registration = registrationOpt.get();
+            if (registration.getStatus() != EventRegistrationStatus.REGISTERED) {
+                return ResponseEntity.status(400).body(Map.of("error", "Registration is not active"));
+            }
+            
+            // Kiểm tra sự kiện đã kết thúc chưa
+            LocalDateTime now = LocalDateTime.now();
+            if (event.getEndTime() != null && now.isAfter(event.getEndTime())) {
+                return ResponseEntity.status(400).body(Map.of("error", "Event has ended"));
+            }
+            
+            // Tạo hoặc cập nhật QR code
+            String qrCode = "EVENT_" + event.getId() + "_" + userId + "_" + System.currentTimeMillis();
+            LocalDateTime qrExpiresAt = event.getEndTime() != null ? 
+                event.getEndTime().plusHours(1) : 
+                LocalDateTime.now().plusDays(1);
+            
+            registration.setQrCode(qrCode);
+            registration.setQrExpiresAt(qrExpiresAt);
+            registrationRepository.save(registration);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("qrCode", qrCode);
+            response.put("qrExpiresAt", qrExpiresAt);
+            response.put("eventId", eventId);
+            response.put("userId", userId);
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }

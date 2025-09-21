@@ -102,21 +102,29 @@ class BookingsApi {
     }
   }
 
-  /// Hủy đặt chỗ
-  static Future<void> cancel(int id) async {
+  /// Hủy đặt chỗ - chỉ thay đổi trạng thái thành CANCELLED
+  static Future<FacilityBooking> cancel(int id) async {
     try {
       print('Cancelling booking with ID: $id');
-      final response = await ApiHelper.delete('$_basePath/$id');
+      final response = await ApiHelper.patch(
+        '$_basePath/$id/status',
+        data: {'status': 'CANCELLED'},
+      );
       print('Cancel booking response status: ${response.statusCode}');
       print('Cancel booking response body: ${response.body}');
 
-      if (response.statusCode != 200 && response.statusCode != 204) {
+      if (response.statusCode != 200) {
         throw Exception(
           'Failed to cancel booking: ${response.statusCode} - ${response.body}',
         );
       }
 
-      print('Booking cancelled successfully');
+      final data = jsonDecode(response.body);
+      final bookingData = ApiHelper.extractMap(data);
+      final booking = FacilityBooking.fromJson(bookingData);
+
+      print('Booking cancelled successfully: ${booking.id}');
+      return booking;
     } catch (e) {
       print('Error cancelling booking: $e');
       throw Exception('Error canceling booking: $e');
