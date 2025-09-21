@@ -5,6 +5,7 @@ import com.mytech.apartment.portal.dtos.EventDto;
 import com.mytech.apartment.portal.dtos.EventUpdateRequest;
 import com.mytech.apartment.portal.mappers.EventMapper;
 import com.mytech.apartment.portal.models.Event;
+import com.mytech.apartment.portal.models.EventRegistration;
 import com.mytech.apartment.portal.repositories.EventRepository;
 import com.mytech.apartment.portal.repositories.EventRegistrationRepository;
 import com.mytech.apartment.portal.models.enums.EventRegistrationStatus;
@@ -12,6 +13,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -41,13 +43,41 @@ public class EventService {
 
     public List<EventDto> getAllEvents(Long userId) {
         List<Event> all = eventRepository.findAll();
+        LocalDateTime now = LocalDateTime.now();
         return all.stream().map(event -> {
             int participantCount = eventRegistrationRepository.countByEventIdAndStatus(event.getId(), EventRegistrationStatus.REGISTERED);
             boolean isRegistered = false;
+            String qrCode = null;
+            String qrExpiresAt = null;
+            Boolean checkedIn = null;
+            String checkedInAt = null;
+            
             if (userId != null) {
                 isRegistered = eventRegistrationRepository.existsByEventIdAndUserIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
+                
+                // Lấy thông tin QR code và check-in nếu đã đăng ký
+                if (isRegistered) {
+                    Optional<EventRegistration> registration = eventRegistrationRepository.findByEventIdAndUserId(event.getId(), userId);
+                    if (registration.isPresent()) {
+                        EventRegistration reg = registration.get();
+                        qrCode = reg.getQrCode();
+                        qrExpiresAt = reg.getQrExpiresAt() != null ? reg.getQrExpiresAt().toString() : null;
+                        checkedIn = reg.getCheckedIn();
+                        checkedInAt = reg.getCheckedInAt() != null ? reg.getCheckedInAt().toString() : null;
+                    }
+                }
             }
-            return eventMapper.toDto(event, participantCount, isRegistered, false); // isEnded không cần thiết nữa
+            
+            // Kiểm tra sự kiện đã kết thúc chưa
+            boolean isEnded = event.getEndTime() != null && now.isAfter(event.getEndTime());
+            
+            EventDto dto = eventMapper.toDto(event, participantCount, isRegistered, isEnded);
+            dto.setQrCode(qrCode);
+            dto.setQrExpiresAt(qrExpiresAt);
+            dto.setCheckedIn(checkedIn);
+            dto.setCheckedInAt(checkedInAt);
+            
+            return dto;
         }).collect(java.util.stream.Collectors.toList());
     }
 
@@ -94,10 +124,38 @@ public class EventService {
             return getEventById(id);
         }
         
+        LocalDateTime now = LocalDateTime.now();
         return eventRepository.findById(id).map(event -> {
             int participantCount = eventRegistrationRepository.countByEventIdAndStatus(event.getId(), EventRegistrationStatus.REGISTERED);
             boolean isRegistered = eventRegistrationRepository.existsByEventIdAndUserIdAndStatus(event.getId(), userId, EventRegistrationStatus.REGISTERED);
-            return eventMapper.toDto(event, participantCount, isRegistered, false);
+            
+            String qrCode = null;
+            String qrExpiresAt = null;
+            Boolean checkedIn = null;
+            String checkedInAt = null;
+            
+            // Lấy thông tin QR code và check-in nếu đã đăng ký
+            if (isRegistered) {
+                Optional<EventRegistration> registration = eventRegistrationRepository.findByEventIdAndUserId(event.getId(), userId);
+                if (registration.isPresent()) {
+                    EventRegistration reg = registration.get();
+                    qrCode = reg.getQrCode();
+                    qrExpiresAt = reg.getQrExpiresAt() != null ? reg.getQrExpiresAt().toString() : null;
+                    checkedIn = reg.getCheckedIn();
+                    checkedInAt = reg.getCheckedInAt() != null ? reg.getCheckedInAt().toString() : null;
+                }
+            }
+            
+            // Kiểm tra sự kiện đã kết thúc chưa
+            boolean isEnded = event.getEndTime() != null && now.isAfter(event.getEndTime());
+            
+            EventDto dto = eventMapper.toDto(event, participantCount, isRegistered, isEnded);
+            dto.setQrCode(qrCode);
+            dto.setQrExpiresAt(qrExpiresAt);
+            dto.setCheckedIn(checkedIn);
+            dto.setCheckedInAt(checkedInAt);
+            
+            return dto;
         });
     }
 } 

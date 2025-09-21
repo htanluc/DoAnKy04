@@ -6,4 +6,4 @@ public enum ServiceRequestStatus {
     IN_PROGRESS,
     COMPLETED,
     CANCELLED
-} 
+}  

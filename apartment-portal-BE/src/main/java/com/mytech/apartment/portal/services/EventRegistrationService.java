@@ -73,6 +73,18 @@ public class EventRegistrationService {
         Event event = eventRepository.findById(request.getEventId())
                 .orElseThrow(() -> new RuntimeException("Event not found with id " + request.getEventId()));
         System.out.println("Service: Found event: " + event.getTitle());
+        
+        // Kiểm tra thời gian sự kiện
+        LocalDateTime now = LocalDateTime.now();
+        if (event.getEndTime() != null && now.isAfter(event.getEndTime())) {
+            System.out.println("Service: Event has ended, cannot register");
+            throw new RuntimeException("Sự kiện đã kết thúc, không thể đăng ký");
+        }
+        
+        if (event.getStartTime() != null && now.isAfter(event.getStartTime())) {
+            System.out.println("Service: Event has started, cannot register");
+            throw new RuntimeException("Sự kiện đã bắt đầu, không thể đăng ký");
+        }
 
         // Check for existing REGISTERED registration
         System.out.println("Service: Checking for existing registration...");
@@ -117,8 +129,19 @@ public class EventRegistrationService {
             registration.setStatus(EventRegistrationStatus.REGISTERED);
         }
 
+        // Tạo QR code cho sự kiện
+        String qrCode = "EVENT_" + event.getId() + "_" + request.getUserId() + "_" + System.currentTimeMillis();
+        LocalDateTime qrExpiresAt = event.getEndTime() != null ? 
+            event.getEndTime().plusHours(1) : 
+            LocalDateTime.now().plusDays(1);
+        
+        registration.setQrCode(qrCode);
+        registration.setQrExpiresAt(qrExpiresAt);
+        registration.setCheckedIn(false);
+
         EventRegistration savedRegistration = registrationRepository.save(registration);
         System.out.println("Service: Registration saved with ID: " + savedRegistration.getId());
+        System.out.println("Service: QR code generated: " + qrCode);
         
         EventRegistrationDto dto = registrationMapper.toDto(savedRegistration);
         System.out.println("Service: Returning DTO: " + dto);

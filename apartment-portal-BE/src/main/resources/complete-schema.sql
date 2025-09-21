@@ -144,6 +144,10 @@ CREATE TABLE IF NOT EXISTS event_registrations (
     user_id BIGINT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'REGISTERED',
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    qr_code VARCHAR(255),
+    qr_expires_at TIMESTAMP,
+    checked_in BOOLEAN DEFAULT FALSE,
+    checked_in_at TIMESTAMP,
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

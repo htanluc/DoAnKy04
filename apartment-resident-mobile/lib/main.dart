@@ -6,7 +6,7 @@ import 'features/auth/login_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/invoices/ui/invoices_screen.dart';
 import 'features/facility_bookings/facility_bookings_page.dart';
-import 'features/events/events_page.dart';
+import 'features/events/ui/events_screen.dart';
 import 'features/announcements/announcements_page.dart';
 import 'features/service_requests/ui/requests_screen.dart';
 import 'features/service_requests/debug_image_test.dart';
@@ -52,7 +52,7 @@ class MainApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardPage(),
         '/invoices': (context) => const InvoicesScreen(),
         '/facility-bookings': (context) => const FacilityBookingsPage(),
-        '/events': (context) => const EventsPage(),
+        '/events': (context) => const EventsScreen(),
         '/announcements': (context) => const AnnouncementsPage(),
         '/service-requests': (context) => const ServiceRequestsScreen(),
         '/debug-image-test': (context) => const DebugImageTest(),
