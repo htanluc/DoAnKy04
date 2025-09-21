@@ -78,9 +78,9 @@ class BookingsRepository {
   }
 
   /// Hủy đặt chỗ
-  Future<void> cancelBooking(int id) async {
+  Future<FacilityBooking> cancelBooking(int id) async {
     try {
-      await BookingsApi.cancel(id);
+      return await BookingsApi.cancel(id);
     } catch (e) {
       throw Exception('Không thể hủy đặt chỗ: $e');
     }

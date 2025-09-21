@@ -155,13 +155,15 @@ class BookingsNotifier
   }
 
   /// Hủy đặt chỗ
-  Future<void> cancelBooking(int id) async {
+  Future<FacilityBooking> cancelBooking(int id) async {
     try {
-      await _repository.cancelBooking(id);
+      final cancelledBooking = await _repository.cancelBooking(id);
       // Reload danh sách sau khi hủy thành công
       await loadBookings();
+      return cancelledBooking;
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
+      rethrow;
     }
   }
 

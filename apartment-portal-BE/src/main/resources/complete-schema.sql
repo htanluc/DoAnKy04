@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS facility_bookings (
     user_id BIGINT NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
     duration INT,

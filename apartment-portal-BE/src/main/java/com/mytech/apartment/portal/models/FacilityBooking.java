@@ -37,7 +37,7 @@ public class FacilityBooking {
     private Integer duration;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", length = 20)
     private FacilityBookingStatus status;
     
     @Column(name = "created_at")

@@ -122,7 +122,32 @@ public class FacilityBookingController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // User endpoint to cancel their booking
+    // User endpoint to cancel their booking - chỉ thay đổi status thành CANCELLED
+    @PatchMapping("/facility-bookings/{id}/status")
+    public ResponseEntity<?> cancelFacilityBooking(@PathVariable("id") Long id, @RequestBody Map<String, String> request) {
+        try {
+            String status = request.get("status");
+            if (!"CANCELLED".equals(status)) {
+                return ResponseEntity.badRequest().body("Chỉ cho phép hủy booking (status = CANCELLED)");
+            }
+            
+            FacilityBookingDto cancelledBooking = facilityBookingService.updateBookingStatus(id, status, null);
+            
+            // Log activity: Cancel facility booking
+            activityLogService.logActivityForCurrentUser(
+                ActivityActionType.CANCEL_FACILITY_BOOKING, 
+                "Hủy đặt tiện ích: %s (#%d)", 
+                cancelledBooking.getFacilityName(),
+                cancelledBooking.getId()
+            );
+            
+            return ResponseEntity.ok(cancelledBooking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // User endpoint to delete their booking (legacy - sẽ deprecated)
     @DeleteMapping("/facility-bookings/{id}")
     public ResponseEntity<Void> deleteFacilityBooking(@PathVariable("id") Long id) {
         // Get booking info before deletion for logging
@@ -130,11 +155,11 @@ public class FacilityBookingController {
         
         boolean deleted = facilityBookingService.deleteFacilityBooking(id);
         
-        // Log activity: Cancel facility booking
+        // Log activity: Delete facility booking
         if (deleted && booking.isPresent()) {
             activityLogService.logActivityForCurrentUser(
                 ActivityActionType.CANCEL_FACILITY_BOOKING, 
-                "Hủy đặt tiện ích: %s (#%d)", 
+                "Xóa đặt tiện ích: %s (#%d)", 
                 booking.get().getFacilityName(),
                 booking.get().getId()
             );
