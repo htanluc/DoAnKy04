@@ -24,6 +24,8 @@ public interface WaterMeterMapper {
     @Mapping(target = "previousReading", ignore = true)
     @Mapping(target = "currentReading", source = "meterReading")
     @Mapping(target = "apartmentName", ignore = true)
+    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "recordedByName", ignore = true)
     WaterMeterReadingDto toDto(WaterMeterReading entity);
 
     /**

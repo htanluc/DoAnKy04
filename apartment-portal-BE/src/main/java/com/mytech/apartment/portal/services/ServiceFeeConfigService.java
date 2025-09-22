@@ -6,11 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.time.YearMonth;
+import com.mytech.apartment.portal.repositories.InvoiceRepository;
 
 @Service
 public class ServiceFeeConfigService {
     @Autowired
     private ServiceFeeConfigRepository repository;
+
+    @Autowired
+    private InvoiceRepository invoiceRepository;
 
     public Optional<ServiceFeeConfig> getByMonthAndYear(int month, int year) {
         return repository.findByMonthAndYear(month, year);
@@ -20,6 +25,20 @@ public class ServiceFeeConfigService {
         // Upsert theo (month, year) để tránh trùng cấu hình
         int month = config.getMonth();
         int year = config.getYear();
+
+        // Chặn sửa biểu phí quá khứ và tháng hiện tại nếu đã tạo hóa đơn
+        YearMonth target = YearMonth.of(year, month);
+        YearMonth current = YearMonth.now();
+        if (target.isBefore(current)) {
+            throw new IllegalStateException("Không được cập nhật biểu phí của tháng quá khứ");
+        }
+        if (target.equals(current)) {
+            String prefix = String.format("%04d-%02d", year, month);
+            long count = invoiceRepository.countByBillingPeriodStartingWith(prefix);
+            if (count > 0) {
+                throw new IllegalStateException("Không được cập nhật biểu phí tháng hiện tại vì đã tạo hóa đơn");
+            }
+        }
         Optional<ServiceFeeConfig> existing = repository.findByMonthAndYear(month, year);
         if (existing.isPresent()) {
             ServiceFeeConfig entity = existing.get();

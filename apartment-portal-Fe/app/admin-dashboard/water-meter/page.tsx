@@ -245,6 +245,8 @@ export default function WaterMeterListPage() {
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.prev')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.current')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.consumption')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.recordedBy','Người ghi')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.recordedAt','Thời gian ghi')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.actions')}</th>
                 </tr>
               </thead>
@@ -274,6 +276,8 @@ export default function WaterMeterListPage() {
                           {r.consumption || (r.currentReading - r.previousReading)}
                         </span>
                       </td>
+                      <td className="border px-2 py-1">{r.recordedByName || r.recordedBy || '-'}</td>
+                      <td className="border px-2 py-1">{r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}</td>
                       <td className="border px-2 py-1">
                         {editId === rowKey ? (
                           <>
