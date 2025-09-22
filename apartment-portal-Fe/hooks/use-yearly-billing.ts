@@ -213,7 +213,8 @@ export const useYearlyBilling = () => {
         if (response.status === 404) {
           errorMessage = 'Không tìm thấy cấu hình phí cho tháng/năm này. Vui lòng tạo cấu hình mới.';
         } else if (response.status === 400) {
-          errorMessage = 'Dữ liệu cấu hình không hợp lệ. Vui lòng kiểm tra lại.';
+          // Giữ nguyên message cụ thể từ BE nếu có (ví dụ: chặn sửa quá khứ / đã tạo hóa đơn)
+          errorMessage = errorData.message || 'Dữ liệu cấu hình không hợp lệ. Vui lòng kiểm tra lại.';
         }
         
         setError(errorMessage);
@@ -250,6 +251,21 @@ export const useYearlyBilling = () => {
       return null;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Kiểm tra tháng/năm đã có hóa đơn chưa
+  const hasInvoicesForMonth = async (year: number, month: number): Promise<{ success: boolean; hasInvoices: boolean; count?: number } | null> => {
+    try {
+      const response = await api.get(`/api/admin/yearly-billing/has-invoices/${year}/${month}`);
+      if (response.ok) {
+        const result = await response.json();
+        return { success: true, hasInvoices: !!result.hasInvoices, count: result.count };
+      } else {
+        return { success: false, hasInvoices: false };
+      }
+    } catch (err) {
+      return { success: false, hasInvoices: false };
     }
   };
 
@@ -571,5 +587,6 @@ export const useYearlyBilling = () => {
     clearMessages,
     getInvoiceStats,
     clearCache,
+    hasInvoicesForMonth,
   };
 }; 

@@ -102,6 +102,55 @@ public class InvoiceService {
         invoice.setTotalAmount(invoice.getTotalAmount() + amount.doubleValue());
         invoiceRepository.save(invoice);
     }
+
+    /**
+     * Gửi email hóa đơn (đính kèm PDF) cho tất cả cư dân của một căn hộ trong kỳ.
+     */
+    public void sendInvoiceEmailsForApartmentPeriod(Long apartmentId, String period) {
+        Optional<Invoice> invoiceOpt = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, period);
+        if (invoiceOpt.isEmpty()) {
+            return;
+        }
+
+        InvoiceDto invoice = invoiceMapper.toDto(invoiceOpt.get());
+
+        // Lấy email các cư dân thuộc căn hộ
+        var residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
+        var emails = residents.stream()
+                .map(link -> userRepository.findById(link.getUserId()))
+                .filter(java.util.Optional::isPresent)
+                .map(opt -> opt.get().getEmail())
+                .filter(e -> e != null && !e.isBlank())
+                .distinct()
+                .toList();
+
+        if (emails.isEmpty()) {
+            return;
+        }
+
+        String subject = String.format("Hóa đơn căn hộ #%d - Kỳ %s", invoice.getApartmentId(), invoice.getBillingPeriod());
+        String html = String.format(
+                "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>" +
+                "<h2 style='color:#1976d2'>Hóa đơn kỳ %s</h2>" +
+                "<p><b>Căn hộ:</b> #%d</p>" +
+                "<p><b>Ngày phát hành:</b> %s</p>" +
+                "<p><b>Đến hạn:</b> %s</p>" +
+                "<p><b>Tổng tiền:</b> <span style='color:#d32f2f'>%,.0f VND</span></p>" +
+                "<p>Vui lòng xem file PDF đính kèm để biết chi tiết.</p>" +
+                "<p>Trân trọng,<br/>Ban quản lý tòa nhà</p>" +
+                "</div>",
+                invoice.getBillingPeriod(), invoice.getApartmentId(), invoice.getIssueDate(), invoice.getDueDate(),
+                invoice.getTotalAmount() == null ? 0.0 : invoice.getTotalAmount());
+
+        byte[] pdfBytes = invoicePdfService.generateInvoicePdf(invoice);
+
+        for (String email : emails) {
+            try {
+                emailService.sendHtmlWithAttachment(email, subject, html, "invoice_" + invoice.getId() + ".pdf", pdfBytes);
+            } catch (Exception ignored) {
+            }
+        }
+    }
     public void notifyResidents(String period) {
         // TODO: implement gửi email/SMS
     }

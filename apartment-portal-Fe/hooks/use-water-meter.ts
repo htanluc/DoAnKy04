@@ -8,6 +8,8 @@ export interface WaterMeterReading {
   currentReading: number;
   consumption?: number;
   createdAt?: string;
+  recordedBy?: number;
+  recordedByName?: string;
 }
 
 const API_BASE_URL = 'http://localhost:8080/api/admin/water-readings';
@@ -72,7 +74,7 @@ export function useWaterMeter() {
     }
   }
 
-  async function addReading(reading: Omit<WaterMeterReading, 'readingId' | 'consumption' | 'createdAt'>) {
+  async function addReading(reading: Omit<WaterMeterReading, 'readingId' | 'consumption' | 'createdAt' | 'recordedBy' | 'recordedByName'>) {
     setLoading(true);
     setError(null);
     try {
@@ -84,7 +86,6 @@ export function useWaterMeter() {
         readingDate,
         previousReading: reading.previousReading ?? 0,
         currentReading: reading.currentReading,
-        recordedBy: 0,
       };
       const res = await fetch(`${API_BASE_URL}`, {
         method: 'POST',

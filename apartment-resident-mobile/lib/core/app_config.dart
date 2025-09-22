@@ -15,7 +15,7 @@ class AppConfig {
     // - iOS simulator có thể dùng localhost
     // - Thiết bị thật: thay bằng IP LAN của máy backend (có thể override bằng dart-define)
     if (_isAndroid) {
-      return 'http://172.16.2.32:8080';
+      return 'http://10.0.3.2:8080';
     }
     if (_isIOS) {
       return 'http://localhost:8080';

@@ -461,6 +461,32 @@ public class YearlyBillingController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    /**
+     * Kiểm tra tháng/năm đã có hóa đơn nào chưa (để quyết định disable chỉnh sửa biểu phí)
+     */
+    @GetMapping("/has-invoices/{year}/{month}")
+    public ResponseEntity<Map<String, Object>> hasInvoicesForMonth(
+        @PathVariable int year,
+        @PathVariable int month
+    ) {
+        try {
+            String prefix = String.format("%04d-%02d", year, month);
+            long count = invoiceRepository.countByBillingPeriodStartingWith(prefix);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("year", year);
+            response.put("month", month);
+            response.put("hasInvoices", count > 0);
+            response.put("count", count);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi kiểm tra hóa đơn: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
     
     /**
      * Rate limiting helper method

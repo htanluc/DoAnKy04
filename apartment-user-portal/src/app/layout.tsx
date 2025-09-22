@@ -5,7 +5,6 @@ import { Toaster } from '@/components/ui/toaster'
 import ErrorBoundary from '@/components/ui/error-boundary'
 import PerformanceMonitor from '@/components/ui/performance-monitor'
 import { PWAInstall } from '@/components/pwa/pwa-install'
-import RequestDeduplicationMonitor from '@/components/debug/request-deduplication-monitor'
 import Script from 'next/script'
 import { pwaMetadata } from './pwa-metadata'
 
@@ -56,7 +55,6 @@ export default function RootLayout({
         </ErrorBoundary>
         <Toaster />
         <PerformanceMonitor />
-        <RequestDeduplicationMonitor />
         <PWAInstall />
         <Script
           id="sw-registration"

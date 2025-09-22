@@ -9,7 +9,7 @@ class ApiService {
   static String baseUrl = const String.fromEnvironment(
     'API_BASE_URL',
     // For real device, use your computer's IP address instead of 10.0.3.2 (emulator only)
-    defaultValue: 'http://192.168.68.113:8080',
+    defaultValue: 'http://10.0.3.2:8080',
   );
 
   static Future<Map<String, dynamic>> login(

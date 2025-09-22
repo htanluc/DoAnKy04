@@ -58,6 +58,8 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         saved = waterMeterReadingRepository.save(saved);
         WaterMeterReadingDto result = waterMeterMapper.toDto(saved);
         result.setApartmentName(apartmentService.getApartmentName(saved.getApartmentId().intValue()));
+        // Điền recordedByName nếu có
+        result.setRecordedByName(resolveUserDisplayName(saved.getRecordedBy()));
         // Set previousReading và currentReading cho frontend
         setReadingValues(result, saved);
         return result;
@@ -69,6 +71,7 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                 .map(e -> {
                     WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
                     dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
                     setReadingValues(dto, e);
                     return dto;
                 })
@@ -83,6 +86,7 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                 .map(e -> {
                     WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
                     dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
                     setReadingValues(dto, e);
                     return dto;
                 })
@@ -107,6 +111,7 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                 .map(e -> {
                     WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
                     dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
                     setReadingValues(dto, e);
                     return dto;
                 });
@@ -125,11 +130,17 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         WaterMeterReading entity = waterMeterReadingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Water meter reading not found"));
         waterMeterMapper.updateEntityFromDto(dto, entity);
+        // Ghi nhận lại người thực hiện chỉnh sửa
+        Long currentUserId = getCurrentAuthenticatedUserId();
+        if (currentUserId != null) {
+            entity.setRecordedBy(currentUserId);
+        }
         WaterMeterReading saved = waterMeterReadingRepository.save(entity);
         // Sau khi cập nhật meterReading, cập nhật consumption
         updateConsumption(saved);
         WaterMeterReadingDto result = waterMeterMapper.toDto(saved);
         result.setApartmentName(apartmentService.getApartmentName(saved.getApartmentId().intValue()));
+        result.setRecordedByName(resolveUserDisplayName(saved.getRecordedBy()));
         setReadingValues(result, saved);
         return result;
     }
@@ -154,13 +165,44 @@ public class WaterMeterServiceImpl implements WaterMeterService {
             entity.setMeterReading(currentReading);
         }
         
+        // Ghi nhận lại người thực hiện chỉnh sửa
+        Long currentUserId = getCurrentAuthenticatedUserId();
+        if (currentUserId != null) {
+            entity.setRecordedBy(currentUserId);
+        }
         WaterMeterReading saved = waterMeterReadingRepository.save(entity);
         // Cập nhật consumption
         updateConsumption(saved);
         WaterMeterReadingDto result = waterMeterMapper.toDto(saved);
         result.setApartmentName(apartmentService.getApartmentName(saved.getApartmentId().intValue()));
+        result.setRecordedByName(resolveUserDisplayName(saved.getRecordedBy()));
         setReadingValues(result, saved);
         return result;
+    }
+
+    private String resolveUserDisplayName(Long userId) {
+        try {
+            if (userId == null) return null;
+            // Fallback hiển thị cho bản ghi hệ thống (seed)
+            if (userId == 0L) return "Hệ thống";
+            var user = userService.getUserEntityById(userId);
+            if (user == null) return "Hệ thống";
+            if (user.getFullName() != null && !user.getFullName().isBlank()) return user.getFullName();
+            if (user.getUsername() != null && !user.getUsername().isBlank()) return user.getUsername();
+            if (user.getPhoneNumber() != null && !user.getPhoneNumber().isBlank()) return user.getPhoneNumber();
+            return String.valueOf(userId);
+        } catch (Exception e) {
+            return "Hệ thống";
+        }
+    }
+
+    private Long getCurrentAuthenticatedUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            Long uid = userService.getUserIdByPhoneNumber(auth.getName());
+            if (uid != null) return uid;
+        }
+        return null;
     }
 
     @Override

@@ -26,7 +26,7 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8080
 ## 🔧 Cấu hình auto-detect
 
 App tự động phát hiện platform và sử dụng URL mặc định:
-- **Android**: `http://10.0.2.2:8080`
+- **Android**: `http://10.0.3.2:8080`
 - **iOS**: `http://localhost:8080`
 - **Desktop**: `http://localhost:8080`
 

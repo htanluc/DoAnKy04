@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class WaterMeterReadingDto {
@@ -39,4 +40,10 @@ public class WaterMeterReadingDto {
 
     // Mới: tên căn hộ
     private String apartmentName;
+
+    // Thời gian tạo bản ghi (ai ghi khi nào)
+    private LocalDateTime createdAt;
+
+    // Tên người ghi (để hiển thị tiện lợi ở FE)
+    private String recordedByName;
 }

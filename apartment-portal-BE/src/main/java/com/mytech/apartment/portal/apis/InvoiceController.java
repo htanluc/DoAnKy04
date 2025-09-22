@@ -128,6 +128,53 @@ public class InvoiceController {
         }
     }
 
+
+    /**
+     * [EN] Get overdue invoices (admin only)
+     * [VI] Lấy hóa đơn quá hạn (chỉ admin)
+     */
+    @GetMapping("/api/admin/invoices/overdue")
+    public ResponseEntity<List<InvoiceDto>> getOverdueInvoices() {
+        try {
+            List<InvoiceDto> overdueInvoices = invoiceService.getOverdueInvoices();
+            
+            // Log admin activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.VIEW_INVOICE, 
+                "Admin xem hóa đơn quá hạn (%d hóa đơn)", overdueInvoices.size());
+            
+            return ResponseEntity.ok(overdueInvoices);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    /**
+     * [EN] Update overdue invoice status (admin only)
+     * [VI] Cập nhật trạng thái hóa đơn quá hạn (chỉ admin)
+     */
+    @PostMapping("/api/admin/invoices/update-overdue-status")
+    public ResponseEntity<Map<String, Object>> updateOverdueStatus() {
+        try {
+            int updatedCount = invoiceService.updateOverdueStatus();
+            
+            // Log admin activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.UPDATE_INVOICE, 
+                "Admin cập nhật trạng thái quá hạn cho %d hóa đơn", updatedCount);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("updatedCount", updatedCount);
+            response.put("message", String.format("Đã cập nhật %d hóa đơn thành trạng thái quá hạn", updatedCount));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi cập nhật trạng thái quá hạn: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
     /**
      * [EN] Get invoice by ID (admin only)
      * [VI] Lấy hóa đơn theo ID (chỉ admin)
@@ -330,24 +377,6 @@ public class InvoiceController {
         }
     }
 
-    /**
-     * [EN] Get overdue invoices (admin only)
-     * [VI] Lấy danh sách hóa đơn quá hạn (chỉ admin)
-     */
-    @GetMapping("/api/admin/invoices/overdue")
-    public ResponseEntity<List<InvoiceDto>> getOverdueInvoices() {
-        try {
-            List<InvoiceDto> overdueInvoices = invoiceService.getOverdueInvoices();
-            
-            // Log admin activity
-            smartActivityLogService.logSmartActivity(ActivityActionType.VIEW_INVOICE, 
-                "Admin xem danh sách hóa đơn quá hạn (%d hóa đơn)", overdueInvoices.size());
-            
-            return ResponseEntity.ok(overdueInvoices);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).build();
-        }
-    }
 
     /**
      * [EN] Send reminder emails for selected overdue invoices
@@ -378,30 +407,4 @@ public class InvoiceController {
         }
     }
 
-    /**
-     * [EN] Update invoice status to overdue
-     * [VI] Cập nhật trạng thái hóa đơn thành quá hạn
-     */
-    @PostMapping("/api/admin/invoices/update-overdue-status")
-    public ResponseEntity<Map<String, Object>> updateOverdueStatus() {
-        try {
-            int updatedCount = invoiceService.updateOverdueStatus();
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", String.format("Đã cập nhật %d hóa đơn thành trạng thái quá hạn", updatedCount));
-            response.put("updatedCount", updatedCount);
-            
-            // Log admin activity
-            smartActivityLogService.logSmartActivity(ActivityActionType.UPDATE_INVOICE, 
-                "Admin cập nhật trạng thái quá hạn cho %d hóa đơn", updatedCount);
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Lỗi khi cập nhật trạng thái quá hạn: " + e.getMessage());
-            return ResponseEntity.status(500).body(response);
-        }
-    }
 }

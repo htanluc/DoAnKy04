@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Service
 public class YearlyBillingService {
@@ -44,6 +45,9 @@ public class YearlyBillingService {
 
     @Autowired
     private ApartmentResidentRepository apartmentResidentRepository;
+
+    @Autowired
+    private InvoiceService invoiceService;
     
     // Cache for fee configs to reduce database queries
     private final ConcurrentHashMap<String, ServiceFeeConfig> configCache = new ConcurrentHashMap<>();
@@ -141,6 +145,8 @@ public class YearlyBillingService {
         String billingPeriod = String.format("%04d-%02d", year, month);
         System.out.println("DEBUG: Số căn hộ: " + allApartments.size() + ", kỳ: " + billingPeriod);
 
+        java.util.List<Long> createdApartmentIds = new java.util.ArrayList<>();
+
         for (Apartment apartment : allApartments) {
             // Chỉ tạo mới nếu chưa tồn tại hóa đơn của kỳ này
             Optional<Invoice> existing = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), billingPeriod);
@@ -169,11 +175,20 @@ public class YearlyBillingService {
                 .build();
 
             invoiceRepository.save(invoice);
+            // Ghi nhận căn hộ đã tạo mới hoá đơn để gửi email sau khi đã tính xong các item
+            createdApartmentIds.add(apartment.getId());
         }
 
         // 2) Gọi lần lượt các dịch vụ tính phí để thêm item vào từng hóa đơn (idempotent)
         if (feeServices != null && !feeServices.isEmpty()) {
             feeServices.forEach(svc -> svc.generateFeeForMonth(billingPeriod));
+        }
+
+        // Sau khi đã thêm các items vào hoá đơn, mới gửi email để bảng chi tiết không bị trống
+        for (Long aptId : createdApartmentIds) {
+            try {
+                invoiceService.sendInvoiceEmailsForApartmentPeriod(aptId, billingPeriod);
+            } catch (Exception ignored) {}
         }
 
         System.out.println("DEBUG: Hoàn thành tạo hóa đơn base và thêm các items cho tháng " + month + "/" + year);
@@ -356,6 +371,22 @@ public class YearlyBillingService {
     public void updateFeeConfig(int month, int year, double serviceFeePerM2, 
                               double waterFeePerM3, double motorcycleFee,
                               double car4SeatsFee, double car7SeatsFee) {
+        // Chặn sửa biểu phí cho tháng quá khứ
+        YearMonth target = YearMonth.of(year, month);
+        YearMonth current = YearMonth.now();
+        if (target.isBefore(current)) {
+            throw new IllegalStateException("Không được cập nhật biểu phí của tháng quá khứ");
+        }
+
+        // Nếu là tháng hiện tại và đã tạo hóa đơn thì không cho sửa
+        if (target.equals(current)) {
+            String prefix = String.format("%04d-%02d", year, month);
+            long invoiceCount = invoiceRepository.countByBillingPeriodStartingWith(prefix);
+            if (invoiceCount > 0) {
+                throw new IllegalStateException("Không được cập nhật biểu phí tháng hiện tại vì đã tạo hóa đơn");
+            }
+        }
+
         Optional<ServiceFeeConfig> existingConfig = serviceFeeConfigRepository.findByMonthAndYear(month, year);
         
         if (existingConfig.isPresent()) {
