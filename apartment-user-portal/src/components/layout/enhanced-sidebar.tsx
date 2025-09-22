@@ -37,8 +37,12 @@ const navigation = [
     description: "Gửi yêu cầu hỗ trợ", color: "from-red-500 to-orange-500", gradient: "bg-gradient-to-br from-red-500 to-orange-500"
   },
   {
+    name: "Thông tin cư dân", href: "/dashboard/settings", icon: User,
+    description: "Xem thông tin cá nhân", color: "from-[color:#0066CC] to-[color:#009966]", gradient: "bg-gradient-to-br from-[color:#0066CC] to-[color:#009966]"
+  },
+  {
     name: "Cập nhật thông tin", href: "/dashboard/update-info", icon: User,
-    description: "Quản lý hồ sơ", color: "from-[color:#0066CC] to-[color:#009966]", gradient: "bg-gradient-to-br from-[color:#0066CC] to-[color:#009966]"
+    description: "Quản lý hồ sơ", color: "from-purple-500 to-pink-500", gradient: "bg-gradient-to-br from-purple-500 to-pink-500"
   },
   {
     name: "Phương tiện", href: "/dashboard/vehicles", icon: Car,

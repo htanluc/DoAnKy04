@@ -37,6 +37,15 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     
     List<Vehicle> findByApartmentId(Long apartmentId);
     
+    /**
+     * Lấy danh sách xe theo apartmentId với FETCH JOIN để load user và apartment
+     */
+    @Query("SELECT v FROM Vehicle v " +
+           "LEFT JOIN FETCH v.user u " +
+           "LEFT JOIN FETCH v.apartment a " +
+           "WHERE v.apartment.id = :apartmentId")
+    List<Vehicle> findByApartmentIdWithUserAndApartment(@Param("apartmentId") Long apartmentId);
+    
     List<Vehicle> findByUserIdAndApartmentId(Long userId, Long apartmentId);
     
     @Query("SELECT v FROM Vehicle v WHERE v.user.id = :userId AND v.apartment.id IN " +
@@ -76,7 +85,26 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     List<Vehicle> findAllByOrderByCreatedAtAsc();
     
     /**
+     * Lấy tất cả xe với FETCH JOIN để load user và apartment
+     */
+    @Query("SELECT v FROM Vehicle v " +
+           "LEFT JOIN FETCH v.user u " +
+           "LEFT JOIN FETCH v.apartment a " +
+           "ORDER BY v.createdAt ASC")
+    List<Vehicle> findAllWithUserAndApartmentOrderByCreatedAtAsc();
+    
+    /**
      * Lấy tất cả xe sắp xếp theo thời gian đăng ký (LIFO)
      */
     List<Vehicle> findAllByOrderByCreatedAtDesc();
+    
+    /**
+     * Lấy xe theo status với FETCH JOIN để load user và apartment
+     */
+    @Query("SELECT v FROM Vehicle v " +
+           "LEFT JOIN FETCH v.user u " +
+           "LEFT JOIN FETCH v.apartment a " +
+           "WHERE v.status = :status " +
+           "ORDER BY v.createdAt ASC")
+    List<Vehicle> findByStatusWithUserAndApartmentOrderByCreatedAtAsc(@Param("status") VehicleStatus status);
 } 

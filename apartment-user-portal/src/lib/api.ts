@@ -134,21 +134,50 @@ export async function updateCurrentResident(update: any) {
   return res.json();
 }
 
-// Đổi mật khẩu
+// Đổi mật khẩu - theo đúng format API backend
 export async function changePassword(data: { oldPassword: string; newPassword: string }) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/auth/change-password', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  const result = await res.json();
-  if (!res.ok || !result.success) throw new Error(result.message || 'Đổi mật khẩu thất bại');
-  return result;
+  
+  try {
+    console.log('Đang gọi API đổi mật khẩu với format:', {
+      oldPassword: data.oldPassword,
+      newPassword: data.newPassword,
+      confirmNewPassword: data.newPassword
+    });
+    
+    const res = await fetch('http://localhost:8080/api/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        oldPassword: data.oldPassword,
+        newPassword: data.newPassword,
+        confirmNewPassword: data.newPassword // Thêm trường này theo API doc
+      }),
+    });
+    
+    const result = await res.json();
+    console.log('Response từ backend:', result);
+    
+    if (!res.ok) {
+      throw new Error(result.message || `HTTP ${res.status}: Đổi mật khẩu thất bại`);
+    }
+    
+    if (result.success === false) {
+      throw new Error(result.message || 'Đổi mật khẩu thất bại');
+    }
+    
+    return result;
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    if (error.message) {
+      throw error;
+    }
+    throw new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại.');
+  }
 }
 
 // Lấy lịch sử đặt tiện ích của resident hiện tại

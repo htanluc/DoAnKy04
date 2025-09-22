@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.mytech.apartment.portal.dtos.ApiResponse;
 import com.mytech.apartment.portal.dtos.ChangePasswordRequest;
 import com.mytech.apartment.portal.dtos.ForgotPasswordRequest;
+import com.mytech.apartment.portal.dtos.ForgotPasswordWithPhoneRequest;
 import com.mytech.apartment.portal.dtos.JwtResponse;
 import com.mytech.apartment.portal.dtos.LoginRequest;
 import com.mytech.apartment.portal.dtos.RegisterRequest;
@@ -254,6 +255,17 @@ public class AuthController {
         try {
             authService.forgotPassword(req.getEmailOrPhone());
             return ResponseEntity.ok(ApiResponse.success("Email đặt lại mật khẩu đã được gửi!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @Operation(summary = "Forgot password with phone and email", description = "Reset password by providing phone number and email - generates random password and sends via email")
+    @PostMapping("/forgot-password-phone-email")
+    public ResponseEntity<ApiResponse<String>> forgotPasswordWithPhoneAndEmail(@Valid @RequestBody ForgotPasswordWithPhoneRequest req) {
+        try {
+            authService.forgotPasswordWithPhoneAndEmail(req.getPhoneNumber(), req.getEmail());
+            return ResponseEntity.ok(ApiResponse.success("Mật khẩu mới đã được gửi qua email!"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

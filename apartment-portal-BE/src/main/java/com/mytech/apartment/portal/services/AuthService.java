@@ -3,6 +3,10 @@ package com.mytech.apartment.portal.services;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Random;
+import java.util.List;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +22,9 @@ import com.mytech.apartment.portal.repositories.UserRepository;
 import com.mytech.apartment.portal.repositories.EmailVerificationTokenRepository;
 
 import com.mytech.apartment.portal.models.enums.UserStatus;
+import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.dtos.UserCreateRequest;
+import com.mytech.apartment.portal.services.SmartActivityLogService;
 
 @Service
 public class AuthService {
@@ -34,6 +40,9 @@ public class AuthService {
     
     @Autowired
     private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    
+    @Autowired
+    private SmartActivityLogService smartActivityLogService;
 
 
 
@@ -156,6 +165,87 @@ public class AuthService {
         
         // Gửi OTP để reset password
         // sendOtp(emailOrPhone, "RESET_PASSWORD");
+    }
+
+    /**
+     * Quên mật khẩu với số điện thoại và email - tạo mật khẩu ngẫu nhiên và gửi qua email
+     */
+    public void forgotPasswordWithPhoneAndEmail(String phoneNumber, String email) {
+        // Tìm user theo số điện thoại
+        Optional<User> userOpt = userRepository.findByPhoneNumber(phoneNumber);
+        
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("Không tìm thấy tài khoản với số điện thoại này");
+        }
+        
+        User user = userOpt.get();
+        
+        // Kiểm tra email có khớp với email trong database không
+        if (!email.equals(user.getEmail())) {
+            throw new RuntimeException("Email không khớp với tài khoản đã đăng ký");
+        }
+        
+        // Tạo mật khẩu ngẫu nhiên
+        String newPassword = generateRandomPassword();
+        
+        // Mã hóa mật khẩu mới
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        
+        // Cập nhật mật khẩu trong database
+        user.setPasswordHash(encodedPassword);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        
+        // Gửi email chứa mật khẩu mới
+        try {
+            emailService.sendNewPasswordEmail(user.getEmail(), newPassword, user.getFullName());
+            
+            // Log hoạt động
+            smartActivityLogService.logSmartActivity(ActivityActionType.PASSWORD_CHANGE, 
+                "Đặt lại mật khẩu thành công qua email cho số điện thoại: " + phoneNumber);
+                
+        } catch (Exception e) {
+            // Nếu gửi email thất bại, rollback mật khẩu cũ
+            user.setPasswordHash(user.getPasswordHash()); // Giữ nguyên mật khẩu cũ
+            userRepository.save(user);
+            throw new RuntimeException("Không thể gửi email mật khẩu mới: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Tạo mật khẩu ngẫu nhiên
+     */
+    private String generateRandomPassword() {
+        String upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lowerCase = "abcdefghijklmnopqrstuvwxyz";
+        String numbers = "0123456789";
+        String specialChars = "!@#$%^&*";
+        
+        String allChars = upperCase + lowerCase + numbers + specialChars;
+        Random random = new Random();
+        
+        StringBuilder password = new StringBuilder();
+        
+        // Đảm bảo mật khẩu có ít nhất 1 ký tự từ mỗi loại
+        password.append(upperCase.charAt(random.nextInt(upperCase.length())));
+        password.append(lowerCase.charAt(random.nextInt(lowerCase.length())));
+        password.append(numbers.charAt(random.nextInt(numbers.length())));
+        password.append(specialChars.charAt(random.nextInt(specialChars.length())));
+        
+        // Thêm 4 ký tự ngẫu nhiên nữa để đủ 8 ký tự
+        for (int i = 0; i < 4; i++) {
+            password.append(allChars.charAt(random.nextInt(allChars.length())));
+        }
+        
+        // Trộn thứ tự các ký tự
+        List<Character> chars = password.toString().chars()
+                .mapToObj(c -> (char) c)
+                .collect(Collectors.toList());
+        Collections.shuffle(chars);
+        
+        return chars.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining());
     }
 
     public void resetPassword(ResetPasswordRequest request) {

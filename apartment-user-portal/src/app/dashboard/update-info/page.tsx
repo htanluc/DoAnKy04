@@ -311,7 +311,8 @@ export default function UpdateInfoPage() {
     try {
       const payload: any = {
         fullName: formData.fullName,
-        emergencyContacts: formData.emergencyContacts.filter(ec => ec.name || ec.phone || ec.relationship),
+        // phoneNumber không được gửi lên server vì không cho phép chỉnh sửa
+        // emergencyContacts bị ẩn nên không gửi lên server
       };
       const updated = await updateCurrentResident(payload);
       setShowSuccess(true)
@@ -542,16 +543,20 @@ export default function UpdateInfoPage() {
                           <Input
                             id="phoneNumber"
                             value={formData.phoneNumber}
-                            onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                            placeholder="Nhập số điện thoại"
+                            disabled
+                            className="bg-gray-100 text-gray-500 cursor-not-allowed"
+                            placeholder="Số điện thoại không thể thay đổi"
                           />
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Số điện thoại không thể chỉnh sửa. Liên hệ quản trị viên nếu cần thay đổi.
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Emergency Contact */}
-                  <div>
+                  <div className="hidden">
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Liên hệ khẩn cấp</h3>
                     {formData.emergencyContacts.map((contact, idx) => (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2" key={idx}>

@@ -100,14 +100,16 @@ public class VehicleService {
     }
 
     public List<VehicleDto> getVehiclesByApartment(Long apartmentId) {
-        List<Vehicle> vehicles = vehicleRepository.findByApartmentId(apartmentId);
+        // Sử dụng query với FETCH JOIN để load user và apartment cùng lúc
+        List<Vehicle> vehicles = vehicleRepository.findByApartmentIdWithUserAndApartment(apartmentId);
         return vehicles.stream()
                 .map(vehicleMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     public List<VehicleDto> getAllVehicles() {
-        return vehicleRepository.findAllByOrderByCreatedAtAsc().stream()
+        // Sử dụng query với FETCH JOIN để load user và apartment cùng lúc
+        return vehicleRepository.findAllWithUserAndApartmentOrderByCreatedAtAsc().stream()
                 .map(vehicleMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -186,7 +188,8 @@ public class VehicleService {
     }
 
     public List<VehicleDto> getVehiclesByStatus(VehicleStatus status) {
-        return vehicleRepository.findByStatusOrderByCreatedAtAsc(status).stream()
+        // Sử dụng query với FETCH JOIN để load user và apartment cùng lúc
+        return vehicleRepository.findByStatusWithUserAndApartmentOrderByCreatedAtAsc(status).stream()
                 .map(vehicleMapper::toDto)
                 .collect(Collectors.toList());
     }

@@ -21,7 +21,10 @@ import {
   Eye,
   Filter,
   Calculator,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import Link from 'next/link';
 import { Invoice } from '@/lib/api';
@@ -55,6 +58,13 @@ function InvoicesPageContent() {
   const [genMonth, setGenMonth] = useState(new Date().getMonth() + 1);
   const [genLoading, setGenLoading] = useState(false);
   const [genMessage, setGenMessage] = useState<string | null>(null);
+  
+  // Overdue invoices state
+  const [overdueInvoices, setOverdueInvoices] = useState<Invoice[]>([]);
+  const [selectedOverdueIds, setSelectedOverdueIds] = useState<number[]>([]);
+  const [overdueLoading, setOverdueLoading] = useState(false);
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState<string | null>(null);
 
   // Determine if invoices already exist for the selected period
   const selectedPeriodKey = `${genYear}-${String(genMonth).padStart(2, '0')}`;
@@ -101,6 +111,18 @@ function InvoicesPageContent() {
     // Reset to first page when filters/search change
     setCurrentPage(1);
   }, [searchTerm, filterStatus, filterYear, filterMonth]);
+
+  useEffect(() => {
+    // Update overdue invoices from current invoices list
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    const overdue = invoices.filter(invoice => {
+      const dueDate = new Date(invoice.dueDate);
+      // Hóa đơn quá hạn: due_date < today HOẶC status = 'OVERDUE'
+      return dueDate < today || invoice.status === 'OVERDUE';
+    });
+    setOverdueInvoices(overdue);
+  }, [invoices]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -157,6 +179,75 @@ function InvoicesPageContent() {
       setGenMessage(errorMessage);
     }
     setGenLoading(false);
+  };
+
+
+  // Send reminder emails
+  const sendReminderEmails = async () => {
+    if (selectedOverdueIds.length === 0) {
+      setReminderMessage('Vui lòng chọn ít nhất một hóa đơn để gửi nhắc nhở');
+      return;
+    }
+
+    setReminderLoading(true);
+    setReminderMessage(null);
+    
+    try {
+      const response = await api.post('/api/admin/invoices/send-overdue-reminders', selectedOverdueIds);
+      if (response.ok) {
+        const result = await response.json();
+        setReminderMessage(result.message);
+        if (result.success) {
+          setSelectedOverdueIds([]);
+          await fetchInvoices(); // Refresh the main invoices list
+        }
+      } else {
+        const error = await response.json();
+        setReminderMessage(error.message || 'Có lỗi xảy ra khi gửi email nhắc nhở');
+      }
+    } catch (error) {
+      console.error('Error sending reminder emails:', error);
+      setReminderMessage('Có lỗi xảy ra khi gửi email nhắc nhở');
+    } finally {
+      setReminderLoading(false);
+    }
+  };
+
+  // Update overdue status
+  const updateOverdueStatus = async () => {
+    try {
+      const response = await api.post('/api/admin/invoices/update-overdue-status');
+      if (response.ok) {
+        const result = await response.json();
+        setReminderMessage(result.message);
+        await fetchInvoices(); // Refresh main invoices list
+      } else {
+        const error = await response.json();
+        setReminderMessage(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái quá hạn');
+      }
+    } catch (error) {
+      console.error('Error updating overdue status:', error);
+      setReminderMessage('Có lỗi xảy ra khi cập nhật trạng thái quá hạn');
+    }
+  };
+
+  // Handle checkbox selection
+  const handleOverdueSelect = (invoiceId: number) => {
+    setSelectedOverdueIds(prev => 
+      prev.includes(invoiceId) 
+        ? prev.filter(id => id !== invoiceId)
+        : [...prev, invoiceId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedOverdueIds.length === overdueInvoices.length && overdueInvoices.length > 0) {
+      // Bỏ chọn tất cả
+      setSelectedOverdueIds([]);
+    } else {
+      // Chọn tất cả hóa đơn quá hạn
+      setSelectedOverdueIds(overdueInvoices.map(inv => inv.id));
+    }
   };
 
   if (invoicesLoading || apartmentsLoading) {
@@ -272,6 +363,7 @@ function InvoicesPageContent() {
           </CardContent>
         </Card>
 
+
         {/* Invoices List */}
         <div className="space-y-4">
               {/* Header with actions */}
@@ -284,16 +376,62 @@ function InvoicesPageContent() {
                     {t('admin.invoices.listDesc')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => exportInvoicesToExcel(filteredInvoices, apartments, language)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {t('admin.export.excel', 'Xuất Excel')}
-                  </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {/* Row 1: Basic actions */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => exportInvoicesToExcel(filteredInvoices, apartments, language)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {t('admin.export.excel', 'Xuất Excel')}
+                    </Button>
+                    <Button
+                      onClick={updateOverdueStatus}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Cập nhật trạng thái quá hạn
+                    </Button>
+                  </div>
+                  
+                  {/* Row 2: Overdue actions */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={sendReminderEmails}
+                      disabled={reminderLoading || selectedOverdueIds.length === 0}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      {reminderLoading ? 'Đang gửi...' : `Gửi nhắc nhở quá hạn (${selectedOverdueIds.length})`}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        console.log('Overdue invoices:', overdueInvoices);
+                        console.log('Selected IDs:', selectedOverdueIds);
+                        console.log('All invoices:', invoices);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="bg-blue-100"
+                    >
+                      Debug ({overdueInvoices.length})
+                    </Button>
+                  </div>
                 </div>
               </div>
+
+              {/* Message display */}
+              {reminderMessage && (
+                <div className={`p-3 rounded-md ${
+                  reminderMessage.includes('thành công') || reminderMessage.includes('Đã gửi') 
+                    ? 'bg-green-50 border border-green-200 text-green-800'
+                    : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                  {reminderMessage}
+                </div>
+              )}
 
                                                            {/* Statistics Cards - Số lượng */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -555,14 +693,28 @@ function InvoicesPageContent() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{t('admin.invoices.list')} ({filteredInvoices.length})</span>
-                    <Button 
-                      onClick={fetchInvoices} 
-                      variant="outline" 
-                      size="sm"
-                      disabled={invoicesLoading}
-                    >
-                                             {invoicesLoading ? t('admin.action.loading') : t('admin.action.refresh')}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={handleSelectAll}
+                        variant="outline"
+                        size="sm"
+                        disabled={overdueInvoices.length === 0}
+                        className="bg-green-100 hover:bg-green-200"
+                      >
+                        {selectedOverdueIds.length === overdueInvoices.length && overdueInvoices.length > 0 
+                          ? 'Bỏ chọn tất cả' 
+                          : `Chọn tất cả (${overdueInvoices.length})`
+                        }
+                      </Button>
+                      <Button 
+                        onClick={fetchInvoices} 
+                        variant="outline" 
+                        size="sm"
+                        disabled={invoicesLoading}
+                      >
+                        {invoicesLoading ? t('admin.action.loading') : t('admin.action.refresh')}
+                      </Button>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -575,6 +727,7 @@ function InvoicesPageContent() {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-12">Chọn</TableHead>
                             <TableHead>{t('admin.invoices.invoiceNumber')}</TableHead>
                             <TableHead>{t('admin.invoices.apartment')}</TableHead>
                             <TableHead>{t('admin.invoices.amount')}</TableHead>
@@ -588,8 +741,41 @@ function InvoicesPageContent() {
                             const apartment = apartments.find(apt => apt.id === invoice.apartmentId) as ApiApartment | undefined;
                             const apartmentInfo = apartment ? (apartment.unitNumber || `${t('admin.apartments.apartment')} ${apartment.id}`) : `${t('admin.apartments.apartment')} ${invoice.apartmentId}`;
                             
+                            // Kiểm tra hóa đơn có quá hạn không
+                            const dueDate = new Date(invoice.dueDate);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0); // Reset time to start of day
+                            
+                            // Hóa đơn quá hạn: due_date < today HOẶC status = 'OVERDUE'
+                            const isOverdue = dueDate < today || invoice.status === 'OVERDUE';
+                            
+                            // Debug log for first few invoices
+                            if (invoice.id <= 565) {
+                              console.log(`Invoice ${invoice.id}:`, {
+                                dueDate: invoice.dueDate,
+                                status: invoice.status,
+                                dueDateObj: dueDate,
+                                today: today,
+                                isOverdue: isOverdue,
+                                condition1: dueDate < today,
+                                condition2: invoice.status === 'OVERDUE'
+                              });
+                            }
+                            
                             return (
-                              <TableRow key={invoice.id}>
+                              <TableRow key={invoice.id} className={isOverdue ? 'bg-red-50' : ''}>
+                                <TableCell>
+                                  {isOverdue ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedOverdueIds.includes(invoice.id)}
+                                      onChange={() => handleOverdueSelect(invoice.id)}
+                                      className="rounded"
+                                    />
+                                  ) : (
+                                    <span className="text-gray-400 text-xs">-</span>
+                                  )}
+                                </TableCell>
                                 <TableCell className="font-medium">
                                   #{invoice.id}
                                 </TableCell>
@@ -602,7 +788,16 @@ function InvoicesPageContent() {
                                 <TableCell>
                                   {new Date(invoice.dueDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
                                 </TableCell>
-                                <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                                <TableCell>
+                                  <div>
+                                    {getStatusBadge(invoice.status)}
+                                    {isOverdue && (
+                                      <div className="text-xs text-red-600 mt-1">
+                                        Quá hạn {Math.ceil((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))} ngày
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
                                 <TableCell>
                                   <div className="flex items-center space-x-2">
                                     <Link href={`/admin-dashboard/invoices/${invoice.id}`}>
