@@ -225,7 +225,7 @@ class ServiceRequestsApi {
   String getImageUrl(String rawUrl) {
     if (rawUrl.startsWith('http')) {
       // Replace localhost with the correct IP for mobile
-      String correctedUrl = rawUrl.replaceAll('localhost', '10.0.3.2');
+      String correctedUrl = rawUrl.replaceAll('localhost', '172.16.2.32');
       return correctedUrl;
     }
 

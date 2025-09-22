@@ -8,6 +8,7 @@ import '../models/event.dart';
 import '../providers/events_providers.dart';
 import '../data/events_repository.dart';
 import 'event_detail_screen.dart';
+import '../../dashboard/ui/widgets/main_scaffold.dart';
 
 class EventsScreen extends ConsumerStatefulWidget {
   const EventsScreen({super.key});
@@ -40,16 +41,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final state = ref.watch(eventsProvider);
     final stats = ref.watch(eventsStatsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sự kiện'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(),
-          ),
-        ],
-      ),
+    return MainScaffold(
+      title: 'Sự kiện',
+      currentBottomNavIndex: 2, // Events tab
       body: Column(
         children: [
           _buildStatsHeader(stats),
