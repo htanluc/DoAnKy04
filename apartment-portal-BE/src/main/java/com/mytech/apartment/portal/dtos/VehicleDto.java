@@ -25,4 +25,5 @@ public class VehicleDto {
     private String apartmentUnitNumber;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime registrationDate;
 } 

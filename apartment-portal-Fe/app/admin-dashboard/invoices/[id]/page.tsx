@@ -22,7 +22,8 @@ import {
   Zap,
   Wrench,
   ParkingCircle,
-  Lightbulb
+  Lightbulb,
+  Mail
 } from 'lucide-react';
 import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { useApartments } from '@/hooks/use-apartments';
@@ -67,6 +68,9 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [debugInfo, setDebugInfo] = useState(false);
   const [apartmentCode, setApartmentCode] = useState<string>('');
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
+  const [emailRecipients, setEmailRecipients] = useState<string[]>([]);
 
 
   useEffect(() => {
@@ -113,16 +117,32 @@ export default function InvoiceDetailPage() {
   };
 
   const handleSendEmail = async () => {
+    setEmailLoading(true);
+    setEmailMessage(null);
+    
     try {
       const res = await api.post(`/api/admin/invoices/${invoiceId}/send-email`);
       if (res.ok) {
-        alert(t('admin.invoices.emailSent','Đã gửi email hóa đơn.'));
+        const result = await res.json();
+        const recipients = result.recipients || [];
+        const recipientCount = recipients.length;
+        const message = result.message || `Đã gửi email hóa đơn thành công!`;
+        
+        setEmailRecipients(recipients);
+        
+        if (recipientCount > 0) {
+          setEmailMessage(`${message} (Gửi tới ${recipientCount} cư dân)`);
+        } else {
+          setEmailMessage(message);
+        }
       } else {
         const err = await res.json();
-        alert(err.message || t('admin.invoices.emailFailed','Gửi email thất bại'));
+        setEmailMessage(err.message || 'Gửi email thất bại');
       }
     } catch (e) {
-      alert(t('admin.invoices.emailFailed','Gửi email thất bại'));
+      setEmailMessage('Có lỗi xảy ra khi gửi email');
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -542,9 +562,14 @@ export default function InvoiceDetailPage() {
                   <FileText className="h-4 w-4 mr-2" />
                   {t('admin.actions.downloadPdf','Tải PDF')}
                 </Button>
-                <Button className="w-full" variant="outline" onClick={handleSendEmail}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  {t('admin.actions.sendEmail','Gửi email')}
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  onClick={handleSendEmail}
+                  disabled={emailLoading}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {emailLoading ? 'Đang gửi...' : t('admin.actions.sendEmail','Gửi email')}
                 </Button>
                 <Button className="w-full" variant="outline" onClick={handlePrint}>
                   <FileText className="h-4 w-4 mr-2" />
@@ -552,6 +577,42 @@ export default function InvoiceDetailPage() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Email Message */}
+            {emailMessage && (
+              <Card className="mt-4">
+                <CardContent className="pt-4">
+                  <div className={`p-3 rounded-md ${
+                    emailMessage.includes('thành công') || emailMessage.includes('Đã gửi')
+                      ? 'bg-green-50 border border-green-200 text-green-800'
+                      : 'bg-red-50 border border-red-200 text-red-800'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {emailMessage.includes('thành công') || emailMessage.includes('Đã gửi') ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      <span className="font-medium">{emailMessage}</span>
+                    </div>
+                    
+                    {/* Danh sách email người nhận */}
+                    {emailRecipients.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium mb-2">📧 Danh sách người nhận:</p>
+                        <div className="space-y-1">
+                          {emailRecipients.map((email, index) => (
+                            <div key={index} className="text-sm bg-white bg-opacity-50 px-2 py-1 rounded">
+                              {email}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 

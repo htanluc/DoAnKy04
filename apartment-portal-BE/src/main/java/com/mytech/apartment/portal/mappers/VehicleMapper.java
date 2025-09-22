@@ -15,9 +15,10 @@ public interface VehicleMapper {
 
     @Mapping(target = "vehicleTypeDisplayName", source = "vehicleType.displayName")
     @Mapping(target = "statusDisplayName", source = "status.displayName")
-    @Mapping(target = "userFullName", source = "user.fullName")
+    @Mapping(target = "userFullName", source = ".", qualifiedByName = "getUserFullName")
     @Mapping(target = "apartmentId", source = "apartment.id")
-    @Mapping(target = "apartmentUnitNumber", source = "apartment.unitNumber")
+    @Mapping(target = "apartmentUnitNumber", source = ".", qualifiedByName = "getApartmentUnitNumber")
+    @Mapping(target = "registrationDate", source = "createdAt")
     @Mapping(target = "imageUrls", source = "imageUrls", qualifiedByName = "stringToArray")
     VehicleDto toDto(Vehicle entity);
 
@@ -60,5 +61,23 @@ public interface VehicleMapper {
         } catch (JsonProcessingException e) {
             return "[]";
         }
+    }
+
+    @Named("getUserFullName")
+    default String getUserFullName(Vehicle vehicle) {
+        if (vehicle == null || vehicle.getUser() == null) {
+            return "Không rõ";
+        }
+        String fullName = vehicle.getUser().getFullName();
+        return fullName != null && !fullName.trim().isEmpty() ? fullName : "Không rõ";
+    }
+
+    @Named("getApartmentUnitNumber")
+    default String getApartmentUnitNumber(Vehicle vehicle) {
+        if (vehicle == null || vehicle.getApartment() == null) {
+            return "Không rõ";
+        }
+        String unitNumber = vehicle.getApartment().getUnitNumber();
+        return unitNumber != null && !unitNumber.trim().isEmpty() ? unitNumber : "Không rõ";
     }
 } 

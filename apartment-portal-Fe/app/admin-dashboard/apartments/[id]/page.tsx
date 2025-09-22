@@ -111,7 +111,7 @@ function ApartmentDetailContent() {
     addDebugInfo(`Tìm thấy ${(veh || []).length} xe`);
     if (veh && veh.length > 0) {
       veh.forEach((v, idx) => {
-        addDebugInfo(`Xe ${idx + 1}: ${v.licensePlate} (${v.ownerName || 'Không rõ chủ xe'})`);
+        addDebugInfo(`Xe ${idx + 1}: ${v.licensePlate} (${v.userFullName || v.ownerName || 'Không rõ chủ xe'})`);
       });
     }
     setLoadingStates(prev => ({ ...prev, vehicles: false }));
@@ -594,7 +594,7 @@ function ApartmentDetailContent() {
                     <TableRow key={`${veh.id || index}`}>
                       <TableCell>
                         <div className="font-medium">
-                          {veh.ownerName || 'Không rõ'}
+                          {veh.userFullName || veh.ownerName || 'Không rõ'}
                         </div>
                       </TableCell>
                       <TableCell>

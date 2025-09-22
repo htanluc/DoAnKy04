@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,4 +43,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     
     /** Lấy tất cả hóa đơn theo apartmentId sắp xếp theo billing period */
     List<Invoice> findByApartmentIdOrderByBillingPeriodDesc(Long apartmentId);
+    
+    /** Lấy hóa đơn quá hạn (due date trước ngày hiện tại và status UNPAID) */
+    List<Invoice> findByDueDateBeforeAndStatus(LocalDate date, InvoiceStatus status);
 }

@@ -121,7 +121,8 @@ export default function ResidentDetailPage() {
             for (const v of list) {
               all.push({
                 ...v,
-                ownerName: resident.fullName,
+                userFullName: (v as any).userFullName || resident.fullName || 'Không rõ',
+                ownerName: (v as any).userFullName || resident.fullName || 'Không rõ', // Backward compatibility
                 type: (v as any).type || (v as any).vehicleType,
                 vehicleType: (v as any).vehicleType || (v as any).type,
               } as Vehicle);

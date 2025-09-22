@@ -290,7 +290,56 @@ export default function VehiclesPage() {
       setBuildingVehiclesLoading(true);
       const token = localStorage.getItem('token');
       
-      // Lấy danh sách xe từ tất cả căn hộ của user
+      // Thử sử dụng API admin để lấy tất cả xe đang chờ duyệt
+      try {
+        console.log('Trying admin API for pending vehicles...');
+        const adminResponse = await fetch(`${API_BASE_URL}/api/admin/vehicles/pending`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (adminResponse.ok) {
+          const adminVehicles = await adminResponse.json();
+          console.log('Admin API response:', adminVehicles);
+          
+          // Lọc xe thuộc các căn hộ của user hiện tại
+          const userApartmentIds = apartments.map(apt => apt.id);
+          const filteredVehicles = adminVehicles.filter((vehicle: any) => 
+            userApartmentIds.includes(vehicle.apartmentId)
+          );
+          
+          // Thêm thông tin căn hộ
+          const vehiclesWithApartmentInfo = filteredVehicles.map((vehicle: any) => {
+            const apartment = apartments.find(apt => apt.id === vehicle.apartmentId);
+            return {
+              ...vehicle,
+              apartmentUnitNumber: apartment?.unitNumber || vehicle.apartmentUnitNumber,
+              buildingId: apartment?.buildingId || vehicle.buildingId,
+              userFullName: vehicle.userFullName || 'Không rõ'
+            };
+          });
+          
+          // Sắp xếp theo thứ tự ưu tiên
+          vehiclesWithApartmentInfo.sort((a, b) => {
+            if (a.buildingId !== b.buildingId) {
+              return (a.buildingId || 0) - (b.buildingId || 0);
+            }
+            if (a.apartmentUnitNumber !== b.apartmentUnitNumber) {
+              return a.apartmentUnitNumber.localeCompare(b.apartmentUnitNumber);
+            }
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          });
+          
+          setBuildingVehicles(vehiclesWithApartmentInfo);
+          return;
+        }
+      } catch (adminError) {
+        console.log('Admin API failed, trying apartment API...', adminError);
+      }
+      
+      // Fallback: Lấy danh sách xe từ tất cả căn hộ của user
       const allBuildingVehicles: BuildingVehicle[] = [];
       
       for (const apartment of apartments) {
@@ -304,13 +353,15 @@ export default function VehiclesPage() {
 
           if (response.ok) {
             const apartmentVehicles = await response.json();
+            console.log(`Vehicles for apartment ${apartment.id}:`, apartmentVehicles);
             // Chỉ lấy xe có status PENDING và thêm thông tin căn hộ
             const pendingVehicles = apartmentVehicles
               .filter((vehicle: any) => vehicle.status === 'PENDING')
               .map((vehicle: any) => ({
                 ...vehicle,
                 apartmentUnitNumber: apartment.unitNumber,
-                buildingId: apartment.buildingId
+                buildingId: apartment.buildingId,
+                userFullName: vehicle.userFullName || 'Không rõ'
               }));
             allBuildingVehicles.push(...pendingVehicles);
           }
@@ -673,7 +724,7 @@ export default function VehiclesPage() {
                                 {vehicle.buildingId && ` - Tòa ${vehicle.buildingId}`}
                               </p>
                               <p className="text-sm text-gray-600 mb-1">
-                                <span className="font-medium">Chủ xe:</span> {vehicle.userFullName || 'Không xác định'}
+                                <span className="font-medium">Chủ xe:</span> {vehicle.userFullName || 'Không rõ'}
                               </p>
                               <p className="text-sm text-gray-600 mb-1">
                                 <span className="font-medium">Thời gian chờ:</span> {getWaitingTime(vehicle.createdAt)}

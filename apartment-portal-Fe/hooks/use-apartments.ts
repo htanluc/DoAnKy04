@@ -28,7 +28,8 @@ export interface Vehicle {
   color: string;
   model: string;
   registrationDate: string;
-  ownerName?: string;
+  userFullName?: string; // Tên đầy đủ của chủ xe từ API
+  ownerName?: string; // Giữ lại để backward compatibility
   userId?: number;
   brand?: string;
   status?: 'APPROVED' | 'PENDING' | 'REJECTED' | string;
@@ -165,6 +166,8 @@ export function useApartments() {
                 ...v,
                 type: v.type || v.vehicleType,
                 vehicleType: v.vehicleType || v.type,
+                userFullName: v.userFullName || v.ownerName || 'Không rõ',
+                ownerName: v.userFullName || v.ownerName || 'Không rõ', // Backward compatibility
               }));
             }
           }
@@ -188,7 +191,8 @@ export function useApartments() {
               if (Array.isArray(userVehicles)) {
                 const vehiclesWithOwner = userVehicles.map((vehicle: any) => ({
                   ...vehicle,
-                  ownerName: resident.fullName,
+                  userFullName: vehicle.userFullName || resident.fullName || 'Không rõ',
+                  ownerName: vehicle.userFullName || resident.fullName || 'Không rõ', // Backward compatibility
                   userId: resident.userId,
                   type: vehicle.type || vehicle.vehicleType,
                   vehicleType: vehicle.vehicleType || vehicle.type,
@@ -202,7 +206,8 @@ export function useApartments() {
                 if (Array.isArray(altVehicles)) {
                   const vehiclesWithOwner = altVehicles.map((vehicle: any) => ({
                     ...vehicle,
-                    ownerName: resident.fullName,
+                    userFullName: vehicle.userFullName || resident.fullName || 'Không rõ',
+                    ownerName: vehicle.userFullName || resident.fullName || 'Không rõ', // Backward compatibility
                     userId: resident.userId,
                     type: vehicle.type || vehicle.vehicleType,
                     vehicleType: vehicle.vehicleType || vehicle.type,

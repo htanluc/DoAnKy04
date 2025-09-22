@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Create Overdue Invoices</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        input { padding: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Test Create Overdue Invoices</h1>
+    
+    <div class="section">
+        <h2>1. Tạo hóa đơn quá hạn để test</h2>
+        <p>Nhập thông tin để tạo hóa đơn quá hạn:</p>
+        <div>
+            <label>Apartment ID:</label>
+            <input type="number" id="apartmentId" value="1" placeholder="1">
+        </div>
+        <div>
+            <label>Billing Period (YYYY-MM):</label>
+            <input type="text" id="billingPeriod" value="2024-01" placeholder="2024-01">
+        </div>
+        <div>
+            <label>Due Date (YYYY-MM-DD):</label>
+            <input type="date" id="dueDate" value="2024-01-01">
+        </div>
+        <div>
+            <label>Total Amount:</label>
+            <input type="number" id="totalAmount" value="1000000" placeholder="1000000">
+        </div>
+        <div>
+            <label>Status:</label>
+            <select id="status">
+                <option value="UNPAID">UNPAID</option>
+                <option value="PENDING">PENDING</option>
+                <option value="PAID">PAID</option>
+            </select>
+        </div>
+        <button onclick="createOverdueInvoice()">Tạo hóa đơn quá hạn</button>
+        <div id="create-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. Lấy danh sách hóa đơn</h2>
+        <button onclick="getAllInvoices()">GET /api/admin/invoices</button>
+        <div id="invoices-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. Test gửi nhắc nhở</h2>
+        <p>Nhập ID hóa đơn (cách nhau bằng dấu phẩy):</p>
+        <input type="text" id="invoiceIds" placeholder="1,2,3" style="width: 200px;">
+        <button onclick="sendReminders()">Gửi nhắc nhở</button>
+        <div id="reminder-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(API_BASE + url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function createOverdueInvoice() {
+            const apartmentId = document.getElementById('apartmentId').value;
+            const billingPeriod = document.getElementById('billingPeriod').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const totalAmount = document.getElementById('totalAmount').value;
+            const status = document.getElementById('status').value;
+
+            // Tạo hóa đơn thông qua API generate
+            const result = await makeRequest('/api/admin/invoices/generate-all', {
+                method: 'POST',
+                body: JSON.stringify({ billingPeriod })
+            });
+
+            const div = document.getElementById('create-result');
+            
+            if (result.success) {
+                div.innerHTML = `
+                    <div class="success">
+                        <h3>Thành công!</h3>
+                        <p>Đã tạo hóa đơn cho kỳ ${billingPeriod}</p>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="error">
+                        <h3>Lỗi!</h3>
+                        <p>Status: ${result.status}</p>
+                        <pre>${JSON.stringify(result.data || result.error, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function getAllInvoices() {
+            const result = await makeRequest('/api/admin/invoices');
+            const div = document.getElementById('invoices-result');
+            
+            if (result.success) {
+                const overdueInvoices = result.data.filter(invoice => {
+                    const dueDate = new Date(invoice.dueDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return dueDate < today && (invoice.status === 'UNPAID' || invoice.status === 'PENDING');
+                });
+
+                div.innerHTML = `
+                    <div class="success">
+                        <h3>Thành công!</h3>
+                        <p>Tổng số hóa đơn: ${result.data.length}</p>
+                        <p>Số hóa đơn quá hạn: ${overdueInvoices.length}</p>
+                        <h4>Hóa đơn quá hạn:</h4>
+                        <pre>${JSON.stringify(overdueInvoices, null, 2)}</pre>
+                        <h4>Tất cả hóa đơn:</h4>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="error">
+                        <h3>Lỗi!</h3>
+                        <p>Status: ${result.status}</p>
+                        <pre>${JSON.stringify(result.data || result.error, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function sendReminders() {
+            const invoiceIdsInput = document.getElementById('invoiceIds');
+            const invoiceIds = invoiceIdsInput.value.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            
+            if (invoiceIds.length === 0) {
+                alert('Vui lòng nhập ít nhất một ID hóa đơn');
+                return;
+            }
+
+            const result = await makeRequest('/api/admin/invoices/send-overdue-reminders', {
+                method: 'POST',
+                body: JSON.stringify(invoiceIds)
+            });
+            const div = document.getElementById('reminder-result');
+            
+            if (result.success) {
+                div.innerHTML = `
+                    <div class="success">
+                        <h3>Thành công!</h3>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="error">
+                        <h3>Lỗi!</h3>
+                        <p>Status: ${result.status}</p>
+                        <pre>${JSON.stringify(result.data || result.error, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Set default due date to past date
+        document.addEventListener('DOMContentLoaded', function() {
+            const pastDate = new Date();
+            pastDate.setDate(pastDate.getDate() - 30); // 30 days ago
+            document.getElementById('dueDate').value = pastDate.toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

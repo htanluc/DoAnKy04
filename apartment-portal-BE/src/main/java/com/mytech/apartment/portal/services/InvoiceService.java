@@ -3,7 +3,6 @@ package com.mytech.apartment.portal.services;
 // import com.mytech.apartment.portal.dtos.InvoiceCreateRequest;
 import com.mytech.apartment.portal.dtos.InvoiceDto;
 // import com.mytech.apartment.portal.dtos.InvoiceUpdateRequest;
-import com.mytech.apartment.portal.mappers.InvoiceItemMapper;
 import com.mytech.apartment.portal.mappers.InvoiceMapper;
 import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
@@ -18,10 +17,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 // import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,10 +32,11 @@ public class InvoiceService {
 
     @Autowired private InvoiceRepository invoiceRepository;
     @Autowired private InvoiceMapper    invoiceMapper;
-    @Autowired private InvoiceItemMapper invoiceItemMapper;
     @Autowired private ApartmentResidentRepository apartmentResidentRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private ApartmentRepository apartmentRepository;
+    @Autowired private EmailService emailService;
+    @Autowired private com.mytech.apartment.portal.services.InvoicePdfService invoicePdfService;
 
     // ... (các method CRUD).
 
@@ -177,5 +180,135 @@ public class InvoiceService {
         return invoiceRepository.findByApartmentIdOrderByBillingPeriodDesc(apartmentId).stream()
                 .map(invoiceMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * [EN] Get overdue invoices
+     * [VI] Lấy danh sách hóa đơn quá hạn
+     */
+    public List<InvoiceDto> getOverdueInvoices() {
+        LocalDate today = LocalDate.now();
+        return invoiceRepository.findByDueDateBeforeAndStatus(today, InvoiceStatus.UNPAID).stream()
+                .map(invoiceMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * [EN] Send reminder emails for overdue invoices
+     * [VI] Gửi email nhắc nhở cho các hóa đơn quá hạn
+     */
+    public Map<String, Object> sendOverdueReminders(List<Long> invoiceIds) {
+        Map<String, Object> result = new HashMap<>();
+        int successCount = 0;
+        int failCount = 0;
+        List<String> failedInvoices = new java.util.ArrayList<>();
+
+        for (Long invoiceId : invoiceIds) {
+            try {
+                Optional<InvoiceDto> invoiceOpt = getInvoiceById(invoiceId);
+                if (invoiceOpt.isEmpty()) {
+                    failCount++;
+                    failedInvoices.add("Hóa đơn #" + invoiceId + " không tồn tại");
+                    continue;
+                }
+
+                InvoiceDto invoice = invoiceOpt.get();
+                
+                // Kiểm tra hóa đơn có quá hạn không
+                if (invoice.getDueDate().isAfter(LocalDate.now())) {
+                    failCount++;
+                    failedInvoices.add("Hóa đơn #" + invoiceId + " chưa đến hạn thanh toán");
+                    continue;
+                }
+
+                // Lấy email của cư dân căn hộ
+                var residents = apartmentResidentRepository.findByApartment_Id(invoice.getApartmentId());
+                var emails = residents.stream()
+                        .map(link -> userRepository.findById(link.getUserId()))
+                        .filter(Optional::isPresent)
+                        .map(opt -> opt.get().getEmail())
+                        .filter(e -> e != null && !e.isBlank())
+                        .distinct()
+                        .toList();
+
+                if (emails.isEmpty()) {
+                    failCount++;
+                    failedInvoices.add("Hóa đơn #" + invoiceId + " không có email cư dân");
+                    continue;
+                }
+
+                // Tạo nội dung email nhắc nhở
+                String subject = String.format("NHẮC NHỞ THANH TOÁN - Hóa đơn căn hộ #%d - Kỳ %s", 
+                    invoice.getApartmentId(), invoice.getBillingPeriod());
+                
+                String html = String.format(
+                    "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>" +
+                    "<h2 style='color: #d32f2f;'>⚠️ NHẮC NHỞ THANH TOÁN HÓA ĐƠN</h2>" +
+                    "<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;'>" +
+                    "<p style='margin: 0; color: #856404;'><strong>Hóa đơn của bạn đã quá hạn thanh toán!</strong></p>" +
+                    "</div>" +
+                    "<div style='background-color: #f8f9fa; padding: 20px; border-radius: 5px;'>" +
+                    "<h3>Thông tin hóa đơn:</h3>" +
+                    "<p><strong>Căn hộ:</strong> #%d</p>" +
+                    "<p><strong>Kỳ thanh toán:</strong> %s</p>" +
+                    "<p><strong>Ngày phát hành:</strong> %s</p>" +
+                    "<p><strong>Hạn thanh toán:</strong> %s</p>" +
+                    "<p><strong>Tổng tiền:</strong> <span style='color: #d32f2f; font-size: 18px; font-weight: bold;'>%,.0f VND</span></p>" +
+                    "</div>" +
+                    "<div style='background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;'>" +
+                    "<p style='margin: 0; color: #1565c0;'><strong>Vui lòng thanh toán sớm để tránh phí phạt và gián đoạn dịch vụ.</strong></p>" +
+                    "</div>" +
+                    "<p>Trân trọng,<br/>Ban quản lý tòa nhà</p>" +
+                    "</div>",
+                    invoice.getApartmentId(), invoice.getBillingPeriod(), 
+                    invoice.getIssueDate(), invoice.getDueDate(), 
+                    invoice.getTotalAmount() == null ? 0.0 : invoice.getTotalAmount());
+
+                // Tạo PDF đính kèm
+                byte[] pdfBytes = invoicePdfService.generateInvoicePdf(invoice);
+
+                // Gửi email cho tất cả cư dân
+                for (String email : emails) {
+                    try {
+                        emailService.sendHtmlWithAttachment(email, subject, html, 
+                            "invoice_reminder_" + invoiceId + ".pdf", pdfBytes);
+                    } catch (Exception e) {
+                        // Log lỗi nhưng không dừng quá trình
+                        System.err.println("Lỗi gửi email cho " + email + ": " + e.getMessage());
+                    }
+                }
+
+                successCount++;
+
+            } catch (Exception e) {
+                failCount++;
+                failedInvoices.add("Hóa đơn #" + invoiceId + ": " + e.getMessage());
+            }
+        }
+
+        result.put("success", true);
+        result.put("totalProcessed", invoiceIds.size());
+        result.put("successCount", successCount);
+        result.put("failCount", failCount);
+        result.put("failedInvoices", failedInvoices);
+        result.put("message", String.format("Đã gửi nhắc nhở cho %d/%d hóa đơn", successCount, invoiceIds.size()));
+
+        return result;
+    }
+
+    /**
+     * [EN] Update invoice status to overdue
+     * [VI] Cập nhật trạng thái hóa đơn thành quá hạn
+     */
+    public int updateOverdueStatus() {
+        LocalDate today = LocalDate.now();
+        List<Invoice> overdueInvoices = invoiceRepository.findByDueDateBeforeAndStatus(today, InvoiceStatus.UNPAID);
+        
+        for (Invoice invoice : overdueInvoices) {
+            invoice.setStatus(InvoiceStatus.OVERDUE);
+            invoiceRepository.save(invoice);
+        }
+        
+        return overdueInvoices.size();
     }
 }
