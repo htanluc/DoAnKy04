@@ -3,14 +3,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/auth/login_page.dart';
-import 'features/dashboard/dashboard_page.dart';
+import 'features/dashboard/ui/dashboard_screen.dart';
 import 'features/invoices/ui/invoices_screen.dart';
 import 'features/facility_bookings/facility_bookings_page.dart';
 import 'features/events/ui/events_screen.dart';
-import 'features/announcements/announcements_page.dart';
+import 'features/announcements/ui/announcements_screen.dart';
 import 'features/service_requests/ui/requests_screen.dart';
 import 'features/service_requests/debug_image_test.dart';
-import 'features/profile/profile_page.dart';
+import 'features/profile/ui/profile_screen.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/vehicles/ui/vehicles_screen.dart';
 import 'features/facilities/ui/facilities_screen.dart';
@@ -49,14 +49,14 @@ class MainApp extends StatelessWidget {
       routes: {
         '/': (context) => const AuthGate(),
         '/login': (context) => const LoginPage(),
-        '/dashboard': (context) => const DashboardPage(),
+        '/dashboard': (context) => const DashboardScreen(),
         '/invoices': (context) => const InvoicesScreen(),
         '/facility-bookings': (context) => const FacilityBookingsPage(),
         '/events': (context) => const EventsScreen(),
-        '/announcements': (context) => const AnnouncementsPage(),
+        '/announcements': (context) => const AnnouncementsScreen(),
         '/service-requests': (context) => const ServiceRequestsScreen(),
         '/debug-image-test': (context) => const DebugImageTest(),
-        '/profile': (context) => const ProfilePage(),
+        '/profile': (context) => const ProfileScreen(),
         '/vehicles': (context) => const VehiclesScreen(),
         '/facilities': (context) => const FacilitiesScreen(),
       },

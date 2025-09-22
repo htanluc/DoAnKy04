@@ -4,6 +4,7 @@ import '../models/invoice.dart';
 import '../providers/invoices_providers.dart';
 import 'widgets/invoice_card.dart';
 import 'invoice_detail_screen.dart';
+import '../../dashboard/ui/widgets/main_scaffold.dart';
 
 class InvoicesScreen extends ConsumerStatefulWidget {
   const InvoicesScreen({super.key});
@@ -28,12 +29,9 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
     final filteredInvoices = ref.watch(filteredInvoicesProvider);
     final statusFilter = ref.watch(invoiceStatusFilterProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hóa đơn'),
-        backgroundColor: const Color(0xFF0066CC),
-        foregroundColor: Colors.white,
-      ),
+    return MainScaffold(
+      title: 'Hóa đơn',
+      currentBottomNavIndex: 1, // Invoices tab
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(myInvoicesProvider);

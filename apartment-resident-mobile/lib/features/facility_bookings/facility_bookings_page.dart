@@ -7,6 +7,7 @@ import '../facilities/providers/bookings_providers.dart';
 import '../facilities/data/bookings_api.dart';
 import '../facilities/models/booking.dart';
 import '../facilities/ui/widgets/booking_card.dart';
+import '../dashboard/ui/widgets/main_scaffold.dart';
 
 class FacilityBookingsPage extends ConsumerStatefulWidget {
   const FacilityBookingsPage({super.key});
@@ -32,55 +33,70 @@ class _FacilityBookingsPageState extends ConsumerState<FacilityBookingsPage> {
   Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(myBookingsProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text(
-          'Đặt chỗ của tôi',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF1976D2), // FPT Blue
-        elevation: 0,
-        actions: [
-          // Filter dropdown
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list, color: Colors.white),
-            onSelected: (String value) {
-              setState(() {
-                _selectedFilter = value;
-              });
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem(value: 'Tất cả', child: Text('Tất cả')),
-              const PopupMenuItem(
-                value: 'Chờ thanh toán',
-                child: Text('Chờ thanh toán'),
-              ),
-              const PopupMenuItem(
-                value: 'Đã xác nhận',
-                child: Text('Đã xác nhận'),
-              ),
-              const PopupMenuItem(value: 'Đã hủy', child: Text('Đã hủy')),
-              const PopupMenuItem(value: 'Từ chối', child: Text('Từ chối')),
-            ],
-          ),
-          IconButton(
-            onPressed: () => ref.invalidate(myBookingsProvider),
-            icon: const Icon(Icons.refresh, color: Colors.white),
-          ),
-        ],
-      ),
-      body: bookingsAsync.when(
-        loading: () => _buildLoadingState(),
-        error: (error, stackTrace) =>
-            _buildErrorState(context, ref, error.toString()),
-        data: (bookings) => _buildBookingsList(context, ref, bookings),
-      ),
+    return MainScaffold(
+      title: 'Đặt tiện ích',
+      currentBottomNavIndex: 3, // Facility Bookings tab
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToFacilities(context),
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF1976D2),
+      ),
+      body: Column(
+        children: [
+          // Filter dropdown
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(Icons.filter_list),
+                    onSelected: (String value) {
+                      setState(() {
+                        _selectedFilter = value;
+                      });
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      const PopupMenuItem(
+                        value: 'Tất cả',
+                        child: Text('Tất cả'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'Chờ thanh toán',
+                        child: Text('Chờ thanh toán'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'Đã xác nhận',
+                        child: Text('Đã xác nhận'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'Đã hủy',
+                        child: Text('Đã hủy'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'Từ chối',
+                        child: Text('Từ chối'),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => ref.invalidate(myBookingsProvider),
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: bookingsAsync.when(
+              loading: () => _buildLoadingState(),
+              error: (error, stackTrace) =>
+                  _buildErrorState(context, ref, error.toString()),
+              data: (bookings) => _buildBookingsList(context, ref, bookings),
+            ),
+          ),
+        ],
       ),
     );
   }

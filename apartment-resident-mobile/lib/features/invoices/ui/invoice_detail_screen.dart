@@ -7,6 +7,7 @@ import '../models/payment.dart';
 import '../providers/invoices_providers.dart';
 import 'widgets/payment_method_sheet.dart';
 import 'payment_webview_screen.dart';
+import '../../dashboard/ui/widgets/main_scaffold.dart';
 
 class InvoiceDetailScreen extends ConsumerStatefulWidget {
   const InvoiceDetailScreen({super.key, required this.invoiceId});
@@ -29,12 +30,9 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       autoPaymentSettingsProvider(widget.invoiceId),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Hóa đơn #${widget.invoiceId}'),
-        backgroundColor: const Color(0xFF0066CC),
-        foregroundColor: Colors.white,
-      ),
+    return MainScaffold(
+      title: 'Hóa đơn #${widget.invoiceId}',
+      currentBottomNavIndex: 1,
       body: invoiceAsync.when(
         data: (invoice) =>
             _buildInvoiceDetail(invoice, paymentsAsync, autoPaymentAsync),
