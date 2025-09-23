@@ -46,11 +46,17 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private FeedbackRepository feedbackRepository;
     @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private AiQaHistoryRepository aiQaHistoryRepository;
+    @Autowired private AnnouncementReadRepository announcementReadRepository;
+    @Autowired private PaymentTransactionRepository paymentTransactionRepository;
+    @Autowired private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    @Autowired private RefreshTokenRepository refreshTokenRepository;
+    @Autowired private ApartmentInvitationRepository apartmentInvitationRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private FeedbackCategoryRepository feedbackCategoryRepository;
     @Autowired private WaterMeterReadingRepository waterMeterReadingRepository;
     @Autowired private VehicleRepository vehicleRepository;
     @Autowired private VehicleCapacityConfigRepository vehicleCapacityConfigRepository;
+    @Autowired private ServiceFeeConfigRepository serviceFeeConfigRepository;
     // @Autowired private PaymentMethodRepository paymentMethodRepository; // Comment out if not exists
     // @Autowired private EmergencyContactRepository emergencyContactRepository; // Comment out if not exists
     // @Autowired private ApartmentInvitationRepository apartmentInvitationRepository; // Comment out if not exists
@@ -78,12 +84,18 @@ public class DataInitializer implements CommandLineRunner {
         // PART 4: FACILITIES & SERVICE CATEGORIES
         initializeFacilitiesAndServiceCategories();
         
+        // PART 4.0: SERVICE FEE CONFIG (for last 9 months)
+        initializeServiceFeeConfigsForNineMonths();
+
         // PART 5: ANNOUNCEMENTS & EVENTS
         initializeAnnouncementsAndEvents();
         
         // PART 6: FACILITY BOOKINGS
         initializeFacilityBookings();
         
+        // PART 4.5: WATER METER READINGS (before invoices)
+        initializeWaterMeterReadings();
+
         // PART 7: INVOICES & PAYMENTS
         initializeInvoicesAndPayments();
         
@@ -111,118 +123,182 @@ public class DataInitializer implements CommandLineRunner {
         // 1.1 Create Roles
         Role adminRole = roleRepository.save(Role.builder()
             .name("ADMIN")
-            .description("Quản trị viên hệ thống - Toàn quyền truy cập và quản lý")
+            .description("System administrator - full access to all features")
             .build());
         
         Role staffRole = roleRepository.save(Role.builder()
             .name("STAFF")
-            .description("Nhân viên quản lý - Quản lý căn hộ, dịch vụ và cư dân")
+            .description("Staff - manage apartments, services and residents")
             .build());
         
         Role residentRole = roleRepository.save(Role.builder()
             .name("RESIDENT")
-            .description("Cư dân - Sử dụng dịch vụ, thanh toán và báo cáo sự cố")
+            .description("Resident - use facilities, pay invoices and report issues")
             .build());
         
         Role technicianRole = roleRepository.save(Role.builder()
             .name("TECHNICIAN")
-            .description("Kỹ thuật viên - Xử lý sự cố kỹ thuật và bảo trì")
+            .description("Technician - handle technical incidents and maintenance")
             .build());
         
         Role cleanerRole = roleRepository.save(Role.builder()
             .name("CLEANER")
-            .description("Nhân viên vệ sinh - Dọn dẹp và bảo trì vệ sinh")
+            .description("Cleaner - sanitation and hygiene maintenance")
             .build());
         
         Role securityRole = roleRepository.save(Role.builder()
             .name("SECURITY")
-            .description("Bảo vệ - An ninh, tuần tra và kiểm soát ra vào")
+            .description("Security - patrols and access control")
             .build());
 
         // 1.2 Create Enhanced Users with complete information
         List<User> users = new ArrayList<>();
         
         // Admin Users
-        users.add(createUser("admin", "admin@apartment.com", "0901234567", "Nguyễn Văn Admin", 
+        users.add(createUser("admin", "admin@apartment.com", "0901234567", "John Admin", 
             LocalDate.of(1985, 5, 15), "123456789001", Set.of(adminRole), UserStatus.ACTIVE));
         
-        users.add(createUser("manager", "manager@apartment.com", "0901234568", "Trần Thị Manager", 
+        users.add(createUser("manager", "manager@apartment.com", "0901234568", "Mary Manager", 
             LocalDate.of(1988, 8, 20), "123456789002", Set.of(adminRole), UserStatus.ACTIVE));
         
         // Staff Users
-        users.add(createUser("staff1", "staff1@apartment.com", "0901234569", "Lê Văn Staff", 
+        users.add(createUser("staff1", "staff1@apartment.com", "0901234569", "Steven Staff", 
             LocalDate.of(1990, 3, 10), "123456789003", Set.of(staffRole), UserStatus.ACTIVE));
         
-        users.add(createUser("staff2", "staff2@apartment.com", "0901234570", "Phạm Thị Staff", 
+        users.add(createUser("staff2", "staff2@apartment.com", "0901234570", "Sarah Staff", 
             LocalDate.of(1992, 7, 25), "123456789004", Set.of(staffRole), UserStatus.ACTIVE));
         
         // Resident Users with diverse information
-        users.add(createUser("resident1", "nguyenvanA@gmail.com", "0901234571", "Nguyễn Văn An", 
+        users.add(createUser("resident1", "nguyenvanA@gmail.com", "0901234571", "Alex Anderson", 
             LocalDate.of(1980, 1, 15), "123456789005", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident2", "tranthiB@gmail.com", "0901234572", "Trần Thị Bình", 
+        users.add(createUser("resident2", "tranthiB@gmail.com", "0901234572", "Bella Brown", 
             LocalDate.of(1982, 4, 22), "123456789006", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident3", "levanC@gmail.com", "0901234573", "Lê Văn Cường", 
+        users.add(createUser("resident3", "levanC@gmail.com", "0901234573", "Charlie Clark", 
             LocalDate.of(1985, 9, 8), "123456789007", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident4", "phamthiD@gmail.com", "0901234574", "Phạm Thị Dung", 
+        users.add(createUser("resident4", "phamthiD@gmail.com", "0901234574", "Diana Davis", 
             LocalDate.of(1987, 12, 3), "123456789008", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident5", "hoangvanE@gmail.com", "0901234575", "Hoàng Văn Em", 
+        users.add(createUser("resident5", "hoangvanE@gmail.com", "0901234575", "Evan Edwards", 
             LocalDate.of(1983, 6, 18), "123456789009", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident6", "dangthiF@gmail.com", "0901234576", "Đặng Thị Phương", 
+        users.add(createUser("resident6", "dangthiF@gmail.com", "0901234576", "Fiona Fisher", 
             LocalDate.of(1989, 11, 12), "123456789010", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident7", "vuthiG@gmail.com", "0901234582", "Vũ Thị Giang", 
+        users.add(createUser("resident7", "vuthiG@gmail.com", "0901234582", "Grace Green", 
             LocalDate.of(1986, 2, 28), "123456789011", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident8", "dovanH@gmail.com", "0901234583", "Đỗ Văn Hùng", 
+        users.add(createUser("resident8", "dovanH@gmail.com", "0901234583", "Henry Hill", 
             LocalDate.of(1984, 8, 14), "123456789012", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident9", "buithiI@gmail.com", "0901234584", "Bùi Thị Inh", 
+        users.add(createUser("resident9", "buithiI@gmail.com", "0901234584", "Ivy Irving", 
             LocalDate.of(1991, 5, 7), "123456789013", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident10", "ngovanJ@gmail.com", "0901234585", "Ngô Văn Jinh", 
+        users.add(createUser("resident10", "ngovanJ@gmail.com", "0901234585", "Jack Johnson", 
             LocalDate.of(1981, 10, 30), "123456789014", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident11", "lythiK@gmail.com", "0901234586", "Lý Thị Kim", 
+        users.add(createUser("resident11", "lythiK@gmail.com", "0901234586", "Karen King", 
             LocalDate.of(1988, 3, 25), "123456789015", Set.of(residentRole), UserStatus.ACTIVE));
         
-        users.add(createUser("resident12", "hovanL@gmail.com", "0901234587", "Hồ Văn Long", 
+        users.add(createUser("resident12", "hovanL@gmail.com", "0901234587", "Leo Lewis", 
             LocalDate.of(1983, 7, 19), "123456789016", Set.of(residentRole), UserStatus.ACTIVE));
+
+        // Additional 30 resident users
+        String[] extraFirstNames = {"Mia","Noah","Olivia","Liam","Emma","Ava","Sophia","Isabella","Mason","Logan",
+            "Lucas","Ethan","James","Benjamin","Charlotte","Amelia","Harper","Evelyn","Abigail","Emily",
+            "Michael","Elijah","Daniel","Henry","Sebastian","Aiden","Matthew","Jackson","Scarlett","Aria"};
+        String[] extraLastNames = {"Taylor","Walker","Harris","Martin","Thompson","White","Lewis","Lee","Clark","Young",
+            "Allen","King","Wright","Scott","Green","Baker","Adams","Nelson","Hill","Ramirez",
+            "Campbell","Mitchell","Roberts","Carter","Phillips","Evans","Turner","Torres","Parker","Collins"};
+        for (int i = 0; i < 30; i++) {
+            String username = "resident" + (13 + i);
+            String email = username + "@example.com";
+            String phone = String.format("0902%06d", 300 + i);
+            String fullName = extraFirstNames[i % extraFirstNames.length] + " " + extraLastNames[i % extraLastNames.length];
+            users.add(createUser(username, email, phone, fullName,
+                LocalDate.of(1980 + (i % 20), 1 + (i % 12), 1 + (i % 28)),
+                "77777777" + String.format("%02d", i), Set.of(residentRole), UserStatus.ACTIVE));
+        }
         
         // Technician Users
-        users.add(createUser("technician1", "technician1@apartment.com", "0901234577", "Nguyễn Văn Kỹ Thuật", 
+        users.add(createUser("technician1", "technician1@apartment.com", "0901234577", "Tom Technician", 
             LocalDate.of(1985, 4, 5), "123456789017", Set.of(technicianRole), UserStatus.ACTIVE));
         
-        users.add(createUser("technician2", "technician2@apartment.com", "0901234578", "Trần Thị Kỹ Thuật", 
+        users.add(createUser("technician2", "technician2@apartment.com", "0901234578", "Tina Technician", 
             LocalDate.of(1987, 9, 12), "123456789018", Set.of(technicianRole), UserStatus.ACTIVE));
         
         // Cleaner Users
-        users.add(createUser("cleaner1", "cleaner1@apartment.com", "0901234579", "Lê Văn Vệ Sinh", 
+        users.add(createUser("cleaner1", "cleaner1@apartment.com", "0901234579", "Clara Cleaner", 
             LocalDate.of(1989, 1, 20), "123456789019", Set.of(cleanerRole), UserStatus.ACTIVE));
         
-        users.add(createUser("cleaner2", "cleaner2@apartment.com", "0901234580", "Phạm Thị Vệ Sinh", 
+        users.add(createUser("cleaner2", "cleaner2@apartment.com", "0901234580", "Chris Cleaner", 
             LocalDate.of(1990, 6, 8), "123456789020", Set.of(cleanerRole), UserStatus.ACTIVE));
         
         // Security Users
-        users.add(createUser("security1", "security1@apartment.com", "0901234581", "Hoàng Văn Bảo Vệ", 
+        users.add(createUser("security1", "security1@apartment.com", "0901234581", "Sam Security", 
             LocalDate.of(1986, 12, 15), "123456789021", Set.of(securityRole), UserStatus.ACTIVE));
         
-        users.add(createUser("security2", "security2@apartment.com", "0901234588", "Đặng Thị Bảo Vệ", 
+        users.add(createUser("security2", "security2@apartment.com", "0901234588", "Sophie Security", 
             LocalDate.of(1988, 3, 22), "123456789022", Set.of(securityRole), UserStatus.ACTIVE));
         
         // Special Status Users
-        users.add(createUser("resident_locked", "locked@gmail.com", "0901234589", "Nguyễn Văn Locked", 
-            LocalDate.of(1990, 1, 1), "999999999999", Set.of(residentRole), UserStatus.LOCKED, "Vi phạm quy định"));
+        users.add(createUser("resident_locked", "locked@gmail.com", "0901234589", "Locke Resident", 
+            LocalDate.of(1990, 1, 1), "999999999999", Set.of(residentRole), UserStatus.LOCKED, "Policy violation"));
         
-        users.add(createUser("resident_inactive", "inactive@gmail.com", "0901234590", "Trần Thị Inactive", 
+        users.add(createUser("resident_inactive", "inactive@gmail.com", "0901234590", "Inactive Resident", 
             LocalDate.of(1991, 2, 2), "888888888888", Set.of(residentRole), UserStatus.INACTIVE));
         
         System.out.println("✅ Created " + users.size() + " users with complete information");
     }
+    /**
+     * PART 4.5: Initialize Water Meter Readings for apartments (monthly from 2025-01)
+     */
+    private void initializeWaterMeterReadings() {
+        System.out.println("💧 Initializing Water Meter Readings...");
+
+        List<Apartment> apartments = apartmentRepository.findAll();
+        // Use admin as recorder
+        Optional<User> adminOpt = userRepository.findByUsername("admin");
+        Long recordedBy = adminOpt.map(User::getId).orElse(1L);
+
+        YearMonth start = YearMonth.of(2025, 1);
+        YearMonth end = YearMonth.now();
+
+        for (Apartment apartment : apartments) {
+            YearMonth ym = start;
+            double previousMeter = 100.0 + (apartment.getId() % 50); // base per apartment
+            while (!ym.isAfter(end)) {
+                LocalDate readingDate = LocalDate.of(ym.getYear(), ym.getMonthValue(), Math.min(ym.lengthOfMonth(), 28));
+                // If exists, skip
+                boolean exists = waterMeterReadingRepository
+                    .findByApartmentIdAndReadingDate(apartment.getId(), readingDate)
+                    .isPresent();
+                if (!exists) {
+                    // Vary consumption by area and month
+                    double consumption = Math.max(3.0, (apartment.getArea() / 30.0) + (ym.getMonthValue() % 4));
+                    double unitPrice = 10000.0 + ((apartment.getId() % 3) * 500); // VND per m3
+                    double total = consumption * unitPrice;
+                    previousMeter += consumption;
+
+                    WaterMeterReading reading = new WaterMeterReading();
+                    reading.setApartmentId(apartment.getId());
+                    reading.setReadingDate(readingDate);
+                    reading.setMeterReading(BigDecimal.valueOf(previousMeter));
+                    reading.setConsumption(BigDecimal.valueOf(consumption));
+                    reading.setUnitPrice(BigDecimal.valueOf(unitPrice));
+                    reading.setTotalAmount(BigDecimal.valueOf(total));
+                    reading.setRecordedBy(recordedBy);
+                    waterMeterReadingRepository.save(reading);
+                }
+                ym = ym.plusMonths(1);
+            }
+        }
+
+        System.out.println("✅ Water meter readings initialized");
+    }
+
 
     /**
      * Helper method to create users with complete information
@@ -265,38 +341,38 @@ public class DataInitializer implements CommandLineRunner {
         List<Building> buildings = new ArrayList<>();
         
         buildings.add(buildingRepository.save(Building.builder()
-            .buildingName("Tòa A - Golden Tower")
-            .address("123 Đường ABC, Phường 1, Quận 1, TP.HCM")
+            .buildingName("Tower A - Golden Tower")
+            .address("123 ABC Street, Ward 1, District 1, Ho Chi Minh City")
             .floors(25)
-            .description("Tòa nhà cao cấp với đầy đủ tiện ích, view đẹp hướng sông Sài Gòn")
+            .description("Premium tower with full amenities and river view")
             .build()));
         
         buildings.add(buildingRepository.save(Building.builder()
-            .buildingName("Tòa B - Silver Residence")
-            .address("456 Đường XYZ, Phường 2, Quận 2, TP.HCM")
+            .buildingName("Tower B - Silver Residence")
+            .address("456 XYZ Street, Ward 2, District 2, Ho Chi Minh City")
             .floors(20)
-            .description("Tòa nhà trung cấp phù hợp gia đình, gần trường học và bệnh viện")
+            .description("Mid-range building for families, near schools and hospitals")
             .build()));
         
         buildings.add(buildingRepository.save(Building.builder()
-            .buildingName("Tòa C - Diamond Complex")
-            .address("789 Đường DEF, Phường 3, Quận 3, TP.HCM")
+            .buildingName("Tower C - Diamond Complex")
+            .address("789 DEF Street, Ward 3, District 3, Ho Chi Minh City")
             .floors(30)
-            .description("Tòa nhà cao cấp view đẹp, tiện ích đầy đủ, an ninh 24/7")
+            .description("High-end building with full amenities, 24/7 security")
             .build()));
         
         buildings.add(buildingRepository.save(Building.builder()
-            .buildingName("Tòa D - Emerald Garden")
-            .address("321 Đường GHI, Phường 4, Quận 7, TP.HCM")
+            .buildingName("Tower D - Emerald Garden")
+            .address("321 GHI Street, Ward 4, District 7, Ho Chi Minh City")
             .floors(18)
-            .description("Tòa nhà với không gian xanh, phù hợp gia đình có trẻ em")
+            .description("Green space, suitable for families with children")
             .build()));
         
         buildings.add(buildingRepository.save(Building.builder()
-            .buildingName("Tòa E - Platinum Heights")
-            .address("654 Đường JKL, Phường 5, Quận 4, TP.HCM")
+            .buildingName("Tower E - Platinum Heights")
+            .address("654 JKL Street, Ward 5, District 4, Ho Chi Minh City")
             .floors(22)
-            .description("Tòa nhà cao cấp với view biển, tiện ích sang trọng")
+            .description("Luxury building with sea view and premium amenities")
             .build()));
 
         // 2.2 Create Diverse Apartments for each building
@@ -536,102 +612,102 @@ public class DataInitializer implements CommandLineRunner {
         
         // Sports & Fitness Facilities
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Phòng Gym Premium")
-            .description("Phòng tập thể dục với đầy đủ thiết bị hiện đại, có huấn luyện viên cá nhân")
-            .location("Tầng 1 - Tòa A")
+            .name("Premium Gym")
+            .description("Modern gym with full equipment and personal trainers")
+            .location("Floor 1 - Tower A")
             .capacity(30)
-            .otherDetails("Mở cửa 6:00-22:00, có phòng thay đồ, tủ khóa, vòi sen")
+            .otherDetails("Open 06:00-22:00, lockers and showers available")
             .usageFee(80000.0)
             .openingHours("06:00 - 22:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Hồ bơi Olympic")
-            .description("Hồ bơi ngoài trời với view đẹp, có cứu hộ chuyên nghiệp")
-            .location("Khu vực ngoài trời - Tầng trệt")
+            .name("Olympic Pool")
+            .description("Outdoor pool with great view and professional lifeguards")
+            .location("Outdoor area - Ground floor")
             .capacity(50)
-            .otherDetails("Mở cửa 6:00-21:00, có ghế tắm nắng, quán bar bên hồ")
+            .otherDetails("Open 06:00-21:00, sun loungers and pool bar")
             .usageFee(120000.0)
             .openingHours("06:00 - 21:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Sân tennis chuyên nghiệp")
-            .description("Sân tennis ngoài trời chất lượng cao với đèn chiếu sáng")
-            .location("Khu vực ngoài trời - Tầng trệt")
+            .name("Tennis Court")
+            .description("High-quality outdoor tennis court with lights")
+            .location("Outdoor area - Ground floor")
             .capacity(8)
-            .otherDetails("Có đèn chiếu sáng, có thể chơi ban đêm, có máy bán nước")
+            .otherDetails("Night lighting available, vending machines on site")
             .usageFee(100000.0)
             .openingHours("06:00 - 22:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Sân bóng rổ")
-            .description("Sân bóng rổ ngoài trời với đèn chiếu sáng")
-            .location("Khu vực ngoài trời - Tầng trệt")
+            .name("Basketball Court")
+            .description("Outdoor basketball court with lighting")
+            .location("Outdoor area - Ground floor")
             .capacity(20)
-            .otherDetails("Có đèn chiếu sáng, có mái che, phù hợp cho trẻ em và người lớn")
+            .otherDetails("Lighting and canopy, suitable for all ages")
             .usageFee(60000.0)
             .openingHours("06:00 - 22:00")
             .build()));
         
         // Community & Entertainment Facilities
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Phòng sinh hoạt cộng đồng")
-            .description("Phòng đa năng cho các hoạt động cộng đồng, tiệc tùng")
-            .location("Tầng 1 - Tòa C")
+            .name("Community Room")
+            .description("Multi-purpose room for community activities and parties")
+            .location("Floor 1 - Tower C")
             .capacity(100)
-            .otherDetails("Có sân khấu, âm thanh ánh sáng, bàn ghế, nhà bếp")
+            .otherDetails("Stage, audio and lighting, tables and chairs, pantry")
             .usageFee(30000.0)
             .openingHours("08:00 - 22:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Phòng họp đa năng")
-            .description("Phòng họp đa năng cho cư dân, có máy chiếu và âm thanh")
-            .location("Tầng 2 - Tòa B")
+            .name("Meeting Room")
+            .description("Multi-purpose meeting room with projector and audio")
+            .location("Floor 2 - Tower B")
             .capacity(40)
-            .otherDetails("Có máy chiếu, âm thanh, bàn ghế, wifi miễn phí")
+            .otherDetails("Projector, audio, tables and chairs, free Wi-Fi")
             .usageFee(50000.0)
             .openingHours("08:00 - 20:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Khu BBQ ngoài trời")
-            .description("Khu vực nướng BBQ ngoài trời với view đẹp")
-            .location("Khu vực ngoài trời - Tầng trệt")
+            .name("Outdoor BBQ Area")
+            .description("Outdoor BBQ area with a nice view")
+            .location("Outdoor area - Ground floor")
             .capacity(50)
-            .otherDetails("Có bàn ghế, lò nướng, bếp gas, quán bar")
+            .otherDetails("Benches, grills, gas stove, bar")
             .usageFee(80000.0)
             .openingHours("16:00 - 22:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Khu vui chơi trẻ em")
-            .description("Sân chơi an toàn cho trẻ em với nhiều trò chơi")
-            .location("Khu vực ngoài trời - Tầng trệt")
+            .name("Kids Playground")
+            .description("Safe playground for kids with various games")
+            .location("Outdoor area - Ground floor")
             .capacity(30)
-            .otherDetails("Có đồ chơi, có ghế ngồi cho phụ huynh, có mái che")
+            .otherDetails("Toys, seating for parents, canopy")
             .usageFee(40000.0)
             .openingHours("06:00 - 20:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
             .name("Spa & Massage")
-            .description("Spa và massage thư giãn cho cư dân")
-            .location("Tầng 1 - Tòa B")
+            .description("Relaxing spa and massage services for residents")
+            .location("Floor 1 - Tower B")
             .capacity(10)
-            .otherDetails("Có phòng massage, spa, sauna, có nhân viên chuyên nghiệp")
+            .otherDetails("Massage rooms, spa, sauna, professional staff")
             .usageFee(200000.0)
             .openingHours("09:00 - 21:00")
             .build()));
         
         facilities.add(facilityRepository.save(Facility.builder()
-            .name("Bãi đỗ xe có mái che")
-            .description("Bãi đỗ xe có mái che, an toàn cho xe cư dân")
-            .location("Tầng hầm - Tòa A")
+            .name("Covered Parking")
+            .description("Covered parking area, safe for residents' vehicles")
+            .location("Basement - Tower A")
             .capacity(200)
-            .otherDetails("Miễn phí cho cư dân, có camera giám sát, có bảo vệ")
+            .otherDetails("Free for residents, CCTV, security guards")
             .usageFee(10000.0)
             .openingHours("24/7")
             .build()));
@@ -643,57 +719,57 @@ public class DataInitializer implements CommandLineRunner {
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("ELECTRICITY")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("ELECTRICITY")
-                .categoryName("Điện")
+                .categoryName("Electricity")
                 .assignedRole("TECHNICIAN")
-                .description("Sửa chữa điện, thay bóng đèn, ổ cắm, công tắc, tủ điện")
+                .description("Electrical repairs, bulbs, outlets, switches, panels")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("PLUMBING")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("PLUMBING")
-                .categoryName("Nước")
+                .categoryName("Plumbing")
                 .assignedRole("TECHNICIAN")
-                .description("Sửa ống nước, vòi nước, bồn cầu, bồn rửa, máy bơm nước")
+                .description("Pipes, faucets, toilets, sinks, water pumps")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("CLEANING")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("CLEANING")
-                .categoryName("Vệ sinh")
+                .categoryName("Cleaning")
                 .assignedRole("CLEANER")
-                .description("Dọn dẹp, lau chùi, vệ sinh chung, thu gom rác")
+                .description("Housekeeping, sweeping, general cleaning, garbage collection")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("SECURITY")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("SECURITY")
-                .categoryName("An ninh")
+                .categoryName("Security")
                 .assignedRole("SECURITY")
-                .description("Tuần tra, kiểm tra an ninh, xử lý sự cố, quản lý ra vào")
+                .description("Patrols, security checks, incidents, access control")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("HVAC")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("HVAC")
-                .categoryName("Điều hòa")
+                .categoryName("HVAC")
                 .assignedRole("TECHNICIAN")
-                .description("Bảo trì, sửa chữa điều hòa, thông gió, lọc không khí")
+                .description("Maintenance and repair for air conditioning and ventilation")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("ELEVATOR")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("ELEVATOR")
-                .categoryName("Thang máy")
+                .categoryName("Elevator")
                 .assignedRole("TECHNICIAN")
-                .description("Bảo trì, sửa chữa thang máy, kiểm tra an toàn")
+                .description("Elevator maintenance, repair and safety checks")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("GARDENING")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("GARDENING")
-                .categoryName("Cây xanh")
+                .categoryName("Gardening")
                 .assignedRole("CLEANER")
-                .description("Chăm sóc cây xanh, cắt tỉa, tưới nước, bón phân")
+                .description("Plant care, trimming, watering, fertilizing")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("INTERNET")
@@ -701,18 +777,49 @@ public class DataInitializer implements CommandLineRunner {
                 .categoryCode("INTERNET")
                 .categoryName("Internet & IT")
                 .assignedRole("TECHNICIAN")
-                .description("Sửa chữa mạng internet, wifi, camera, hệ thống IT")
+                .description("Internet network, Wi‑Fi, cameras and IT systems")
                 .build())));
         
         serviceCategories.add(serviceCategoryRepository.findByCategoryCode("GENERAL")
             .orElseGet(() -> serviceCategoryRepository.save(ServiceCategory.builder()
                 .categoryCode("GENERAL")
-                .categoryName("Khác")
+                .categoryName("Other")
                 .assignedRole("STAFF")
-                .description("Các yêu cầu khác không thuộc danh mục trên")
+                .description("Other requests that do not fit the categories above")
                 .build())));
         
         System.out.println("✅ Created " + facilities.size() + " facilities and " + serviceCategories.size() + " service categories");
+    }
+
+    /**
+     * Seed service fee configs for 9 recent months to simulate a live project.
+     */
+    private void initializeServiceFeeConfigsForNineMonths() {
+        System.out.println("🧾 Initializing Service Fee Configs for last 9 months...");
+        YearMonth current = YearMonth.now();
+        for (int i = 8; i >= 0; i--) {
+            YearMonth ym = current.minusMonths(i);
+            boolean exists = serviceFeeConfigRepository.findByMonthAndYear(ym.getMonthValue(), ym.getYear()).isPresent();
+            if (!exists) {
+                // Slight variations per month
+                double servicePerM2 = 12000.0 + (i * 50);
+                double waterPerM3 = 10000.0 + (i * 30);
+                double moto = 60000.0 + (i * 100);
+                double car4 = 200000.0 + (i * 500);
+                double car7 = 250000.0 + (i * 700);
+
+                serviceFeeConfigRepository.save(ServiceFeeConfig.builder()
+                    .month(ym.getMonthValue())
+                    .year(ym.getYear())
+                    .serviceFeePerM2(servicePerM2)
+                    .waterFeePerM3(waterPerM3)
+                    .motorcycleFee(moto)
+                    .car4SeatsFee(car4)
+                    .car7SeatsFee(car7)
+                    .build());
+            }
+        }
+        System.out.println("✅ Service Fee Configs initialized for 9 months");
     }
 
     /**
@@ -730,8 +837,8 @@ public class DataInitializer implements CommandLineRunner {
         
         // Regular Announcements
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("Thông báo bảo trì thang máy tòa A")
-            .content("Thang máy tòa A sẽ được bảo trì định kỳ từ 8:00-12:00 ngày 15/12/2025. Vui lòng sử dụng thang máy khác trong thời gian này. Chúng tôi xin lỗi vì sự bất tiện này.")
+            .title("Elevator maintenance - Tower A")
+            .content("Elevators in Tower A will undergo scheduled maintenance from 08:00 to 12:00 on 2025-12-15. Please use other elevators during this time. We apologize for the inconvenience.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -739,8 +846,8 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
         
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("Thông báo về phí dịch vụ tháng 12/2025")
-            .content("Phí dịch vụ tháng 12/2025 sẽ tăng 5% do chi phí điện nước tăng. Vui lòng thanh toán đúng hạn để tránh phí trễ hạn. Chi tiết xem trong phần hóa đơn.")
+            .title("Service fee for December 2025")
+            .content("The service fee for December 2025 will increase by 5% due to rising utility costs. Please pay on time to avoid late fees. See details in the invoice section.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -748,8 +855,8 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
         
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("Thông báo về dịch vụ vệ sinh")
-            .content("Dịch vụ vệ sinh sẽ được thực hiện vào thứ 2 và thứ 6 hàng tuần. Vui lòng để rác đúng nơi quy định và không để rác ở hành lang.")
+            .title("Cleaning service schedule")
+            .content("Cleaning services will be performed every Monday and Friday. Please dispose of trash properly and do not leave garbage in the hallways.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -758,8 +865,8 @@ public class DataInitializer implements CommandLineRunner {
         
         // Urgent Announcements
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("THÔNG BÁO KHẨN: Mất điện bảo trì")
-            .content("Sẽ có kế hoạch cắt điện bảo trì từ 22:00-06:00 ngày 20/12/2025. Vui lòng chuẩn bị đèn pin và các thiết bị cần thiết. Điện sẽ được khôi phục sớm nhất có thể.")
+            .title("URGENT: Planned power outage")
+            .content("There will be a planned power maintenance from 22:00 to 06:00 on 2025-12-20. Please prepare flashlights and necessary equipment. Power will be restored as soon as possible.")
             .type("URGENT")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -767,8 +874,8 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
         
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("THÔNG BÁO KHẨN: Bảo mật an ninh")
-            .content("Vui lòng đóng cửa cẩn thận và không cho người lạ vào tòa nhà. Báo cáo ngay nếu thấy hành vi đáng ngờ. Số điện thoại bảo vệ: 0901234567")
+            .title("URGENT: Security notice")
+            .content("Please lock doors carefully and do not let strangers into the building. Report suspicious activities immediately. Security hotline: 0901234567")
             .type("URGENT")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -777,8 +884,8 @@ public class DataInitializer implements CommandLineRunner {
         
         // Event Announcements
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("Sự kiện Tết 2025 - Chương trình đón năm mới")
-            .content("Chương trình đón Tết 2025 sẽ diễn ra tại sảnh chính từ 18:00-22:00 ngày 30/12/2025. Có múa lân, ẩm thực truyền thống, và nhiều hoạt động vui nhộn. Mời tất cả cư dân tham gia!")
+            .title("New Year 2025 Celebration")
+            .content("The New Year 2025 celebration will take place in the main lobby from 18:00 to 22:00 on 2025-12-30. Lion dance, traditional cuisine, and fun activities. All residents are welcome!")
             .type("EVENT")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -786,8 +893,8 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
         
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("Thông báo về dịch vụ internet")
-            .content("Dịch vụ internet sẽ được nâng cấp vào ngày 28/12/2025. Có thể bị gián đoạn từ 2:00-4:00 sáng. Tốc độ internet sẽ được cải thiện đáng kể sau nâng cấp.")
+            .title("Internet service upgrade")
+            .content("Internet service will be upgraded on 2025-12-28. There may be interruptions from 02:00 to 04:00. Speeds will be significantly improved afterward.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -795,8 +902,8 @@ public class DataInitializer implements CommandLineRunner {
             .build()));
         
         announcements.add(announcementRepository.save(Announcement.builder()
-            .title("Thông báo về bảo trì hệ thống nước")
-            .content("Hệ thống nước sẽ được bảo trì từ 14:00-18:00 ngày 25/12/2025. Vui lòng dự trữ nước đủ dùng trong thời gian này. Nước sẽ được khôi phục sớm nhất có thể.")
+            .title("Water system maintenance")
+            .content("The water system will undergo maintenance from 14:00 to 18:00 on 2025-12-25. Please store enough water for this period. Service will be restored as soon as possible.")
             .type("REGULAR")
             .targetAudience("ALL")
             .createdBy(adminUser.getId())
@@ -807,85 +914,99 @@ public class DataInitializer implements CommandLineRunner {
         List<Event> events = new ArrayList<>();
         
         events.add(eventRepository.save(Event.builder()
-            .title("Tiệc Giáng sinh 2025 - Gala Dinner")
-            .description("Tiệc Giáng sinh sang trọng cho cư dân với nhiều hoạt động vui nhộn, ẩm thực đa dạng và chương trình văn nghệ đặc sắc")
+            .title("Christmas 2025 Gala Dinner")
+            .description("Elegant Christmas party for residents with fun activities, diverse cuisine and performances")
             .startTime(LocalDateTime.of(2025, 12, 24, 18, 0))
             .endTime(LocalDateTime.of(2025, 12, 24, 22, 0))
-            .location("Sảnh chính tòa A - Golden Tower")
+            .location("Main lobby - Tower A - Golden Tower")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Họp cư dân tháng 12 - Thảo luận quy hoạch 2025")
-            .description("Họp cư dân định kỳ để thảo luận các vấn đề chung, quy hoạch cải tiến và nghe ý kiến phản hồi từ cư dân")
+            .title("Monthly resident meeting - December 2025")
+            .description("Regular meeting to discuss common issues, improvement plans and gather feedback")
             .startTime(LocalDateTime.of(2025, 12, 15, 19, 0))
             .endTime(LocalDateTime.of(2025, 12, 15, 21, 0))
-            .location("Phòng sinh hoạt cộng đồng")
+            .location("Community Room")
             .build()));
         events.add(eventRepository.save(Event.builder()
-            .title("Họp cư dân tháng 8 - Thảo luận quy hoạch 2025")
-            .description("Họp cư dân định kỳ để thảo luận các vấn đề chung, quy hoạch cải tiến và nghe ý kiến phản hồi từ cư dân")
+            .title("Monthly resident meeting - August 2025")
+            .description("Regular meeting to discuss common issues, improvement plans and gather feedback")
             .startTime(LocalDateTime.of(2025, 8, 15, 19, 0))
             .endTime(LocalDateTime.of(2025, 8, 15, 21, 0))
-            .location("Phòng sinh hoạt cộng đồng")
+            .location("Community Room")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Lớp yoga miễn phí - Sáng chủ nhật")
-            .description("Lớp yoga miễn phí cho cư dân mỗi sáng Chủ nhật, phù hợp cho mọi lứa tuổi, có huấn luyện viên chuyên nghiệp")
+            .title("Free yoga class - Sunday morning")
+            .description("Free yoga class for residents every Sunday morning, suitable for all ages, with professional instructors")
             .startTime(LocalDateTime.of(2025, 12, 22, 7, 0))
             .endTime(LocalDateTime.of(2025, 12, 22, 8, 30))
-            .location("Phòng gym - Tầng 2")
+            .location("Gym room - Floor 2")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Workshop nấu ăn truyền thống Việt Nam")
-            .description("Workshop nấu ăn truyền thống Việt Nam với các món ăn đặc trưng, có đầu bếp chuyên nghiệp hướng dẫn")
+            .title("Traditional Vietnamese cooking workshop")
+            .description("Cooking workshop with signature Vietnamese dishes guided by professional chefs")
             .startTime(LocalDateTime.of(2025, 12, 28, 14, 0))
             .endTime(LocalDateTime.of(2025, 12, 28, 17, 0))
-            .location("Khu BBQ ngoài trời")
+            .location("Outdoor BBQ Area")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Giải tennis cư dân 2025 - Mùa giải mới")
-            .description("Giải đấu tennis thường niên cho cư dân với nhiều hạng mục thi đấu, có giải thưởng hấp dẫn")
+            .title("Resident Tennis Open 2025 - New season")
+            .description("Annual tennis tournament for residents with multiple categories and attractive prizes")
             .startTime(LocalDateTime.of(2025, 7, 1, 8, 0))
             .endTime(LocalDateTime.of(2025, 12, 31, 18, 0))
-            .location("Sân tennis chuyên nghiệp")
+            .location("Tennis Court")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Lớp học nấu ăn - Món ăn châu Á")
-            .description("Lớp học nấu ăn châu Á với các món ăn từ Nhật Bản, Hàn Quốc, Thái Lan và Trung Quốc")
+            .title("Asian cuisine cooking class")
+            .description("Cooking class with dishes from Japan, Korea, Thailand and China")
             .startTime(LocalDateTime.of(2025, 1, 15, 14, 0))
             .endTime(LocalDateTime.of(2025, 1, 15, 17, 0))
-            .location("Phòng sinh hoạt cộng đồng")
+            .location("Community Room")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Họp cư dân tháng 1/2025 - Kế hoạch năm mới")
-            .description("Họp cư dân định kỳ để thảo luận kế hoạch năm mới, cải tiến dịch vụ và nghe ý kiến phản hồi")
+            .title("Monthly resident meeting 01/2025 - New year plan")
+            .description("Regular meeting to discuss the new year plan, service improvements and gather feedback")
             .startTime(LocalDateTime.of(2025, 1, 15, 19, 0))
             .endTime(LocalDateTime.of(2025, 1, 15, 21, 0))
-            .location("Phòng họp đa năng")
+            .location("Meeting Room")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Tiệc mừng năm mới 2025 - Countdown Party")
-            .description("Tiệc mừng năm mới 2025 với chương trình countdown, âm nhạc sôi động và nhiều hoạt động vui nhộn")
+            .title("New Year 2025 - Countdown Party")
+            .description("New Year 2025 party with countdown, lively music and fun activities")
             .startTime(LocalDateTime.of(2025, 1, 1, 18, 0))
             .endTime(LocalDateTime.of(2025, 1, 1, 23, 0))
-            .location("Sảnh chính tòa A - Golden Tower")
+            .location("Main lobby - Tower A - Golden Tower")
             .build()));
         
         events.add(eventRepository.save(Event.builder()
-            .title("Hội thảo bảo mật an ninh - Diễn ra 3 ngày")
-            .description("Hội thảo về bảo mật an ninh cho cư dân với các chuyên gia, diễn ra trong 3 ngày liên tiếp")
+            .title("Security workshop - 3-day seminar")
+            .description("Security workshop for residents with experts, taking place over three consecutive days")
             .startTime(LocalDateTime.of(2025, 2, 10, 9, 0))
             .endTime(LocalDateTime.of(2025, 2, 12, 17, 0))
-            .location("Phòng họp đa năng - Tầng 1")
+            .location("Meeting Room - Floor 1")
             .build()));
         
-        System.out.println("✅ Created " + announcements.size() + " announcements and " + events.size() + " events");
+        // Mark some announcements as read by random residents to mimic 9-month activity
+        List<User> residents = userRepository.findAllWithRoles().stream()
+            .filter(u -> u.getRoles() != null && u.getRoles().stream().anyMatch(r -> "RESIDENT".equals(r.getName())))
+            .toList();
+        int reads = 0;
+        for (Announcement ann : announcements) {
+            for (int i = 0; i < residents.size(); i += 3) { // every 3rd resident reads
+                announcementReadRepository.save(AnnouncementRead.builder()
+                    .announcement(ann)
+                    .user(residents.get(i))
+                    .build());
+                reads++;
+            }
+        }
+        System.out.println("✅ Created " + announcements.size() + " announcements, " + events.size() + " events and " + reads + " announcement reads");
     }
 
     /**
@@ -907,6 +1028,17 @@ public class DataInitializer implements CommandLineRunner {
         
         // 6.1 Create Diverse Facility Bookings
         List<FacilityBooking> bookings = new ArrayList<>();
+        String[] purposes = {
+            "Morning workout",
+            "Family swimming",
+            "Tennis practice",
+            "Basketball game",
+            "Community meetup",
+            "Team meeting",
+            "BBQ gathering",
+            "Kids playtime",
+            "Spa relaxation"
+        };
         
         // Past bookings (completed)
         for (int i = 0; i < Math.min(10, residentUsers.size()); i++) {
@@ -914,24 +1046,32 @@ public class DataInitializer implements CommandLineRunner {
             Facility facility = facilities.get(i % facilities.size());
             
             // Past booking - completed
+            LocalDateTime start = LocalDateTime.now().minusDays(7 + i);
+            int duration = 60;
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
-                .bookingTime(LocalDateTime.now().minusDays(7 + i))
-                .duration(60)
+                .bookingTime(start)
+                .endTime(start.plusMinutes(duration))
+                .duration(duration)
                 .status(FacilityBookingStatus.CONFIRMED)
                 .numberOfPeople(2 + (i % 4))
+                .purpose(purposes[i % purposes.length])
                 .build()));
             
             // Past booking - rejected
             if (i % 3 == 0) {
+                LocalDateTime start2 = LocalDateTime.now().minusDays(5 + i);
+                int duration2 = 90;
                 bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                     .facility(facility)
                     .user(resident)
-                    .bookingTime(LocalDateTime.now().minusDays(5 + i))
-                    .duration(90)
+                    .bookingTime(start2)
+                    .endTime(start2.plusMinutes(duration2))
+                    .duration(duration2)
                     .status(FacilityBookingStatus.REJECTED)
                     .numberOfPeople(3 + (i % 3))
+                    .purpose(purposes[(i + 1) % purposes.length])
                     .build()));
             }
         }
@@ -942,24 +1082,32 @@ public class DataInitializer implements CommandLineRunner {
             Facility facility = facilities.get((i + 1) % facilities.size());
             
             // Current booking - pending
+            LocalDateTime start = LocalDateTime.now().plusDays(1 + i);
+            int duration = 120;
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
-                .bookingTime(LocalDateTime.now().plusDays(1 + i))
-                .duration(120)
+                .bookingTime(start)
+                .endTime(start.plusMinutes(duration))
+                .duration(duration)
                 .status(FacilityBookingStatus.PENDING)
                 .numberOfPeople(4 + (i % 3))
+                .purpose(purposes[(i + 2) % purposes.length])
                 .build()));
             
             // Current booking - confirmed
             if (i % 2 == 0) {
+                LocalDateTime start2 = LocalDateTime.now().plusDays(2 + i);
+                int duration2 = 180;
                 bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                     .facility(facility)
                     .user(resident)
-                    .bookingTime(LocalDateTime.now().plusDays(2 + i))
-                    .duration(180)
+                    .bookingTime(start2)
+                    .endTime(start2.plusMinutes(duration2))
+                    .duration(duration2)
                     .status(FacilityBookingStatus.CONFIRMED)
                     .numberOfPeople(6 + (i % 4))
+                    .purpose(purposes[(i + 3) % purposes.length])
                     .build()));
             }
         }
@@ -970,24 +1118,32 @@ public class DataInitializer implements CommandLineRunner {
             Facility facility = facilities.get((i + 2) % facilities.size());
             
             // Future booking - confirmed
+            LocalDateTime start = LocalDateTime.now().plusDays(7 + i);
+            int duration = 240;
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
-                .bookingTime(LocalDateTime.now().plusDays(7 + i))
-                .duration(240)
+                .bookingTime(start)
+                .endTime(start.plusMinutes(duration))
+                .duration(duration)
                 .status(FacilityBookingStatus.CONFIRMED)
                 .numberOfPeople(8 + (i % 5))
+                .purpose(purposes[(i + 4) % purposes.length])
                 .build()));
             
             // Future booking - pending
             if (i % 3 == 0) {
+                LocalDateTime start2 = LocalDateTime.now().plusDays(10 + i);
+                int duration2 = 300;
                 bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                     .facility(facility)
                     .user(resident)
-                    .bookingTime(LocalDateTime.now().plusDays(10 + i))
-                    .duration(300)
+                    .bookingTime(start2)
+                    .endTime(start2.plusMinutes(duration2))
+                    .duration(duration2)
                     .status(FacilityBookingStatus.PENDING)
                     .numberOfPeople(10 + (i % 6))
+                    .purpose(purposes[(i + 5) % purposes.length])
                     .build()));
             }
         }
@@ -998,13 +1154,17 @@ public class DataInitializer implements CommandLineRunner {
             Facility facility = facilities.get(0); // Community room for large events
             
             // Large group booking
+            LocalDateTime start = LocalDateTime.now().plusDays(15 + i);
+            int duration = 480; // 8 hours
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
-                .bookingTime(LocalDateTime.now().plusDays(15 + i))
-                .duration(480) // 8 hours
+                .bookingTime(start)
+                .endTime(start.plusMinutes(duration))
+                .duration(duration)
                 .status(FacilityBookingStatus.CONFIRMED)
                 .numberOfPeople(20 + (i * 5))
+                .purpose("Large group event")
                 .build()));
         }
         
@@ -1013,13 +1173,17 @@ public class DataInitializer implements CommandLineRunner {
             User resident = residentUsers.get(i);
             Facility facility = facilities.get((i + 3) % facilities.size());
             
+            LocalDateTime start = LocalDateTime.now().plusDays(3 + i);
+            int duration = 60;
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
-                .bookingTime(LocalDateTime.now().plusDays(3 + i))
-                .duration(60)
+                .bookingTime(start)
+                .endTime(start.plusMinutes(duration))
+                .duration(duration)
                 .status(FacilityBookingStatus.REJECTED)
                 .numberOfPeople(2)
+                .purpose("Booking rejected")
                 .build()));
         }
         
@@ -1044,35 +1208,44 @@ public class DataInitializer implements CommandLineRunner {
         
         // 7.1 Create Diverse Invoices for each apartment
         List<Invoice> invoices = new ArrayList<>();
-        
+
+        // Generate billing periods from 2025-01 up to current month
+        YearMonth start = YearMonth.of(2025, 1);
+        YearMonth end = YearMonth.now();
+
         for (Apartment apartment : apartmentsWithResidents) {
-            // Create invoices for different billing periods
-            String[] billingPeriods = {"2024-11", "2024-10", "2024-09", "2024-08", "2024-07"};
-            InvoiceStatus[] statuses = {InvoiceStatus.UNPAID, InvoiceStatus.PAID, InvoiceStatus.OVERDUE, InvoiceStatus.PAID, InvoiceStatus.PAID};
-            
-            for (int i = 0; i < billingPeriods.length; i++) {
-                // Check if invoice already exists
-                boolean hasInvoice = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), billingPeriods[i]).isPresent();
-                
+            YearMonth ym = start;
+            int idx = 0;
+            while (!ym.isAfter(end)) {
+                String period = ym.toString(); // format YYYY-MM
+                boolean hasInvoice = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), period).isPresent();
+
                 if (!hasInvoice) {
-                    double baseAmount = 800000.0 + (apartment.getArea() * 1000) + (i * 50000);
-                    double paidAmount = statuses[i] == InvoiceStatus.PAID ? baseAmount : (statuses[i] == InvoiceStatus.OVERDUE ? baseAmount * 0.7 : 0);
-                    double remainingAmount = baseAmount - paidAmount;
-                    
+                    // Rotate statuses: UNPAID, PAID, OVERDUE, PAID, PAID
+                    InvoiceStatus status;
+                    int mod = idx % 5;
+                    if (mod == 0) status = InvoiceStatus.UNPAID;
+                    else if (mod == 2) status = InvoiceStatus.OVERDUE;
+                    else status = InvoiceStatus.PAID;
+
+                    double baseAmount = 800000.0 + (apartment.getArea() * 1000) + (idx * 20000);
+                    double paidAmount = status == InvoiceStatus.PAID ? baseAmount : (status == InvoiceStatus.OVERDUE ? baseAmount * 0.7 : 0);
+
                     Invoice invoice = invoiceRepository.save(Invoice.builder()
                         .apartmentId(apartment.getId())
-                        .billingPeriod(billingPeriods[i])
-                        .issueDate(LocalDate.of(2024, 11 - i, 1))
-                        .dueDate(LocalDate.of(2024, 11 - i, 15))
+                        .billingPeriod(period)
+                        .issueDate(LocalDate.of(ym.getYear(), ym.getMonthValue(), 1))
+                        .dueDate(LocalDate.of(ym.getYear(), ym.getMonthValue(), Math.min(15, ym.lengthOfMonth())))
                         .totalAmount(baseAmount)
-                        .status(statuses[i])
+                        .status(status)
                         .build());
-                    
+
                     invoices.add(invoice);
-                    
-                    // 7.2 Create Invoice Items for each invoice
                     createInvoiceItems(invoice, apartment.getArea());
                 }
+
+                ym = ym.plusMonths(1);
+                idx++;
             }
         }
         
@@ -1081,52 +1254,133 @@ public class DataInitializer implements CommandLineRunner {
         
         for (Invoice invoice : invoices) {
             if (invoice.getStatus() == InvoiceStatus.PAID) {
-                // Create payment record
                 Payment payment = paymentRepository.save(Payment.builder()
                     .invoice(invoice)
-                    .paidByUserId(invoice.getApartmentId()) // Using apartment ID as user ID for simplicity
+                    .paidByUserId(invoice.getApartmentId())
                     .amount(invoice.getTotalAmount())
                     .method(PaymentMethod.BANK_TRANSFER)
                     .status(PaymentStatus.PAID)
-                    .referenceCode("PAY" + System.currentTimeMillis())
+                    .referenceCode("PAY" + invoice.getBillingPeriod().replace("-", "") + invoice.getApartmentId())
                     .build());
-                
+
                 payments.add(payment);
             }
         }
         
-        System.out.println("✅ Created " + invoices.size() + " invoices and " + payments.size() + " payments");
+        // Create synthetic payment transactions for paid invoices to enrich dataset
+        int txCount = 0;
+        for (Payment p : payments) {
+            PaymentTransaction tx = new PaymentTransaction();
+            tx.setTransactionRef("TX-" + p.getReferenceCode());
+            tx.setInvoiceId(p.getInvoice().getId());
+            tx.setAmount(p.getAmount().longValue());
+            tx.setGateway("VNPAY");
+            tx.setOrderInfo("Invoice payment for period " + p.getInvoice().getBillingPeriod());
+            tx.setPaidByUserId(p.getPaidByUserId());
+            tx.setStatus(PaymentTransaction.STATUS_SUCCESS);
+            tx.setCreatedAt(LocalDateTime.now().minusDays(1));
+            tx.setUpdatedAt(LocalDateTime.now());
+            tx.setCompletedAt(LocalDateTime.now());
+            paymentTransactionRepository.save(tx);
+            txCount++;
+        }
+
+        System.out.println("✅ Created " + invoices.size() + " invoices, " + payments.size() + " payments and " + txCount + " payment transactions");
     }
     
     /**
      * Helper method to create invoice items
      */
     private void createInvoiceItems(Invoice invoice, double apartmentArea) {
-        // Create diverse invoice items
-        String[] feeTypes = {"ELECTRICITY", "WATER", "PARKING", "INTERNET", "MAINTENANCE", "CLEANING", "SECURITY", "GARDENING"};
-        String[] descriptions = {
-            "Phí điện sinh hoạt",
-            "Phí nước sinh hoạt", 
-            "Phí giữ xe tháng",
-            "Phí internet và truyền hình",
-            "Phí bảo trì chung",
-            "Phí vệ sinh chung",
-            "Phí an ninh",
-            "Phí chăm sóc cây xanh"
-        };
-        
-        double[] baseAmounts = {300000.0, 200000.0, 150000.0, 100000.0, 250000.0, 180000.0, 120000.0, 80000.0};
-        
-        for (int i = 0; i < feeTypes.length; i++) {
-            double amount = baseAmounts[i] + (apartmentArea * 50) + (Math.random() * 50000);
-            
-            invoiceItemRepository.save(InvoiceItem.builder()
-                .invoice(invoice)
-                .feeType(feeTypes[i])
-                .description(descriptions[i])
-                .amount(amount)
-                .build());
+        // Determine month for fetching water reading
+        YearMonth ym = YearMonth.parse(invoice.getBillingPeriod());
+
+        // Electricity (estimate by area)
+        double electricity = 200000.0 + (apartmentArea * 60);
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("ELECTRICITY")
+            .description("Electricity usage")
+            .amount(electricity)
+            .build());
+
+        // Water (from water_meter_readings)
+        double waterAmount = 0.0;
+        LocalDate monthStart = LocalDate.of(ym.getYear(), ym.getMonthValue(), 1);
+        LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+        List<WaterMeterReading> readingsInMonth = waterMeterReadingRepository.findAllByReadingDateBetween(monthStart, monthEnd);
+        Optional<WaterMeterReading> wm = readingsInMonth.stream()
+            .filter(r -> r.getApartmentId().equals(invoice.getApartmentId()))
+            .findFirst();
+        if (wm.isPresent()) {
+            waterAmount = wm.get().getTotalAmount().doubleValue();
+        } else {
+            // fallback: small estimate
+            waterAmount = 150000.0 + (apartmentArea * 20);
         }
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("WATER")
+            .description("Water consumption")
+            .amount(waterAmount)
+            .build());
+
+        // Parking (flat or based on area proxy)
+        double parking = 100000.0 + ((apartmentArea > 80) ? 50000.0 : 0.0);
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("PARKING")
+            .description("Monthly parking fee")
+            .amount(parking)
+            .build());
+
+        // Internet
+        double internet = 120000.0;
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("INTERNET")
+            .description("Internet and TV package")
+            .amount(internet)
+            .build());
+
+        // Common fees
+        double maintenance = 250000.0 + (apartmentArea * 10);
+        double cleaning = 150000.0;
+        double security = 100000.0;
+        double gardening = 80000.0;
+
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("MAINTENANCE")
+            .description("Common maintenance fee")
+            .amount(maintenance)
+            .build());
+
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("CLEANING")
+            .description("Common cleaning fee")
+            .amount(cleaning)
+            .build());
+
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("SECURITY")
+            .description("Security service fee")
+            .amount(security)
+            .build());
+
+        invoiceItemRepository.save(InvoiceItem.builder()
+            .invoice(invoice)
+            .feeType("GARDENING")
+            .description("Gardening care fee")
+            .amount(gardening)
+            .build());
+
+        // Update invoice total to sum of items
+        double total = electricity + waterAmount + parking + internet + maintenance + cleaning + security + gardening;
+        invoice.setTotalAmount(total);
+        invoiceRepository.save(invoice);
     }
 
     /**
@@ -1158,39 +1412,39 @@ public class DataInitializer implements CommandLineRunner {
             .collect(Collectors.toList());
         
         String[] requestTitles = {
-            "Sửa chữa điều hòa không hoạt động",
-            "Thay bóng đèn hành lang bị cháy",
-            "Sửa vòi nước bị rò rỉ",
-            "Dọn dẹp rác thải ở sân chung",
-            "Kiểm tra hệ thống điện",
-            "Sửa chữa thang máy bị lỗi",
-            "Bảo trì hệ thống nước",
-            "Vệ sinh khu vực chung",
-            "Sửa chữa cửa tự động",
-            "Kiểm tra camera an ninh",
-            "Cắt tỉa cây xanh",
-            "Sửa chữa wifi không ổn định",
-            "Thay khóa cửa bị hỏng",
-            "Sửa chữa máy bơm nước",
-            "Dọn dẹp bãi đỗ xe"
+            "Air conditioner not working",
+            "Replace burnt hallway light",
+            "Fix leaking faucet",
+            "Clean common yard trash",
+            "Inspect electrical system",
+            "Repair malfunctioning elevator",
+            "Maintain water system",
+            "Clean common area",
+            "Fix automatic door",
+            "Check security cameras",
+            "Trim greenery",
+            "Fix unstable Wi‑Fi",
+            "Replace broken door lock",
+            "Repair water pump",
+            "Clean and reorganize parking area"
         };
         
         String[] requestDescriptions = {
-            "Điều hòa trong phòng khách không hoạt động, cần kiểm tra và sửa chữa gấp",
-            "Bóng đèn hành lang tầng 5 bị cháy, cần thay thế để đảm bảo an toàn",
-            "Vòi nước trong nhà bếp bị rò rỉ, cần sửa chữa để tránh lãng phí nước",
-            "Rác thải tích tụ ở sân chung, cần dọn dẹp để giữ vệ sinh",
-            "Hệ thống điện có dấu hiệu bất thường, cần kiểm tra để đảm bảo an toàn",
-            "Thang máy tòa A bị lỗi, cần sửa chữa để cư dân sử dụng",
-            "Hệ thống nước có vấn đề, cần bảo trì định kỳ",
-            "Khu vực chung cần được vệ sinh sạch sẽ",
-            "Cửa tự động ở lối vào bị hỏng, cần sửa chữa",
-            "Camera an ninh không hoạt động, cần kiểm tra và sửa chữa",
-            "Cây xanh cần được cắt tỉa để đảm bảo thẩm mỹ",
-            "Wifi không ổn định, cần kiểm tra và khắc phục",
-            "Khóa cửa chính bị hỏng, cần thay thế để đảm bảo an toàn",
-            "Máy bơm nước bị lỗi, cần sửa chữa để đảm bảo cung cấp nước",
-            "Bãi đỗ xe cần được dọn dẹp và sắp xếp lại"
+            "The living room AC is not cooling. Please inspect and repair urgently.",
+            "The hallway light on floor 5 is burnt. Please replace for safety.",
+            "The kitchen faucet is leaking. Please repair to avoid water waste.",
+            "Trash is piling up in the common yard. Please clean to maintain hygiene.",
+            "Electrical system shows anomalies. Please inspect for safety.",
+            "Elevator in Tower A is malfunctioning. Please repair for residents.",
+            "Water system has issues. Please perform periodic maintenance.",
+            "Common area needs thorough cleaning.",
+            "Automatic entrance door is broken. Please repair.",
+            "Security cameras are not working. Please check and fix.",
+            "Greenery needs trimming to maintain aesthetics.",
+            "Wi‑Fi is unstable. Please inspect and fix.",
+            "Main door lock is broken. Please replace for safety.",
+            "Water pump is faulty. Please repair to ensure supply.",
+            "Parking area needs cleaning and reorganization."
         };
         
         // Create service requests with different statuses
@@ -1220,7 +1474,7 @@ public class DataInitializer implements CommandLineRunner {
                 .assignedAt(assignedStaff != null ? LocalDateTime.now().minusDays(8 - i) : null)
                 .status(status)
                 .priority(priority)
-                .resolutionNotes(status == ServiceRequestStatus.COMPLETED ? "Đã hoàn thành theo yêu cầu" : null)
+                .resolutionNotes(status == ServiceRequestStatus.COMPLETED ? "Completed as requested" : null)
                 .completedAt(status == ServiceRequestStatus.COMPLETED ? LocalDateTime.now().minusDays(5 - i) : null)
                 .rating(status == ServiceRequestStatus.COMPLETED ? 4 + (i % 2) : null)
                 .build());
@@ -1233,61 +1487,61 @@ public class DataInitializer implements CommandLineRunner {
         
         feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder()
             .categoryCode("GENERAL_SERVICE")
-            .categoryName("Dịch vụ chung")
-            .description("Phản hồi về các dịch vụ chung của tòa nhà")
+            .categoryName("General services")
+            .description("Feedback about general building services")
             .build()));
         
         feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder()
             .categoryCode("SECURITY")
-            .categoryName("An ninh")
-            .description("Phản hồi về hệ thống an ninh và bảo vệ")
+            .categoryName("Security")
+            .description("Feedback about security and guard services")
             .build()));
         
         feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder()
             .categoryCode("CLEANING")
-            .categoryName("Vệ sinh")
-            .description("Phản hồi về dịch vụ vệ sinh và dọn dẹp")
+            .categoryName("Cleaning")
+            .description("Feedback about cleaning and housekeeping services")
             .build()));
         
         feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder()
             .categoryCode("FACILITIES")
-            .categoryName("Tiện ích")
-            .description("Phản hồi về các tiện ích và cơ sở vật chất")
+            .categoryName("Facilities")
+            .description("Feedback about facilities and infrastructure")
             .build()));
         
         feedbackCategories.add(feedbackCategoryRepository.save(FeedbackCategory.builder()
             .categoryCode("MANAGEMENT")
-            .categoryName("Quản lý")
-            .description("Phản hồi về dịch vụ quản lý và hỗ trợ")
+            .categoryName("Management")
+            .description("Feedback about management and support services")
             .build()));
         
         // 8.3 Create Diverse Feedback
         List<Feedback> feedbacks = new ArrayList<>();
         
         String[] feedbackContents = {
-            "Dịch vụ vệ sinh rất tốt, nhân viên làm việc chuyên nghiệp",
-            "Hệ thống an ninh cần được cải thiện, camera có vấn đề",
-            "Tiện ích gym rất tốt, thiết bị hiện đại và sạch sẽ",
-            "Quản lý phản hồi chậm, cần cải thiện thời gian xử lý",
-            "Khu vực chung cần được vệ sinh thường xuyên hơn",
-            "Dịch vụ internet ổn định, tốc độ tốt",
-            "Bảo vệ làm việc rất tốt, an toàn cho cư dân",
-            "Cần thêm tiện ích cho trẻ em",
-            "Hệ thống thang máy hoạt động tốt",
-            "Cần cải thiện hệ thống thông báo"
+            "Cleaning service is excellent; staff are professional.",
+            "Security system needs improvement; cameras are problematic.",
+            "Gym facility is great; equipment is modern and clean.",
+            "Management responds slowly; response time should improve.",
+            "Common areas should be cleaned more frequently.",
+            "Internet service is stable with good speed.",
+            "Security staff work very well; residents feel safe.",
+            "More facilities for children are needed.",
+            "Elevator system operates well.",
+            "Notification system should be improved."
         };
         
         String[] responses = {
-            "Cảm ơn phản hồi tích cực của bạn. Chúng tôi sẽ duy trì chất lượng dịch vụ",
-            "Chúng tôi đã ghi nhận vấn đề và sẽ khắc phục trong thời gian sớm nhất",
-            "Rất vui khi bạn hài lòng với dịch vụ. Chúng tôi sẽ tiếp tục cải thiện",
-            "Xin lỗi vì sự bất tiện. Chúng tôi sẽ cải thiện thời gian phản hồi",
-            "Chúng tôi sẽ tăng cường tần suất vệ sinh khu vực chung",
-            "Cảm ơn phản hồi tích cực về dịch vụ internet",
-            "Cảm ơn sự ghi nhận của bạn về đội ngũ bảo vệ",
-            "Chúng tôi đang lên kế hoạch bổ sung tiện ích cho trẻ em",
-            "Cảm ơn phản hồi tích cực về hệ thống thang máy",
-            "Chúng tôi sẽ cải thiện hệ thống thông báo để phục vụ tốt hơn"
+            "Thank you for the positive feedback. We'll maintain service quality.",
+            "We have acknowledged the issue and will fix it as soon as possible.",
+            "Glad that you are satisfied. We will keep improving.",
+            "Apologies for the inconvenience. We will improve response times.",
+            "We will increase cleaning frequency in common areas.",
+            "Thank you for the positive feedback on internet service.",
+            "Thank you for recognizing our security team.",
+            "We are planning to add more facilities for children.",
+            "Thank you for the positive feedback on the elevator system.",
+            "We will improve the notification system."
         };
         
         for (int i = 0; i < Math.min(15, residentUsers.size()); i++) {
@@ -1325,21 +1579,21 @@ public class DataInitializer implements CommandLineRunner {
         List<ActivityLog> activityLogs = new ArrayList<>();
         
         String[] activities = {
-            "Đăng nhập hệ thống",
-            "Xem thông báo mới",
-            "Đặt tiện ích phòng gym",
-            "Thanh toán hóa đơn tháng 12",
-            "Báo cáo sự cố điều hòa",
-            "Đăng ký tham gia sự kiện Giáng sinh",
-            "Cập nhật thông tin cá nhân",
-            "Xem lịch sử thanh toán",
-            "Đặt tiện ích hồ bơi",
-            "Gửi phản hồi về dịch vụ",
-            "Xem thông tin căn hộ",
-            "Tải xuống hóa đơn",
-            "Đặt lịch hẹn với quản lý",
-            "Xem thông báo bảo trì",
-            "Đăng ký nhận thông báo"
+            "Logged into the system",
+            "Viewed new announcements",
+            "Booked gym facility",
+            "Paid December invoice",
+            "Reported AC issue",
+            "Registered for Christmas event",
+            "Updated profile information",
+            "Viewed payment history",
+            "Booked pool facility",
+            "Submitted service feedback",
+            "Viewed apartment information",
+            "Downloaded invoice",
+            "Scheduled appointment with manager",
+            "Viewed maintenance notice",
+            "Subscribed to notifications"
         };
         
         ActivityActionType[] actionTypes = {
@@ -1380,29 +1634,29 @@ public class DataInitializer implements CommandLineRunner {
         List<AiQaHistory> aiQaHistories = new ArrayList<>();
         
         String[] questions = {
-            "Làm thế nào để đặt tiện ích phòng gym?",
-            "Phí dịch vụ tháng này bao nhiêu?",
-            "Cách thanh toán hóa đơn online?",
-            "Thời gian mở cửa hồ bơi?",
-            "Làm sao để báo cáo sự cố?",
-            "Có thể đăng ký tham gia sự kiện không?",
-            "Cách cập nhật thông tin cá nhân?",
-            "Lịch vệ sinh chung khi nào?",
-            "Thông tin về bảo mật an ninh?",
-            "Cách liên hệ quản lý tòa nhà?"
+            "How to book the gym facility?",
+            "What is this month's service fee?",
+            "How to pay invoices online?",
+            "What are the pool opening hours?",
+            "How to report a service issue?",
+            "Can I register for events?",
+            "How to update my personal information?",
+            "When is the general cleaning schedule?",
+            "Information about security policies?",
+            "How to contact the building manager?"
         };
         
         String[] answers = {
-            "Bạn có thể đặt tiện ích phòng gym thông qua ứng dụng hoặc website. Vào mục 'Tiện ích' -> 'Đặt tiện ích' -> Chọn phòng gym và thời gian phù hợp.",
-            "Phí dịch vụ tháng này bao gồm: Điện: 300,000đ, Nước: 200,000đ, Vệ sinh: 150,000đ, An ninh: 100,000đ. Tổng cộng: 750,000đ.",
-            "Bạn có thể thanh toán online qua: 1) Chuyển khoản ngân hàng, 2) Ví điện tử (MoMo, ZaloPay), 3) Thẻ tín dụng. Vào mục 'Thanh toán' để thực hiện.",
-            "Hồ bơi mở cửa từ 6:00-21:00 hàng ngày. Có cứu hộ chuyên nghiệp và phòng thay đồ sạch sẽ.",
-            "Để báo cáo sự cố, bạn có thể: 1) Gọi hotline 0901234567, 2) Gửi yêu cầu qua ứng dụng, 3) Liên hệ trực tiếp với quản lý.",
-            "Có, bạn có thể đăng ký tham gia sự kiện qua ứng dụng. Vào mục 'Sự kiện' -> Chọn sự kiện muốn tham gia -> Nhấn 'Đăng ký'.",
-            "Để cập nhật thông tin cá nhân: Vào 'Hồ sơ cá nhân' -> 'Chỉnh sửa' -> Cập nhật thông tin -> 'Lưu'.",
-            "Lịch vệ sinh chung: Thứ 2 và Thứ 6 hàng tuần từ 8:00-12:00. Vui lòng để rác đúng nơi quy định.",
-            "Hệ thống an ninh 24/7 với camera giám sát, bảo vệ tuần tra, cửa tự động. Báo cáo ngay nếu thấy hành vi đáng ngờ.",
-            "Liên hệ quản lý: Hotline 0901234567, Email: manager@apartment.com, Văn phòng: Tầng 1 tòa A."
+            "You can book the gym via app or website: Facilities -> Book -> Choose gym and time.",
+            "This month's fee includes: Electricity, Water, Cleaning, Security. See invoices for details.",
+            "You can pay online via bank transfer, e-wallets (MoMo, ZaloPay) or credit card.",
+            "The pool is open daily from 06:00 to 21:00 with professional lifeguards.",
+            "Report issues via hotline 0901234567, submit a request in the app, or contact management.",
+            "Yes. Go to Events -> select an event -> Register.",
+            "Profile -> Edit -> Update information -> Save.",
+            "General cleaning: Monday and Friday, 08:00–12:00. Please dispose of trash properly.",
+            "24/7 security with CCTV, patrols and automatic doors. Report suspicious behavior immediately.",
+            "Contact manager: Hotline 0901234567, Email: manager@apartment.com, Office: Floor 1, Tower A."
         };
         
         for (int i = 0; i < Math.min(20, allUsers.size()); i++) {
@@ -1445,15 +1699,15 @@ public class DataInitializer implements CommandLineRunner {
         List<Vehicle> vehicles = new ArrayList<>();
         
         String[] licensePlates = {
-            "30A-12345", "30A-12346", "30A-12347", "30A-12348", "30A-12349",
-            "30B-12350", "30B-12351", "30B-12352", "30B-12353", "30B-12354",
-            "30C-12355", "30C-12356", "30C-12357", "30C-12358", "30C-12359",
-            "30D-12360", "30D-12361", "30D-12362", "30D-12363", "30D-12364"
+            "30A-12345", "30A-67890", "29B-11223", "31C-33445", "51D-55667",
+            "30B-12350", "59A-77889", "50B-99001", "18C-22334", "20D-44556",
+            "30C-12355", "37A-66778", "88B-88990", "14C-10101", "72D-12121",
+            "30D-12360", "43A-23232", "47B-34343", "60C-45454", "65D-56565"
         };
         
         String[] brands = {"Toyota", "Honda", "Ford", "Hyundai", "Kia", "Mazda", "Nissan", "BMW", "Mercedes", "Audi"};
-        String[] models = {"Vios", "City", "Ranger", "Accent", "Rio", "3", "Sunny", "X3", "C-Class", "A4"};
-        String[] colors = {"Trắng", "Đen", "Bạc", "Xanh", "Đỏ", "Xám", "Vàng", "Cam", "Tím", "Nâu"};
+        String[] models = {"Vios", "City", "Ranger", "Accent", "Rio", "Mazda 3", "Sunny", "X3", "C-Class", "A4"};
+        String[] colors = {"White", "Black", "Silver", "Blue", "Red", "Gray", "Yellow", "Orange", "Purple", "Brown"};
         
         for (int i = 0; i < Math.min(15, residentUsers.size()); i++) {
             User resident = residentUsers.get(i % residentUsers.size());
@@ -1507,13 +1761,13 @@ public class DataInitializer implements CommandLineRunner {
         List<EmergencyContact> emergencyContacts = new ArrayList<>();
         
         String[] contactNames = {
-            "Nguyễn Văn Bố", "Trần Thị Mẹ", "Lê Văn Anh", "Phạm Thị Chị", "Hoàng Văn Em",
-            "Đặng Thị Vợ", "Vũ Văn Chồng", "Bùi Thị Con", "Ngô Văn Bạn", "Lý Thị Hàng Xóm"
+            "John Father", "Mary Mother", "Andrew Brother", "Sophie Sister", "Ethan Younger",
+            "Linda Wife", "Victor Husband", "Bella Child", "Nathan Friend", "Lucy Neighbor"
         };
         
         String[] relationships = {
-            "Bố", "Mẹ", "Anh trai", "Chị gái", "Em trai",
-            "Vợ", "Chồng", "Con", "Bạn thân", "Hàng xóm"
+            "Father", "Mother", "Brother", "Sister", "Younger brother",
+            "Wife", "Husband", "Child", "Friend", "Neighbor"
         };
         
         String[] phoneNumbers = {
@@ -1537,6 +1791,41 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
             
             emergencyContacts.add(contact);
+        }
+        
+        // 11.1b Seed Email Verification Tokens and Refresh Tokens (idempotent-ish)
+        int tokenCount = 0;
+        for (int i = 0; i < Math.min(10, residentUsers.size()); i++) {
+            User resident = residentUsers.get(i);
+            // Email token
+            EmailVerificationToken evt = EmailVerificationToken.builder()
+                .token("EVT-" + resident.getId() + "-" + System.currentTimeMillis())
+                .user(resident)
+                .expiryDate(LocalDateTime.now().plusDays(7))
+                .build();
+            emailVerificationTokenRepository.save(evt);
+            // Refresh token
+            RefreshToken rt = RefreshToken.builder()
+                .user(resident)
+                .token("RT-" + resident.getId() + "-" + System.nanoTime())
+                .expiryDate(LocalDateTime.now().plusDays(30))
+                .build();
+            refreshTokenRepository.save(rt);
+            tokenCount += 2;
+        }
+        
+        // 11.1c Seed Apartment Invitations for first few apartments
+        List<Apartment> someApartments = apartmentRepository.findAll();
+        int inviteCount = 0;
+        for (int i = 0; i < Math.min(10, someApartments.size()); i++) {
+            ApartmentInvitation inv = ApartmentInvitation.builder()
+                .code("INV-" + someApartments.get(i).getId() + "-" + (1000 + i))
+                .apartmentId(someApartments.get(i).getId())
+                .used(false)
+                .expiresAt(LocalDateTime.now().plusDays(14))
+                .build();
+            apartmentInvitationRepository.save(inv);
+            inviteCount++;
         }
         
         // 11.2 Create Event Registrations
@@ -1563,7 +1852,8 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
         
-        System.out.println("✅ Created " + emergencyContacts.size() + " emergency contacts and " + eventRegistrations.size() + " event registrations");
+        System.out.println("✅ Created " + emergencyContacts.size() + " emergency contacts, " + inviteCount + " invitations and " + tokenCount + " tokens");
+        System.out.println("✅ Also created " + eventRegistrations.size() + " event registrations");
         
         // 11.3 Clean up duplicate event registrations
         cleanupDuplicateEventRegistrations();
