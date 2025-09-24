@@ -82,14 +82,13 @@ export default function PendingCarsPage() {
 
   // Danh sách lý do từ chối có sẵn
   const rejectionReasons = [
-    'Thông tin xe không chính xác',
-    'Biển số xe không rõ ràng',
-    'Thiếu giấy tờ xe',
-    'Xe không đủ tiêu chuẩn an toàn',
-    'Thông tin chủ xe không hợp lệ',
-    'Căn hộ không tồn tại',
-    'Vượt quá giới hạn xe cho phép',
-    'Lý do khác'
+    t('admin.vehicleRegistrations.rejectionReasons.inaccurateInfo', 'Thông tin xe không chính xác'),
+    t('admin.vehicleRegistrations.rejectionReasons.unreadablePlate', 'Biển số xe không rõ ràng'),
+    t('admin.vehicleRegistrations.rejectionReasons.missingDocuments', 'Thiếu giấy tờ xe'),
+    t('admin.vehicleRegistrations.rejectionReasons.unsafetyStandards', 'Xe không đủ tiêu chuẩn an toàn'),
+    t('admin.vehicleRegistrations.rejectionReasons.invalidOwnerInfo', 'Thông tin chủ xe không hợp lệ'),
+    t('admin.vehicleRegistrations.rejectionReasons.exceedsLimit', 'Vượt quá giới hạn xe cho phép'),
+    t('admin.vehicleRegistrations.rejectionReasons.other', 'Lý do khác')
   ];
 
   // Load pending vehicles
@@ -307,7 +306,10 @@ export default function PendingCarsPage() {
               </div>
             </div>
             <Badge variant={canApproveVehicle(vehicle) ? "default" : "secondary"}>
-              {canApproveVehicle(vehicle) ? "Có thể duyệt" : "Không thể duyệt"}
+              {canApproveVehicle(vehicle) ?
+                t('admin.vehicleRegistrations.status.canApprove', 'Có thể duyệt') :
+                t('admin.vehicleRegistrations.status.cannotApprove', 'Không thể duyệt')
+              }
             </Badge>
           </div>
         </CardHeader>
@@ -315,10 +317,10 @@ export default function PendingCarsPage() {
           {/* Hình ảnh xe */}
           <div className="flex justify-center">
             {(vehicle.imageUrls && vehicle.imageUrls.length > 0) || (validUrlsByVehicle[vehicle.id]?.length ?? 0) > 0 ? (
-              <div 
+              <div
                 className="cursor-pointer group relative"
                 onClick={() => handleViewImages(vehicle)}
-                title="Click để xem tất cả hình ảnh"
+                title={t('admin.vehicleRegistrations.image.clickToView', 'Click để xem tất cả hình ảnh')}
               >
                 <img
                   src={getThumbnailUrl(vehicle) || ''}
@@ -343,7 +345,7 @@ export default function PendingCarsPage() {
                   }}
                 />
                 <div className="hidden w-24 h-24 bg-red-50 rounded-lg border border-red-200 flex items-center justify-center text-[10px] text-red-600">
-                  Lỗi tải ảnh
+                  {t('admin.vehicleRegistrations.image.errorLoading', 'Lỗi tải ảnh')}
                 </div>
                 {((validUrlsByVehicle[vehicle.id]?.length ?? vehicle.imageUrls?.length ?? 0) > 1) && (
                   <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
@@ -353,7 +355,7 @@ export default function PendingCarsPage() {
               </div>
             ) : (
               <div className="w-24 h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center text-xs text-gray-500">
-                Không có ảnh
+                {t('admin.vehicleRegistrations.image.noImage', 'Không có ảnh')}
               </div>
             )}
           </div>
@@ -407,12 +409,18 @@ export default function PendingCarsPage() {
               onClick={() => handleApprove(vehicle.id)}
               disabled={!canApproveVehicle(vehicle)}
               className={`flex-1 ${canApproveVehicle(vehicle) ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}`}
-              title={canApproveVehicle(vehicle) ? "Duyệt xe" : 
-                     carVehicles.findIndex(v => v.id === vehicle.id) > 0 ? "Không thể duyệt - Phải duyệt xe trước đó trước" : 
-                     "Không thể duyệt - Đã đạt giới hạn"}
+              title={canApproveVehicle(vehicle) ?
+                t('admin.vehicleRegistrations.tooltip.approve', 'Duyệt xe') :
+                carVehicles.findIndex(v => v.id === vehicle.id) > 0 ?
+                  t('admin.vehicleRegistrations.tooltip.cannotApproveQueue', 'Không thể duyệt - Phải duyệt xe trước đó trước') :
+                  t('admin.vehicleRegistrations.tooltip.cannotApproveLimit', 'Không thể duyệt - Đã đạt giới hạn')
+              }
             >
               <Check className="w-4 h-4 mr-1" />
-              {canApproveVehicle(vehicle) ? "Duyệt" : "Không thể duyệt"}
+              {canApproveVehicle(vehicle) ?
+                t('admin.vehicleRegistrations.actions.approve', 'Duyệt') :
+                t('admin.vehicleRegistrations.status.cannotApprove', 'Không thể duyệt')
+              }
             </Button>
             <Button
               size="sm"
@@ -424,7 +432,7 @@ export default function PendingCarsPage() {
               }}
             >
               <X className="w-4 h-4 mr-1" />
-              Từ chối
+              {t('admin.vehicleRegistrations.actions.reject', 'Từ chối')}
             </Button>
           </div>
         </CardContent>
@@ -441,16 +449,16 @@ export default function PendingCarsPage() {
             <Link href="/admin-dashboard/vehicle-registrations">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Quay lại
+                {t('admin.vehicleRegistrations.actions.back', 'Quay lại')}
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
                 <Car className="h-8 w-8 text-blue-600" />
-                Ô tô chờ duyệt ({carVehicles.length})
+                {t('admin.vehicleRegistrations.pending.cars.subtitle', 'Ô tô chờ duyệt ({count})', { count: carVehicles.length })}
               </h1>
               <p className="text-muted-foreground">
-                Danh sách ô tô đang chờ phê duyệt
+                {t('admin.vehicleRegistrations.pending.cars.description', 'Danh sách ô tô đang chờ phê duyệt')}
               </p>
             </div>
           </div>
@@ -462,9 +470,9 @@ export default function PendingCarsPage() {
             <div className="flex items-center gap-2 text-blue-700">
               <div className="text-lg">ℹ️</div>
               <div>
-                <div className="font-medium">Nguyên tắc duyệt xe: FIFO (First In, First Out)</div>
+                <div className="font-medium">{t('admin.vehicleRegistrations.fifo.title', 'Nguyên tắc duyệt xe: FIFO (First In, First Out)')}</div>
                 <div className="text-sm text-blue-600">
-                  Xe đăng ký trước sẽ được duyệt trước. Chỉ có thể duyệt xe sau khi xe trước đó đã được xử lý.
+                  {t('admin.vehicleRegistrations.fifo.description', 'Xe đăng ký trước sẽ được duyệt trước. Chỉ có thể duyệt xe sau khi xe trước đó đã được xử lý.')}
                 </div>
               </div>
             </div>
@@ -474,9 +482,9 @@ export default function PendingCarsPage() {
         {/* Mobile View - Card Layout */}
         <div className="block lg:hidden">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Đang tải...</div>
+            <div className="text-center py-8 text-gray-500">{t('admin.vehicleRegistrations.loading', 'Đang tải...')}</div>
           ) : carVehicles.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Không có ô tô chờ duyệt</div>
+            <div className="text-center py-8 text-gray-500">{t('admin.vehicleRegistrations.empty.pending', 'Không có ô tô chờ duyệt')}</div>
           ) : (
             <div className="space-y-4">
               {carVehicles.map((vehicle, index) => (
@@ -491,23 +499,23 @@ export default function PendingCarsPage() {
           <Card>
             <CardContent className="pt-6">
               {loading ? (
-                <div className="text-center py-8 text-gray-500">Đang tải...</div>
+                <div className="text-center py-8 text-gray-500">{t('admin.vehicleRegistrations.loading', 'Đang tải...')}</div>
               ) : carVehicles.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">Không có ô tô chờ duyệt</div>
+                <div className="text-center py-8 text-gray-500">{t('admin.vehicleRegistrations.empty.pending', 'Không có ô tô chờ duyệt')}</div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-20">Thứ tự</TableHead>
-                        <TableHead className="w-24">Hình ảnh</TableHead>
-                        <TableHead className="w-32">Chủ xe</TableHead>
-                        <TableHead className="w-28">Biển số</TableHead>
-                        <TableHead className="w-24">Màu sắc</TableHead>
-                        <TableHead className="w-28">Căn hộ</TableHead>
-                        <TableHead className="w-32">Thời gian đăng ký</TableHead>
-                        <TableHead className="w-32">Giới hạn xe</TableHead>
-                        <TableHead className="w-40">Hành động</TableHead>
+                        <TableHead className="w-20">{t('admin.vehicleRegistrations.table.sequence', 'Thứ tự')}</TableHead>
+                        <TableHead className="w-24">{t('admin.vehicleRegistrations.table.image', 'Hình ảnh')}</TableHead>
+                        <TableHead className="w-32">{t('admin.vehicleRegistrations.table.owner', 'Chủ xe')}</TableHead>
+                        <TableHead className="w-28">{t('admin.vehicleRegistrations.table.licensePlate', 'Biển số')}</TableHead>
+                        <TableHead className="w-24">{t('admin.vehicleRegistrations.table.color', 'Màu sắc')}</TableHead>
+                        <TableHead className="w-28">{t('admin.vehicleRegistrations.table.apartment', 'Căn hộ')}</TableHead>
+                        <TableHead className="w-32">{t('admin.vehicleRegistrations.table.registrationDate', 'Thời gian đăng ký')}</TableHead>
+                        <TableHead className="w-32">{t('admin.vehicleRegistrations.table.capacityLimit', 'Giới hạn xe')}</TableHead>
+                        <TableHead className="w-40">{t('admin.vehicleRegistrations.table.actions', 'Hành động')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -525,7 +533,7 @@ export default function PendingCarsPage() {
                                 <div 
                                   className="cursor-pointer group relative"
                                   onClick={() => handleViewImages(vehicle)}
-                                  title="Click để xem tất cả hình ảnh"
+                                  title={t('admin.vehicleRegistrations.image.clickToView', 'Click để xem tất cả hình ảnh')}
                                 >
                                   <img
                                     src={getThumbnailUrl(vehicle) || ''}
@@ -554,11 +562,11 @@ export default function PendingCarsPage() {
                                   />
                                   {/* Error placeholder, shown when image fails */}
                                   <div className="hidden w-16 h-16 bg-red-50 rounded-lg border border-red-200 flex items-center justify-center text-[10px] text-red-600 px-1 text-center">
-                                    Lỗi tải ảnh
+                                    {t('admin.vehicleRegistrations.image.errorLoading', 'Lỗi tải ảnh')}
                                   </div>
                                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
                                     <div className="text-white opacity-0 group-hover:opacity-100 text-xs font-medium">
-                                      Xem tất cả
+                                      {t('admin.vehicleRegistrations.image.viewAll', 'Xem tất cả')}
                                     </div>
                                   </div>
                                   {((validUrlsByVehicle[vehicle.id]?.length ?? vehicle.imageUrls?.length ?? 0) > 1) && (
@@ -571,7 +579,7 @@ export default function PendingCarsPage() {
                               </div>
                             ) : (
                               <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center text-xs text-gray-500">
-                                Không có ảnh
+                                {t('admin.vehicleRegistrations.image.noImage', 'Không có ảnh')}
                               </div>
                             )}
                           </TableCell>
@@ -623,11 +631,17 @@ export default function PendingCarsPage() {
                                 onClick={() => handleApprove(vehicle.id)}
                                 disabled={!canApproveVehicle(vehicle)}
                                 className={canApproveVehicle(vehicle) ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}
-                                title={canApproveVehicle(vehicle) ? "Duyệt xe" : 
-                                       carVehicles.findIndex(v => v.id === vehicle.id) > 0 ? "Không thể duyệt - Phải duyệt xe trước đó trước" : 
-                                       "Không thể duyệt - Đã đạt giới hạn"}
+                                title={canApproveVehicle(vehicle) ?
+                                  t('admin.vehicleRegistrations.tooltip.approve', 'Duyệt xe') :
+                                  carVehicles.findIndex(v => v.id === vehicle.id) > 0 ?
+                                    t('admin.vehicleRegistrations.tooltip.cannotApproveQueue', 'Không thể duyệt - Phải duyệt xe trước đó trước') :
+                                    t('admin.vehicleRegistrations.tooltip.cannotApproveLimit', 'Không thể duyệt - Đã đạt giới hạn')
+                                }
                               >
-                                {canApproveVehicle(vehicle) ? "Duyệt" : "Không thể duyệt"}
+                                {canApproveVehicle(vehicle) ?
+                                  t('admin.vehicleRegistrations.actions.approve', 'Duyệt') :
+                                  t('admin.vehicleRegistrations.status.cannotApprove', 'Không thể duyệt')
+                                }
                               </Button>
                               <Button
                                 size="sm"
@@ -638,7 +652,7 @@ export default function PendingCarsPage() {
                                   setShowRejectModal(true);
                                 }}
                               >
-                                Từ chối
+                                {t('admin.vehicleRegistrations.actions.reject', 'Từ chối')}
                               </Button>
                             </div>
                           </TableCell>
@@ -656,7 +670,7 @@ export default function PendingCarsPage() {
         {showRejectModal && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-              <h3 className="text-lg font-semibold mb-4">Chọn lý do từ chối</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('admin.vehicleRegistrations.rejectModal.title', 'Chọn lý do từ chối')}</h3>
               
               <div className="space-y-3 mb-6">
                 {rejectionReasons.map((reason, index) => (
@@ -675,21 +689,21 @@ export default function PendingCarsPage() {
               </div>
 
               <div className="flex justify-end gap-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setShowRejectModal(false);
                     setRejectionReason('');
                   }}
                 >
-                  Hủy
+                  {t('admin.vehicleRegistrations.rejectModal.cancel', 'Hủy')}
                 </Button>
                 <Button
                   className="bg-red-600 text-white"
                   onClick={handleReject}
                   disabled={!rejectionReason}
                 >
-                  Xác nhận từ chối
+                  {t('admin.vehicleRegistrations.rejectModal.confirm', 'Xác nhận từ chối')}
                 </Button>
               </div>
             </div>
@@ -704,7 +718,7 @@ export default function PendingCarsPage() {
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">
-                    Hình ảnh xe {selectedVehicle.licensePlate}
+                    {t('admin.vehicleRegistrations.table.image', 'Hình ảnh')} xe {selectedVehicle.licensePlate}
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     {selectedVehicle.userFullName} - {selectedVehicle.apartmentUnitNumber}
@@ -813,10 +827,10 @@ export default function PendingCarsPage() {
               {/* Footer */}
               <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
                 <div className="text-sm text-gray-600">
-                  Tổng cộng: {selectedVehicle.imageUrls?.length || 0} hình ảnh
+                  {t('admin.vehicleRegistrations.imageModal.total', 'Tổng cộng: {count} hình ảnh', { count: selectedVehicle.imageUrls?.length || 0 })}
                 </div>
                 <div className="text-sm text-gray-500">
-                  Click vào hình ảnh để xem full size
+                  {t('admin.vehicleRegistrations.imageModal.clickHint', 'Click vào hình ảnh để xem full size')}
                 </div>
               </div>
             </div>

@@ -35,13 +35,14 @@ export default function MonthlyInvoiceForm({ apartments = [] }: MonthlyInvoiceFo
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [invoiceStats, setInvoiceStats] = useState<any>(null);
   const [showStats, setShowStats] = useState(false);
+  const [skipWaterValidation, setSkipWaterValidation] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearMessages();
 
     try {
-      const result = await generateMonthlyInvoices(selectedYear, selectedMonth);
+      const result = await generateMonthlyInvoices(selectedYear, selectedMonth, skipWaterValidation);
       
       if (result?.success) {
         // Load stats after successful generation
@@ -135,6 +136,30 @@ export default function MonthlyInvoiceForm({ apartments = [] }: MonthlyInvoiceFo
                 Hệ thống sẽ sử dụng cấu hình phí đã được thiết lập cho tháng này.
               </AlertDescription>
             </Alert>
+
+            {/* Tùy chọn bỏ qua kiểm tra chỉ số nước */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="skipWaterValidation"
+                checked={skipWaterValidation}
+                onChange={(e) => setSkipWaterValidation(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <Label htmlFor="skipWaterValidation" className="text-sm text-gray-700">
+                Bỏ qua kiểm tra chỉ số nước (không khuyến nghị)
+              </Label>
+            </div>
+            
+            {skipWaterValidation && (
+              <Alert className="border-orange-200 bg-orange-50">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  <strong>Cảnh báo:</strong> Bỏ qua kiểm tra chỉ số nước có thể tạo hóa đơn không chính xác. 
+                  Chỉ sử dụng khi cần thiết và đã đảm bảo dữ liệu chỉ số nước chính xác.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-end">

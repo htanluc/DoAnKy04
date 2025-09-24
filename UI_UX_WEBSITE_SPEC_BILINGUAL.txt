@@ -1,0 +1,173 @@
+## 2. USER INTERFACE (UI/UX) DESIGN / THIẾT KẾ GIAO DIỆN NGƯỜI DÙNG (UI/UX)
+
+### 2.1 Website interface / Giao diện Website
+
+### 2.1.1 Login / Đăng nhập
+- **Layout (EN)**: Centered login form with gradient background
+- **Bố cục (VI)**: Form đăng nhập căn giữa với nền gradient
+- **Components (EN)**: System logo at top; Phone number + password; "Remember me"; "Forgot password"; "Register"; Login button with hover
+- **Thành phần (VI)**: Logo hệ thống phía trên; Số điện thoại + mật khẩu; "Ghi nhớ tôi"; "Quên mật khẩu"; "Đăng ký"; Nút đăng nhập có hover
+- **Responsive (EN)**: Auto-adjust for mobile and tablet
+- **Responsive (VI)**: Tự động tối ưu cho mobile và tablet
+
+### 2.1.2 Dashboard / Bảng điều khiển
+- **Layout (EN)**: Grid with sidebar navigation
+- **Bố cục (VI)**: Lưới với thanh điều hướng bên trái
+- **Components (EN)**: Sidebar (menu, profile, quick actions); Header (search, notifications, user menu); Main (widgets, charts, tables); Footer (system info, support)
+- **Thành phần (VI)**: Sidebar (menu, hồ sơ, thao tác nhanh); Header (tìm kiếm, thông báo, menu người dùng); Nội dung (widget, biểu đồ, bảng dữ liệu); Footer (thông tin hệ thống, hỗ trợ)
+- **Widgets (EN)**: Residents count, apartments, facilities, unpaid invoices
+- **Widgets (VI)**: Số cư dân, căn hộ, tiện ích, hóa đơn chưa thanh toán
+
+### 2.1.3 Resident Management / Quản lý cư dân
+- **Layout (EN)**: Table with search and filters
+- **Bố cục (VI)**: Bảng dữ liệu có tìm kiếm và bộ lọc
+- **Components (EN)**: Toolbar (add, import/export, bulk actions); Search with filters (status, apartment); Paginated table; Modal add/edit
+- **Thành phần (VI)**: Thanh công cụ (thêm mới, import/export, thao tác hàng loạt); Tìm kiếm theo trạng thái/căn hộ; Bảng phân trang; Modal thêm/sửa
+- **Features (EN)**: CRUD, bulk delete, Excel export
+- **Tính năng (VI)**: CRUD, xóa hàng loạt, xuất Excel
+
+### 2.1.4 Facility Management / Quản lý tiện ích
+- **Layout (EN)**: Card grid with status
+- **Bố cục (VI)**: Lưới thẻ (card) kèm trạng thái
+- **Components (EN)**: Facility cards; Add/edit modal; Calendar view for bookings; Status (available, maintenance, closed)
+- **Thành phần (VI)**: Thẻ tiện ích; Modal thêm/sửa; Lịch đặt chỗ; Trạng thái (sẵn sàng, bảo trì, đóng)
+- **Features (EN)**: Maintenance schedules, update usage fees
+- **Tính năng (VI)**: Lịch bảo trì, cập nhật phí sử dụng
+
+### 2.1.5 Invoices / Hóa đơn
+- **Layout (EN)**: Table with advanced filters
+- **Bố cục (VI)**: Bảng dữ liệu với bộ lọc nâng cao
+- **Components (EN)**: Filter (month, status, apartment); Sortable table; Actions (view, send email, print PDF); Summary panel
+- **Thành phần (VI)**: Lọc (tháng, trạng thái, căn hộ); Bảng sắp xếp; Hành động (xem, gửi email, in PDF); Bảng tổng kết
+- **Features (EN)**: Create manual invoices, send reminders
+- **Tính năng (VI)**: Tạo hóa đơn thủ công, gửi nhắc nợ
+
+### 2.1.6 Announcements / Thông báo
+- **Layout (EN)**: List layout with timeline view
+- **Bố cục (VI)**: Danh sách kèm timeline
+- **Components (EN)**:
+  - Form to create a new announcement
+  - Announcement list with priority indicators
+  - Preview panel for content
+  - Schedule panel for delivery time
+- **Thành phần (VI)**:
+  - Form tạo thông báo mới
+  - Danh sách thông báo kèm chỉ báo mức ưu tiên
+  - Khung xem trước nội dung
+  - Khung lên lịch thời gian gửi
+- **Features (EN)**: Draft, schedule, target audience selection
+- **Tính năng (VI)**: Lưu nháp, lên lịch, chọn nhóm đối tượng nhận
+
+### 2.1.7 Support Requests (Tickets) / Yêu cầu hỗ trợ (Ticket)
+- **Layout (EN)**: Table + details drawer
+- **Bố cục (VI)**: Bảng + ngăn chi tiết (drawer)
+- **Components (EN)**: Toolbar filters (status, priority, category, assignee); SLA timer; Priority badges; Assignee; Canned responses; Internal notes; Timeline; Attachments
+- **Thành phần (VI)**: Bộ lọc (trạng thái, ưu tiên, danh mục, người xử lý); Đồng hồ SLA; Nhãn ưu tiên; Người xử lý; Câu trả lời mẫu; Ghi chú nội bộ; Dòng thời gian; Tệp đính kèm
+- **Features (EN)**: SLA per category, overdue alerts, assign/reassign, merge duplicates, CSAT survey, CSV export
+- **Tính năng (VI)**: SLA theo danh mục, cảnh báo trễ, phân công/đổi người xử lý, hợp nhất trùng, khảo sát CSAT, xuất CSV
+
+### 2.1.8 Vehicle Management / Quản lý phương tiện
+- **Layout (EN)**: Tabs (pending, approved, rejected, expired)
+- **Bố cục (VI)**: Tabs (chờ duyệt, đã duyệt, từ chối, hết hạn)
+- **Components (EN)**: Vehicle table; Bulk approve/reject (reason); Attachments viewer; Capacity indicator per parking area; Renewal reminders
+- **Thành phần (VI)**: Bảng đăng ký xe; Duyệt/từ chối hàng loạt (lý do); Xem giấy tờ; Chỉ báo dung lượng theo bãi; Nhắc gia hạn
+- **Features (EN)**: Quota/capacity management, over-limit alerts, plate change history, receipt/PDF export
+- **Tính năng (VI)**: Quản lý quota/dung lượng, cảnh báo vượt ngưỡng, lịch sử đổi biển số, xuất biên nhận/PDF
+
+### 2.1.9 Water Meter Management / Quản lý đồng hồ nước
+- **Layout (EN)**: Periods + household details
+- **Bố cục (VI)**: Kỳ đọc số + chi tiết hộ
+- **Components (EN)**: CSV import readings; Preview & validate; Approve/close period; Anomaly flags (spikes); Photo verification viewer
+- **Thành phần (VI)**: Import CSV chỉ số; Xem trước & kiểm tra; Duyệt/chốt kỳ; Gắn cờ bất thường; Trình xem ảnh đối soát
+- **Features (EN)**: Estimate missing readings; Lock period after closing; Sync water invoices per period
+- **Tính năng (VI)**: Ước tính khi thiếu số; Khóa kỳ sau khi chốt; Đồng bộ hóa đơn nước theo kỳ
+
+### 2.1.10 Billing Config & Feature Flags / Cấu hình hóa đơn & Cờ tính năng
+- **Layout (EN)**: Versioned settings
+- **Bố cục (VI)**: Cấu hình có phiên bản
+- **Components (EN)**: Version list; Effective date; Compare (diff); Feature flags (overdue fee, yearly billing)
+- **Thành phần (VI)**: Danh sách phiên bản; Ngày hiệu lực; So sánh (diff); Cờ tính năng (phí trễ hạn, hóa đơn năm)
+- **Features (EN)**: Preview before apply; Audit who/when
+- **Tính năng (VI)**: Xem trước trước khi áp dụng; Nhật ký ai/bao giờ
+
+### 2.1.11 Notification Center / Trung tâm thông báo
+- **Layout (EN)**: Templates + Campaigns
+- **Bố cục (VI)**: Mẫu + Chiến dịch
+- **Components (EN)**: i18n template editor (email/in-app); Audience targeting; Scheduling; Delivery status (delivered/failed)
+- **Thành phần (VI)**: Trình soạn mẫu i18n (email/in-app); Chọn nhóm nhận; Lên lịch; Trạng thái gửi (thành công/thất bại)
+- **Features (EN)**: Test send; Auto-retry; Open/click metrics (if available)
+- **Tính năng (VI)**: Gửi thử; Tự động retry; Thống kê mở/nhấp (nếu có)
+
+### 2.1.12 Role-Based Access Control (RBAC) / Phân quyền theo vai trò
+- **Layout (EN)**: Role matrix
+- **Bố cục (VI)**: Ma trận vai trò
+- **Components (EN)**: Roles vs permissions table; Assign roles to users
+- **Thành phần (VI)**: Bảng vai trò-quyền hạn; Gán vai trò cho người dùng
+- **Features (EN)**: Hide/disable UI per role; FE route guards; BE authorization
+- **Tính năng (VI)**: Ẩn/vô hiệu UI theo vai trò; Guard tuyến FE; Ủy quyền BE
+
+### 2.1.13 Reports & Analytics / Báo cáo & Phân tích
+- **Layout (EN)**: Report dashboards + export
+- **Bố cục (VI)**: Bảng điều khiển báo cáo + xuất
+- **Components (EN)**: Revenue, overdue, facility usage, ticket performance
+- **Thành phần (VI)**: Doanh thu, nợ quá hạn, sử dụng tiện ích, hiệu suất ticket
+- **Features (EN)**: PDF/CSV export; Time/building filters
+- **Tính năng (VI)**: Xuất PDF/CSV; Lọc theo thời gian/tòa
+
+### 2.1.14 Facility Booking 2.0 / Đặt tiện ích 2.0
+- **Layout (EN)**: Calendar + booking list
+- **Bố cục (VI)**: Lịch + danh sách đặt chỗ
+- **Components (EN)**: Calendar per facility; Conflict checks; Time-based pricing; Status
+- **Thành phần (VI)**: Lịch theo tiện ích; Kiểm tra trùng; Giá theo khung giờ; Trạng thái
+- **Features (EN)**: Cancel/reschedule policy; Pre-approval workflow; Reminders
+- **Tính năng (VI)**: Chính sách hủy/đổi; Quy trình duyệt; Nhắc lịch
+
+### 2.1.15 Announcements 2.0 / Thông báo 2.0
+- **Layout (EN)**: Timeline + scheduler
+- **Bố cục (VI)**: Timeline + bộ lập lịch
+- **Components (EN)**: Targeting by building/floor/household/group; Priority; Multi-channel preview
+- **Thành phần (VI)**: Nhắm mục tiêu theo tòa/tầng/hộ/nhóm; Ưu tiên; Xem trước đa kênh
+- **Features (EN)**: Draft, clone, read receipts/seen stats
+- **Tính năng (VI)**: Lưu nháp, nhân bản, thống kê đã xem
+
+### 2.1.16 Resident Portal Enhancements / Nâng cấp cổng cư dân
+- **Layout (EN)**: My bills, my tickets, my vehicles
+- **Bố cục (VI)**: Hóa đơn của tôi, yêu cầu của tôi, phương tiện của tôi
+- **Components (EN)**: Bills (view/download PDF, history, dispute); Tickets (chat, CSAT); Vehicles (register/change plate, track approval)
+- **Thành phần (VI)**: Hóa đơn (xem/tải PDF, lịch sử, tranh chấp); Ticket (chat, CSAT); Phương tiện (đăng ký/đổi biển số, theo dõi duyệt)
+- **Features (EN)**: Dunning preferences; Water anomaly notifications
+- **Tính năng (VI)**: Tùy chọn nhắc nợ; Thông báo bất thường đồng hồ nước
+
+### 2.1.17 Settings & Branding / Cài đặt & Nhận diện thương hiệu
+- **Layout (EN)**: System settings
+- **Bố cục (VI)**: Cài đặt hệ thống
+- **Components (EN)**: FPT theme (colors, logo); Favicon; i18n defaults/fallback
+- **Thành phần (VI)**: Theme FPT (màu sắc, logo); Favicon; Cài đặt i18n mặc định/fallback
+- **Features (EN)**: Theme preview; Import/export UI config
+- **Tính năng (VI)**: Xem trước theme; Import/export cấu hình UI
+
+### 2.1.18 Audit Logs / Nhật ký hệ thống
+- **Layout (EN)**: Event table
+- **Bố cục (VI)**: Bảng sự kiện
+- **Components (EN)**: Module filters (billing, vehicles, water, support); User/action/time filters
+- **Thành phần (VI)**: Lọc theo mô-đun (hóa đơn, phương tiện, nước, hỗ trợ); Lọc theo người dùng/hành động/thời gian
+- **Features (EN)**: CSV export; Retention/TTL policy
+- **Tính năng (VI)**: Xuất CSV; Chính sách lưu trữ/TTL
+
+### 2.1.19 Accessibility & Performance / Truy cập & Hiệu năng
+- **Components (EN)**: Keyboard navigation; ARIA labels; Contrast checks; Loading skeleton; Virtualized tables
+- **Thành phần (VI)**: Điều hướng bằng bàn phím; Nhãn ARIA; Kiểm tra tương phản; Skeleton; Bảng ảo hóa
+- **Features (EN)**: SSR pagination/sort; Debounced search; Client cache
+- **Tính năng (VI)**: Phân trang/sort phía server; Tìm kiếm debounce; Cache client
+
+### 2.1.20 Dark Mode & Preferences / Chế độ tối & Tùy chọn người dùng
+- **Components (EN)**: Dark mode toggle; Per-user preferences; Column visibility; Saved filters
+- **Thành phần (VI)**: Bật/tắt dark mode; Tùy chọn theo người dùng; Ẩn/hiện cột; Lưu bộ lọc
+- **Features (EN)**: Sync preferences with account; Persist across devices
+- **Tính năng (VI)**: Đồng bộ tùy chọn với tài khoản; Giữ nguyên trên nhiều thiết bị
+
+### Notes / Ghi chú
+- **FE**: Use MUI components, full i18n, FPT branding
+- **FE**: Sử dụng MUI, i18n đầy đủ, theo nhận diện FPT
+- **BE**: Add explicit controller params to avoid loose flags; no DB migration (use SQL update if needed)
+- **BE**: Thêm tham số rõ ràng ở Controller tránh lỗi tham số; không migration DB (dùng SQL update khi cần)

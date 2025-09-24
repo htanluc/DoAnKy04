@@ -87,7 +87,8 @@ public class YearlyBillingController {
      */
     @PostMapping("/generate-monthly-invoices")
     public ResponseEntity<Map<String, Object>> generateMonthlyInvoicesForAllApartments(
-            @RequestBody YearlyBillingRequest request) {
+            @RequestBody YearlyBillingRequest request,
+            @RequestParam(value = "skipWaterValidation", defaultValue = "false") boolean skipWaterValidation) {
         
         // Rate limiting check
         String endpoint = "generate-monthly-invoices";
@@ -103,21 +104,28 @@ public class YearlyBillingController {
             int month = request.getMonth();
             
             System.out.println("DEBUG: Bắt đầu tạo hóa đơn đồng loạt cho tháng " + month + "/" + year);
+            System.out.println("DEBUG: Request data - year: " + year + ", month: " + month + ", skipWaterValidation: " + skipWaterValidation);
             // Ghi chú: Không còn tự động cập nhật biểu phí khi tạo hóa đơn
             // Biểu phí cần được cập nhật qua endpoint riêng trước đó nếu muốn thay đổi
 
             // Tạo hóa đơn đồng loạt cho tất cả căn hộ trong tháng này
-            yearlyBillingService.generateMonthlyInvoicesForAllApartments(year, month);
+            yearlyBillingService.generateMonthlyInvoicesForAllApartments(year, month, skipWaterValidation);
+            
+            System.out.println("DEBUG: Service hoàn thành thành công");
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", String.format("Đã tạo hóa đơn đồng loạt cho tất cả căn hộ tháng %d/%d", month, year));
+            response.put("message", String.format("Đã tạo hóa đơn cho căn hộ đã có chỉ số nước tháng %d/%d", month, year));
             response.put("year", year);
             response.put("month", month);
-            response.put("note", "Hóa đơn đã được tạo với tính toán tổng tiền chính xác từ các items");
+            response.put("note", "Hóa đơn đã được tạo cho căn hộ có chỉ số nước. Căn hộ chưa có chỉ số nước đã được bỏ qua.");
             
+            System.out.println("DEBUG: Trả về response thành công");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.out.println("ERROR: Exception trong controller: " + e.getMessage());
+            e.printStackTrace();
+            
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "Lỗi khi tạo hóa đơn đồng loạt: " + e.getMessage());
@@ -133,7 +141,8 @@ public class YearlyBillingController {
     public ResponseEntity<Map<String, Object>> generateInvoicesForMonth(
             @PathVariable("year") int year,
             @PathVariable("month") int month,
-            @RequestBody YearlyBillingRequest request) {
+            @RequestBody YearlyBillingRequest request,
+            @RequestParam(value = "skipWaterValidation", defaultValue = "false") boolean skipWaterValidation) {
         
         // Rate limiting check
         String endpoint = "generate-month-" + year + "-" + month;
@@ -150,14 +159,14 @@ public class YearlyBillingController {
             // Nếu cần thay đổi, hãy gọi endpoint cập nhật cấu hình trước khi tạo hóa đơn
 
             // Tạo hóa đơn cho tất cả căn hộ trong tháng này
-            yearlyBillingService.generateInvoicesForMonth(year, month);
+            yearlyBillingService.generateInvoicesForMonth(year, month, skipWaterValidation);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", String.format("Đã tạo hóa đơn cho tất cả căn hộ tháng %d/%d", month, year));
+            response.put("message", String.format("Đã tạo hóa đơn cho căn hộ đã có chỉ số nước tháng %d/%d", month, year));
             response.put("year", year);
             response.put("month", month);
-            response.put("note", "Hóa đơn đã được tạo cho tất cả căn hộ trong tháng này");
+            response.put("note", "Hóa đơn đã được tạo cho căn hộ có chỉ số nước. Căn hộ chưa có chỉ số nước đã được bỏ qua.");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {

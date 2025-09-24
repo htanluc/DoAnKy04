@@ -55,6 +55,7 @@ public class WaterMonthlyFeeService implements MonthlyFeeService {
     List<Apartment> apartments = apartmentRepository.findAll();
     for (Apartment apartment : apartments) {
       long apartmentId = apartment.getId();
+      
       double consumption = consumptionByApartment.getOrDefault(apartmentId, 0.0);
       if (consumption < 0) consumption = 0;
       double amount = consumption * waterFeePerM3;

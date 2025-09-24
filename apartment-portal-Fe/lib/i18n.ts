@@ -1133,6 +1133,352 @@ export const translations: Translations = {
   'admin.events.status.CANCELLED': { vi: 'Đã hủy', en: 'Cancelled' },
   'admin.events.filter.status': { vi: 'Lọc theo trạng thái', en: 'Filter by status' },
 
+  // Vehicle Management
+  'admin.vehicleRegistrations.title': {
+    vi: 'Quản lý đăng ký xe',
+    en: 'Vehicle Registration Management'
+  },
+  'admin.vehicleRegistrations.main.title': {
+    vi: 'Quản lý đăng ký xe',
+    en: 'Vehicle Registration Management'
+  },
+  'admin.vehicleRegistrations.main.subtitle': {
+    vi: 'Quản lý tất cả đăng ký xe của cư dân',
+    en: 'Manage all resident vehicle registrations'
+  },
+  'admin.vehicleRegistrations.pending.cars.title': {
+    vi: 'Ô tô chờ duyệt',
+    en: 'Pending Cars'
+  },
+  'admin.vehicleRegistrations.pending.cars.subtitle': {
+    vi: 'Ô tô chờ duyệt ({count})',
+    en: 'Pending cars ({count})'
+  },
+  'admin.vehicleRegistrations.pending.cars.description': {
+    vi: 'Danh sách ô tô đang chờ phê duyệt',
+    en: 'List of cars pending approval'
+  },
+  'admin.vehicleRegistrations.pending.motorcycles.title': {
+    vi: 'Xe máy chờ duyệt',
+    en: 'Pending Motorcycles'
+  },
+  'admin.vehicleRegistrations.pending.motorcycles.subtitle': {
+    vi: 'Xe máy chờ duyệt ({count})',
+    en: 'Pending motorcycles ({count})'
+  },
+  'admin.vehicleRegistrations.pending.motorcycles.description': {
+    vi: 'Danh sách xe máy/xe đạp đang chờ phê duyệt',
+    en: 'List of motorcycles/bicycles pending approval'
+  },
+  'admin.vehicleRegistrations.pending.all.title': {
+    vi: 'Chờ duyệt ({count})',
+    en: 'Pending ({count})'
+  },
+  'admin.vehicleRegistrations.all.title': {
+    vi: 'Tất cả xe ({count})',
+    en: 'All Vehicles ({count})'
+  },
+  'admin.vehicleRegistrations.approved.title': {
+    vi: 'Đã duyệt ({count})',
+    en: 'Approved ({count})'
+  },
+  'admin.vehicleRegistrations.rejected.title': {
+    vi: 'Từ chối ({count})',
+    en: 'Rejected ({count})'
+  },
+  'admin.vehicleRegistrations.capacity.overview.title': {
+    vi: 'Tổng quan giới hạn',
+    en: 'Capacity Overview'
+  },
+  'admin.vehicleRegistrations.capacity.config.title': {
+    vi: 'Cấu hình giới hạn',
+    en: 'Capacity Configuration'
+  },
+  'admin.vehicleRegistrations.fifo.title': {
+    vi: 'Nguyên tắc duyệt xe: FIFO (First In, First Out)',
+    en: 'Vehicle approval principle: FIFO (First In, First Out)'
+  },
+  'admin.vehicleRegistrations.fifo.description': {
+    vi: 'Xe đăng ký trước sẽ được duyệt trước. Chỉ có thể duyệt xe sau khi xe trước đó đã được xử lý.',
+    en: 'Vehicles registered first will be approved first. You can only approve subsequent vehicles after previous ones have been processed.'
+  },
+  'admin.vehicleRegistrations.actions.approve': {
+    vi: 'Duyệt',
+    en: 'Approve'
+  },
+  'admin.vehicleRegistrations.actions.reject': {
+    vi: 'Từ chối',
+    en: 'Reject'
+  },
+  'admin.vehicleRegistrations.actions.cancel': {
+    vi: 'Hủy đăng ký',
+    en: 'Cancel Registration'
+  },
+  'admin.vehicleRegistrations.actions.restore': {
+    vi: 'Khôi phục',
+    en: 'Restore'
+  },
+  'admin.vehicleRegistrations.actions.back': {
+    vi: 'Quay lại',
+    en: 'Back'
+  },
+  'admin.vehicleRegistrations.actions.viewDetails': {
+    vi: 'Xem chi tiết',
+    en: 'View Details'
+  },
+  'admin.vehicleRegistrations.actions.createNew': {
+    vi: 'Tạo mới',
+    en: 'Create New'
+  },
+  'admin.vehicleRegistrations.status.canApprove': {
+    vi: 'Có thể duyệt',
+    en: 'Can Approve'
+  },
+  'admin.vehicleRegistrations.status.cannotApprove': {
+    vi: 'Không thể duyệt',
+    en: 'Cannot Approve'
+  },
+  'admin.vehicleRegistrations.table.owner': {
+    vi: 'Chủ xe',
+    en: 'Owner'
+  },
+  'admin.vehicleRegistrations.table.type': {
+    vi: 'Loại xe',
+    en: 'Vehicle Type'
+  },
+  'admin.vehicleRegistrations.table.licensePlate': {
+    vi: 'Biển số',
+    en: 'License Plate'
+  },
+  'admin.vehicleRegistrations.table.color': {
+    vi: 'Màu sắc',
+    en: 'Color'
+  },
+  'admin.vehicleRegistrations.table.apartment': {
+    vi: 'Căn hộ',
+    en: 'Apartment'
+  },
+  'admin.vehicleRegistrations.table.registrationDate': {
+    vi: 'Thời gian đăng ký',
+    en: 'Registration Date'
+  },
+  'admin.vehicleRegistrations.table.status': {
+    vi: 'Trạng thái',
+    en: 'Status'
+  },
+  'admin.vehicleRegistrations.table.capacityLimit': {
+    vi: 'Giới hạn xe',
+    en: 'Capacity Limit'
+  },
+  'admin.vehicleRegistrations.table.actions': {
+    vi: 'Hành động',
+    en: 'Actions'
+  },
+  'admin.vehicleRegistrations.table.sequence': {
+    vi: 'Thứ tự',
+    en: 'Sequence'
+  },
+  'admin.vehicleRegistrations.table.image': {
+    vi: 'Hình ảnh',
+    en: 'Image'
+  },
+  'admin.vehicleRegistrations.capacity.overview.title.full': {
+    vi: 'Tổng quan giới hạn xe',
+    en: 'Vehicle Capacity Overview'
+  },
+  'admin.vehicleRegistrations.capacity.overview.description': {
+    vi: 'Xem tình trạng sức chứa xe của tất cả tòa nhà',
+    en: 'View capacity status of vehicles for all buildings'
+  },
+  'admin.vehicleRegistrations.capacity.loading': {
+    vi: 'Đang tải thông tin giới hạn xe...',
+    en: 'Loading vehicle capacity information...'
+  },
+  'admin.vehicleRegistrations.capacity.empty': {
+    vi: 'Chưa có cấu hình giới hạn xe',
+    en: 'No vehicle capacity configurations yet'
+  },
+  'admin.vehicleRegistrations.capacity.overview.cardTitle': {
+    vi: 'Giới hạn xe - {building}',
+    en: 'Vehicle limit - {building}'
+  },
+  'admin.vehicleRegistrations.capacity.overview.cardSubtitle': {
+    vi: 'Tình trạng sức chứa xe hiện tại',
+    en: 'Current vehicle capacity status'
+  },
+  'admin.vehicleRegistrations.capacity.labels.cars': {
+    vi: 'Ô tô (4-7 chỗ)',
+    en: 'Cars (4-7 seats)'
+  },
+  'admin.vehicleRegistrations.capacity.labels.motorcycles': {
+    vi: 'Xe máy',
+    en: 'Motorcycles'
+  },
+  'admin.vehicleRegistrations.capacity.labels.current': { vi: 'Hiện tại', en: 'Current' },
+  'admin.vehicleRegistrations.capacity.labels.max': { vi: 'Tối đa', en: 'Max' },
+  'admin.vehicleRegistrations.capacity.labels.status': { vi: 'Trạng thái', en: 'Status' },
+  'admin.vehicleRegistrations.capacity.labels.cannotRegisterMore': { vi: 'Không thể đăng ký thêm', en: 'Cannot register more' },
+  'admin.vehicleRegistrations.capacity.labels.remainingSpots': { vi: 'Chỉ còn {count} chỗ', en: '{count} spots remaining' },
+  'admin.vehicleRegistrations.capacity.labels.applied': { vi: 'Cấu hình đang được áp dụng', en: 'Configuration is applied' },
+  'admin.vehicleRegistrations.capacity.labels.disabledNote': { vi: 'Cấu hình đã bị tắt, không áp dụng giới hạn', en: 'Configuration is disabled; limits not applied' },
+  'admin.vehicleRegistrations.capacity.labels.buildingName': { vi: 'Tòa {id}', en: 'Building {id}' },
+  'admin.vehicleRegistrations.capacity.status.disabled': { vi: 'Không hỗ trợ', en: 'Not supported' },
+  'admin.vehicleRegistrations.capacity.status.full': { vi: 'Đã đầy', en: 'Full' },
+  'admin.vehicleRegistrations.capacity.status.warning': { vi: 'Gần đầy', en: 'Almost full' },
+  'admin.vehicleRegistrations.capacity.status.available': { vi: 'Còn chỗ', en: 'Available' },
+  'admin.vehicleRegistrations.loading': {
+    vi: 'Đang tải...',
+    en: 'Loading...'
+  },
+  'admin.vehicleRegistrations.noData': {
+    vi: 'Không có dữ liệu',
+    en: 'No data available'
+  },
+  'admin.vehicleRegistrations.empty.pending': {
+    vi: 'Không có xe chờ duyệt',
+    en: 'No pending vehicles'
+  },
+  'admin.vehicleRegistrations.empty.all': {
+    vi: 'Chưa có xe nào trong hệ thống',
+    en: 'No vehicles in the system yet'
+  },
+  'admin.vehicleRegistrations.rejectModal.title': {
+    vi: 'Chọn lý do từ chối',
+    en: 'Select rejection reason'
+  },
+  'admin.vehicleRegistrations.rejectModal.quickReasons': {
+    vi: 'Lý do nhanh:',
+    en: 'Quick reasons:'
+  },
+  'admin.vehicleRegistrations.rejectModal.cancel': {
+    vi: 'Hủy',
+    en: 'Cancel'
+  },
+  'admin.vehicleRegistrations.rejectModal.confirm': {
+    vi: 'Xác nhận từ chối',
+    en: 'Confirm rejection'
+  },
+  'admin.vehicleRegistrations.cancelModal.title': {
+    vi: 'Xác nhận hủy đăng ký xe',
+    en: 'Confirm vehicle registration cancellation'
+  },
+  'admin.vehicleRegistrations.cancelModal.description': {
+    vi: 'Bạn có chắc chắn muốn hủy đăng ký xe này không?',
+    en: 'Are you sure you want to cancel this vehicle registration?'
+  },
+  'admin.vehicleRegistrations.cancelModal.quickReasons': {
+    vi: 'Chọn lý do nhanh:',
+    en: 'Select quick reason:'
+  },
+  'admin.vehicleRegistrations.cancelModal.placeholder': {
+    vi: 'Nhập lý do hủy đăng ký...',
+    en: 'Enter cancellation reason...'
+  },
+  'admin.vehicleRegistrations.cancelModal.cancel': {
+    vi: 'Hủy',
+    en: 'Cancel'
+  },
+  'admin.vehicleRegistrations.cancelModal.confirm': {
+    vi: 'Xác nhận hủy',
+    en: 'Confirm cancellation'
+  },
+  'admin.vehicleRegistrations.cancelModal.processing': {
+    vi: 'Đang xử lý...',
+    en: 'Processing...'
+  },
+  'admin.vehicleRegistrations.error.requiredReason': {
+    vi: 'Vui lòng nhập lý do hủy.',
+    en: 'Please enter a cancellation reason.'
+  },
+  'admin.vehicleRegistrations.imageModal.total': {
+    vi: 'Tổng cộng: {count} hình ảnh',
+    en: 'Total: {count} images'
+  },
+  'admin.vehicleRegistrations.imageModal.clickHint': {
+    vi: 'Click vào hình ảnh để xem full size',
+    en: 'Click on image to view full size'
+  },
+  'admin.vehicleRegistrations.capacityWarning.title': {
+    vi: 'Cảnh báo: Một số xe không thể duyệt',
+    en: 'Warning: Some vehicles cannot be approved'
+  },
+  'admin.vehicleRegistrations.capacityWarning.description': {
+    vi: 'Các xe này đã đạt giới hạn số lượng tối đa cho loại xe tương ứng trong tòa nhà',
+    en: 'These vehicles have reached the maximum limit for their vehicle type in the building'
+  },
+  'admin.vehicleRegistrations.image.clickToView': {
+    vi: 'Click để xem tất cả hình ảnh',
+    en: 'Click to view all images'
+  },
+  'admin.vehicleRegistrations.image.errorLoading': {
+    vi: 'Lỗi tải ảnh',
+    en: 'Error loading image'
+  },
+  'admin.vehicleRegistrations.image.noImage': {
+    vi: 'Không có ảnh',
+    en: 'No image'
+  },
+  'admin.vehicleRegistrations.image.viewAll': {
+    vi: 'Xem tất cả',
+    en: 'View all'
+  },
+  'admin.vehicleRegistrations.tooltip.approve': {
+    vi: 'Duyệt xe',
+    en: 'Approve vehicle'
+  },
+  'admin.vehicleRegistrations.tooltip.cannotApproveQueue': {
+    vi: 'Không thể duyệt - Phải duyệt xe trước đó trước',
+    en: 'Cannot approve - Must approve previous vehicles first'
+  },
+  'admin.vehicleRegistrations.tooltip.cannotApproveLimit': {
+    vi: 'Không thể duyệt - Đã đạt giới hạn',
+    en: 'Cannot approve - Limit reached'
+  },
+  'admin.vehicleRegistrations.rejectionReasons.inaccurateInfo': {
+    vi: 'Thông tin xe không chính xác',
+    en: 'Inaccurate vehicle information'
+  },
+  'admin.vehicleRegistrations.rejectionReasons.unreadablePlate': {
+    vi: 'Biển số xe không rõ ràng',
+    en: 'Unreadable license plate'
+  },
+  'admin.vehicleRegistrations.rejectionReasons.missingDocuments': {
+    vi: 'Thiếu giấy tờ xe',
+    en: 'Missing vehicle documents'
+  },
+  'admin.vehicleRegistrations.rejectionReasons.unsafetyStandards': {
+    vi: 'Xe không đủ tiêu chuẩn an toàn',
+    en: 'Vehicle does not meet safety standards'
+  },
+  'admin.vehicleRegistrations.rejectionReasons.invalidOwnerInfo': {
+    vi: 'Thông tin chủ xe không hợp lệ',
+    en: 'Invalid owner information'
+  },
+  'admin.vehicleRegistrations.rejectionReasons.exceedsLimit': {
+    vi: 'Vượt quá giới hạn xe cho phép',
+    en: 'Exceeds allowed vehicle limit'
+  },
+  'admin.vehicleRegistrations.rejectionReasons.other': {
+    vi: 'Lý do khác',
+    en: 'Other reason'
+  },
+  'admin.vehicleRegistrations.tabs.pending': {
+    vi: 'Chờ duyệt ({count})',
+    en: 'Pending ({count})'
+  },
+  'admin.vehicleRegistrations.tabs.all': {
+    vi: 'Tất cả xe ({count})',
+    en: 'All Vehicles ({count})'
+  },
+  'admin.vehicleRegistrations.tabs.approved': {
+    vi: 'Đã duyệt ({count})',
+    en: 'Approved ({count})'
+  },
+  'admin.vehicleRegistrations.tabs.rejected': {
+    vi: 'Từ chối ({count})',
+    en: 'Rejected ({count})'
+  },
+
   // Facility Management
   'admin.facilities.title': {
     vi: 'Quản lý tiện ích',
@@ -1705,11 +2051,358 @@ export const translations: Translations = {
   'admin.support-requests.category.SECURITY': { vi: 'An ninh', en: 'Security' },
   'admin.support-requests.category.CLEANING': { vi: 'Vệ sinh', en: 'Cleaning' },
   'admin.support-requests.category.OTHER': { vi: 'Khác', en: 'Other' },
-  'admin.support-requests.category.WATER': { vi: 'Nước', en: 'Water' },
-  'admin.support-requests.category.AIR_CONDITIONER': { vi: 'Điều hòa', en: 'Air conditioner' },
-  'admin.support-requests.category.GREENERY': { vi: 'Cây xanh', en: 'Greenery' },
-  'admin.support-requests.priority.URGENT': { vi: 'Khẩn cấp', en: 'Urgent' },
-  'admin.support-requests.priority.HIGH': { vi: 'Cao', en: 'High' },
+  'admin.support-requests.error.loadList': {
+    vi: 'Lỗi tải danh sách yêu cầu hỗ trợ: ',
+    en: 'Error loading support requests list: '
+  },
+  'admin.support-requests.stats.filtered': {
+    vi: 'Kết quả lọc',
+    en: 'Filtered results'
+  },
+  'admin.support-requests.stats.all': {
+    vi: 'Tất cả yêu cầu',
+    en: 'All requests'
+  },
+  'admin.support-requests.stats.pendingDesc': {
+    vi: 'Cần xử lý ngay',
+    en: 'Need immediate attention'
+  },
+  'admin.support-requests.stats.inProgressDesc': {
+    vi: 'Đang được xử lý',
+    en: 'Currently being processed'
+  },
+  'admin.support-requests.stats.completedDesc': {
+    vi: 'Đã hoàn thành',
+    en: 'Completed'
+  },
+  'admin.support-requests.searchPlaceholder': {
+    vi: 'Tìm kiếm theo cư dân, số điện thoại, tiêu đề, mô tả...',
+    en: 'Search by resident, phone, title, description...'
+  },
+  'admin.support-requests.filter.statusTitle': {
+    vi: 'Trạng thái yêu cầu',
+    en: 'Request status'
+  },
+  'admin.support-requests.sort.title': {
+    vi: 'Sắp xếp theo thời gian',
+    en: 'Sort by time'
+  },
+  'admin.support-requests.sort.newest': {
+    vi: 'Mới nhất trước',
+    en: 'Newest first'
+  },
+  'admin.support-requests.sort.oldest': {
+    vi: 'Cũ nhất trước',
+    en: 'Oldest first'
+  },
+  'admin.support-requests.request': {
+    vi: 'yêu cầu',
+    en: 'request'
+  },
+  'admin.support-requests.requests': {
+    vi: 'yêu cầu',
+    en: 'requests'
+  },
+  'admin.support-requests.noData': {
+    vi: 'Không có yêu cầu hỗ trợ nào',
+    en: 'No support requests'
+  },
+  'admin.support-requests.noResults': {
+    vi: 'Không tìm thấy yêu cầu phù hợp với bộ lọc của bạn',
+    en: 'No requests found matching your filters'
+  },
+  'admin.support-requests.noDataDesc': {
+    vi: 'Chưa có yêu cầu hỗ trợ nào từ cư dân',
+    en: 'No support requests from residents yet'
+  },
+  'admin.support-requests.noTitle': {
+    vi: 'Không có tiêu đề',
+    en: 'No title'
+  },
+  'admin.support-requests.assignmentHistory': {
+    vi: 'Chi tiết lịch sử gán nhân viên',
+    en: 'Staff assignment history details'
+  },
+  'admin.support-requests.assignmentInfo': {
+    vi: 'Thông tin gán',
+    en: 'Assignment information'
+  },
+  'admin.support-requests.staff': {
+    vi: 'Nhân viên',
+    en: 'Staff'
+  },
+  'admin.support-requests.currentStatus': {
+    vi: 'Trạng thái hiện tại',
+    en: 'Current status'
+  },
+  'admin.support-requests.attachments': {
+    vi: 'Hình ảnh đính kèm',
+    en: 'Attached images'
+  },
+  'admin.support-requests.images': {
+    vi: 'ảnh',
+    en: 'images'
+  },
+  'admin.support-requests.imageAlt': {
+    vi: 'Hình ảnh',
+    en: 'Image'
+  },
+  'admin.support-requests.clickToView': {
+    vi: 'Click để xem ảnh đầy đủ',
+    en: 'Click to view full image'
+  },
+  'admin.support-requests.notAssignedDesc': {
+    vi: 'Yêu cầu này chưa được gán cho nhân viên nào',
+    en: 'This request has not been assigned to any staff'
+  },
+  'admin.support-requests.assignTip': {
+    vi: 'Click vào nút "Gán nhân viên" trong trang chi tiết để gán',
+    en: 'Click the "Assign Staff" button in the detail page to assign'
+  },
+  'admin.support-requests.viewFullDetails': {
+    vi: 'Xem chi tiết đầy đủ',
+    en: 'View full details'
+  },
+  'admin.support-requests.detail.title': {
+    vi: 'Chi tiết yêu cầu hỗ trợ',
+    en: 'Support Request Details'
+  },
+  'admin.support-requests.detail.backToList': {
+    vi: 'Quay lại danh sách',
+    en: 'Back to List'
+  },
+  'admin.support-requests.detail.requestInfo': {
+    vi: 'Thông tin yêu cầu',
+    en: 'Request Information'
+  },
+  'admin.support-requests.detail.residentInfo': {
+    vi: 'Thông tin cư dân',
+    en: 'Resident Information'
+  },
+  'admin.support-requests.detail.name': {
+    vi: 'Tên',
+    en: 'Name'
+  },
+  'admin.support-requests.detail.phone': {
+    vi: 'Số điện thoại',
+    en: 'Phone Number'
+  },
+  'admin.support-requests.detail.requestTitle': {
+    vi: 'Tiêu đề',
+    en: 'Title'
+  },
+  'admin.support-requests.detail.description': {
+    vi: 'Mô tả',
+    en: 'Description'
+  },
+  'admin.support-requests.detail.category': {
+    vi: 'Danh mục',
+    en: 'Category'
+  },
+  'admin.support-requests.detail.priority': {
+    vi: 'Mức độ ưu tiên',
+    en: 'Priority'
+  },
+  'admin.support-requests.detail.status': {
+    vi: 'Trạng thái',
+    en: 'Status'
+  },
+  'admin.support-requests.detail.createdAt': {
+    vi: 'Ngày tạo',
+    en: 'Created At'
+  },
+  'admin.support-requests.detail.assignedTo': {
+    vi: 'Được giao cho',
+    en: 'Assigned To'
+  },
+  'admin.support-requests.detail.completedAt': {
+    vi: 'Ngày hoàn thành',
+    en: 'Completed At'
+  },
+  'admin.support-requests.detail.resolutionNotes': {
+    vi: 'Ghi chú xử lý',
+    en: 'Resolution Notes'
+  },
+  'admin.support-requests.detail.images': {
+    vi: 'Hình ảnh',
+    en: 'Images'
+  },
+  'admin.support-requests.detail.beforeImages': {
+    vi: 'Hình ảnh trước khi sửa',
+    en: 'Before Images'
+  },
+  'admin.support-requests.detail.afterImages': {
+    vi: 'Hình ảnh sau khi sửa',
+    en: 'After Images'
+  },
+  'admin.support-requests.detail.noImages': {
+    vi: 'Không có hình ảnh',
+    en: 'No images'
+  },
+  'admin.support-requests.detail.clickToView': {
+    vi: 'Click để xem',
+    en: 'Click to view'
+  },
+  'admin.support-requests.detail.assignStaff': {
+    vi: 'Gán nhân viên',
+    en: 'Assign Staff'
+  },
+  'admin.support-requests.detail.selectStaff': {
+    vi: 'Chọn nhân viên',
+    en: 'Select Staff'
+  },
+  'admin.support-requests.detail.selectStaffPlaceholder': {
+    vi: 'Chọn nhân viên để gán...',
+    en: 'Select staff to assign...'
+  },
+  'admin.support-requests.detail.selectPriority': {
+    vi: 'Chọn mức độ ưu tiên',
+    en: 'Select Priority'
+  },
+  'admin.support-requests.detail.priority.low': {
+    vi: 'Thấp',
+    en: 'Low'
+  },
+  'admin.support-requests.detail.priority.medium': {
+    vi: 'Trung bình',
+    en: 'Medium'
+  },
+  'admin.support-requests.detail.priority.high': {
+    vi: 'Cao',
+    en: 'High'
+  },
+  'admin.support-requests.detail.priority.urgent': {
+    vi: 'Khẩn cấp',
+    en: 'Urgent'
+  },
+  'admin.support-requests.detail.assignButton': {
+    vi: 'Gán',
+    en: 'Assign'
+  },
+  'admin.support-requests.detail.assigning': {
+    vi: 'Đang gán...',
+    en: 'Assigning...'
+  },
+  'admin.support-requests.detail.updateStatus': {
+    vi: 'Cập nhật trạng thái',
+    en: 'Update Status'
+  },
+  'admin.support-requests.detail.selectNewStatus': {
+    vi: 'Chọn trạng thái mới',
+    en: 'Select New Status'
+  },
+  'admin.support-requests.detail.status.pending': {
+    vi: 'Chờ xử lý',
+    en: 'Pending'
+  },
+  'admin.support-requests.detail.status.assigned': {
+    vi: 'Đã giao',
+    en: 'Assigned'
+  },
+  'admin.support-requests.detail.status.inProgress': {
+    vi: 'Đang xử lý',
+    en: 'In Progress'
+  },
+  'admin.support-requests.detail.status.completed': {
+    vi: 'Hoàn thành',
+    en: 'Completed'
+  },
+  'admin.support-requests.detail.status.cancelled': {
+    vi: 'Đã hủy',
+    en: 'Cancelled'
+  },
+  'admin.support-requests.detail.updateButton': {
+    vi: 'Cập nhật',
+    en: 'Update'
+  },
+  'admin.support-requests.detail.updating': {
+    vi: 'Đang cập nhật...',
+    en: 'Updating...'
+  },
+  'admin.support-requests.detail.addResolutionNotes': {
+    vi: 'Thêm ghi chú xử lý',
+    en: 'Add Resolution Notes'
+  },
+  'admin.support-requests.detail.notesPlaceholder': {
+    vi: 'Nhập ghi chú về việc xử lý yêu cầu...',
+    en: 'Enter notes about the request resolution...'
+  },
+  'admin.support-requests.detail.saveNotes': {
+    vi: 'Lưu ghi chú',
+    en: 'Save Notes'
+  },
+  'admin.support-requests.detail.saving': {
+    vi: 'Đang lưu...',
+    en: 'Saving...'
+  },
+  'admin.support-requests.detail.error.load': {
+    vi: 'Không thể tải chi tiết yêu cầu hỗ trợ',
+    en: 'Failed to load support request details'
+  },
+  'admin.support-requests.detail.error.assign': {
+    vi: 'Không thể gán nhân viên',
+    en: 'Failed to assign staff'
+  },
+  'admin.support-requests.detail.error.update': {
+    vi: 'Không thể cập nhật trạng thái',
+    en: 'Failed to update status'
+  },
+  'admin.support-requests.detail.error.saveNotes': {
+    vi: 'Không thể lưu ghi chú',
+    en: 'Failed to save notes'
+  },
+  'admin.support-requests.detail.error.selectStaff': {
+    vi: 'Vui lòng chọn nhân viên!',
+    en: 'Please select a staff member!'
+  },
+  'admin.support-requests.detail.success.assign': {
+    vi: 'Đã gán nhân viên thành công',
+    en: 'Staff assigned successfully'
+  },
+  'admin.support-requests.detail.success.update': {
+    vi: 'Đã cập nhật trạng thái thành công',
+    en: 'Status updated successfully'
+  },
+  'admin.support-requests.detail.success.saveNotes': {
+    vi: 'Đã lưu ghi chú thành công',
+    en: 'Notes saved successfully'
+  },
+  'admin.support-requests.detail.noData': {
+    vi: 'Không có',
+    en: 'No data'
+  },
+  'admin.support-requests.detail.current': {
+    vi: 'hiện tại',
+    en: 'current'
+  },
+  'admin.support-requests.detail.time': {
+    vi: 'thời gian',
+    en: 'time'
+  },
+  'admin.support-requests.detail.staff': {
+    vi: 'Nhân viên',
+    en: 'Staff'
+  },
+  'admin.support-requests.detail.responsible': {
+    vi: 'phụ trách',
+    en: 'responsible'
+  },
+  'admin.support-requests.detail.assigned': {
+    vi: 'được gán',
+    en: 'assigned'
+  },
+  'admin.support-requests.detail.assignmentTime': {
+    vi: 'Thời gian gán',
+    en: 'Assignment time'
+  },
+  'admin.support-requests.detail.assignmentNotes': {
+    vi: 'Ghi chú khi gán',
+    en: 'Assignment notes'
+  },
+  'admin.support-requests.detail.imageCount': {
+    vi: 'ảnh',
+    en: 'images'
+  },
   'admin.support-requests.priority.MEDIUM': { vi: 'Trung bình', en: 'Medium' },
   'admin.support-requests.priority.LOW': { vi: 'Thấp', en: 'Low' },
   'admin.support-requests.status.PENDING': { vi: 'Chờ xử lý', en: 'Pending' },
@@ -1877,7 +2570,6 @@ export const translations: Translations = {
   'admin.counter.bookings': { vi: 'đặt chỗ', en: 'bookings' },
 
   // Support Requests
-  'admin.support-requests.searchPlaceholder': { vi: 'Tìm kiếm theo cư dân, tiêu đề, mô tả...', en: 'Search by resident, title, description...' },
 
   // Water meter
   'admin.waterMeter.title': { vi: 'Danh sách chỉ số nước', en: 'Water meter list' },
@@ -1986,6 +2678,11 @@ export const translations: Translations = {
   'admin.waterMeter.btn.cancel': { vi: 'Hủy', en: 'Cancel' },
   'admin.waterMeter.btn.edit': { vi: 'Sửa', en: 'Edit' },
   'admin.waterMeter.btn.delete': { vi: 'Xóa', en: 'Delete' },
+  'admin.waterMeter.loadingLatestMonth': { vi: 'Đang tải dữ liệu tháng mới nhất...', en: 'Loading latest month data...' },
+  'admin.waterMeter.latestMonth': { vi: 'Tháng mới nhất', en: 'Latest month' },
+  'admin.waterMeter.table.recordedBy': { vi: 'Người ghi', en: 'Recorded by' },
+  'admin.waterMeter.table.recordedAt': { vi: 'Thời gian ghi', en: 'Recorded at' },
+  'admin.waterMeter.confirmDelete': { vi: 'Bạn có chắc chắn muốn xóa bản ghi này?', en: 'Are you sure you want to delete this record?' },
 
   // Invoices fee type labels
   'admin.invoices.feeType.SERVICE_FEE': { vi: 'Phí dịch vụ', en: 'Service Fee' },

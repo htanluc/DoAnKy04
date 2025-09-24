@@ -9,12 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Simple toast function
-const showToast = (title: string, description: string, type: 'success' | 'error' = 'success') => {
-  // Simple alert for now, can be replaced with proper toast library
-  alert(`${title}: ${description}`);
-};
+import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { Modal } from '@/components/ui/modal';
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -69,6 +66,7 @@ interface BuildingVehicle {
 }
 
 export default function VehiclesPage() {
+  const { toast } = useToast();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [buildingVehicles, setBuildingVehicles] = useState<BuildingVehicle[]>([]);
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
@@ -87,6 +85,121 @@ export default function VehiclesPage() {
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Khách hàng yêu cầu hủy đăng ký');
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  // Helpers: normalize và kiểm tra trùng biển số
+  const normalizePlate = (plate: string) => plate.replace(/[\s-]/g, '').toUpperCase();
+  const isDuplicateLicensePlate = (plate: string) => {
+    const target = normalizePlate(plate || '');
+    if (!target) return false;
+    const existsInMyVehicles = vehicles.some(v => normalizePlate(v.licensePlate) === target);
+    const existsInBuildingPending = buildingVehicles.some(v => normalizePlate(v.licensePlate) === target);
+    return existsInMyVehicles || existsInBuildingPending;
+  };
+
+  // Validation functions
+  const validateField = (name: string, value: string) => {
+    let error = '';
+    
+    switch (name) {
+      case 'licensePlate':
+        if (!value.trim()) {
+          error = 'Biển số xe là bắt buộc';
+        } else {
+          const plate = value.trim().toUpperCase();
+          // Hỗ trợ nhiều định dạng biển số Việt Nam
+          const patterns = [
+            /^[0-9]{2}[A-Z]{1,2}-[0-9]{4,5}$/, // 30A-12345
+            /^[0-9]{2}[A-Z]{1,2}[0-9]{4,5}$/,  // 30A12345
+            /^[0-9]{2}[A-Z]{1,2}\s[0-9]{4,5}$/, // 30A 12345
+          ];
+          
+          if (!patterns.some(pattern => pattern.test(plate))) {
+            error = 'Biển số xe không đúng định dạng (VD: 30A-12345, 30A12345, 30A 12345)';
+          } else if (isDuplicateLicensePlate(plate)) {
+            error = 'Biển số xe đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.';
+          }
+        }
+        break;
+      case 'vehicleType':
+        if (!value) {
+          error = 'Vui lòng chọn loại phương tiện';
+        }
+        break;
+      case 'apartmentId':
+        if (!value) {
+          error = 'Vui lòng chọn căn hộ';
+        }
+        break;
+      case 'brand':
+        if (value.trim() && value.trim().length < 2) {
+          error = 'Hãng xe phải có ít nhất 2 ký tự';
+        }
+        break;
+      case 'model':
+        if (value.trim() && value.trim().length < 2) {
+          error = 'Dòng xe phải có ít nhất 2 ký tự';
+        }
+        break;
+      case 'color':
+        if (value.trim() && value.trim().length < 2) {
+          error = 'Màu sắc phải có ít nhất 2 ký tự';
+        }
+        break;
+    }
+    
+    return error;
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    Object.keys(formData).forEach(key => {
+      if (key !== 'imageUrls') {
+        const error = validateField(key, formData[key as keyof typeof formData] as string);
+        if (error) {
+          newErrors[key] = error;
+        }
+      }
+    });
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFieldChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    
+    // Validate field in real-time after user has touched it
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+    
+    // Auto-format license plate
+    if (name === 'licensePlate') {
+      const formatted = value.trim().toUpperCase();
+      if (formatted !== value) {
+        setFormData(prev => ({ ...prev, [name]: formatted }));
+      }
+    }
+  };
+
+  const handleFieldBlur = (name: string) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, formData[name as keyof typeof formData] as string);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
 
   // Fetch vehicle types
   useEffect(() => {
@@ -105,10 +218,26 @@ export default function VehiclesPage() {
         }
 
         const data = await response.json();
-        setVehicleTypes(data);
+        
+        // Chỉ lấy 3 loại phương tiện chính: 4 chỗ, 7 chỗ, xe máy
+        const allowedTypes = data.filter((type: VehicleType) => {
+          const displayName = type.displayName.toLowerCase();
+          return displayName.includes('4 chỗ') || 
+                 displayName.includes('7 chỗ') || 
+                 displayName.includes('xe máy') ||
+                 displayName.includes('motorcycle') ||
+                 displayName.includes('car 4') ||
+                 displayName.includes('car 7');
+        });
+        
+        setVehicleTypes(allowedTypes);
       } catch (error) {
         console.error('Error fetching vehicle types:', error);
-        showToast("Lỗi", "Không thể tải danh sách loại phương tiện", "error");
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải danh sách loại phương tiện",
+          variant: "destructive",
+        });
       }
     };
 
@@ -135,7 +264,11 @@ export default function VehiclesPage() {
         setApartments(data);
       } catch (error) {
         console.error('Error fetching apartments:', error);
-        showToast("Lỗi", "Không thể tải danh sách căn hộ", "error");
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải danh sách căn hộ",
+          variant: "destructive",
+        });
       }
     };
 
@@ -163,7 +296,11 @@ export default function VehiclesPage() {
         setVehicles(data);
       } catch (error) {
         console.error('Error fetching vehicles:', error);
-        showToast("Lỗi", "Không thể tải danh sách xe", "error");
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải danh sách xe",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -225,11 +362,90 @@ export default function VehiclesPage() {
     }
   };
 
+  const cancelVehicle = async (vehicleId: number, reason: string) => {
+    try {
+      setCancelling(true);
+      const token = localStorage.getItem('token');
+
+      // Thử endpoint chuẩn cư dân
+      let response = await fetch(`${API_BASE_URL}/api/vehicles/${vehicleId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      // Fallback: thử cập nhật trạng thái trực tiếp
+      if (!response.ok) {
+        response = await fetch(`${API_BASE_URL}/api/vehicles/${vehicleId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'REJECTED', reason }),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error('Không thể hủy đăng ký xe. Vui lòng thử lại sau.');
+      }
+
+      // Cập nhật UI: đặt trạng thái REJECTED cho xe tương ứng
+      setVehicles(prev => prev.map(v => v.id === vehicleId ? { ...v, status: 'REJECTED', statusDisplayName: 'Từ chối' } as any : v));
+
+      toast({
+        title: 'Đã hủy đăng ký',
+        description: 'Yêu cầu hủy đăng ký xe đã được xử lý.',
+        variant: 'success',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error?.message || 'Không thể hủy đăng ký xe',
+        variant: 'destructive',
+      });
+    } finally {
+      setCancelling(false);
+      setShowCancelModal(false);
+      setCancellingId(null);
+      setCancelReason('Khách hàng yêu cầu hủy đăng ký');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.licensePlate || !formData.vehicleType || !formData.apartmentId) {
-      showToast("Lỗi", "Vui lòng điền đầy đủ thông tin bắt buộc", "error");
+    // Kiểm tra trùng biển số trước khi submit
+    if (isDuplicateLicensePlate(formData.licensePlate)) {
+      setErrors(prev => ({ ...prev, licensePlate: 'Biển số xe đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.' }));
+      setTouched(prev => ({ ...prev, licensePlate: true }));
+      toast({
+        title: 'Trùng biển số',
+        description: 'Biển số này đã được đăng ký hoặc đang chờ duyệt trong tòa nhà.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Mark all fields as touched to show validation errors
+    const allTouched = Object.keys(formData).reduce((acc, key) => {
+      if (key !== 'imageUrls') {
+        acc[key] = true;
+      }
+      return acc;
+    }, {} as Record<string, boolean>);
+    setTouched(allTouched);
+    
+    // Validate form
+    if (!validateForm()) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng kiểm tra lại thông tin đã nhập",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -273,12 +489,22 @@ export default function VehiclesPage() {
         color: '',
         imageUrls: []
       });
+      setErrors({});
+      setTouched({});
       clearAllImages();
       
-      showToast("Thành công", "Đăng ký xe thành công", "success");
+      toast({
+        title: "Thành công",
+        description: "Đăng ký xe thành công! Xe của bạn đang chờ duyệt.",
+        variant: "success",
+      });
     } catch (error) {
       console.error('Error creating vehicle:', error);
-      showToast("Lỗi", error instanceof Error ? error.message : "Không thể đăng ký xe", "error");
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Không thể đăng ký xe",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -322,7 +548,7 @@ export default function VehiclesPage() {
           });
           
           // Sắp xếp theo thứ tự ưu tiên
-          vehiclesWithApartmentInfo.sort((a, b) => {
+          vehiclesWithApartmentInfo.sort((a: BuildingVehicle, b: BuildingVehicle) => {
             if (a.buildingId !== b.buildingId) {
               return (a.buildingId || 0) - (b.buildingId || 0);
             }
@@ -371,7 +597,7 @@ export default function VehiclesPage() {
       }
       
       // Sắp xếp theo thứ tự ưu tiên: Tòa nhà -> Căn hộ -> Ngày đăng ký (cũ nhất trước)
-      const sortedVehicles = allBuildingVehicles.sort((a, b) => {
+      const sortedVehicles = allBuildingVehicles.sort((a: BuildingVehicle, b: BuildingVehicle) => {
         // Sắp xếp theo tòa nhà trước
         const buildingA = a.buildingId || 0;
         const buildingB = b.buildingId || 0;
@@ -393,7 +619,11 @@ export default function VehiclesPage() {
       setBuildingVehicles(sortedVehicles);
     } catch (error) {
       console.error('Error fetching building vehicles:', error);
-      showToast("Lỗi", "Không thể tải danh sách xe trong tòa nhà", "error");
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách xe trong tòa nhà",
+        variant: "destructive",
+      });
     } finally {
       setBuildingVehiclesLoading(false);
     }
@@ -466,7 +696,24 @@ export default function VehiclesPage() {
         <TabsContent value="register" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Đăng ký xe mới</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-blue-500" />
+                Đăng ký xe mới
+              </CardTitle>
+              <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Hướng dẫn đăng ký xe:</p>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Các trường có dấu <span className="text-red-500 font-semibold">*</span> là bắt buộc</li>
+                      <li>• Biển số xe phải đúng định dạng: 2 số + 1-2 chữ cái + 4-5 số (VD: 30A-12345, 30A12345, 30A 12345)</li>
+                      <li>• Hình ảnh xe giúp quản lý dễ dàng xác minh thông tin</li>
+                      <li>• Xe đăng ký sẽ được duyệt theo thứ tự ưu tiên trong tòa nhà</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -476,40 +723,54 @@ export default function VehiclesPage() {
                     <Input
                       id="licensePlate"
                       value={formData.licensePlate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, licensePlate: e.target.value }))}
-                      placeholder="Ví dụ: 30A-12345"
+                      onChange={(e) => handleFieldChange('licensePlate', e.target.value)}
+                      onBlur={() => handleFieldBlur('licensePlate')}
+                      placeholder="Ví dụ: 30A-12345, 30A12345, 30A 12345"
+                      className={errors.licensePlate ? 'border-red-500 focus:border-red-500' : ''}
                       required
                     />
+                    {errors.licensePlate && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                        <XCircle className="w-4 h-4" />
+                        {errors.licensePlate}
+                      </p>
+                    )}
                   </div>
                   
                   <div>
                     <Label htmlFor="vehicleType">Loại phương tiện *</Label>
                     <Select
                       value={formData.vehicleType}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, vehicleType: value }))}
+                      onValueChange={(value) => handleFieldChange('vehicleType', value)}
                       required
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={errors.vehicleType ? 'border-red-500 focus:border-red-500' : ''}>
                         <SelectValue placeholder="Chọn loại phương tiện" />
                       </SelectTrigger>
                       <SelectContent>
                         {vehicleTypes.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
-                            {type.displayName} - {formatCurrency(type.monthlyFee)}/tháng
+                            {type.displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {errors.vehicleType && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                        <XCircle className="w-4 h-4" />
+                        {errors.vehicleType}
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <Label htmlFor="apartmentId">Căn hộ *</Label>
                     <Select
                       value={formData.apartmentId}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, apartmentId: value }))}
+                      onValueChange={(value) => handleFieldChange('apartmentId', value)}
                       required
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={errors.apartmentId ? 'border-red-500 focus:border-red-500' : ''}>
                         <SelectValue placeholder="Chọn căn hộ" />
                       </SelectTrigger>
                       <SelectContent>
@@ -521,6 +782,12 @@ export default function VehiclesPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {errors.apartmentId && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                        <XCircle className="w-4 h-4" />
+                        {errors.apartmentId}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -528,9 +795,17 @@ export default function VehiclesPage() {
                     <Input
                       id="brand"
                       value={formData.brand}
-                      onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
+                      onChange={(e) => handleFieldChange('brand', e.target.value)}
+                      onBlur={() => handleFieldBlur('brand')}
                       placeholder="Ví dụ: Honda, Toyota"
+                      className={errors.brand ? 'border-red-500 focus:border-red-500' : ''}
                     />
+                    {errors.brand && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                        <XCircle className="w-4 h-4" />
+                        {errors.brand}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -538,9 +813,17 @@ export default function VehiclesPage() {
                     <Input
                       id="model"
                       value={formData.model}
-                      onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
+                      onChange={(e) => handleFieldChange('model', e.target.value)}
+                      onBlur={() => handleFieldBlur('model')}
                       placeholder="Ví dụ: Wave Alpha, Vios"
+                      className={errors.model ? 'border-red-500 focus:border-red-500' : ''}
                     />
+                    {errors.model && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                        <XCircle className="w-4 h-4" />
+                        {errors.model}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -548,9 +831,17 @@ export default function VehiclesPage() {
                     <Input
                       id="color"
                       value={formData.color}
-                      onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                      onChange={(e) => handleFieldChange('color', e.target.value)}
+                      onBlur={() => handleFieldBlur('color')}
                       placeholder="Ví dụ: Đen, Trắng"
+                      className={errors.color ? 'border-red-500 focus:border-red-500' : ''}
                     />
+                    {errors.color && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                        <XCircle className="w-4 h-4" />
+                        {errors.color}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -596,8 +887,22 @@ export default function VehiclesPage() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={submitting} className="w-full">
-                  {submitting ? 'Đang đăng ký...' : 'Đăng ký xe'}
+                <Button 
+                  type="submit" 
+                  disabled={submitting} 
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Đang đăng ký...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Đăng ký xe
+                    </div>
+                  )}
                 </Button>
               </form>
             </CardContent>
@@ -630,9 +935,17 @@ export default function VehiclesPage() {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           {getStatusBadge(vehicle.status)}
-                          <span className="text-sm font-medium">
-                            {formatCurrency(vehicle.monthlyFee)}/tháng
-                          </span>
+                          <div className="flex gap-2">
+                            {vehicle.status === 'PENDING' && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => { setCancellingId(vehicle.id); setShowCancelModal(true); }}
+                              >
+                                Hủy đăng ký
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       
@@ -775,6 +1088,34 @@ export default function VehiclesPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Cancel vehicle modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Hủy đăng ký xe"
+        size="sm"
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">Vui lòng nhập lý do hủy đăng ký:</p>
+          <textarea
+            className="w-full border rounded p-2 h-28"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Ví dụ: Khách hàng yêu cầu hủy đăng ký"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCancelModal(false)}>Đóng</Button>
+            <Button
+              variant="destructive"
+              disabled={cancelling || !cancellingId}
+              onClick={() => cancellingId && cancelVehicle(cancellingId, cancelReason)}
+            >
+              {cancelling ? 'Đang xử lý...' : 'Xác nhận hủy'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 } 

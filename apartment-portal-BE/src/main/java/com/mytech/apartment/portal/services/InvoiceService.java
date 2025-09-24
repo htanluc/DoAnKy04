@@ -79,10 +79,15 @@ public class InvoiceService {
                                String feeType,
                                String description,
                                BigDecimal amount) {
-        Invoice invoice = invoiceRepository
-            .findByApartmentIdAndBillingPeriod(apartmentId, period)
-            .orElseThrow(() -> new RuntimeException(
-                "Invoice not found for apt=" + apartmentId + ", period=" + period));
+        Optional<Invoice> invoiceOpt = invoiceRepository
+            .findByApartmentIdAndBillingPeriod(apartmentId, period);
+        
+        if (invoiceOpt.isEmpty()) {
+            System.out.println("DEBUG: Bỏ qua thêm item cho căn hộ " + apartmentId + " - chưa có hóa đơn cho kỳ " + period);
+            return;
+        }
+        
+        Invoice invoice = invoiceOpt.get();
 
         // Đảm bảo tập items không null và kiểm tra idempotent
         if (invoice.getItems() == null) {
@@ -359,5 +364,12 @@ public class InvoiceService {
         }
         
         return overdueInvoices.size();
+    }
+    
+    /**
+     * Kiểm tra xem có invoice cho căn hộ và kỳ thanh toán cụ thể không
+     */
+    public boolean hasInvoiceForPeriod(Long apartmentId, String billingPeriod) {
+        return invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, billingPeriod).isPresent();
     }
 }

@@ -36,7 +36,7 @@ export default function ImageUpload({
 
     const formData = new FormData();
     Array.from(files).forEach(file => {
-      formData.append('file', file);
+      formData.append('files', file);
     });
 
     const response = await fetch(`http://localhost:8080${endpoint}`, {

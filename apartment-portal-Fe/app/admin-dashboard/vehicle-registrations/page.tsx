@@ -451,30 +451,30 @@ export default function VehicleRegistrationsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Quản lý đăng ký xe</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t('admin.vehicleRegistrations.main.title', 'Quản lý đăng ký xe')}</h1>
             <p className="text-muted-foreground">
-              Quản lý tất cả đăng ký xe của cư dân
+              {t('admin.vehicleRegistrations.main.subtitle', 'Quản lý tất cả đăng ký xe của cư dân')}
             </p>
           </div>
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Tạo mới
+            {t('admin.vehicleRegistrations.actions.createNew', 'Tạo mới')}
           </Button>
         </div>
 
         <Tabs defaultValue="pending" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="pending">Chờ duyệt ({pendingCount})</TabsTrigger>
-            <TabsTrigger value="all">Tất cả xe ({totalCount})</TabsTrigger>
-            <TabsTrigger value="approved">Đã duyệt ({approvedCount})</TabsTrigger>
-            <TabsTrigger value="rejected">Từ chối ({rejectedCount})</TabsTrigger>
+            <TabsTrigger value="pending">{t('admin.vehicleRegistrations.tabs.pending', 'Chờ duyệt ({count})', { count: pendingCount })}</TabsTrigger>
+            <TabsTrigger value="all">{t('admin.vehicleRegistrations.tabs.all', 'Tất cả xe ({count})', { count: totalCount })}</TabsTrigger>
+            <TabsTrigger value="approved">{t('admin.vehicleRegistrations.tabs.approved', 'Đã duyệt ({count})', { count: approvedCount })}</TabsTrigger>
+            <TabsTrigger value="rejected">{t('admin.vehicleRegistrations.tabs.rejected', 'Từ chối ({count})', { count: rejectedCount })}</TabsTrigger>
             <TabsTrigger value="capacity-overview">
               <Settings className="mr-2 h-4 w-4" />
-              Tổng quan giới hạn
+              {t('admin.vehicleRegistrations.capacity.overview.title', 'Tổng quan giới hạn')}
             </TabsTrigger>
             <TabsTrigger value="capacity-config">
               <Settings className="mr-2 h-4 w-4" />
-              Cấu hình giới hạn
+              {t('admin.vehicleRegistrations.capacity.config.title', 'Cấu hình giới hạn')}
             </TabsTrigger>
           </TabsList>
 
@@ -486,13 +486,15 @@ export default function VehicleRegistrationsPage() {
                    <CardHeader>
                      <CardTitle className="flex items-center gap-2 text-blue-600">
                        <Car className="h-6 w-6" />
-                       Ô tô chờ duyệt ({filteredVehicles.filter(v => 
-                         (v.vehicleType?.toLowerCase().includes('car') || 
-                          v.vehicleTypeDisplayName?.toLowerCase().includes('ô tô'))
-                       ).length})
+                       {t('admin.vehicleRegistrations.pending.cars.subtitle', 'Ô tô chờ duyệt ({count})', {
+                         count: filteredVehicles.filter(v =>
+                           (v.vehicleType?.toLowerCase().includes('car') ||
+                            v.vehicleTypeDisplayName?.toLowerCase().includes('ô tô'))
+                         ).length
+                       })}
                      </CardTitle>
                      <CardDescription>
-                       Danh sách ô tô đang chờ phê duyệt
+                       {t('admin.vehicleRegistrations.pending.cars.description', 'Danh sách ô tô đang chờ phê duyệt')}
                      </CardDescription>
                    </CardHeader>
                    <CardContent>
@@ -503,9 +505,9 @@ export default function VehicleRegistrationsPage() {
                             v.vehicleTypeDisplayName?.toLowerCase().includes('ô tô'))
                          ).length}
                        </div>
-                       <div className="text-sm text-gray-600">Ô tô chờ duyệt</div>
+                      <div className="text-sm text-gray-600">{t('admin.vehicleRegistrations.pending.cars.title', 'Ô tô chờ duyệt')}</div>
                        <Button className="mt-4" variant="outline">
-                         Xem chi tiết →
+                        {t('admin.vehicleRegistrations.actions.viewDetails', 'Xem chi tiết')} →
                        </Button>
                      </div>
                    </CardContent>
@@ -518,15 +520,17 @@ export default function VehicleRegistrationsPage() {
                    <CardHeader>
                      <CardTitle className="flex items-center gap-2 text-green-600">
                        <Bike className="h-6 w-6" />
-                       Xe máy chờ duyệt ({filteredVehicles.filter(v => 
-                         (v.vehicleType?.toLowerCase().includes('motorcycle') || 
-                          v.vehicleTypeDisplayName?.toLowerCase().includes('xe máy') ||
-                          v.vehicleType?.toLowerCase().includes('xe đạp') || 
-                          v.vehicleTypeDisplayName?.toLowerCase().includes('xe đạp'))
-                       ).length})
+                       {t('admin.vehicleRegistrations.pending.motorcycles.subtitle', 'Xe máy chờ duyệt ({count})', {
+                         count: filteredVehicles.filter(v =>
+                           (v.vehicleType?.toLowerCase().includes('motorcycle') ||
+                            v.vehicleTypeDisplayName?.toLowerCase().includes('xe máy') ||
+                            v.vehicleType?.toLowerCase().includes('xe đạp') ||
+                            v.vehicleTypeDisplayName?.toLowerCase().includes('xe đạp'))
+                         ).length
+                       })}
                      </CardTitle>
                      <CardDescription>
-                       Danh sách xe máy/xe đạp đang chờ phê duyệt
+                       {t('admin.vehicleRegistrations.pending.motorcycles.description', 'Danh sách xe máy/xe đạp đang chờ phê duyệt')}
                      </CardDescription>
                    </CardHeader>
                    <CardContent>
@@ -539,9 +543,9 @@ export default function VehicleRegistrationsPage() {
                             v.vehicleTypeDisplayName?.toLowerCase().includes('xe đạp'))
                          ).length}
                        </div>
-                       <div className="text-sm text-gray-600">Xe máy chờ duyệt</div>
+                      <div className="text-sm text-gray-600">{t('admin.vehicleRegistrations.pending.motorcycles.title', 'Xe máy chờ duyệt')}</div>
                        <Button className="mt-4" variant="outline">
-                         Xem chi tiết →
+                        {t('admin.vehicleRegistrations.actions.viewDetails', 'Xem chi tiết')} →
                        </Button>
                      </div>
                    </CardContent>
@@ -558,25 +562,25 @@ export default function VehicleRegistrationsPage() {
           <TabsContent value="all" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Danh sách xe trong chung cư ({totalCount})</CardTitle>
+                <CardTitle>{t('admin.vehicleRegistrations.tabs.all', 'Tất cả xe ({count})', { count: totalCount })}</CardTitle>
               </CardHeader>
               <CardContent>
                 {allVehiclesLoading ? (
-                  <div className="text-center py-8 text-gray-500">Đang tải...</div>
+                  <div className="text-center py-8 text-gray-500">{t('admin.vehicleRegistrations.loading', 'Đang tải...')}</div>
                 ) : filteredAllVehicles.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
+                  <div className="text-center py-8 text-gray-500">{t('admin.vehicleRegistrations.noData', 'Không có dữ liệu')}</div>
                 ) : (
                   <Table>
                      <TableHeader>
                        <TableRow>
-                         <TableHead>Chủ xe</TableHead>
-                         <TableHead>Loại xe</TableHead>
-                         <TableHead>Biển số</TableHead>
-                         <TableHead>Màu sắc</TableHead>
-                         <TableHead>Căn hộ</TableHead>
-                         <TableHead>Thời gian đăng ký</TableHead>
-                         <TableHead>Trạng thái</TableHead>
-                         <TableHead>Hành động</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.owner', 'Chủ xe')}</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.type', 'Loại xe')}</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.licensePlate', 'Biển số')}</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.color', 'Màu sắc')}</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.apartment', 'Căn hộ')}</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.registrationDate', 'Thời gian đăng ký')}</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.status', 'Trạng thái')}</TableHead>
+                         <TableHead>{t('admin.vehicleRegistrations.table.actions', 'Hành động')}</TableHead>
                        </TableRow>
                      </TableHeader>
                     <TableBody>
@@ -627,7 +631,7 @@ export default function VehicleRegistrationsPage() {
                                     setShowCancelModal(true);
                                   }}
                                 >
-                                  Hủy đăng ký
+                                  {t('admin.vehicleRegistrations.actions.cancel', 'Hủy đăng ký')}
                                 </Button>
                               ) : (
                                 <Button
@@ -637,7 +641,7 @@ export default function VehicleRegistrationsPage() {
                                   disabled={!canApproveVehicle(vehicle)}
                                   title={canApproveVehicle(vehicle) ? 'Khôi phục' : 'Không thể khôi phục - Bãi xe đã đầy hoặc cấu hình không hoạt động'}
                                 >
-                                  Khôi phục
+                                  {t('admin.vehicleRegistrations.actions.restore', 'Khôi phục')}
                                 </Button>
                               )}
                             </div>
@@ -654,19 +658,19 @@ export default function VehicleRegistrationsPage() {
           <TabsContent value="approved" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Đăng ký xe đã duyệt ({approvedCount})</CardTitle>
+                <CardTitle>{t('admin.vehicleRegistrations.tabs.approved', 'Đã duyệt ({count})', { count: approvedCount })}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Chủ xe</TableHead>
-                      <TableHead>Loại xe</TableHead>
-                      <TableHead>Biển số</TableHead>
-                      <TableHead>Màu sắc</TableHead>
-                      <TableHead>Căn hộ</TableHead>
-                      <TableHead>Thời gian đăng ký</TableHead>
-                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.owner', 'Chủ xe')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.type', 'Loại xe')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.licensePlate', 'Biển số')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.color', 'Màu sắc')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.apartment', 'Căn hộ')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.registrationDate', 'Thời gian đăng ký')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.status', 'Trạng thái')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -717,20 +721,20 @@ export default function VehicleRegistrationsPage() {
           <TabsContent value="rejected" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Đăng ký xe bị từ chối ({rejectedCount})</CardTitle>
+                <CardTitle>{t('admin.vehicleRegistrations.tabs.rejected', 'Từ chối ({count})', { count: rejectedCount })}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Chủ xe</TableHead>
-                      <TableHead>Loại xe</TableHead>
-                      <TableHead>Biển số</TableHead>
-                      <TableHead>Màu sắc</TableHead>
-                      <TableHead>Căn hộ</TableHead>
-                      <TableHead>Thời gian đăng ký</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>Hành động</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.owner', 'Chủ xe')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.type', 'Loại xe')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.licensePlate', 'Biển số')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.color', 'Màu sắc')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.apartment', 'Căn hộ')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.registrationDate', 'Thời gian đăng ký')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.status', 'Trạng thái')}</TableHead>
+                      <TableHead>{t('admin.vehicleRegistrations.table.actions', 'Hành động')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -778,7 +782,7 @@ export default function VehicleRegistrationsPage() {
                               disabled={!canApproveVehicle(vehicle)}
                               title={canApproveVehicle(vehicle) ? 'Khôi phục' : 'Không thể khôi phục - Bãi xe đã đầy hoặc không có cấu hình hoạt động'}
                             >
-                              Khôi phục
+                              {t('admin.vehicleRegistrations.actions.restore', 'Khôi phục')}
                             </Button>
                           </div>
                         </TableCell>
@@ -795,10 +799,10 @@ export default function VehicleRegistrationsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Tổng quan giới hạn xe
+                  {t('admin.vehicleRegistrations.capacity.overview.title.full', 'Tổng quan giới hạn xe')}
                 </CardTitle>
                 <CardDescription>
-                  Xem tình trạng sức chứa xe của tất cả tòa nhà
+                  {t('admin.vehicleRegistrations.capacity.overview.description', 'Xem tình trạng sức chứa xe của tất cả tòa nhà')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -816,9 +820,9 @@ export default function VehicleRegistrationsPage() {
         {showRejectModal && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
-              <h3 className="text-lg font-semibold mb-2">Nhập lý do từ chối</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('admin.vehicleRegistrations.rejectModal.title', 'Chọn lý do từ chối')}</h3>
               <div className="space-y-2 mb-2">
-                <div className="text-sm text-gray-600">Lý do nhanh:</div>
+                <div className="text-sm text-gray-600">{t('admin.vehicleRegistrations.rejectModal.quickReasons', 'Lý do nhanh:')}</div>
                 <div className="flex flex-wrap gap-2">
                   {['Khách Hàng Yêu Cầu', 'Chậm thanh toán'].map((preset) => (
                     <button
@@ -839,12 +843,12 @@ export default function VehicleRegistrationsPage() {
                 placeholder="Lý do từ chối..."
               />
               <div className="mt-3 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowRejectModal(false)}>Hủy</Button>
+                <Button variant="outline" onClick={() => setShowRejectModal(false)}>{t('admin.vehicleRegistrations.rejectModal.cancel', 'Hủy')}</Button>
                 <Button
                   className="bg-red-600 text-white"
                   onClick={handleReject}
                 >
-                  Xác nhận từ chối
+                  {t('admin.vehicleRegistrations.rejectModal.confirm', 'Xác nhận từ chối')}
                 </Button>
               </div>
             </div>
@@ -855,10 +859,10 @@ export default function VehicleRegistrationsPage() {
         {showCancelModal && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
-              <h3 className="text-lg font-semibold mb-2">Xác nhận hủy đăng ký xe</h3>
-              <p className="text-gray-600 mb-2">Bạn có chắc chắn muốn hủy đăng ký xe này không?</p>
+              <h3 className="text-lg font-semibold mb-2">{t('admin.vehicleRegistrations.cancelModal.title', 'Xác nhận hủy đăng ký xe')}</h3>
+              <p className="text-gray-600 mb-2">{t('admin.vehicleRegistrations.cancelModal.description', 'Bạn có chắc chắn muốn hủy đăng ký xe này không?')}</p>
               <div className="space-y-2 mb-2">
-                <div className="text-sm text-gray-600">Chọn lý do nhanh:</div>
+                <div className="text-sm text-gray-600">{t('admin.vehicleRegistrations.cancelModal.quickReasons', 'Chọn lý do nhanh:')}</div>
                 <div className="flex flex-wrap gap-2">
                   {['Khách Hàng Yêu Cầu', 'Chậm thanh toán'].map((preset) => (
                     <button
@@ -879,17 +883,17 @@ export default function VehicleRegistrationsPage() {
                 className={`w-full border rounded p-2 h-28 ${cancelError ? 'border-red-500' : ''}`}
                 value={cancelReason}
                 onChange={(e) => { setCancelReason(e.target.value); setCancelError(''); }}
-                placeholder="Nhập lý do hủy đăng ký..."
+                placeholder={t('admin.vehicleRegistrations.cancelModal.placeholder', 'Nhập lý do hủy đăng ký...')}
               />
               {cancelError && <div className="text-sm text-red-600 mt-1">{cancelError}</div>}
               <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowCancelModal(false)}>Hủy</Button>
+                <Button variant="outline" onClick={() => setShowCancelModal(false)}>{t('admin.vehicleRegistrations.cancelModal.cancel', 'Hủy')}</Button>
                 <Button
                   variant="destructive"
                   onClick={handleCancel}
                   disabled={cancelling}
                 >
-                  {cancelling ? 'Đang xử lý...' : 'Xác nhận hủy'}
+                  {cancelling ? t('admin.vehicleRegistrations.cancelModal.processing', 'Đang xử lý...') : t('admin.vehicleRegistrations.cancelModal.confirm', 'Xác nhận hủy')}
                 </Button>
               </div>
             </div>

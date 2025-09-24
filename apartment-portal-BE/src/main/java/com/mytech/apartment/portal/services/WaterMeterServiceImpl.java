@@ -214,11 +214,16 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                 .map(apartment -> apartment.getId())
                 .collect(Collectors.toList());
         
-        // Lấy tháng hiện tại
+        // Lấy tháng hiện tại và đảm bảo nếu startMonth ở tương lai thì vẫn tạo được tháng đó
         String currentMonth = java.time.YearMonth.now().toString(); // YYYY-MM
-        
-        // Tạo danh sách các tháng cần tạo (từ startMonth đến currentMonth)
-        List<String> monthsToGenerate = generateMonthsList(startMonth, currentMonth);
+        java.time.YearMonth startYm = java.time.YearMonth.parse(startMonth);
+        java.time.YearMonth endYm = java.time.YearMonth.parse(currentMonth);
+        // Nếu chọn tháng tương lai (start > now) thì end = start để vẫn tạo skeleton cho tháng đó
+        if (startYm.isAfter(endYm)) {
+            endYm = startYm;
+        }
+        // Tạo danh sách các tháng cần tạo (từ startMonth đến endYm)
+        List<String> monthsToGenerate = generateMonthsList(startYm.toString(), endYm.toString());
         
         int createdCount = 0;
         for (Long apartmentId : apartmentIds) {
