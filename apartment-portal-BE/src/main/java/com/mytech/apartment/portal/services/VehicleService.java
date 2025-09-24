@@ -238,4 +238,23 @@ public class VehicleService {
     public List<VehicleType> getVehicleTypes() {
         return List.of(VehicleType.values());
     }
+
+    /**
+     * Cư dân tự hủy đăng ký xe của mình khi còn ở trạng thái PENDING
+     */
+    public VehicleDto cancelByOwner(Long vehicleId, Long userId, String reason) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy xe"));
+
+        if (vehicle.getUser() == null || vehicle.getUser().getId() == null || !vehicle.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền hủy đăng ký xe này");
+        }
+
+        if (vehicle.getStatus() != VehicleStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể hủy khi xe đang chờ duyệt");
+        }
+
+        String rejectionReason = (reason != null && !reason.isBlank()) ? reason : "Cư dân yêu cầu hủy đăng ký";
+        return updateVehicleStatus(vehicleId, VehicleStatus.REJECTED, rejectionReason);
+    }
 } 

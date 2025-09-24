@@ -34,7 +34,10 @@ import {
   CheckCircle,
   AlertCircle,
   UserCheck,
-  FileText
+  FileText,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import Link from 'next/link';
 import { supportRequestsApi } from '@/lib/api';
@@ -69,6 +72,7 @@ function SupportRequestsPageContent() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -196,7 +200,7 @@ function SupportRequestsPageContent() {
         if (!isMounted) return;
         setSupportRequests([]);
         setLoading(false);
-        alert('Lỗi tải danh sách yêu cầu hỗ trợ: ' + (err?.message || err));
+        alert(t('admin.support-requests.error.loadList', 'Lỗi tải danh sách yêu cầu hỗ trợ: ') + (err?.message || err));
       });
     return () => { isMounted = false; };
   }, []);
@@ -208,7 +212,7 @@ function SupportRequestsPageContent() {
   const sortedSupportRequests = [...supportRequests].sort((a, b) => {
     const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return tb - ta; // mới nhất trước
+    return sortOrder === 'newest' ? tb - ta : ta - tb; // mới nhất trước hoặc cũ nhất trước
   });
 
   const filteredSupportRequests = sortedSupportRequests.filter(request => {
@@ -229,7 +233,7 @@ function SupportRequestsPageContent() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  }, [searchTerm, filterStatus, sortOrder]);
 
   const toggleExpandedRow = (requestId: string) => {
     const newExpandedRows = new Set(expandedRows);
@@ -410,13 +414,19 @@ function SupportRequestsPageContent() {
             <p className="text-gray-600">
               {t('admin.support-requests.listDesc', 'Quản lý tất cả yêu cầu hỗ trợ của cư dân')}
             </p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1 text-sm text-blue-600">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {sortOrder === 'newest'
+                    ? t('admin.support-requests.sort.newest', 'Sắp xếp: Mới nhất trước')
+                    : t('admin.support-requests.sort.oldest', 'Sắp xếp: Cũ nhất trước')
+                  }
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <Button className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>{t('admin.action.create', 'Tạo mới')}</span>
-            </Button>
-          </div>
+          {/* Đã bỏ nút Tạo mới theo yêu cầu */}
         </div>
 
         {/* Statistics Cards */}
@@ -466,14 +476,7 @@ function SupportRequestsPageContent() {
           </div>
         </div>
 
-        {/* Tabs - Chỉ hiển thị tab yêu cầu hỗ trợ */}
-        <div className="flex gap-2">
-          <button
-            className="px-3 py-2 rounded border bg-blue-600 text-white border-blue-600"
-          >
-            {t('admin.support-requests.tab.support','Yêu cầu hỗ trợ')}
-          </button>
-        </div>
+        {/* Tabs - Đã bỏ nút 'Yêu cầu hỗ trợ' theo yêu cầu */}
 
 
 
@@ -505,6 +508,18 @@ function SupportRequestsPageContent() {
                   <option value="IN_PROGRESS">{t('admin.support-requests.status.IN_PROGRESS','Đang xử lý')}</option>
                   <option value="COMPLETED">{t('admin.status.completed','Hoàn thành')}</option>
                   <option value="CANCELLED">{t('admin.status.cancelled','Đã hủy')}</option>
+                </select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                <select
+                  title={t('admin.support-requests.sort.title', 'Sắp xếp theo thời gian')}
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="newest">{t('admin.support-requests.sort.newest','Mới nhất trước')}</option>
+                  <option value="oldest">{t('admin.support-requests.sort.oldest','Cũ nhất trước')}</option>
                 </select>
               </div>
             </div>
@@ -547,7 +562,17 @@ function SupportRequestsPageContent() {
                         <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.priority')}</TableHead>
                         <TableHead className="font-semibold min-w-[150px]">{t('admin.support-requests.assignedTo')}</TableHead>
                         <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.status')}</TableHead>
-                        {/* Created At moved to expanded details */}
+                        <TableHead className="font-semibold min-w-[140px]">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {t('admin.support-requests.createdAt', 'Thời gian tạo')}
+                            {sortOrder === 'newest' ? (
+                              <ArrowDown className="h-3 w-3 text-blue-500" />
+                            ) : (
+                              <ArrowUp className="h-3 w-3 text-blue-500" />
+                            )}
+                          </div>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -613,20 +638,25 @@ function SupportRequestsPageContent() {
                                  <span className="text-gray-500">{t('admin.support-requests.notAssigned','Chưa giao')}</span>
                                )}
                              </TableCell>
-                             {/* Bỏ ô thời gian gán */}
                              <TableCell>
                                <div className="flex items-center gap-2">
                                  {getStatusBadge(request.status || 'PENDING')}
                                  <ServiceRequestMiniProgress status={request.status} />
                                </div>
                              </TableCell>
-                             {/* Bỏ cột thao tác */}
+                             <TableCell>
+                               <div className="text-sm text-gray-600">
+                                 {request.createdAt
+                                   ? `${new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')} ${new Date(request.createdAt).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`
+                                   : t('admin.support-requests.unknown', 'Không xác định')}
+                               </div>
+                             </TableCell>
                            </TableRow>
                            
                            {/* Expanded row với thông tin chi tiết lịch sử gán nhân viên */}
                            {expandedRows.has(request.id) && (
                              <TableRow>
-                               <TableCell colSpan={8} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+                               <TableCell colSpan={7} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
                                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                                    <div className="flex items-center gap-2 font-semibold text-gray-700 border-b border-blue-200 pb-3">
                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>

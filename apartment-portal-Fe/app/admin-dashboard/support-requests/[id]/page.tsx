@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/lib/auth";
 import ServiceRequestStatusProgress from "@/components/admin/ServiceRequestStatusProgress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/lib/i18n";
 import { Image, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SupportRequestDetail {
@@ -37,15 +38,15 @@ function normalizeStatus(raw?: string) {
   return raw?.trim().toUpperCase().replace(" ", "_") || "";
 }
 
-function getStatusBadge(raw?: string) {
+function getStatusBadge(raw?: string, t?: any) {
   const s = normalizeStatus(raw);
   switch (s) {
     case "OPEN":
-      return <Badge className="bg-blue-100 text-blue-800">Mở</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800">{t('admin.support-requests.detail.status.open', 'Mở')}</Badge>;
     case "IN_PROGRESS":
-      return <Badge className="bg-orange-100 text-orange-800">Đang xử lý</Badge>;
+      return <Badge className="bg-orange-100 text-orange-800">{t('admin.support-requests.detail.status.inProgress', 'Đang xử lý')}</Badge>;
     case "COMPLETED":
-      return <Badge className="bg-green-100 text-green-800">Hoàn thành</Badge>;
+      return <Badge className="bg-green-100 text-green-800">{t('admin.support-requests.detail.status.completed', 'Hoàn thành')}</Badge>;
     default:
       return <Badge className="bg-gray-100 text-gray-800">{raw || "-"}</Badge>;
   }
@@ -74,6 +75,7 @@ export default function SupportRequestDetailPage() {
   const [data, setData] = useState<SupportRequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [staffList, setStaffList] = useState<{ id: number; username: string; email: string; phoneNumber?: string }[]>([]);
   const [assigning, setAssigning] = useState(false);
@@ -297,11 +299,11 @@ export default function SupportRequestDetailPage() {
 
   const handleAssign = async () => {
     if (!data) {
-      setAssignError("Không có dữ liệu yêu cầu hỗ trợ!");
+      setAssignError(t('admin.support-requests.detail.error.load', 'Không thể tải chi tiết yêu cầu hỗ trợ'));
       return;
     }
     if (!selectedStaff) {
-      setAssignError("Vui lòng chọn nhân viên!");
+      setAssignError(t('admin.support-requests.detail.error.selectStaff', 'Vui lòng chọn nhân viên!'));
       return;
     }
     setAssigning(true);
@@ -321,10 +323,10 @@ export default function SupportRequestDetailPage() {
         staffPhone: u?.phoneNumber || d!.staffPhone || "",
         resolutionNotes: d!.resolutionNotes || ""
       }));
-      toast({ title: "Thành công", description: "Gán nhân viên thành công" });
+      toast({ title: t('admin.support-requests.detail.success.assign', 'Đã gán nhân viên thành công'), description: t('admin.support-requests.detail.success.assign', 'Đã gán nhân viên thành công') });
     } catch {
-      setAssignError("Gán nhân viên thất bại!");
-      toast({ title: "Thất bại", description: "Gán nhân viên thất bại", variant: "destructive" as any });
+      setAssignError(t('admin.support-requests.detail.error.assign', 'Không thể gán nhân viên'));
+      toast({ title: t('admin.support-requests.detail.error.assign', 'Không thể gán nhân viên'), description: t('admin.support-requests.detail.error.assign', 'Không thể gán nhân viên'), variant: "destructive" as any });
     } finally {
       setAssigning(false);
     }
@@ -332,7 +334,7 @@ export default function SupportRequestDetailPage() {
 
   const handleStatusChange = async (targetStatus: string) => {
     if (!data) {
-      setStatusError("Không có dữ liệu yêu cầu hỗ trợ!");
+      setStatusError(t('admin.support-requests.detail.error.load', 'Không thể tải chi tiết yêu cầu hỗ trợ'));
       return;
     }
     setStatusError("");
@@ -349,20 +351,20 @@ export default function SupportRequestDetailPage() {
         status: normalized,
         completedAt: normalized === 'COMPLETED' ? (d!.completedAt || new Date().toISOString()) : d!.completedAt,
       }));
-      toast({ title: "Thành công", description: "Cập nhật trạng thái thành công" });
+      toast({ title: t('admin.support-requests.detail.success.update', 'Đã cập nhật trạng thái thành công'), description: t('admin.support-requests.detail.success.update', 'Đã cập nhật trạng thái thành công') });
     } catch {
-      setStatusError("Cập nhật trạng thái thất bại!");
-      toast({ title: "Thất bại", description: "Cập nhật trạng thái thất bại", variant: "destructive" as any });
+      setStatusError(t('admin.support-requests.detail.error.update', 'Không thể cập nhật trạng thái'));
+      toast({ title: t('admin.support-requests.detail.error.update', 'Không thể cập nhật trạng thái'), description: t('admin.support-requests.detail.error.update', 'Không thể cập nhật trạng thái'), variant: "destructive" as any });
     } finally {
       setStatusUpdating(false);
     }
   };
 
-  if (loading) return <div className="p-8">Đang tải...</div>;
-  if (!data) return <div className="p-8 text-red-500">Không tìm thấy yêu cầu hỗ trợ!</div>;
+  if (loading) return <div className="p-8">{t('admin.support-requests.loading', 'Đang tải...')}</div>;
+  if (!data) return <div className="p-8 text-red-500">{t('admin.support-requests.detail.error.load', 'Không thể tải chi tiết yêu cầu hỗ trợ')}</div>;
 
   return (
-    <AdminLayout title="Chi tiết yêu cầu hỗ trợ">
+    <AdminLayout title={t('admin.support-requests.detail.title', 'Chi tiết yêu cầu hỗ trợ')}>
       <div className="max-w-5xl mx-auto mt-8 space-y-6">
         <Card>
           <CardHeader>
@@ -380,48 +382,48 @@ export default function SupportRequestDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-lg border bg-emerald-100 border-emerald-300">
-                <div className="mb-2 font-semibold text-emerald-800">Thông tin cư dân</div>
+                <div className="mb-2 font-semibold text-emerald-800">{t('admin.support-requests.detail.residentInfo', 'Thông tin cư dân')}</div>
                 <div className="space-y-2 text-sm">
-                  <div><b>Cư dân:</b> {data.residentName}</div>
-                  <div><b>Số điện thoại:</b> {data.userPhone || "Không có"}</div>
+                  <div><b>{t('admin.support-requests.detail.name', 'Tên')}:</b> {data.residentName}</div>
+                  <div><b>{t('admin.support-requests.detail.phone', 'Số điện thoại')}:</b> {data.userPhone || t('admin.support-requests.detail.noData', 'Không có')}</div>
                 </div>
               </div>
               <div className="p-4 rounded-lg border bg-purple-100 border-purple-300">
-                <div className="mb-2 font-semibold text-purple-800">Thông tin yêu cầu</div>
+                <div className="mb-2 font-semibold text-purple-800">{t('admin.support-requests.detail.requestInfo', 'Thông tin yêu cầu')}</div>
                 <div className="space-y-2 text-sm">
-                  <div><b>Tiêu đề / Mô tả:</b> {data.title || data.description}</div>
-                  <div><b>Danh mục:</b> {data.categoryName}</div>
-                  <div className="flex items-center gap-2"><b>Ưu tiên hiện tại:</b> {data.priority ?? "-"}</div>
+                  <div><b>{t('admin.support-requests.detail.requestTitle', 'Tiêu đề')} / {t('admin.support-requests.detail.description', 'Mô tả')}:</b> {data.title || data.description}</div>
+                  <div><b>{t('admin.support-requests.detail.category', 'Danh mục')}:</b> {data.categoryName}</div>
+                  <div className="flex items-center gap-2"><b>{t('admin.support-requests.detail.priority', 'Mức độ ưu tiên')} {t('admin.support-requests.detail.current', 'hiện tại')}:</b> {data.priority ?? "-"}</div>
                 </div>
               </div>
               {(() => {
                 const tone = getStatusPanelClasses(data.status);
                 return (
                   <div className={`p-4 rounded-lg border ${tone.panel}`}>
-                    <div className="mb-2 font-semibold text-gray-800">Trạng thái & thời gian</div>
+                    <div className="mb-2 font-semibold text-gray-800">{t('admin.support-requests.detail.status', 'Trạng thái')} & {t('admin.support-requests.detail.time', 'thời gian')}</div>
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2"><b>Trạng thái:</b>{getStatusBadge(data.status)}</div>
+                      <div className="flex items-center gap-2"><b>{t('admin.support-requests.detail.status', 'Trạng thái')}:</b>{getStatusBadge(data.status, t)}</div>
                       {data.assignedTo && (
                         <div className="flex items-center gap-2">
-                          <b>Nhân viên:</b>
+                          <b>{t('admin.support-requests.detail.staff', 'Nhân viên')}:</b>
                           <span>{data.assignedTo}</span>
                           {data.staffPhone && (
                             <span className={`${tone.accent}`}>• {data.staffPhone}</span>
                           )}
                         </div>
                       )}
-                      <div><b>Ngày tạo:</b> <span className={`${tone.accent}`}>{formatDate(data.createdAt)}</span></div>
+                      <div><b>{t('admin.support-requests.detail.createdAt', 'Ngày tạo')}:</b> <span className={`${tone.accent}`}>{formatDate(data.createdAt)}</span></div>
                       {data.completedAt && (
-                        <div><b>Ngày hoàn thành:</b> <span className={`${tone.accent}`}>{formatDate(data.completedAt)}</span></div>
+                        <div><b>{t('admin.support-requests.detail.completedAt', 'Ngày hoàn thành')}:</b> <span className={`${tone.accent}`}>{formatDate(data.completedAt)}</span></div>
                       )}
                     </div>
                   </div>
                 );
               })()}
               <div className="p-4 rounded-lg border bg-amber-100 border-amber-300">
-                <div className="mb-2 font-semibold text-amber-800">Nhân viên phụ trách</div>
+                <div className="mb-2 font-semibold text-amber-800">{t('admin.support-requests.detail.staff', 'Nhân viên')} {t('admin.support-requests.detail.responsible', 'phụ trách')}</div>
                 <div className="space-y-2 text-sm">
-                  <div><b>Được giao cho:</b> {data.assignedTo || "Chưa giao"}</div>
+                  <div><b>{t('admin.support-requests.detail.assignedTo', 'Được giao cho')}:</b> {data.assignedTo || t('admin.support-requests.notAssigned', 'Chưa giao')}</div>
                 </div>
               </div>
               
@@ -430,17 +432,17 @@ export default function SupportRequestDetailPage() {
                 <div className="p-4 rounded-lg border bg-green-50 border-green-200">
                   <div className="mb-3 font-semibold text-green-800 flex items-center gap-2">
                     <Image className="h-4 w-4" />
-                    Hình ảnh đính kèm ({data.attachmentUrls.length} ảnh)
+                    {t('admin.support-requests.detail.images', 'Hình ảnh')} {t('admin.support-requests.detail.attachments', 'đính kèm')} ({data.attachmentUrls.length} {t('admin.support-requests.detail.imageCount', 'ảnh')})
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {data.attachmentUrls.map((url, index) => (
                       <div key={index} className="relative group">
                         <img
                           src={url}
-                          alt={`Hình ảnh ${index + 1}`}
+                          alt={`${t('admin.support-requests.detail.imageAlt', 'Hình ảnh')} ${index + 1}`}
                           className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-green-300 transition-colors"
                           onClick={() => openLightbox(data.attachmentUrls!, index)}
-                          title="Click để xem ảnh đầy đủ"
+                          title={t('admin.support-requests.detail.clickToView', 'Click để xem ảnh đầy đủ')}
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center pointer-events-none">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -500,19 +502,19 @@ export default function SupportRequestDetailPage() {
 
             {data.assignedTo && (
               <div className="mt-2 p-4 border rounded bg-blue-50">
-                <div className="mb-2 font-semibold text-blue-800">📋 Gán nhân viên</div>
+                <div className="mb-2 font-semibold text-blue-800">📋 {t('admin.support-requests.detail.assignStaff', 'Gán nhân viên')}</div>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">Nhân viên được gán:</span>
+                    <span className="font-medium">{t('admin.support-requests.detail.staff', 'Nhân viên')} {t('admin.support-requests.detail.assigned', 'được gán')}:</span>
                     <span className="text-blue-700">{data.assignedTo}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">Thời gian gán:</span>
-                    <span className="text-blue-700">{data.assignedAt ? formatDate(data.assignedAt) : 'Không xác định'}</span>
+                    <span className="font-medium">{t('admin.support-requests.detail.assignmentTime', 'Thời gian gán')}:</span>
+                    <span className="text-blue-700">{data.assignedAt ? formatDate(data.assignedAt) : t('admin.support-requests.unknown', 'Không xác định')}</span>
                   </div>
                   {data.resolutionNotes && (
                     <div className="flex items-start gap-2">
-                      <span className="font-medium">Ghi chú khi gán:</span>
+                      <span className="font-medium">{t('admin.support-requests.detail.assignmentNotes', 'Ghi chú khi gán')}:</span>
                       <span className="text-blue-700 bg-white p-2 rounded border flex-1">{data.resolutionNotes}</span>
                     </div>
                   )}
@@ -571,7 +573,7 @@ export default function SupportRequestDetailPage() {
 
             {normalizeStatus(data.status) !== 'COMPLETED' && (
               <div className="mt-2 p-4 border rounded bg-gray-50">
-                <div className="mb-2 font-semibold">Gán cho nhân viên</div>
+                <div className="mb-2 font-semibold">{t('admin.support-requests.detail.assignStaff', 'Gán nhân viên')}</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <select
@@ -579,7 +581,7 @@ export default function SupportRequestDetailPage() {
                       value={selectedStaff}
                       onChange={(e) => setSelectedStaff(e.target.value === "" ? "" : Number(e.target.value))}
                     >
-                      <option value="">Chọn nhân viên</option>
+                      <option value="">{t('admin.support-requests.detail.selectStaff', 'Chọn nhân viên')}</option>
                       {staffList.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.username} ({s.email})
@@ -592,7 +594,7 @@ export default function SupportRequestDetailPage() {
                     onClick={handleAssign}
                     disabled={!selectedStaff || assigning}
                   >
-                    {assigning ? "Đang gán..." : "Gán nhân viên"}
+                            {assigning ? t('admin.support-requests.detail.assigning', 'Đang gán...') : t('admin.support-requests.detail.assignStaff', 'Gán nhân viên')}
                   </Button>
                   {assignError && <div className="text-red-500">{assignError}</div>}
                 </div>

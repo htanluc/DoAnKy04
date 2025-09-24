@@ -19,6 +19,15 @@ class _RequestsByStatusPageState extends State<RequestsByStatusPage> {
   String? _error;
   List<ServiceRequestModel> _items = [];
 
+  DateTime? _tryParseDate(String? input) {
+    if (input == null) return null;
+    try {
+      return DateTime.tryParse(input);
+    } catch (_) {
+      return null;
+    }
+  }
+
   String _titleForStatus(String s) {
     switch (s.toUpperCase()) {
       case 'OPEN':
@@ -101,6 +110,16 @@ class _RequestsByStatusPageState extends State<RequestsByStatusPage> {
           (e.status ?? '').toUpperCase() == status;
       return ok;
     }).toList();
+
+    // Sort by submittedAt/createdAt desc (newest first). Fallback to id desc
+    filtered.sort((a, b) {
+      final da = _tryParseDate(a.submittedAt);
+      final db = _tryParseDate(b.submittedAt);
+      if (da == null && db == null) return b.id.compareTo(a.id);
+      if (da == null) return 1; // a goes after b
+      if (db == null) return -1; // a goes before b
+      return db.compareTo(da); // newer first
+    });
 
     return Scaffold(
       appBar: AppBar(

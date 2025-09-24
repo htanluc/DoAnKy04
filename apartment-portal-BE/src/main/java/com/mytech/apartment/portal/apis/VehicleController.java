@@ -5,6 +5,7 @@ import com.mytech.apartment.portal.dtos.VehicleDto;
 import com.mytech.apartment.portal.models.enums.VehicleStatus;
 import com.mytech.apartment.portal.models.enums.VehicleType;
 import com.mytech.apartment.portal.services.VehicleService;
+import com.mytech.apartment.portal.services.UserService;
 import com.mytech.apartment.portal.services.FileUploadService;
 import com.mytech.apartment.portal.services.ActivityLogService;
 import com.mytech.apartment.portal.models.enums.ActivityActionType;
@@ -28,6 +29,7 @@ public class VehicleController {
     private final VehicleService vehicleService;
     private final FileUploadService fileUploadService;
     private final ActivityLogService activityLogService;
+    private final UserService userService;
     // private final CloudinaryService cloudinaryService;  // Uncomment when using Cloudinary
 
     @PostMapping("/vehicles")
@@ -125,6 +127,31 @@ public class VehicleController {
             @PathVariable("apartmentId") Long apartmentId) {
         List<VehicleDto> vehicles = vehicleService.getVehiclesByUserAndApartment(userId, apartmentId);
         return ResponseEntity.ok(vehicles);
+    }
+
+    // Resident cancels own pending registration
+    @PostMapping("/vehicles/{id}/cancel")
+    public ResponseEntity<VehicleDto> cancelMyVehicle(
+            @PathVariable("id") Long id,
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication authentication) {
+        String username = authentication.getName();
+        Long userId = userService.getUserIdByPhoneNumber(username);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String reason = body != null ? body.getOrDefault("reason", "") : "";
+        VehicleDto vehicle = vehicleService.cancelByOwner(id, userId, reason);
+
+        // Log activity
+        activityLogService.logActivityForCurrentUser(
+            ActivityActionType.UPDATE_VEHICLE,
+            "Cư dân hủy đăng ký xe: %s (biển số: %s)",
+            vehicle.getBrand() + " " + vehicle.getModel(),
+            vehicle.getLicensePlate()
+        );
+
+        return ResponseEntity.ok(vehicle);
     }
 
     @GetMapping("/vehicles/types")

@@ -47,14 +47,19 @@ export default function WaterMeterListPage() {
     loadAllReadings();
   }, []);
   
-  const months = Array.from(new Set(allReadings.map(r => r.readingMonth))).sort().reverse();
+  // Lấy danh sách tháng và sắp xếp theo thứ tự giảm dần (tháng mới nhất đầu tiên)
+  const months = Array.from(new Set(allReadings.map(r => r.readingMonth))).sort((a, b) => {
+    // Sắp xếp theo định dạng YYYY-MM để đảm bảo tháng mới nhất đầu tiên
+    return b.localeCompare(a);
+  });
   
-  // Tự động chọn tháng đầu tiên và load dữ liệu
+  // Tự động chọn tháng mới nhất khi có dữ liệu
   useEffect(() => {
     if (months.length > 0 && !selectedMonth) {
-      const firstMonth = months[0];
-      setSelectedMonth(firstMonth);
-      fetchReadingsByMonth(firstMonth);
+      const latestMonth = months[0]; // Tháng mới nhất (đầu tiên trong danh sách đã sắp xếp)
+      setSelectedMonth(latestMonth);
+      console.log('Auto-selecting latest month:', latestMonth);
+      fetchReadingsByMonth(latestMonth);
     }
   }, [months, selectedMonth, fetchReadingsByMonth]);
 
@@ -113,7 +118,7 @@ export default function WaterMeterListPage() {
   };
 
   const handleDelete = async (id: string | number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa bản ghi này?')) {
+    if (window.confirm(t('admin.waterMeter.confirmDelete', 'Bạn có chắc chắn muốn xóa bản ghi này?'))) {
       await deleteReading(Number(id));
     }
   };
@@ -209,9 +214,19 @@ export default function WaterMeterListPage() {
         {error && <p className="text-red-500">{error}</p>}
         
         {/* Thông báo khi chưa có dữ liệu */}
-        {!selectedMonth && readings.length === 0 && (
+        {!selectedMonth && readings.length === 0 && !loading && (
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
             <p className="text-yellow-800 font-medium">{t('admin.waterMeter.pickMonthHint')}</p>
+          </div>
+        )}
+        
+        {/* Thông báo khi đang tự động load tháng mới nhất */}
+        {!selectedMonth && loading && months.length === 0 && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-blue-800 font-medium">
+              <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-800 mr-2"></span>
+              {t('admin.waterMeter.loadingLatestMonth', 'Đang tải dữ liệu tháng mới nhất...')}
+            </p>
           </div>
         )}
         
@@ -219,7 +234,14 @@ export default function WaterMeterListPage() {
         {selectedMonth && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <div className="flex justify-between items-center">
-              <p className="text-blue-800 font-medium">{t('admin.waterMeter.viewingMonth')} <span className="font-bold">{selectedMonth}</span></p>
+              <div className="flex items-center gap-2">
+                <p className="text-blue-800 font-medium">{t('admin.waterMeter.viewingMonth')} <span className="font-bold">{selectedMonth}</span></p>
+                {months.length > 0 && selectedMonth === months[0] && (
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                    {t('admin.waterMeter.latestMonth', 'Tháng mới nhất')}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-4 text-sm">
                 <span className="text-gray-600">{t('admin.waterMeter.totalApts')} <span className="font-bold">{filteredReadings.length}</span></span>
                 <span className="text-green-600">{t('admin.waterMeter.totalConsumption')} <span className="font-bold">{filteredReadings.reduce((sum, r) => sum + (r.consumption || (r.currentReading - r.previousReading)), 0)} m³</span></span>
@@ -302,12 +324,14 @@ export default function WaterMeterListPage() {
                             >
                               {t('admin.waterMeter.btn.edit')}
                             </button>
-                            <button
-                              className="bg-red-600 text-white px-2 py-1 rounded"
-                              onClick={() => handleDelete(r.readingId)}
-                            >
-                              {t('admin.waterMeter.btn.delete')}
-                            </button>
+                            {r.readingId && (
+                              <button
+                                className="bg-red-600 text-white px-2 py-1 rounded"
+                                onClick={() => handleDelete(r.readingId)}
+                              >
+                                {t('admin.waterMeter.btn.delete')}
+                              </button>
+                            )}
                           </>
                         )}
                       </td>
