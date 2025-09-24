@@ -77,6 +77,31 @@ export default function SupportRequestDetailPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
+  // Chuẩn hoá URL ảnh (fix trường hợp BE trả về đường dẫn tương đối /api/files/...)
+  const normalizeUrl = (u: string | undefined): string => {
+    if (!u) return "";
+    try {
+      let cleaned = u.replace(/\\\\/g, "/").replace(/\\/g, "/").trim();
+      if (cleaned.startsWith("/")) return `${API_BASE_URL}${cleaned}`;
+
+      // Nếu là URL tuyệt đối, chuẩn hoá về cùng origin với API_BASE_URL cho các đường dẫn file
+      if (/^https?:\/\//i.test(cleaned)) {
+        const api = new URL(API_BASE_URL);
+        const parsed = new URL(cleaned);
+        // Chỉ force đổi origin khi là đường dẫn file do BE phục vụ
+        if (parsed.pathname.startsWith("/api/files") || parsed.pathname.startsWith("/uploads")) {
+          // Giữ nguyên pathname, đổi origin sang API_BASE_URL
+          return `${api.origin}${parsed.pathname}`;
+        }
+        return cleaned;
+      }
+
+      return cleaned;
+    } catch {
+      return u as string;
+    }
+  };
+
   const [staffList, setStaffList] = useState<{ id: number; username: string; email: string; phoneNumber?: string }[]>([]);
   const [assigning, setAssigning] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<number | "">("");
@@ -215,6 +240,11 @@ export default function SupportRequestDetailPage() {
           resolutionNotes: (item as any).resolution
         });
 
+        const attachmentUrls: string[] = ((item as any).attachmentUrls || (item as any).imageUrls || (item as any).attachments || [])
+          .map((u: string) => normalizeUrl(u));
+        const beforeImages: string[] = (((item as any).beforeImages) || []).map((u: string) => normalizeUrl(u));
+        const afterImages: string[] = (((item as any).afterImages) || []).map((u: string) => normalizeUrl(u));
+
         setData({
           id: item.id,
           residentName: residentName,
@@ -237,7 +267,9 @@ export default function SupportRequestDetailPage() {
           completedAt: (item as any).resolvedAt || "", // Sử dụng resolvedAt từ backend DTO
           resolutionNotes: (item as any).resolution || "", // Sử dụng resolution từ backend DTO
           assignedAt: (item as any).assignedAt || "", // Lấy assignedAt từ backend DTO
-          attachmentUrls: (item as any).attachmentUrls || (item as any).attachments || [], // Thêm hình ảnh đính kèm
+          attachmentUrls,
+          beforeImages,
+          afterImages,
         });
         setSelectedPriority(pr);
         const assignedId = (item as any).assignedTo && typeof (item as any).assignedTo === 'object'

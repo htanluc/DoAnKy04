@@ -40,11 +40,10 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
       final latest = await ApiService.getAssignedRequestById(staffId, _req.id);
       if (!mounted || latest == null) return;
       final updated = ServiceRequestModel.fromJson(latest);
-      if (updated.imageUrls.isNotEmpty || updated.attachmentUrls.isNotEmpty) {
-        setState(() {
-          _req = updated;
-        });
-      }
+      // Luôn cập nhật để đảm bảo before/after images hiển thị
+      setState(() {
+        _req = updated;
+      });
     } catch (_) {
       // ignore network errors silently here
     }
@@ -75,6 +74,8 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
         _beforeUrls.clear();
         _afterUrls.clear();
       });
+      // Đồng bộ lại để lấy danh sách ảnh đã lưu từ server
+      await _syncLatest();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -521,6 +522,11 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
+                                // Ảnh đã lưu từ server
+                                ..._req.beforeImages
+                                    .map(ApiService.normalizeFileUrl)
+                                    .map(_thumb),
+                                // Ảnh vừa upload, chờ lưu
                                 ..._beforeUrls.map(_thumb),
                                 OutlinedButton.icon(
                                   onPressed: _uploading
@@ -549,6 +555,11 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
+                                // Ảnh đã lưu từ server
+                                ..._req.afterImages
+                                    .map(ApiService.normalizeFileUrl)
+                                    .map(_thumb),
+                                // Ảnh vừa upload, chờ lưu
                                 ..._afterUrls.map(_thumb),
                                 OutlinedButton.icon(
                                   onPressed: _uploading

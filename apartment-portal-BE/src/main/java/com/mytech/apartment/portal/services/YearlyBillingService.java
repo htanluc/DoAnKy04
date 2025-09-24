@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// import java.math.BigDecimal;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 // import java.time.YearMonth;
 // import java.time.format.DateTimeFormatter;
@@ -155,26 +155,33 @@ public class YearlyBillingService {
         System.out.println("DEBUG: Số căn hộ: " + allApartments.size() + ", kỳ: " + billingPeriod);
 
         java.util.List<Long> createdApartmentIds = new java.util.ArrayList<>();
-        LocalDate monthDate = LocalDate.of(year, month, 1);
 
         for (Apartment apartment : allApartments) {
             // Kiểm tra xem căn hộ này đã có chỉ số nước chưa (nếu không bỏ qua kiểm tra)
             if (!skipWaterValidation) {
-                Optional<WaterMeterReading> reading = waterMeterReadingRepository
-                    .findByApartmentIdAndReadingDate(apartment.getId(), monthDate);
+                // Tìm bản ghi chỉ số nước trong tháng (không chỉ ngày 01)
+                LocalDate startOfMonth = LocalDate.of(year, month, 1);
+                LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
                 
-                // Bỏ qua căn hộ chưa có chỉ số nước hoặc chỉ số = 0
-                if (reading.isEmpty()) {
-                    System.out.println("DEBUG: Bỏ qua căn hộ " + apartment.getId() + " - chưa có bản ghi chỉ số nước");
-                    continue;
-                } else if (reading.get().getMeterReading() == null) {
-                    System.out.println("DEBUG: Bỏ qua căn hộ " + apartment.getId() + " - chỉ số nước null");
-                    continue;
-                } else if (reading.get().getMeterReading().compareTo(java.math.BigDecimal.ZERO) == 0) {
-                    System.out.println("DEBUG: Bỏ qua căn hộ " + apartment.getId() + " - chỉ số nước = 0");
+                List<WaterMeterReading> readingsInMonth = waterMeterReadingRepository
+                    .findAllByApartmentIdOrderByReadingDateDesc(apartment.getId())
+                    .stream()
+                    .filter(r -> !r.getReadingDate().isBefore(startOfMonth) && !r.getReadingDate().isAfter(endOfMonth))
+                    .collect(java.util.stream.Collectors.toList());
+                
+                // Chỉ bỏ qua căn hộ chưa có bản ghi chỉ số nước trong tháng
+                if (readingsInMonth.isEmpty()) {
+                    System.out.println("DEBUG: Bỏ qua căn hộ " + apartment.getId() + " - chưa có bản ghi chỉ số nước trong tháng " + month + "/" + year);
                     continue;
                 } else {
-                    System.out.println("DEBUG: Căn hộ " + apartment.getId() + " có chỉ số nước: " + reading.get().getMeterReading() + " - tiếp tục xử lý");
+                    // Có bản ghi chỉ số nước trong tháng, cho phép tạo hóa đơn
+                    WaterMeterReading latestReading = readingsInMonth.get(0); // Đã sắp xếp desc
+                    BigDecimal meterReading = latestReading.getMeterReading();
+                    if (meterReading == null) {
+                        System.out.println("DEBUG: Căn hộ " + apartment.getId() + " có bản ghi nhưng chỉ số nước null - vẫn tạo hóa đơn");
+                    } else {
+                        System.out.println("DEBUG: Căn hộ " + apartment.getId() + " có chỉ số nước: " + meterReading + " (ngày " + latestReading.getReadingDate() + ") - tiếp tục xử lý");
+                    }
                 }
             }
 
@@ -227,14 +234,22 @@ public class YearlyBillingService {
 
         // Sau khi đã thêm các items vào hoá đơn, mới gửi email để bảng chi tiết không bị trống
         System.out.println("DEBUG: Bắt đầu gửi email cho " + createdApartmentIds.size() + " hóa đơn");
-        for (Long aptId : createdApartmentIds) {
-            try {
-                System.out.println("DEBUG: Gửi email cho căn hộ " + aptId);
-                invoiceService.sendInvoiceEmailsForApartmentPeriod(aptId, billingPeriod);
-                System.out.println("DEBUG: Gửi email thành công cho căn hộ " + aptId);
-            } catch (Exception e) {
-                System.out.println("WARNING: Lỗi gửi email cho căn hộ " + aptId + ": " + e.getMessage());
+        if (createdApartmentIds.isEmpty()) {
+            System.out.println("WARNING: Không có hóa đơn nào được tạo - không gửi email");
+        } else {
+            System.out.println("DEBUG: Danh sách căn hộ cần gửi email: " + createdApartmentIds);
+            for (Long aptId : createdApartmentIds) {
+                try {
+                    System.out.println("DEBUG: ===== BẮT ĐẦU GỬI EMAIL CHO CĂN HỘ " + aptId + " KỲ " + billingPeriod + " =====");
+                    invoiceService.sendInvoiceEmailsForApartmentPeriod(aptId, billingPeriod);
+                    System.out.println("DEBUG: ===== GỬI EMAIL THÀNH CÔNG CHO CĂN HỘ " + aptId + " =====");
+                } catch (Exception e) {
+                    System.out.println("ERROR: ===== LỖI GỬI EMAIL CHO CĂN HỘ " + aptId + " =====");
+                    System.out.println("ERROR: Chi tiết lỗi: " + e.getMessage());
+                    e.printStackTrace(); // In stack trace để debug
+                }
             }
+            System.out.println("DEBUG: Hoàn thành gửi email cho tất cả căn hộ");
         }
 
         System.out.println("DEBUG: Hoàn thành tạo hóa đơn base và thêm các items cho tháng " + month + "/" + year + 
@@ -587,8 +602,7 @@ public class YearlyBillingService {
     private void checkWaterMeterReadingsAndWarn(int year, int month) {
         System.out.println("DEBUG: Kiểm tra chỉ số nước cho tháng " + month + "/" + year);
         
-        // Tạo LocalDate cho tháng được chỉ định (ngày 1 của tháng)
-        LocalDate monthDate = LocalDate.of(year, month, 1);
+        // Tìm bản ghi chỉ số nước trong tháng được chỉ định
         
         // Lấy tất cả căn hộ
         List<Apartment> allApartments = apartmentRepository.findAll();
@@ -598,19 +612,21 @@ public class YearlyBillingService {
         int apartmentsWithReadings = 0;
         
         for (Apartment apartment : allApartments) {
-            // Tìm chỉ số nước cho căn hộ này trong tháng được chỉ định
-            Optional<WaterMeterReading> reading = waterMeterReadingRepository
-                .findByApartmentIdAndReadingDate(apartment.getId(), monthDate);
+            // Tìm chỉ số nước cho căn hộ này trong tháng được chỉ định (tìm trong cả tháng)
+            LocalDate startOfMonth = LocalDate.of(year, month, 1);
+            LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
             
-            if (reading.isEmpty()) {
-                // Chưa có bản ghi chỉ số nước
-                apartmentsWithoutReadings++;
-            } else if (reading.get().getMeterReading() == null || 
-                      reading.get().getMeterReading().compareTo(java.math.BigDecimal.ZERO) == 0) {
-                // Có bản ghi nhưng chỉ số = 0 (chưa ghi chỉ số)
+            List<WaterMeterReading> readingsInMonth = waterMeterReadingRepository
+                .findAllByApartmentIdOrderByReadingDateDesc(apartment.getId())
+                .stream()
+                .filter(r -> !r.getReadingDate().isBefore(startOfMonth) && !r.getReadingDate().isAfter(endOfMonth))
+                .collect(java.util.stream.Collectors.toList());
+            
+            if (readingsInMonth.isEmpty()) {
+                // Chưa có bản ghi chỉ số nước trong tháng
                 apartmentsWithoutReadings++;
             } else {
-                // Có chỉ số nước > 0
+                // Có bản ghi chỉ số nước trong tháng (kể cả chỉ số = 0 hoặc null)
                 apartmentsWithReadings++;
             }
         }
@@ -620,17 +636,17 @@ public class YearlyBillingService {
                           ", có chỉ số nước: " + apartmentsWithReadings + 
                           ", chưa có chỉ số nước: " + apartmentsWithoutReadings);
         
-        // Nếu có căn hộ chưa ghi chỉ số nước, ghi cảnh báo nhưng vẫn tiếp tục
+        // Nếu có căn hộ chưa có bản ghi chỉ số nước, ghi cảnh báo nhưng vẫn tiếp tục
         if (apartmentsWithoutReadings > 0) {
             String warningMessage = String.format(
-                "CẢNH BÁO: Có %d căn hộ chưa ghi chỉ số nước cho tháng %d/%d. " +
-                "Hệ thống sẽ tạo hóa đơn cho %d căn hộ đã có chỉ số nước. " +
-                "Vui lòng ghi chỉ số nước cho các căn hộ còn lại sau.",
+                "CẢNH BÁO: Có %d căn hộ chưa có bản ghi chỉ số nước cho tháng %d/%d. " +
+                "Hệ thống sẽ tạo hóa đơn cho %d căn hộ đã có bản ghi chỉ số nước. " +
+                "Vui lòng tạo bản ghi chỉ số nước cho các căn hộ còn lại sau.",
                 apartmentsWithoutReadings, month, year, apartmentsWithReadings
             );
             System.out.println("WARNING: " + warningMessage);
         } else {
-            System.out.println("DEBUG: Đã kiểm tra chỉ số nước - tất cả căn hộ đã có chỉ số > 0");
+            System.out.println("DEBUG: Đã kiểm tra chỉ số nước - tất cả căn hộ đã có bản ghi chỉ số nước");
         }
     }
 } 

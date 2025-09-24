@@ -19,7 +19,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
   bool _submitting = false;
   bool _lookupLoading = false;
   Map<String, dynamic>? _lookupData;
-  int? _lastReading;
+  double? _lastReading;
   DateTime? _lastReadingAt;
   static const int _largeDeltaThreshold = 200;
 
@@ -66,10 +66,10 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
           final prev = m['currentReading'] ?? m['meterReading'];
           final when = (m['readingDate'] ?? m['readingMonth'])?.toString();
           if (prev is num) {
-            _lastReading = prev.toInt();
+            _lastReading = prev.toDouble();
             _prevCtrl.text = _lastReading!.toString();
             // Gợi ý chỉ số mới nếu đang trống hoặc nhỏ hơn chỉ số cũ
-            final cur = int.tryParse(_readingCtrl.text.trim());
+            final cur = double.tryParse(_readingCtrl.text.trim());
             if (cur == null || cur < _lastReading!) {
               _readingCtrl.text = (_lastReading! + 1).toString();
             }
@@ -103,7 +103,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
         setState(() => _submitting = false);
         return;
       }
-      final reading = int.parse(_readingCtrl.text.trim());
+      final reading = double.parse(_readingCtrl.text.trim());
 
       if (_selectedMonth == null) {
         if (!mounted) return;
@@ -123,7 +123,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
       }
 
       // Cảnh báo nếu tăng bất thường
-      final int? delta =
+      final double? delta =
           _lastReading != null ? (reading - _lastReading!) : null;
       if (delta != null && delta >= _largeDeltaThreshold) {
         final confirm = await showDialog<bool>(
@@ -151,7 +151,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
       if (readingId == null) {
         await ApiService.submitWaterReading(
           apartmentCode: _apartmentCtrl.text.trim(),
-          currentReading: reading,
+          currentReading: reading.toInt(),
           readingAt: null,
           readingMonth: _selectedMonth,
         );
@@ -160,7 +160,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
             const SnackBar(content: Text('Reading created successfully')));
       } else {
         await ApiService.updateWaterReadingById(
-            id: readingId, currentReading: reading);
+            id: readingId, currentReading: reading.toInt());
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Reading updated successfully')));
@@ -216,7 +216,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
               res['last']?['value'] ??
               res['latest']?['reading'];
           if (last is num) {
-            _lastReading = last.toInt();
+            _lastReading = last.toDouble();
             _prevCtrl.text = _lastReading!.toString();
             // Gợi ý chỉ số mới = cũ + 1 nếu chưa nhập
             if (_readingCtrl.text.trim().isEmpty) {
@@ -417,18 +417,22 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
               // Ô chỉ số mới - có thể nhập
               TextFormField(
                 controller: _readingCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
+                ],
                 decoration: const InputDecoration(
                   labelText: 'New reading',
-                  helperText: 'Must not be less than previous reading',
+                  helperText:
+                      'Must not be less than previous reading (supports decimals like 19.36)',
                   prefixIcon: Icon(Icons.water_drop_outlined),
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return 'Please enter the reading';
                   }
-                  final n = int.tryParse(v.trim());
+                  final n = double.tryParse(v.trim());
                   if (n == null || n < 0) return 'Invalid reading';
                   if (_lastReading != null && n < _lastReading!) {
                     return 'Must be ≥ previous reading (${_lastReading!})';

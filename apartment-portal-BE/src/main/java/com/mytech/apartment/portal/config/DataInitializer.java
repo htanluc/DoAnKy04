@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mytech.apartment.portal.models.*;
 import com.mytech.apartment.portal.models.enums.*;
+import com.mytech.apartment.portal.entities.*;
 import com.mytech.apartment.portal.repositories.*;
 import com.mytech.apartment.portal.repositories.FeedbackCategoryRepository;
 import com.mytech.apartment.portal.models.enums.PaymentMethod;
@@ -69,6 +70,11 @@ public class DataInitializer implements CommandLineRunner {
         // Guard: nếu dữ liệu lõi đã tồn tại thì bỏ qua seeding
         if (roleRepository.count() > 0 || userRepository.count() > 0 || buildingRepository.count() > 0) {
             System.out.println("⏭️ Data already present. Skipping DataInitializer.");
+            // Nhưng vẫn tạo dữ liệu chỉ số nước nếu chưa có
+            if (waterMeterReadingRepository.count() == 0) {
+                System.out.println("💧 No water meter readings found. Creating sample data...");
+                initializeWaterMeterReadings();
+            }
             return;
         }
         
@@ -1846,6 +1852,7 @@ public class DataInitializer implements CommandLineRunner {
                     .user(resident)
                     .status(status)
                     .registeredAt(LocalDateTime.now().minusDays(10 - i))
+                    .checkedIn(false)
                     .build());
                 
                 eventRegistrations.add(registration);

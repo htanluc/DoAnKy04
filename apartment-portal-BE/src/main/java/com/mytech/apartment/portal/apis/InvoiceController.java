@@ -10,6 +10,11 @@ import com.mytech.apartment.portal.services.MonthlyFeeService;
 import com.mytech.apartment.portal.services.EmailService;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
 import com.mytech.apartment.portal.repositories.UserRepository;
+import com.mytech.apartment.portal.repositories.RoleRepository;
+import com.mytech.apartment.portal.repositories.ApartmentRepository;
+import com.mytech.apartment.portal.models.User;
+import com.mytech.apartment.portal.models.ApartmentResident;
+import com.mytech.apartment.portal.models.ApartmentResidentId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
@@ -17,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +38,8 @@ public class InvoiceController {
     private final EmailService emailService;
     private final ApartmentResidentRepository apartmentResidentRepository;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final ApartmentRepository apartmentRepository;
     private final com.mytech.apartment.portal.services.InvoicePdfService invoicePdfService;
 
     @GetMapping("/api/invoices/by-apartments")
@@ -91,7 +99,7 @@ public class InvoiceController {
             // Gửi async, trả về ngay
             emails.forEach(email -> {
                 try {
-                    emailService.sendHtmlWithAttachment(email, subject, html, "invoice_" + id + ".pdf", pdfBytes);
+                    emailService.sendHtmlWithAttachmentSync(email, subject, html, "invoice_" + id + ".pdf", pdfBytes);
                     smartActivityLogService.logSmartActivity(ActivityActionType.SEND_EMAIL, "Gửi email hóa đơn #%d tới %s", id, email);
                 } catch (Exception ignore) {}
             });
@@ -379,6 +387,203 @@ public class InvoiceController {
 
 
     /**
+     * [EN] Test email sending for debugging
+     * [VI] Test gửi email để debug
+     */
+    @PostMapping("/api/admin/invoices/test-email")
+    public ResponseEntity<Map<String, Object>> testEmailSending(@RequestParam String email) {
+        try {
+            System.out.println("DEBUG: [InvoiceController] Bắt đầu test gửi email tới: " + email);
+            
+            String subject = "Test Email - Hệ thống quản lý chung cư";
+            String html = "<h2>Test Email</h2><p>Đây là email test để kiểm tra cấu hình email.</p>";
+            
+            emailService.sendHtmlEmail(email, subject, html);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Test email đã được gửi thành công tới: " + email);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("ERROR: [InvoiceController] Lỗi test gửi email: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi test gửi email: " + e.getMessage());
+            
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
+     * [EN] Check residents data and create sample if needed (no auth required)
+     * [VI] Kiểm tra dữ liệu cư dân và tạo mẫu nếu cần (không cần auth)
+     */
+    @GetMapping("/api/public/invoices/check-and-create-residents")
+    public ResponseEntity<Map<String, Object>> checkAndCreateResidents() {
+        try {
+            var apartments = apartmentRepository.findAll();
+            var residents = apartmentResidentRepository.findAll();
+            var users = userRepository.findAll();
+            
+            System.out.println("DEBUG: [InvoiceController] Dữ liệu hiện tại:");
+            System.out.println("DEBUG: [InvoiceController] - Căn hộ: " + apartments.size());
+            System.out.println("DEBUG: [InvoiceController] - Cư dân: " + residents.size());
+            System.out.println("DEBUG: [InvoiceController] - Users: " + users.size());
+            
+            // Nếu không có cư dân nào, tạo 5 cư dân mẫu
+            if (residents.isEmpty() && !apartments.isEmpty()) {
+                System.out.println("DEBUG: [InvoiceController] Không có cư dân nào, tạo 5 cư dân mẫu...");
+                
+                // Lấy role RESIDENT
+                var residentRole = roleRepository.findByName("RESIDENT");
+                if (residentRole == null) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Không tìm thấy role RESIDENT");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                int createdCount = 0;
+                for (int i = 0; i < Math.min(5, apartments.size()); i++) {
+                    var apartment = apartments.get(i);
+                    
+                    // Tạo user cư dân
+                    User resident = new User();
+                    resident.setUsername("resident_" + apartment.getId());
+                    resident.setEmail("resident" + apartment.getId() + "@apartment.com");
+                    resident.setPhoneNumber("090" + String.format("%07d", apartment.getId()));
+                    resident.setFullName("Cư dân căn hộ " + apartment.getUnitNumber());
+                    resident.setDateOfBirth(java.time.LocalDate.of(1980 + (i % 20), 1, 1));
+                    resident.setIdCardNumber("123456789" + String.format("%03d", apartment.getId()));
+                    resident.setStatus(com.mytech.apartment.portal.models.enums.UserStatus.ACTIVE);
+                    resident.setRoles(java.util.Set.of(residentRole));
+                    resident.setCreatedAt(java.time.LocalDateTime.now());
+                    resident.setUpdatedAt(java.time.LocalDateTime.now());
+                    
+                    userRepository.save(resident);
+                    
+                    // Tạo liên kết apartment-resident
+                    ApartmentResident apartmentResident = ApartmentResident.builder()
+                        .id(new ApartmentResidentId(apartment.getId(), resident.getId()))
+                        .apartment(apartment)
+                        .user(resident)
+                        .moveInDate(java.time.LocalDate.now().minusMonths(6))
+                        .relationType(com.mytech.apartment.portal.models.enums.RelationType.OWNER)
+                        .isPrimaryResident(true)
+                        .build();
+                    
+                    apartmentResidentRepository.save(apartmentResident);
+                    createdCount++;
+                    
+                    System.out.println("DEBUG: [InvoiceController] Đã tạo cư dân cho căn hộ " + apartment.getId() + " - Email: " + resident.getEmail());
+                }
+                
+                System.out.println("DEBUG: [InvoiceController] Đã tạo " + createdCount + " cư dân mẫu");
+            }
+            
+            // Lấy dữ liệu mới
+            var newResidents = apartmentResidentRepository.findAll();
+            var newUsers = userRepository.findAll();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("totalApartments", apartments.size());
+            response.put("totalResidents", newResidents.size());
+            response.put("totalUsers", newUsers.size());
+            response.put("message", "Dữ liệu hiện tại: " + apartments.size() + " căn hộ, " + newResidents.size() + " cư dân, " + newUsers.size() + " users");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("ERROR: [InvoiceController] Lỗi kiểm tra/tạo dữ liệu: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi kiểm tra/tạo dữ liệu: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
+     * [EN] Create sample residents for testing (no auth required)
+     * [VI] Tạo cư dân mẫu để test (không cần auth)
+     */
+    @PostMapping("/api/public/invoices/create-sample-residents")
+    public ResponseEntity<Map<String, Object>> createSampleResidents(@RequestParam(defaultValue = "10") int count) {
+        try {
+            System.out.println("DEBUG: [InvoiceController] Bắt đầu tạo " + count + " cư dân mẫu");
+            
+            // Lấy role RESIDENT
+            var residentRole = roleRepository.findByName("RESIDENT");
+            if (residentRole == null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Không tìm thấy role RESIDENT");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Lấy một số căn hộ để tạo cư dân
+            var apartments = apartmentRepository.findAll().stream()
+                .limit(count)
+                .collect(java.util.stream.Collectors.toList());
+
+            int createdCount = 0;
+            for (int i = 0; i < apartments.size(); i++) {
+                var apartment = apartments.get(i);
+                
+                // Tạo user cư dân
+                User resident = new User();
+                resident.setUsername("resident_" + apartment.getId());
+                resident.setEmail("resident" + apartment.getId() + "@apartment.com");
+                resident.setPhoneNumber("090" + String.format("%07d", apartment.getId()));
+                resident.setFullName("Cư dân căn hộ " + apartment.getUnitNumber());
+                resident.setDateOfBirth(java.time.LocalDate.of(1980 + (i % 20), 1, 1));
+                resident.setIdCardNumber("123456789" + String.format("%03d", apartment.getId()));
+                resident.setStatus(com.mytech.apartment.portal.models.enums.UserStatus.ACTIVE);
+                resident.setRoles(java.util.Set.of(residentRole));
+                resident.setCreatedAt(java.time.LocalDateTime.now());
+                resident.setUpdatedAt(java.time.LocalDateTime.now());
+                
+                userRepository.save(resident);
+                
+                // Tạo liên kết apartment-resident
+                ApartmentResident apartmentResident = ApartmentResident.builder()
+                    .id(new ApartmentResidentId(apartment.getId(), resident.getId()))
+                    .apartment(apartment)
+                    .user(resident)
+                    .moveInDate(java.time.LocalDate.now().minusMonths(6))
+                    .relationType(com.mytech.apartment.portal.models.enums.RelationType.OWNER)
+                    .isPrimaryResident(true)
+                    .build();
+                
+                apartmentResidentRepository.save(apartmentResident);
+                createdCount++;
+                
+                System.out.println("DEBUG: [InvoiceController] Đã tạo cư dân cho căn hộ " + apartment.getId() + " - Email: " + resident.getEmail());
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Đã tạo " + createdCount + " cư dân mẫu");
+            response.put("createdCount", createdCount);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("ERROR: [InvoiceController] Lỗi tạo cư dân mẫu: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi tạo cư dân mẫu: " + e.getMessage());
+            
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
      * [EN] Send reminder emails for selected overdue invoices
      * [VI] Gửi email nhắc nhở cho các hóa đơn quá hạn đã chọn
      */
@@ -403,6 +608,54 @@ public class InvoiceController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "Lỗi khi gửi email nhắc nhở: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * Gửi mail nhắc nhở cho các hóa đơn được chọn
+     */
+    @PostMapping("/api/admin/invoices/send-reminder-emails")
+    public ResponseEntity<Map<String, Object>> sendReminderEmails(@RequestBody Map<String, Object> request) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Integer> invoiceIds = (List<Integer>) request.get("invoiceIds");
+            
+            if (invoiceIds == null || invoiceIds.isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Vui lòng chọn ít nhất một hóa đơn để gửi mail nhắc nhở.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            int successCount = 0;
+            int failCount = 0;
+            List<String> errors = new ArrayList<>();
+
+            for (Integer invoiceId : invoiceIds) {
+                try {
+                    invoiceService.sendInvoiceEmailsForApartmentPeriod(invoiceId.longValue(), null);
+                    successCount++;
+                } catch (Exception e) {
+                    failCount++;
+                    errors.add("Hóa đơn #" + invoiceId + ": " + e.getMessage());
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("message", String.format("Đã gửi mail nhắc nhở cho %d hóa đơn. Thất bại: %d", successCount, failCount));
+            result.put("successCount", successCount);
+            result.put("failCount", failCount);
+            if (!errors.isEmpty()) {
+                result.put("errors", errors);
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi gửi mail nhắc nhở: " + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }

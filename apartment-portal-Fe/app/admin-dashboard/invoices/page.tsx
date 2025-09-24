@@ -21,7 +21,10 @@ import {
   Eye,
   Filter,
   Calculator,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import Link from 'next/link';
 import { Invoice } from '@/lib/api';
@@ -55,6 +58,11 @@ function InvoicesPageContent() {
   const [genMonth, setGenMonth] = useState(new Date().getMonth() + 1);
   const [genLoading, setGenLoading] = useState(false);
   const [genMessage, setGenMessage] = useState<string | null>(null);
+  
+  // State cho chọn hóa đơn quá hạn
+  const [selectedInvoices, setSelectedInvoices] = useState<number[]>([]);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
   
 
   // Determine if invoices already exist for the selected period
@@ -227,6 +235,59 @@ function InvoicesPageContent() {
     }
   };
 
+  // Hàm xử lý chọn/bỏ chọn hóa đơn
+  const handleSelectInvoice = (invoiceId: number) => {
+    setSelectedInvoices(prev => 
+      prev.includes(invoiceId) 
+        ? prev.filter(id => id !== invoiceId)
+        : [...prev, invoiceId]
+    );
+  };
+
+  // Hàm chọn tất cả hóa đơn quá hạn
+  const handleSelectAllOverdue = () => {
+    const overdueInvoices = filteredInvoices.filter(inv => 
+      getEffectiveStatus(inv) === 'OVERDUE'
+    );
+    setSelectedInvoices(overdueInvoices.map(inv => inv.id));
+  };
+
+  // Hàm bỏ chọn tất cả
+  const handleDeselectAll = () => {
+    setSelectedInvoices([]);
+  };
+
+  // Hàm gửi mail nhắc nhở
+  const handleSendReminderEmails = async () => {
+    if (selectedInvoices.length === 0) {
+      setEmailMessage('Vui lòng chọn ít nhất một hóa đơn để gửi mail nhắc nhở.');
+      return;
+    }
+
+    setEmailLoading(true);
+    setEmailMessage(null);
+
+    try {
+      const response = await api.post('/api/admin/invoices/send-reminder-emails', {
+        invoiceIds: selectedInvoices
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setEmailMessage(`Đã gửi mail nhắc nhở cho ${selectedInvoices.length} hóa đơn.`);
+        setSelectedInvoices([]); // Clear selection after sending
+      } else {
+        const error = await response.json();
+        setEmailMessage(error.message || 'Có lỗi xảy ra khi gửi mail nhắc nhở.');
+      }
+    } catch (error) {
+      console.error('Error sending reminder emails:', error);
+      setEmailMessage('Có lỗi xảy ra khi gửi mail nhắc nhở.');
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
 
 
   if (invoicesLoading || apartmentsLoading) {
@@ -391,6 +452,23 @@ function InvoicesPageContent() {
                       </ol>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Email message */}
+              {emailMessage && (
+                <div className={`p-4 rounded-lg border ${
+                  emailMessage.includes('Đã gửi') 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className={`${
+                    emailMessage.includes('Đã gửi')
+                      ? 'text-green-800' 
+                      : 'text-red-800'
+                  }`}>
+                    {emailMessage}
+                  </div>
                 </div>
               )}
             </div>
@@ -675,7 +753,7 @@ function InvoicesPageContent() {
                         
                         <div className="md:col-span-2">
                           <div className="bg-white p-4 rounded-lg border border-blue-200">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center gap-2">
                                 <Calculator className="h-5 w-5 text-blue-600" />
                                 <span className="text-sm font-medium text-gray-700">Kết quả tìm kiếm:</span>
@@ -683,6 +761,49 @@ function InvoicesPageContent() {
                               <div className="text-right">
                                 <p className="text-2xl font-bold text-blue-600">{filteredInvoices.length}</p>
                                 <p className="text-xs text-gray-500">hóa đơn được tìm thấy</p>
+                              </div>
+                            </div>
+                            
+                            {/* Chọn hóa đơn quá hạn */}
+                            <div className="border-t border-gray-200 pt-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Mail className="h-4 w-4 text-orange-600" />
+                                  <span className="text-sm font-medium text-gray-700">Gửi mail nhắc nhở:</span>
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  Đã chọn: <span className="font-bold text-blue-600">{selectedInvoices.length}</span> hóa đơn
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  onClick={handleSelectAllOverdue}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-orange-50 hover:bg-orange-100 border-orange-300 text-orange-700 hover:text-orange-900"
+                                >
+                                  <CheckSquare className="h-4 w-4 mr-2" />
+                                  Chọn tất cả quá hạn
+                                </Button>
+                                <Button
+                                  onClick={handleDeselectAll}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700 hover:text-gray-900"
+                                >
+                                  <Square className="h-4 w-4 mr-2" />
+                                  Bỏ chọn tất cả
+                                </Button>
+                                <Button
+                                  onClick={handleSendReminderEmails}
+                                  disabled={selectedInvoices.length === 0 || emailLoading}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700 hover:text-blue-900 disabled:opacity-50"
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  {emailLoading ? 'Đang gửi...' : `Gửi mail nhắc nhở (${selectedInvoices.length})`}
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -720,6 +841,20 @@ function InvoicesPageContent() {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-12">
+                              <input
+                                type="checkbox"
+                                checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedInvoices(filteredInvoices.map(inv => inv.id));
+                                  } else {
+                                    setSelectedInvoices([]);
+                                  }
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                            </TableHead>
                             <TableHead>{t('admin.invoices.invoiceNumber')}</TableHead>
                             <TableHead>{t('admin.invoices.apartment')}</TableHead>
                             <TableHead>{t('admin.invoices.amount')}</TableHead>
@@ -735,6 +870,14 @@ function InvoicesPageContent() {
                             
                             return (
                               <TableRow key={invoice.id}>
+                                <TableCell>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedInvoices.includes(invoice.id)}
+                                    onChange={() => handleSelectInvoice(invoice.id)}
+                                    className="rounded border-gray-300"
+                                  />
+                                </TableCell>
                                 <TableCell className="font-medium">
                                   #{invoice.id}
                                 </TableCell>

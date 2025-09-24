@@ -80,9 +80,17 @@ public class WaterMeterServiceImpl implements WaterMeterService {
 
     @Override
     public List<WaterMeterReadingDto> getReadingsByMonth(String month) {
-        // Parse month string to LocalDate
-        LocalDate monthDate = LocalDate.parse(month + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        return waterMeterReadingRepository.findAllByReadingDate(monthDate).stream()
+        // Parse month string to get year and month
+        String[] parts = month.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int monthValue = Integer.parseInt(parts[1]);
+        
+        // Find all readings in the specified month
+        return waterMeterReadingRepository.findAll().stream()
+                .filter(e -> {
+                    LocalDate readingDate = e.getReadingDate();
+                    return readingDate.getYear() == year && readingDate.getMonthValue() == monthValue;
+                })
                 .map(e -> {
                     WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
                     dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
@@ -90,6 +98,34 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                     setReadingValues(dto, e);
                     return dto;
                 })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<WaterMeterReadingDto> getLatestReadings() {
+        // Lấy tất cả readings và group theo apartmentId, lấy reading mới nhất cho mỗi apartment
+        Map<Long, WaterMeterReading> latestByApartment = waterMeterReadingRepository.findAll().stream()
+                .collect(Collectors.groupingBy(
+                    WaterMeterReading::getApartmentId,
+                    Collectors.maxBy((r1, r2) -> r1.getReadingDate().compareTo(r2.getReadingDate()))
+                ))
+                .entrySet().stream()
+                .filter(entry -> entry.getValue().isPresent())
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> entry.getValue().get()
+                ));
+
+        // Convert to DTOs
+        return latestByApartment.values().stream()
+                .map(e -> {
+                    WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
+                    dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
+                    setReadingValues(dto, e);
+                    return dto;
+                })
+                .sorted((a, b) -> a.getApartmentName().compareTo(b.getApartmentName()))
                 .collect(Collectors.toList());
     }
 
@@ -408,5 +444,65 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         dto.setCurrentReading(currentReading != null ? currentReading : BigDecimal.ZERO);
         dto.setMeterReading(dto.getCurrentReading());
         return addReading(dto);
+    }
+
+    @Override
+    @Transactional
+    public void createSampleReadings() {
+        System.out.println("💧 Creating sample water meter readings...");
+        
+        List<com.mytech.apartment.portal.models.Apartment> apartments = apartmentService.getAllApartments().stream()
+                .map(dto -> {
+                    com.mytech.apartment.portal.models.Apartment apartment = new com.mytech.apartment.portal.models.Apartment();
+                    apartment.setId(dto.getId());
+                    apartment.setArea(dto.getArea());
+                    apartment.setUnitNumber(dto.getUnitNumber());
+                    return apartment;
+                })
+                .collect(Collectors.toList());
+        if (apartments.isEmpty()) {
+            throw new RuntimeException("Không có căn hộ nào trong hệ thống");
+        }
+        
+        Long recordedBy = 1L; // Default admin user
+        
+        // Tạo chỉ số nước cho 3 tháng gần đây
+        String[] months = {"2025-01", "2025-02", "2025-03"};
+        
+        for (com.mytech.apartment.portal.models.Apartment apartment : apartments) {
+            double baseReading = 100.0 + (apartment.getId() % 50);
+            
+            for (int i = 0; i < months.length; i++) {
+                String month = months[i];
+                LocalDate readingDate = LocalDate.parse(month + "-28", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                
+                // Kiểm tra xem đã có dữ liệu chưa
+                boolean exists = waterMeterReadingRepository
+                    .findByApartmentIdAndReadingDate(apartment.getId(), readingDate)
+                    .isPresent();
+                
+                if (!exists) {
+                    // Tính toán chỉ số dựa trên diện tích căn hộ
+                    double consumption = Math.max(3.0, (apartment.getArea() / 30.0) + (i + 1));
+                    double unitPrice = 10000.0 + ((apartment.getId() % 3) * 500);
+                    double totalAmount = consumption * unitPrice;
+                    baseReading += consumption;
+                    
+                    WaterMeterReading reading = new WaterMeterReading();
+                    reading.setApartmentId(apartment.getId());
+                    reading.setReadingDate(readingDate);
+                    reading.setMeterReading(BigDecimal.valueOf(baseReading));
+                    reading.setConsumption(BigDecimal.valueOf(consumption));
+                    reading.setUnitPrice(BigDecimal.valueOf(unitPrice));
+                    reading.setTotalAmount(BigDecimal.valueOf(totalAmount));
+                    reading.setRecordedBy(recordedBy);
+                    reading.setCreatedAt(java.time.LocalDateTime.now());
+                    
+                    waterMeterReadingRepository.save(reading);
+                }
+            }
+        }
+        
+        System.out.println("✅ Sample water meter readings created successfully");
     }
 }

@@ -2,6 +2,9 @@ package com.mytech.apartment.portal.services;
 
 import com.mytech.apartment.portal.dtos.InvoiceDto;
 import com.mytech.apartment.portal.dtos.InvoiceItemDto;
+import com.mytech.apartment.portal.models.Apartment;
+import com.mytech.apartment.portal.repositories.ApartmentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -9,6 +12,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.Optional;
 
 // OpenPDF
 import com.lowagie.text.Document;
@@ -25,6 +29,9 @@ import com.lowagie.text.pdf.PdfWriter;
 
 @Service
 public class InvoicePdfService {
+
+    @Autowired
+    private ApartmentRepository apartmentRepository;
 
     // Sinh PDF bằng OpenPDF và nhúng font Unicode để hiển thị tiếng Việt chuẩn
     public byte[] generateInvoicePdf(InvoiceDto invoice) {
@@ -44,8 +51,17 @@ public class InvoicePdfService {
             doc.add(title);
 
             NumberFormat nf = NumberFormat.getInstance(Locale.of("vi", "VN"));
-            doc.add(new Paragraph("Mã: #" + invoice.getId(), fontNormal));
-            doc.add(new Paragraph("Căn hộ: " + invoice.getApartmentId(), fontNormal));
+
+            // Lấy thông tin căn hộ
+            String apartmentInfo = "Căn hộ: #" + invoice.getApartmentId();
+            Optional<Apartment> apartmentOpt = apartmentRepository.findById(invoice.getApartmentId());
+            if (apartmentOpt.isPresent()) {
+                Apartment apartment = apartmentOpt.get();
+                apartmentInfo = "Căn hộ: " + apartment.getUnitNumber() + " (ID: #" + invoice.getApartmentId() + ")";
+            }
+
+            doc.add(new Paragraph("Mã hóa đơn: #" + invoice.getId(), fontNormal));
+            doc.add(new Paragraph(apartmentInfo, fontNormal));
             doc.add(new Paragraph("Kỳ: " + invoice.getBillingPeriod(), fontNormal));
             doc.add(new Paragraph("Phát hành: " + String.valueOf(invoice.getIssueDate()), fontNormal));
             doc.add(new Paragraph("Đến hạn: " + String.valueOf(invoice.getDueDate()), fontNormal));
@@ -111,16 +127,16 @@ public class InvoicePdfService {
         return cell;
     }
 
-    private PdfPCell rightCell(String text, Font font) {
+    private PdfPCell centerCell(String text, Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
-        cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         cell.setPadding(5f);
         return cell;
     }
 
-    private PdfPCell centerCell(String text, Font font) {
+    private PdfPCell rightCell(String text, Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
-        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         cell.setPadding(5f);
         return cell;
     }
