@@ -74,6 +74,28 @@ export function useWaterMeter() {
     }
   }
 
+  async function fetchLatestReadings() {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE_URL}/latest`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (!res.ok) throw new Error('Không thể tải chỉ số nước mới nhất');
+      const data = await res.json();
+      console.log('fetchLatestReadings result:', data);
+      setReadings(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function addReading(reading: Omit<WaterMeterReading, 'readingId' | 'consumption' | 'createdAt' | 'recordedBy' | 'recordedByName'>) {
     setLoading(true);
     setError(null);
@@ -196,5 +218,5 @@ export function useWaterMeter() {
     }
   }
 
-  return { readings, loading, error, fetchReadings, fetchReadingsByMonth, addReading, updateReading, deleteReading, patchReading, bulkGenerate };
+  return { readings, loading, error, fetchReadings, fetchReadingsByMonth, fetchLatestReadings, addReading, updateReading, deleteReading, patchReading, bulkGenerate };
 }

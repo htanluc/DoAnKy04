@@ -17,6 +17,9 @@ public interface WaterMeterService {
     // Lấy chỉ số nước theo tháng cụ thể
     List<WaterMeterReadingDto> getReadingsByMonth(String month);
 
+    // Lấy chỉ số nước mới nhất cho mỗi căn hộ (tối ưu cho dashboard)
+    List<WaterMeterReadingDto> getLatestReadings();
+
     // Lấy chỉ số nước theo ID căn hộ
     List<WaterMeterReadingDto> getWaterMetersByApartmentId(Long apartmentId);
 
@@ -26,4 +29,7 @@ public interface WaterMeterService {
     // STAFF helpers
     Map<String, Object> lookupByApartmentCode(String apartmentCode);
     WaterMeterReadingDto createFromApartmentCode(String apartmentCode, java.math.BigDecimal currentReading, java.time.LocalDate readingDate);
+    
+    // Create sample data for testing
+    void createSampleReadings();
 }

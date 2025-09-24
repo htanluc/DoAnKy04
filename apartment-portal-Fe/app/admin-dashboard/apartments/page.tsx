@@ -57,7 +57,7 @@ import {
 interface Apartment {
   id: number;
   unitNumber: string;
-  building: string;
+  building?: string;
   floor: number;
   area: number;
   status: string;
@@ -114,8 +114,8 @@ function ApartmentsPageContent() {
   };
 
   const filteredApartments = apartments.filter(apartment => {
-    const matchesSearch = apartment.unitNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         apartment.building.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = apartment.unitNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (apartment.building && apartment.building.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || apartment.status === filterStatus;
     return matchesSearch && matchesStatus;
   });

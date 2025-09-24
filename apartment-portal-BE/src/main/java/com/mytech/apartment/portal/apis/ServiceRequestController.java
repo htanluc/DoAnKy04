@@ -145,24 +145,37 @@ public class ServiceRequestController {
 
     /** Upload files cho service request */
     @PostMapping("/upload/service-request")
-    public ResponseEntity<ApiResponse<List<String>>> uploadServiceRequestFiles(@RequestParam("files") List<MultipartFile> files) {
+    public ResponseEntity<ApiResponse<List<String>>> uploadServiceRequestFiles(
+            @RequestParam(value = "file", required = false) MultipartFile single,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) {
                 return ResponseEntity.status(401).build();
             }
-            
+
+            // Gom cả single và list thành một danh sách thống nhất
+            List<MultipartFile> toProcess = new ArrayList<>();
+            if (single != null) toProcess.add(single);
+            if (files != null && !files.isEmpty()) toProcess.addAll(files);
+
+            if (toProcess.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Không có file để upload"));
+            }
+
             List<String> imageUrls = new ArrayList<>();
-            for (MultipartFile file : files) {
-                if (!file.isEmpty()) {
+            for (MultipartFile file : toProcess) {
+                if (file != null && !file.isEmpty()) {
                     String imageUrl = fileUploadService.uploadServiceRequestImage(file);
                     imageUrls.add(imageUrl);
                 }
             }
-            
+
             return ResponseEntity.ok(ApiResponse.success("Upload files thành công", imageUrls));
         } catch (IOException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi upload files: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ApiResponse.error("Lỗi hệ thống: " + e.getMessage()));
         }
     }
 
