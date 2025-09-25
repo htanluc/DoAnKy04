@@ -42,7 +42,8 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
     success, 
     getMonthlyConfig, 
     updateMonthlyBillingConfig, 
-    clearMessages 
+    clearMessages,
+    hasInvoicesForMonth,
   } = useYearlyBilling();
 
   const [selectedYear, setSelectedYear] = useState(year);
@@ -59,6 +60,9 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
   const [isEditing, setIsEditing] = useState(false);
   const [originalConfig, setOriginalConfig] = useState<YearlyBillingConfig | null>(null);
   const [configExists, setConfigExists] = useState(false);
+  const [isPastMonth, setIsPastMonth] = useState(false);
+  const [currentMonthHasInvoices, setCurrentMonthHasInvoices] = useState(false);
+  const [hasInvoicesForSelectedMonth, setHasInvoicesForSelectedMonth] = useState(false);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -69,6 +73,12 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
   }, [selectedYear, selectedMonth]);
 
   const loadConfig = async () => {
+    // Tính toán trạng thái quá khứ/hiện tại
+    const now = new Date();
+    const target = new Date(selectedYear, selectedMonth - 1, 1);
+    const current = new Date(now.getFullYear(), now.getMonth(), 1);
+    setIsPastMonth(target < current);
+
     const result = await getMonthlyConfig(selectedYear, selectedMonth);
     if (result?.success && result.config) {
       console.log('Loaded config:', result.config); // Debug log
@@ -88,9 +98,31 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
       });
       setConfigExists(false);
     }
+
+    // Kiểm tra tháng đã có hóa đơn chưa để disable chỉnh sửa
+    const check = await hasInvoicesForMonth(selectedYear, selectedMonth);
+    const hasInvoices = !!check?.hasInvoices;
+    setHasInvoicesForSelectedMonth(hasInvoices);
+    
+    // Nếu là tháng hiện tại, cập nhật trạng thái currentMonthHasInvoices
+    if (target.getTime() === current.getTime()) {
+      setCurrentMonthHasInvoices(hasInvoices);
+    } else {
+      setCurrentMonthHasInvoices(false);
+    }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
+    // Chặn sửa nếu là tháng quá khứ
+    if (isPastMonth) return;
+
+    // Kiểm tra lại trước khi cho sửa
+    const check = await hasInvoicesForMonth(selectedYear, selectedMonth);
+    if (check?.hasInvoices) {
+      setHasInvoicesForSelectedMonth(true);
+      return; // Không cho bật edit
+    }
+
     setOriginalConfig(config);
     setIsEditing(true);
     clearMessages();
@@ -203,12 +235,46 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
             </AlertDescription>
           </Alert>
 
+          {/* Thông báo khi tháng đã có hóa đơn */}
+          {hasInvoicesForSelectedMonth && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Không thể chỉnh sửa:</strong> Tháng {formatMonthLabel(selectedMonth, language)}/{selectedYear} đã có hóa đơn được tạo. 
+                Để chỉnh sửa cấu hình phí, vui lòng xóa tất cả hóa đơn của tháng này trước.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Thông báo khi là tháng quá khứ */}
+          {isPastMonth && !hasInvoicesForSelectedMonth && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Không thể chỉnh sửa:</strong> Tháng {formatMonthLabel(selectedMonth, language)}/{selectedYear} đã qua. 
+                Chỉ có thể chỉnh sửa cấu hình phí cho tháng hiện tại và tương lai.
+              </AlertDescription>
+            </Alert>
+          )}
+
             <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">{t('admin.yearly-billing.feeSummary')} - {formatMonthLabel(selectedMonth, language)}/{selectedYear}</h3>
               <div className="flex gap-2">
                 {!isEditing ? (
-                  <Button onClick={handleEdit} variant="outline" size="sm">
+                  <Button 
+                    onClick={handleEdit} 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={isPastMonth || hasInvoicesForSelectedMonth}
+                    title={
+                      isPastMonth 
+                        ? `Không thể chỉnh sửa tháng quá khứ ${formatMonthLabel(selectedMonth, language)}/${selectedYear}`
+                        : hasInvoicesForSelectedMonth
+                        ? `Không thể chỉnh sửa vì tháng ${formatMonthLabel(selectedMonth, language)}/${selectedYear} đã có hóa đơn`
+                        : undefined
+                    }
+                  >
                     <Edit className="h-4 w-4 mr-2" />
                     {t('admin.action.edit')}
                   </Button>

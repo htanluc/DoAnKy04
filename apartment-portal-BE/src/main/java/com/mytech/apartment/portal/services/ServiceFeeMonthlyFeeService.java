@@ -44,7 +44,7 @@ public class ServiceFeeMonthlyFeeService implements MonthlyFeeService {
             double area = apartment.getArea();
             double serviceFee = area * serviceFeePerM2;
             
-            // Thêm vào hóa đơn
+            // Thêm vào hóa đơn (idempotent - sẽ bỏ qua nếu đã có)
             invoiceService.addInvoiceItem(
                 apartment.getId(),
                 billingPeriod,

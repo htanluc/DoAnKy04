@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Billing Config Disable Feature</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            background: #4f46e5;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .test-title {
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+        .test-step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 4px;
+        }
+        .expected-result {
+            background: #ecfdf5;
+            border-left: 4px solid #10b981;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .api-endpoint {
+            background: #e0e7ff;
+            border: 1px solid #6366f1;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Test: Disable Edit Button When Month Has Invoices</h1>
+            <p>Kiểm tra chức năng disable nút chỉnh sửa cấu hình phí khi tháng đã tạo hóa đơn</p>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📋 Mô tả chức năng</div>
+            <p>Khi người dùng chọn một tháng/năm trong phần cấu hình phí, hệ thống sẽ:</p>
+            <ul>
+                <li>Kiểm tra xem tháng đó đã có hóa đơn được tạo chưa</li>
+                <li>Nếu đã có hóa đơn → Disable nút "Chỉnh sửa" và hiển thị thông báo</li>
+                <li>Nếu chưa có hóa đơn → Cho phép chỉnh sửa bình thường</li>
+                <li>Nếu là tháng quá khứ → Disable nút "Chỉnh sửa" và hiển thị thông báo</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔧 Các thay đổi đã thực hiện</div>
+            <div class="test-step">
+                <strong>1. Thêm state mới:</strong>
+                <ul>
+                    <li><code>hasInvoicesForSelectedMonth</code> - Lưu trạng thái tháng được chọn có hóa đơn không</li>
+                </ul>
+            </div>
+            <div class="test-step">
+                <strong>2. Cập nhật logic kiểm tra:</strong>
+                <ul>
+                    <li>Kiểm tra tất cả các tháng (không chỉ tháng hiện tại)</li>
+                    <li>Gọi API <code>hasInvoicesForMonth</code> cho tháng được chọn</li>
+                </ul>
+            </div>
+            <div class="test-step">
+                <strong>3. Disable nút Edit:</strong>
+                <ul>
+                    <li>Disable khi <code>isPastMonth || hasInvoicesForSelectedMonth</code></li>
+                    <li>Thêm tooltip giải thích lý do disable</li>
+                </ul>
+            </div>
+            <div class="test-step">
+                <strong>4. Thêm thông báo:</strong>
+                <ul>
+                    <li>Thông báo khi tháng đã có hóa đơn</li>
+                    <li>Thông báo khi là tháng quá khứ</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🧪 Test Cases</div>
+            
+            <div class="test-step">
+                <strong>Test Case 1: Tháng hiện tại chưa có hóa đơn</strong>
+                <ul>
+                    <li>Chọn tháng hiện tại</li>
+                    <li>Kiểm tra nút "Chỉnh sửa" có thể click được</li>
+                    <li>Kiểm tra không có thông báo cảnh báo</li>
+                </ul>
+                <div class="expected-result">
+                    <strong>Kết quả mong đợi:</strong> Nút "Chỉnh sửa" enabled, có thể click
+                </div>
+            </div>
+
+            <div class="test-step">
+                <strong>Test Case 2: Tháng hiện tại đã có hóa đơn</strong>
+                <ul>
+                    <li>Tạo hóa đơn cho tháng hiện tại trước</li>
+                    <li>Chọn tháng hiện tại trong cấu hình phí</li>
+                    <li>Kiểm tra nút "Chỉnh sửa" bị disable</li>
+                    <li>Kiểm tra có thông báo "đã có hóa đơn"</li>
+                </ul>
+                <div class="expected-result">
+                    <strong>Kết quả mong đợi:</strong> Nút "Chỉnh sửa" disabled, có thông báo cảnh báo
+                </div>
+            </div>
+
+            <div class="test-step">
+                <strong>Test Case 3: Tháng quá khứ</strong>
+                <ul>
+                    <li>Chọn tháng trước tháng hiện tại</li>
+                    <li>Kiểm tra nút "Chỉnh sửa" bị disable</li>
+                    <li>Kiểm tra có thông báo "tháng quá khứ"</li>
+                </ul>
+                <div class="expected-result">
+                    <strong>Kết quả mong đợi:</strong> Nút "Chỉnh sửa" disabled, có thông báo "tháng quá khứ"
+                </div>
+            </div>
+
+            <div class="test-step">
+                <strong>Test Case 4: Tháng tương lai</strong>
+                <ul>
+                    <li>Chọn tháng sau tháng hiện tại</li>
+                    <li>Kiểm tra nút "Chỉnh sửa" có thể click được</li>
+                    <li>Kiểm tra không có thông báo cảnh báo</li>
+                </ul>
+                <div class="expected-result">
+                    <strong>Kết quả mong đợi:</strong> Nút "Chỉnh sửa" enabled, có thể click
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔗 API Endpoints được sử dụng</div>
+            <div class="api-endpoint">
+                GET /api/admin/yearly-billing/has-invoices/{year}/{month}
+            </div>
+            <p><strong>Response:</strong></p>
+            <pre style="background: #f3f4f6; padding: 10px; border-radius: 4px;">
+{
+  "success": true,
+  "hasInvoices": true/false,
+  "count": number
+}</pre>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📝 Hướng dẫn test thủ công</div>
+            <div class="test-step">
+                <strong>Bước 1:</strong> Truy cập Admin Dashboard → Cấu hình phí
+            </div>
+            <div class="test-step">
+                <strong>Bước 2:</strong> Chọn các tháng khác nhau và quan sát:
+                <ul>
+                    <li>Trạng thái nút "Chỉnh sửa"</li>
+                    <li>Thông báo hiển thị</li>
+                    <li>Tooltip khi hover vào nút disabled</li>
+                </ul>
+            </div>
+            <div class="test-step">
+                <strong>Bước 3:</strong> Tạo hóa đơn cho một tháng và test lại
+            </div>
+            <div class="test-step">
+                <strong>Bước 4:</strong> Kiểm tra console log để xem API calls
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>⚠️ Lưu ý:</strong>
+            <ul>
+                <li>Chức năng này hoạt động dựa trên API backend</li>
+                <li>Cần đảm bảo backend có endpoint <code>has-invoices</code></li>
+                <li>Logic kiểm tra tháng quá khứ được tính toán ở frontend</li>
+                <li>State được cập nhật mỗi khi thay đổi tháng/năm</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">✅ Checklist hoàn thành</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label><input type="checkbox" disabled checked> Thêm state hasInvoicesForSelectedMonth</label>
+                <label><input type="checkbox" disabled checked> Cập nhật logic kiểm tra cho tất cả tháng</label>
+                <label><input type="checkbox" disabled checked> Disable nút Edit khi có hóa đơn</label>
+                <label><input type="checkbox" disabled checked> Thêm tooltip giải thích</label>
+                <label><input type="checkbox" disabled checked> Thêm thông báo cảnh báo</label>
+                <label><input type="checkbox" disabled checked> Test build thành công</label>
+                <label><input type="checkbox" disabled checked> Không có lỗi linter</label>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

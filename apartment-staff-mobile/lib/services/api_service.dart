@@ -10,7 +10,8 @@ class ApiService {
   static String _baseUrl = const String.fromEnvironment(
     'API_BASE_URL',
     // For real device, use your computer's IP address instead of 10.0.3.2 (emulator only)
-    defaultValue: 'http://172.21.33.101:8080',
+    defaultValue: 'http://10.0.3.2:8080',
+
   );
   static bool _autoDetected = false;
 
@@ -742,7 +743,7 @@ class ApiService {
       }
       final file = File(filePath);
       final multipart = await http.MultipartFile.fromPath(
-        'file',
+        'files',
         file.path,
         filename: fileName ?? file.uri.pathSegments.last,
         contentType: withContentType && contentType != null
@@ -786,7 +787,17 @@ class ApiService {
             body is Map<String, dynamic> ? (body['success'] == true) : false;
         if (success) {
           final data = body['data'];
+          // Accept both string and list of urls
           if (data is String && data.isNotEmpty) return data;
+          if (data is List && data.isNotEmpty) {
+            final first = data.first;
+            if (first is String && first.startsWith('http')) return first;
+            // Some BE may wrap each item as object {url: "..."}
+            if (first is Map<String, dynamic>) {
+              final url = first['url']?.toString();
+              if (url != null && url.startsWith('http')) return url;
+            }
+          }
         }
         // Nếu backend trả string trực tiếp trong body
         if (body is String && body.startsWith('http')) return body;

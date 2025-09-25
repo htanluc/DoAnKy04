@@ -2,14 +2,16 @@
 import { useState, useEffect } from "react";
 import { useWaterMeter } from "../../../hooks/use-water-meter";
 import { useApartments } from "../../../hooks/use-apartments";
+import { useYearlyBilling } from "../../../hooks/use-yearly-billing";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/lib/i18n";
 import { API_BASE_URL } from "@/lib/auth";
 
 export default function WaterMeterListPage() {
   const { t } = useLanguage();
-  const { readings, loading, error, updateReading, addReading, deleteReading, patchReading, bulkGenerate, fetchReadingsByMonth, fetchReadings } = useWaterMeter();
+  const { readings, loading, error, updateReading, addReading, deleteReading, patchReading, bulkGenerate, fetchReadingsByMonth, fetchReadings, fetchLatestReadings } = useWaterMeter();
   const { apartments, loading: apartmentsLoading, error: apartmentsError } = useApartments();
+  const { generateMonthlyInvoices, clearMessages, error: billingError, success: billingSuccess } = useYearlyBilling();
   const [editId, setEditId] = useState<string | number | null>(null);
   const [editForm, setEditForm] = useState<{ currentReading?: number }>({});
   const [search, setSearch] = useState("");
@@ -17,7 +19,9 @@ export default function WaterMeterListPage() {
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [genSuccess, setGenSuccess] = useState<string | null>(null);
-    const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [showLatestOnly, setShowLatestOnly] = useState(true);
+  const [monthLoading, setMonthLoading] = useState(false);
   
   // Lấy danh sách các tháng có trong dữ liệu (từ tất cả dữ liệu, không phụ thuộc vào tháng đang chọn)
   const [allReadings, setAllReadings] = useState<any[]>([]);
@@ -26,12 +30,14 @@ export default function WaterMeterListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   
-  // Load tất cả dữ liệu khi component mount
+  // Load dữ liệu khi component mount - mặc định load latest readings
   useEffect(() => {
-    const loadAllReadings = async () => {
+    const loadData = async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        const res = await fetch(`${API_BASE_URL}/api/admin/water-readings`, {
+
+        const endpoint = showLatestOnly ? 'latest' : '';
+        const res = await fetch(`http://localhost:8080/api/admin/water-readings/${endpoint}`, {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -42,35 +48,79 @@ export default function WaterMeterListPage() {
           setAllReadings(data);
         }
       } catch (error) {
-        console.error('Error loading all readings:', error);
+        console.error('Error loading readings:', error);
       }
     };
-    loadAllReadings();
-  }, []);
+    loadData();
+  }, [showLatestOnly]);
   
-  const months = Array.from(new Set(allReadings.map(r => r.readingMonth))).sort().reverse();
+  // Lấy danh sách tháng và sắp xếp theo thứ tự giảm dần (tháng mới nhất đầu tiên)
+  const months = Array.from(new Set(allReadings.map(r => r.readingMonth))).sort((a, b) => {
+    // Sắp xếp theo định dạng YYYY-MM để đảm bảo tháng mới nhất đầu tiên
+    return b.localeCompare(a);
+  });
   
-  // Tự động chọn tháng đầu tiên và load dữ liệu
+  // Tự động chọn tháng mới nhất khi có dữ liệu
   useEffect(() => {
     if (months.length > 0 && !selectedMonth) {
-      const firstMonth = months[0];
-      setSelectedMonth(firstMonth);
-      fetchReadingsByMonth(firstMonth);
+      const latestMonth = months[0]; // Tháng mới nhất (đầu tiên trong danh sách đã sắp xếp)
+      setSelectedMonth(latestMonth);
+      console.log('Auto-selecting latest month:', latestMonth);
+      fetchReadingsByMonth(latestMonth);
     }
   }, [months, selectedMonth, fetchReadingsByMonth]);
 
   // Xử lý khi chọn tháng
   const handleMonthChange = async (month: string) => {
     setSelectedMonth(month);
+    setCurrentPage(1); // Reset về trang đầu
+    setMonthLoading(true);
     console.log('Loading data for month:', month);
-    await fetchReadingsByMonth(month);
+    
+    try {
+      if (month) {
+        // Load dữ liệu theo tháng được chọn
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const res = await fetch(`http://localhost:8080/api/admin/water-readings/by-month?month=${month}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAllReadings(data);
+        } else {
+          console.error('Error loading data for month:', month);
+        }
+      } else {
+        // Nếu không chọn tháng, load tất cả dữ liệu
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const res = await fetch('http://localhost:8080/api/admin/water-readings', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAllReadings(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setMonthLoading(false);
+    }
   };
 
   // Lọc readings theo tìm kiếm
-  const filteredReadings = readings.filter((r: any) =>
-    ((r.apartmentId + "").toLowerCase().includes(search.toLowerCase()) ||
-      (r.apartmentName || "").toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredReadings = allReadings.filter((r: any) => {
+    const matchesSearch = (r.apartmentId + "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.apartmentName || "").toLowerCase().includes(search.toLowerCase());
+    
+    return matchesSearch;
+  });
 
   // Logic phân trang
   const totalPages = Math.ceil(filteredReadings.length / itemsPerPage);
@@ -114,7 +164,7 @@ export default function WaterMeterListPage() {
   };
 
   const handleDelete = async (id: string | number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa bản ghi này?')) {
+    if (window.confirm(t('admin.waterMeter.confirmDelete', 'Bạn có chắc chắn muốn xóa bản ghi này?'))) {
       await deleteReading(Number(id));
     }
   };
@@ -156,22 +206,127 @@ export default function WaterMeterListPage() {
     }
   };
 
+  const handleGenerateInvoices = async () => {
+    if (!startMonth) {
+      setGenError('Vui lòng chọn tháng để tạo hóa đơn');
+      return;
+    }
+
+    setGenLoading(true);
+    setGenError(null);
+    setGenSuccess(null);
+    clearMessages();
+    
+    try {
+      const [year, month] = startMonth.split('-').map(Number);
+      const result = await generateMonthlyInvoices(year, month, false);
+      
+      if (result?.success) {
+        setGenSuccess(result.message || 'Tạo hóa đơn thành công');
+      } else {
+        setGenError(result?.message || 'Có lỗi xảy ra khi tạo hóa đơn');
+      }
+    } catch (err: any) {
+      setGenError(err.message || 'Có lỗi xảy ra khi tạo hóa đơn');
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
   return (
     <AdminLayout title={t('admin.waterMeter.title','Danh sách chỉ số nước')}>
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">{t('admin.waterMeter.title')}</h1>
+        <h1 className="text-2xl font-bold mb-4">
+          {t('admin.waterMeter.title')}
+          {!showLatestOnly && selectedMonth && (
+            <span className="text-lg font-normal text-gray-600 ml-2">
+              - Tháng {selectedMonth}
+            </span>
+          )}
+        </h1>
         <div className="mb-4 space-y-2">
           <div className="flex flex-wrap gap-2 items-center">
-            <select
-              value={selectedMonth}
-              onChange={e => handleMonthChange(e.target.value)}
-              className="border px-2 py-1 rounded"
-              title="Chọn tháng"
-            >
-              {months.map(month => (
-                <option key={month} value={month}>{month}</option>
-              ))}
-            </select>
+
+            <button
+              onClick={async () => {
+                const newShowLatestOnly = !showLatestOnly;
+                setShowLatestOnly(newShowLatestOnly);
+                setSelectedMonth("");
+                setCurrentPage(1);
+                
+                // Load dữ liệu tương ứng
+                if (newShowLatestOnly) {
+                  const loadLatestData = async () => {
+                    try {
+                      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                      const res = await fetch('http://localhost:8080/api/admin/water-readings/latest', {
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token ? { Authorization: `Bearer ${token}` } : {})
+                        }
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setAllReadings(data);
+                      }
+                    } catch (error) {
+                      console.error('Error loading latest readings:', error);
+                    }
+                  };
+                  loadLatestData();
+                } else {
+                  const loadAllData = async () => {
+                    try {
+                      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                      const res = await fetch('http://localhost:8080/api/admin/water-readings', {
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token ? { Authorization: `Bearer ${token}` } : {})
+                        }
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setAllReadings(data);
+                      }
+                    } catch (error) {
+                      console.error('Error loading all readings:', error);
+                    }
+                  };
+                  loadAllData();
+                }
+              }}
+              className={`px-4 py-2 rounded text-sm font-medium ${
+                showLatestOnly 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              {showLatestOnly ? 'Chỉ số mới nhất' : 'Tất cả chỉ số'}
+            </button>
+            {!showLatestOnly && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={e => handleMonthChange(e.target.value)}
+                  className="border px-2 py-1 rounded"
+                  placeholder="Chọn tháng"
+                  disabled={monthLoading}
+                />
+                <button
+                  onClick={() => handleMonthChange("")}
+                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                  disabled={monthLoading}
+                >
+                  Tất cả
+                </button>
+                {monthLoading && (
+                  <div className="text-sm text-gray-500 flex items-center gap-1">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    Đang tải...
+                  </div>
+                )}
+              </div>
+            )}
             <input
               type="text"
               placeholder={t('admin.waterMeter.searchPlaceholder')}
@@ -199,6 +354,13 @@ export default function WaterMeterListPage() {
             >
               {genLoading ? t('admin.waterMeter.generating') : t('admin.waterMeter.generate')}
             </button>
+            <button
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handleGenerateInvoices}
+              disabled={genLoading || !startMonth}
+            >
+              {genLoading ? 'Đang tạo...' : 'Tạo hóa đơn'}
+            </button>
             {startMonth && monthHasData(startMonth) && (
               <span className="text-orange-600 text-sm font-medium">
                 {t('admin.waterMeter.monthExists')}
@@ -208,13 +370,32 @@ export default function WaterMeterListPage() {
         </div>
         {genError && <p className="text-red-500 mb-2">{genError}</p>}
         {genSuccess && <p className="text-green-600 mb-2">{genSuccess}</p>}
+        {billingError && <p className="text-red-500 mb-2">{billingError}</p>}
+        {billingSuccess && <p className="text-green-600 mb-2">{billingSuccess}</p>}
+        {!showLatestOnly && selectedMonth && filteredReadings.length === 0 && !monthLoading && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <p className="text-yellow-800">
+              Không có dữ liệu chỉ số nước cho tháng {selectedMonth}
+            </p>
+          </div>
+        )}
         {loading && <p>{t('admin.waterMeter.loading')}</p>}
         {error && <p className="text-red-500">{error}</p>}
         
         {/* Thông báo khi chưa có dữ liệu */}
-        {!selectedMonth && readings.length === 0 && (
+        {!selectedMonth && readings.length === 0 && !loading && (
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
             <p className="text-yellow-800 font-medium">{t('admin.waterMeter.pickMonthHint')}</p>
+          </div>
+        )}
+        
+        {/* Thông báo khi đang tự động load tháng mới nhất */}
+        {!selectedMonth && loading && months.length === 0 && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-blue-800 font-medium">
+              <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-800 mr-2"></span>
+              {t('admin.waterMeter.loadingLatestMonth', 'Đang tải dữ liệu tháng mới nhất...')}
+            </p>
           </div>
         )}
         
@@ -222,7 +403,14 @@ export default function WaterMeterListPage() {
         {selectedMonth && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <div className="flex justify-between items-center">
-              <p className="text-blue-800 font-medium">{t('admin.waterMeter.viewingMonth')} <span className="font-bold">{selectedMonth}</span></p>
+              <div className="flex items-center gap-2">
+                <p className="text-blue-800 font-medium">{t('admin.waterMeter.viewingMonth')} <span className="font-bold">{selectedMonth}</span></p>
+                {months.length > 0 && selectedMonth === months[0] && (
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                    {t('admin.waterMeter.latestMonth', 'Tháng mới nhất')}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-4 text-sm">
                 <span className="text-gray-600">{t('admin.waterMeter.totalApts')} <span className="font-bold">{filteredReadings.length}</span></span>
                 <span className="text-green-600">{t('admin.waterMeter.totalConsumption')} <span className="font-bold">{filteredReadings.reduce((sum, r) => sum + (r.consumption || (r.currentReading - r.previousReading)), 0)} m³</span></span>
@@ -248,6 +436,8 @@ export default function WaterMeterListPage() {
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.prev')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.current')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.consumption')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.recordedBy','Người ghi')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.recordedAt','Thời gian ghi')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.actions')}</th>
                 </tr>
               </thead>
@@ -278,6 +468,8 @@ export default function WaterMeterListPage() {
                           {r.consumption || (r.currentReading - r.previousReading)}
                         </span>
                       </td>
+                      <td className="border px-2 py-1">{r.recordedByName || r.recordedBy || '-'}</td>
+                      <td className="border px-2 py-1">{r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}</td>
                       <td className="border px-2 py-1">
                         {editId === rowKey ? (
                           <>
@@ -302,12 +494,14 @@ export default function WaterMeterListPage() {
                             >
                               {t('admin.waterMeter.btn.edit')}
                             </button>
-                            <button
-                              className="bg-red-600 text-white px-2 py-1 rounded"
-                              onClick={() => handleDelete(r.readingId)}
-                            >
-                              {t('admin.waterMeter.btn.delete')}
-                            </button>
+                            {r.readingId && (
+                              <button
+                                className="bg-red-600 text-white px-2 py-1 rounded"
+                                onClick={() => handleDelete(r.readingId)}
+                              >
+                                {t('admin.waterMeter.btn.delete')}
+                              </button>
+                            )}
                           </>
                         )}
                       </td>

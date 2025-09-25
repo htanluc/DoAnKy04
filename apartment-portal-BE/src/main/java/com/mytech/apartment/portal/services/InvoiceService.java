@@ -8,6 +8,7 @@ import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import com.mytech.apartment.portal.models.Apartment;
+import com.mytech.apartment.portal.models.ApartmentResident;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
@@ -41,16 +42,19 @@ public class InvoiceService {
     // ... (các method CRUD).
 
     /**
-     * Sinh hóa đơn cơ bản cho tất cả căn hộ trong kỳ (chưa gồm phí phát sinh).
+     * Sinh hóa đơn cơ bản cho tất cả căn hộ có cư dân trong kỳ (chưa gồm phí phát sinh).
      */
     public void generateInvoicesForMonth(String period) {
         YearMonth targetMonth = YearMonth.parse(period);
 
-        // Lấy tất cả căn hộ để đảm bảo căn hộ mới cũng có hóa đơn
-        List<Long> apartmentIds = apartmentRepository.findAll()
+        // Lấy tất cả căn hộ có cư dân để tạo hóa đơn
+        List<Long> apartmentIds = apartmentResidentRepository.findAll()
             .stream()
-            .map(Apartment::getId)
+            .map(ApartmentResident::getApartmentId)
+            .distinct()
             .collect(Collectors.toList());
+
+        System.out.println("DEBUG: Tìm thấy " + apartmentIds.size() + " căn hộ có cư dân để tạo hóa đơn cho kỳ " + period);
 
         for (Long apartmentId : apartmentIds) {
             // Tránh tạo trùng hóa đơn cho cùng kỳ
@@ -69,6 +73,8 @@ public class InvoiceService {
 
             invoiceRepository.save(invoice);
         }
+
+        System.out.println("DEBUG: Hoàn thành tạo hóa đơn base cho kỳ " + period + " - tạo " + apartmentIds.size() + " hóa đơn");
     }
 
     /**
@@ -79,10 +85,15 @@ public class InvoiceService {
                                String feeType,
                                String description,
                                BigDecimal amount) {
-        Invoice invoice = invoiceRepository
-            .findByApartmentIdAndBillingPeriod(apartmentId, period)
-            .orElseThrow(() -> new RuntimeException(
-                "Invoice not found for apt=" + apartmentId + ", period=" + period));
+        Optional<Invoice> invoiceOpt = invoiceRepository
+            .findByApartmentIdAndBillingPeriod(apartmentId, period);
+        
+        if (invoiceOpt.isEmpty()) {
+            System.out.println("DEBUG: Bỏ qua thêm item cho căn hộ " + apartmentId + " - chưa có hóa đơn cho kỳ " + period);
+            return;
+        }
+        
+        Invoice invoice = invoiceOpt.get();
 
         // Đảm bảo tập items không null và kiểm tra idempotent
         if (invoice.getItems() == null) {
@@ -101,6 +112,81 @@ public class InvoiceService {
         invoice.getItems().add(item);
         invoice.setTotalAmount(invoice.getTotalAmount() + amount.doubleValue());
         invoiceRepository.save(invoice);
+    }
+
+    /**
+     * Gửi email hóa đơn (đính kèm PDF) cho tất cả cư dân của một căn hộ trong kỳ.
+     */
+    public void sendInvoiceEmailsForApartmentPeriod(Long apartmentId, String period) {
+        System.out.println("DEBUG: [InvoiceService] Bắt đầu gửi email cho căn hộ " + apartmentId + " kỳ " + period);
+        
+        Optional<Invoice> invoiceOpt = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, period);
+        if (invoiceOpt.isEmpty()) {
+            System.out.println("DEBUG: [InvoiceService] Không tìm thấy hóa đơn cho căn hộ " + apartmentId + " kỳ " + period);
+            return;
+        }
+
+        InvoiceDto invoice = invoiceMapper.toDto(invoiceOpt.get());
+        System.out.println("DEBUG: [InvoiceService] Tìm thấy hóa đơn #" + invoice.getId() + " cho căn hộ " + apartmentId);
+
+        // Lấy email các cư dân thuộc căn hộ
+        var residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
+        System.out.println("DEBUG: [InvoiceService] Tìm thấy " + residents.size() + " cư dân cho căn hộ " + apartmentId);
+        
+        var emails = residents.stream()
+                .map(link -> userRepository.findById(link.getUserId()))
+                .filter(java.util.Optional::isPresent)
+                .map(opt -> opt.get().getEmail())
+                .filter(e -> e != null && !e.isBlank())
+                .distinct()
+                .toList();
+
+        System.out.println("DEBUG: [InvoiceService] Tìm thấy " + emails.size() + " email hợp lệ: " + emails);
+        
+        if (emails.isEmpty()) {
+            System.out.println("WARNING: [InvoiceService] Không có email nào cho căn hộ " + apartmentId + " - bỏ qua gửi email");
+            return;
+        }
+
+        // Lấy thông tin căn hộ để hiển thị tên thực tế
+        String apartmentInfo = "#" + invoice.getApartmentId();
+        var apartmentOpt = apartmentRepository.findById(invoice.getApartmentId());
+        if (apartmentOpt.isPresent()) {
+            var apartment = apartmentOpt.get();
+            apartmentInfo = apartment.getUnitNumber() + " (ID: #" + invoice.getApartmentId() + ")";
+        }
+
+        String subject = String.format("Hóa đơn căn hộ %s - Kỳ %s", apartmentInfo, invoice.getBillingPeriod());
+        String html = String.format(
+                "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>" +
+                "<h2 style='color:#1976d2'>Hóa đơn kỳ %s</h2>" +
+                "<p><b>Căn hộ:</b> %s</p>" +
+                "<p><b>Ngày phát hành:</b> %s</p>" +
+                "<p><b>Đến hạn:</b> %s</p>" +
+                "<p><b>Tổng tiền:</b> <span style='color:#d32f2f'>%,.0f VND</span></p>" +
+                "<p>Vui lòng xem file PDF đính kèm để biết chi tiết.</p>" +
+                "<p>Trân trọng,<br/>Ban quản lý tòa nhà</p>" +
+                "</div>",
+                invoice.getBillingPeriod(), apartmentInfo, invoice.getIssueDate(), invoice.getDueDate(),
+                invoice.getTotalAmount() == null ? 0.0 : invoice.getTotalAmount());
+
+        System.out.println("DEBUG: [InvoiceService] Tạo PDF cho hóa đơn #" + invoice.getId());
+        byte[] pdfBytes = invoicePdfService.generateInvoicePdf(invoice);
+        System.out.println("DEBUG: [InvoiceService] PDF được tạo thành công, kích thước: " + pdfBytes.length + " bytes");
+
+        for (String email : emails) {
+            try {
+                System.out.println("DEBUG: [InvoiceService] ===== BẮT ĐẦU GỬI EMAIL TỚI: " + email + " =====");
+                System.out.println("DEBUG: [InvoiceService] Subject: " + subject);
+                System.out.println("DEBUG: [InvoiceService] PDF size: " + pdfBytes.length + " bytes");
+                emailService.sendHtmlWithAttachmentSync(email, subject, html, "invoice_" + invoice.getId() + ".pdf", pdfBytes);
+                System.out.println("DEBUG: [InvoiceService] ===== GỬI EMAIL THÀNH CÔNG TỚI: " + email + " =====");
+            } catch (Exception e) {
+                System.out.println("ERROR: [InvoiceService] ===== LỖI GỬI EMAIL TỚI: " + email + " =====");
+                System.out.println("ERROR: [InvoiceService] Chi tiết lỗi: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
     public void notifyResidents(String period) {
         // TODO: implement gửi email/SMS
@@ -237,10 +323,18 @@ public class InvoiceService {
                     continue;
                 }
 
+                // Lấy thông tin căn hộ để hiển thị tên thực tế
+                String apartmentInfo = "#" + invoice.getApartmentId();
+                var aptOpt = apartmentRepository.findById(invoice.getApartmentId());
+                if (aptOpt.isPresent()) {
+                    var apt = aptOpt.get();
+                    apartmentInfo = apt.getUnitNumber() + " (ID: #" + invoice.getApartmentId() + ")";
+                }
+
                 // Tạo nội dung email nhắc nhở
-                String subject = String.format("NHẮC NHỞ THANH TOÁN - Hóa đơn căn hộ #%d - Kỳ %s", 
-                    invoice.getApartmentId(), invoice.getBillingPeriod());
-                
+                String subject = String.format("NHẮC NHỞ THANH TOÁN - Hóa đơn căn hộ %s - Kỳ %s",
+                    apartmentInfo, invoice.getBillingPeriod());
+
                 String html = String.format(
                     "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>" +
                     "<h2 style='color: #d32f2f;'>⚠️ NHẮC NHỞ THANH TOÁN HÓA ĐƠN</h2>" +
@@ -249,7 +343,7 @@ public class InvoiceService {
                     "</div>" +
                     "<div style='background-color: #f8f9fa; padding: 20px; border-radius: 5px;'>" +
                     "<h3>Thông tin hóa đơn:</h3>" +
-                    "<p><strong>Căn hộ:</strong> #%d</p>" +
+                    "<p><strong>Căn hộ:</strong> %s</p>" +
                     "<p><strong>Kỳ thanh toán:</strong> %s</p>" +
                     "<p><strong>Ngày phát hành:</strong> %s</p>" +
                     "<p><strong>Hạn thanh toán:</strong> %s</p>" +
@@ -260,8 +354,8 @@ public class InvoiceService {
                     "</div>" +
                     "<p>Trân trọng,<br/>Ban quản lý tòa nhà</p>" +
                     "</div>",
-                    invoice.getApartmentId(), invoice.getBillingPeriod(), 
-                    invoice.getIssueDate(), invoice.getDueDate(), 
+                    apartmentInfo, invoice.getBillingPeriod(),
+                    invoice.getIssueDate(), invoice.getDueDate(),
                     invoice.getTotalAmount() == null ? 0.0 : invoice.getTotalAmount());
 
                 // Tạo PDF đính kèm
@@ -270,7 +364,7 @@ public class InvoiceService {
                 // Gửi email cho tất cả cư dân
                 for (String email : emails) {
                     try {
-                        emailService.sendHtmlWithAttachment(email, subject, html, 
+                        emailService.sendHtmlWithAttachmentSync(email, subject, html, 
                             "invoice_reminder_" + invoiceId + ".pdf", pdfBytes);
                     } catch (Exception e) {
                         // Log lỗi nhưng không dừng quá trình
@@ -310,5 +404,12 @@ public class InvoiceService {
         }
         
         return overdueInvoices.size();
+    }
+    
+    /**
+     * Kiểm tra xem có invoice cho căn hộ và kỳ thanh toán cụ thể không
+     */
+    public boolean hasInvoiceForPeriod(Long apartmentId, String billingPeriod) {
+        return invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, billingPeriod).isPresent();
     }
 }

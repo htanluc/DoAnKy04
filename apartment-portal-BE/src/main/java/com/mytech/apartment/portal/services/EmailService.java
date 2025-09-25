@@ -114,11 +114,16 @@ public class EmailService {
     }
 
     /**
-     * Gửi email HTML kèm file đính kèm (PDF, ...)
+     * Gửi email HTML kèm file đính kèm (PDF, ...) - Synchronous version for debugging
      */
-    @Async
-    public void sendHtmlWithAttachment(String to, String subject, String htmlContent, String filename, byte[] data) {
+    public void sendHtmlWithAttachmentSync(String to, String subject, String htmlContent, String filename, byte[] data) {
         try {
+            System.out.println("DEBUG: [EmailService] ===== BẮT ĐẦU GỬI EMAIL (ĐÍNH KÈM) - SYNC =====");
+            System.out.println("DEBUG: [EmailService] To: " + to);
+            System.out.println("DEBUG: [EmailService] Subject: " + subject);
+            System.out.println("DEBUG: [EmailService] Filename: " + filename);
+            System.out.println("DEBUG: [EmailService] Data size: " + (data != null ? data.length : 0) + " bytes");
+            
             logger.info("[EmailService] Gửi email (đính kèm) tới: {} | Subject: {}", to, subject);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -127,10 +132,53 @@ public class EmailService {
             helper.setText(htmlContent, true);
             if (data != null && data.length > 0) {
                 helper.addAttachment(filename, new org.springframework.core.io.ByteArrayResource(data));
+                System.out.println("DEBUG: [EmailService] Đã thêm file đính kèm: " + filename);
             }
+            
+            System.out.println("DEBUG: [EmailService] Đang gửi email...");
             mailSender.send(message);
+            System.out.println("DEBUG: [EmailService] ===== GỬI EMAIL THÀNH CÔNG - SYNC =====");
             logger.info("[EmailService] Gửi email (đính kèm) thành công tới: {}", to);
         } catch (MessagingException e) {
+            System.out.println("ERROR: [EmailService] ===== LỖI GỬI EMAIL (ĐÍNH KÈM) - SYNC =====");
+            System.out.println("ERROR: [EmailService] Chi tiết lỗi: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("[EmailService] Lỗi khi gửi email (đính kèm) tới {}: {}", to, e.getMessage(), e);
+            throw new RuntimeException("Không gửi được email: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Gửi email HTML kèm file đính kèm (PDF, ...)
+     */
+    @Async
+    public void sendHtmlWithAttachment(String to, String subject, String htmlContent, String filename, byte[] data) {
+        try {
+            System.out.println("DEBUG: [EmailService] ===== BẮT ĐẦU GỬI EMAIL (ĐÍNH KÈM) =====");
+            System.out.println("DEBUG: [EmailService] To: " + to);
+            System.out.println("DEBUG: [EmailService] Subject: " + subject);
+            System.out.println("DEBUG: [EmailService] Filename: " + filename);
+            System.out.println("DEBUG: [EmailService] Data size: " + (data != null ? data.length : 0) + " bytes");
+            
+            logger.info("[EmailService] Gửi email (đính kèm) tới: {} | Subject: {}", to, subject);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            if (data != null && data.length > 0) {
+                helper.addAttachment(filename, new org.springframework.core.io.ByteArrayResource(data));
+                System.out.println("DEBUG: [EmailService] Đã thêm file đính kèm: " + filename);
+            }
+            
+            System.out.println("DEBUG: [EmailService] Đang gửi email...");
+            mailSender.send(message);
+            System.out.println("DEBUG: [EmailService] ===== GỬI EMAIL THÀNH CÔNG =====");
+            logger.info("[EmailService] Gửi email (đính kèm) thành công tới: {}", to);
+        } catch (MessagingException e) {
+            System.out.println("ERROR: [EmailService] ===== LỖI GỬI EMAIL (ĐÍNH KÈM) =====");
+            System.out.println("ERROR: [EmailService] Chi tiết lỗi: " + e.getMessage());
+            e.printStackTrace();
             logger.error("[EmailService] Lỗi khi gửi email (đính kèm) tới {}: {}", to, e.getMessage(), e);
             throw new RuntimeException("Không gửi được email: " + e.getMessage());
         }

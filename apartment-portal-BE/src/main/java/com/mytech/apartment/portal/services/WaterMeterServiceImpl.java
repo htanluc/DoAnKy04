@@ -58,6 +58,8 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         saved = waterMeterReadingRepository.save(saved);
         WaterMeterReadingDto result = waterMeterMapper.toDto(saved);
         result.setApartmentName(apartmentService.getApartmentName(saved.getApartmentId().intValue()));
+        // Điền recordedByName nếu có
+        result.setRecordedByName(resolveUserDisplayName(saved.getRecordedBy()));
         // Set previousReading và currentReading cho frontend
         setReadingValues(result, saved);
         return result;
@@ -69,6 +71,7 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                 .map(e -> {
                     WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
                     dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
                     setReadingValues(dto, e);
                     return dto;
                 })
@@ -77,15 +80,52 @@ public class WaterMeterServiceImpl implements WaterMeterService {
 
     @Override
     public List<WaterMeterReadingDto> getReadingsByMonth(String month) {
-        // Parse month string to LocalDate
-        LocalDate monthDate = LocalDate.parse(month + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        return waterMeterReadingRepository.findAllByReadingDate(monthDate).stream()
+        // Parse month string to get year and month
+        String[] parts = month.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int monthValue = Integer.parseInt(parts[1]);
+        
+        // Find all readings in the specified month
+        return waterMeterReadingRepository.findAll().stream()
+                .filter(e -> {
+                    LocalDate readingDate = e.getReadingDate();
+                    return readingDate.getYear() == year && readingDate.getMonthValue() == monthValue;
+                })
                 .map(e -> {
                     WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
                     dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
                     setReadingValues(dto, e);
                     return dto;
                 })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<WaterMeterReadingDto> getLatestReadings() {
+        // Lấy tất cả readings và group theo apartmentId, lấy reading mới nhất cho mỗi apartment
+        Map<Long, WaterMeterReading> latestByApartment = waterMeterReadingRepository.findAll().stream()
+                .collect(Collectors.groupingBy(
+                    WaterMeterReading::getApartmentId,
+                    Collectors.maxBy((r1, r2) -> r1.getReadingDate().compareTo(r2.getReadingDate()))
+                ))
+                .entrySet().stream()
+                .filter(entry -> entry.getValue().isPresent())
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> entry.getValue().get()
+                ));
+
+        // Convert to DTOs
+        return latestByApartment.values().stream()
+                .map(e -> {
+                    WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
+                    dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
+                    setReadingValues(dto, e);
+                    return dto;
+                })
+                .sorted((a, b) -> a.getApartmentName().compareTo(b.getApartmentName()))
                 .collect(Collectors.toList());
     }
 
@@ -107,6 +147,7 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                 .map(e -> {
                     WaterMeterReadingDto dto = waterMeterMapper.toDto(e);
                     dto.setApartmentName(apartmentService.getApartmentName(e.getApartmentId().intValue()));
+                    dto.setRecordedByName(resolveUserDisplayName(e.getRecordedBy()));
                     setReadingValues(dto, e);
                     return dto;
                 });
@@ -125,11 +166,17 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         WaterMeterReading entity = waterMeterReadingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Water meter reading not found"));
         waterMeterMapper.updateEntityFromDto(dto, entity);
+        // Ghi nhận lại người thực hiện chỉnh sửa
+        Long currentUserId = getCurrentAuthenticatedUserId();
+        if (currentUserId != null) {
+            entity.setRecordedBy(currentUserId);
+        }
         WaterMeterReading saved = waterMeterReadingRepository.save(entity);
         // Sau khi cập nhật meterReading, cập nhật consumption
         updateConsumption(saved);
         WaterMeterReadingDto result = waterMeterMapper.toDto(saved);
         result.setApartmentName(apartmentService.getApartmentName(saved.getApartmentId().intValue()));
+        result.setRecordedByName(resolveUserDisplayName(saved.getRecordedBy()));
         setReadingValues(result, saved);
         return result;
     }
@@ -154,13 +201,44 @@ public class WaterMeterServiceImpl implements WaterMeterService {
             entity.setMeterReading(currentReading);
         }
         
+        // Ghi nhận lại người thực hiện chỉnh sửa
+        Long currentUserId = getCurrentAuthenticatedUserId();
+        if (currentUserId != null) {
+            entity.setRecordedBy(currentUserId);
+        }
         WaterMeterReading saved = waterMeterReadingRepository.save(entity);
         // Cập nhật consumption
         updateConsumption(saved);
         WaterMeterReadingDto result = waterMeterMapper.toDto(saved);
         result.setApartmentName(apartmentService.getApartmentName(saved.getApartmentId().intValue()));
+        result.setRecordedByName(resolveUserDisplayName(saved.getRecordedBy()));
         setReadingValues(result, saved);
         return result;
+    }
+
+    private String resolveUserDisplayName(Long userId) {
+        try {
+            if (userId == null) return null;
+            // Fallback hiển thị cho bản ghi hệ thống (seed)
+            if (userId == 0L) return "Hệ thống";
+            var user = userService.getUserEntityById(userId);
+            if (user == null) return "Hệ thống";
+            if (user.getFullName() != null && !user.getFullName().isBlank()) return user.getFullName();
+            if (user.getUsername() != null && !user.getUsername().isBlank()) return user.getUsername();
+            if (user.getPhoneNumber() != null && !user.getPhoneNumber().isBlank()) return user.getPhoneNumber();
+            return String.valueOf(userId);
+        } catch (Exception e) {
+            return "Hệ thống";
+        }
+    }
+
+    private Long getCurrentAuthenticatedUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            Long uid = userService.getUserIdByPhoneNumber(auth.getName());
+            if (uid != null) return uid;
+        }
+        return null;
     }
 
     @Override
@@ -172,11 +250,16 @@ public class WaterMeterServiceImpl implements WaterMeterService {
                 .map(apartment -> apartment.getId())
                 .collect(Collectors.toList());
         
-        // Lấy tháng hiện tại
+        // Lấy tháng hiện tại và đảm bảo nếu startMonth ở tương lai thì vẫn tạo được tháng đó
         String currentMonth = java.time.YearMonth.now().toString(); // YYYY-MM
-        
-        // Tạo danh sách các tháng cần tạo (từ startMonth đến currentMonth)
-        List<String> monthsToGenerate = generateMonthsList(startMonth, currentMonth);
+        java.time.YearMonth startYm = java.time.YearMonth.parse(startMonth);
+        java.time.YearMonth endYm = java.time.YearMonth.parse(currentMonth);
+        // Nếu chọn tháng tương lai (start > now) thì end = start để vẫn tạo skeleton cho tháng đó
+        if (startYm.isAfter(endYm)) {
+            endYm = startYm;
+        }
+        // Tạo danh sách các tháng cần tạo (từ startMonth đến endYm)
+        List<String> monthsToGenerate = generateMonthsList(startYm.toString(), endYm.toString());
         
         int createdCount = 0;
         for (Long apartmentId : apartmentIds) {
@@ -361,5 +444,65 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         dto.setCurrentReading(currentReading != null ? currentReading : BigDecimal.ZERO);
         dto.setMeterReading(dto.getCurrentReading());
         return addReading(dto);
+    }
+
+    @Override
+    @Transactional
+    public void createSampleReadings() {
+        System.out.println("💧 Creating sample water meter readings...");
+        
+        List<com.mytech.apartment.portal.models.Apartment> apartments = apartmentService.getAllApartments().stream()
+                .map(dto -> {
+                    com.mytech.apartment.portal.models.Apartment apartment = new com.mytech.apartment.portal.models.Apartment();
+                    apartment.setId(dto.getId());
+                    apartment.setArea(dto.getArea());
+                    apartment.setUnitNumber(dto.getUnitNumber());
+                    return apartment;
+                })
+                .collect(Collectors.toList());
+        if (apartments.isEmpty()) {
+            throw new RuntimeException("Không có căn hộ nào trong hệ thống");
+        }
+        
+        Long recordedBy = 1L; // Default admin user
+        
+        // Tạo chỉ số nước cho 3 tháng gần đây
+        String[] months = {"2025-01", "2025-02", "2025-03"};
+        
+        for (com.mytech.apartment.portal.models.Apartment apartment : apartments) {
+            double baseReading = 100.0 + (apartment.getId() % 50);
+            
+            for (int i = 0; i < months.length; i++) {
+                String month = months[i];
+                LocalDate readingDate = LocalDate.parse(month + "-28", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                
+                // Kiểm tra xem đã có dữ liệu chưa
+                boolean exists = waterMeterReadingRepository
+                    .findByApartmentIdAndReadingDate(apartment.getId(), readingDate)
+                    .isPresent();
+                
+                if (!exists) {
+                    // Tính toán chỉ số dựa trên diện tích căn hộ
+                    double consumption = Math.max(3.0, (apartment.getArea() / 30.0) + (i + 1));
+                    double unitPrice = 10000.0 + ((apartment.getId() % 3) * 500);
+                    double totalAmount = consumption * unitPrice;
+                    baseReading += consumption;
+                    
+                    WaterMeterReading reading = new WaterMeterReading();
+                    reading.setApartmentId(apartment.getId());
+                    reading.setReadingDate(readingDate);
+                    reading.setMeterReading(BigDecimal.valueOf(baseReading));
+                    reading.setConsumption(BigDecimal.valueOf(consumption));
+                    reading.setUnitPrice(BigDecimal.valueOf(unitPrice));
+                    reading.setTotalAmount(BigDecimal.valueOf(totalAmount));
+                    reading.setRecordedBy(recordedBy);
+                    reading.setCreatedAt(java.time.LocalDateTime.now());
+                    
+                    waterMeterReadingRepository.save(reading);
+                }
+            }
+        }
+        
+        System.out.println("✅ Sample water meter readings created successfully");
     }
 }

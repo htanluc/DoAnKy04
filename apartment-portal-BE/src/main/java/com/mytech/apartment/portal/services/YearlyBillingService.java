@@ -4,11 +4,12 @@ import com.mytech.apartment.portal.models.*;
 import com.mytech.apartment.portal.repositories.*;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 // import com.mytech.apartment.portal.models.enums.VehicleType;
+import com.mytech.apartment.portal.models.WaterMeterReading;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// import java.math.BigDecimal;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 // import java.time.YearMonth;
 // import java.time.format.DateTimeFormatter;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Service
 public class YearlyBillingService {
@@ -39,11 +41,14 @@ public class YearlyBillingService {
     @Autowired
     private List<MonthlyFeeService> feeServices;
 
-    // @Autowired
-    // private WaterMeterReadingRepository waterMeterReadingRepository;
+    @Autowired
+    private WaterMeterReadingRepository waterMeterReadingRepository;
 
     @Autowired
     private ApartmentResidentRepository apartmentResidentRepository;
+
+    @Autowired
+    private InvoiceService invoiceService;
     
     // Cache for fee configs to reduce database queries
     private final ConcurrentHashMap<String, ServiceFeeConfig> configCache = new ConcurrentHashMap<>();
@@ -122,10 +127,11 @@ public class YearlyBillingService {
      * Tạo hóa đơn cho tất cả căn hộ trong một tháng cụ thể
      * @param year Năm
      * @param month Tháng (1-12)
-     * @throws IllegalArgumentException nếu chưa có cấu hình phí dịch vụ
+     * @param skipWaterValidation Bỏ qua kiểm tra chỉ số nước
+     * @throws IllegalArgumentException nếu chưa có cấu hình phí dịch vụ hoặc chưa ghi chỉ số nước
      */
     @Transactional
-    public void generateInvoicesForMonth(int year, int month) {
+    public void generateInvoicesForMonth(int year, int month, boolean skipWaterValidation) {
         System.out.println("DEBUG: Bắt đầu tạo hóa đơn (base + items) cho tháng " + month + "/" + year);
 
         // Kiểm tra xem có cấu hình phí dịch vụ cho tháng này không
@@ -136,17 +142,59 @@ public class YearlyBillingService {
             throw new IllegalArgumentException(errorMessage);
         }
 
+        // Kiểm tra chỉ số nước cho tháng này (nếu không bỏ qua)
+        if (!skipWaterValidation) {
+            checkWaterMeterReadingsAndWarn(year, month);
+        } else {
+            System.out.println("DEBUG: Bỏ qua kiểm tra chỉ số nước theo yêu cầu");
+        }
+
         // 1) Tạo hóa đơn với tính toán phí ngay từ đầu
         List<Apartment> allApartments = apartmentRepository.findAll();
         String billingPeriod = String.format("%04d-%02d", year, month);
         System.out.println("DEBUG: Số căn hộ: " + allApartments.size() + ", kỳ: " + billingPeriod);
 
+        java.util.List<Long> createdApartmentIds = new java.util.ArrayList<>();
+
         for (Apartment apartment : allApartments) {
+            // Kiểm tra xem căn hộ này đã có chỉ số nước chưa (nếu không bỏ qua kiểm tra)
+            if (!skipWaterValidation) {
+                // Tìm bản ghi chỉ số nước trong tháng (không chỉ ngày 01)
+                LocalDate startOfMonth = LocalDate.of(year, month, 1);
+                LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+                
+                List<WaterMeterReading> readingsInMonth = waterMeterReadingRepository
+                    .findAllByApartmentIdOrderByReadingDateDesc(apartment.getId())
+                    .stream()
+                    .filter(r -> !r.getReadingDate().isBefore(startOfMonth) && !r.getReadingDate().isAfter(endOfMonth))
+                    .collect(java.util.stream.Collectors.toList());
+                
+                // Chỉ bỏ qua căn hộ chưa có bản ghi chỉ số nước trong tháng
+                if (readingsInMonth.isEmpty()) {
+                    System.out.println("DEBUG: Bỏ qua căn hộ " + apartment.getId() + " - chưa có bản ghi chỉ số nước trong tháng " + month + "/" + year);
+                    continue;
+                } else {
+                    // Có bản ghi chỉ số nước trong tháng, cho phép tạo hóa đơn
+                    WaterMeterReading latestReading = readingsInMonth.get(0); // Đã sắp xếp desc
+                    BigDecimal meterReading = latestReading.getMeterReading();
+                    if (meterReading == null) {
+                        System.out.println("DEBUG: Căn hộ " + apartment.getId() + " có bản ghi nhưng chỉ số nước null - vẫn tạo hóa đơn");
+                    } else {
+                        System.out.println("DEBUG: Căn hộ " + apartment.getId() + " có chỉ số nước: " + meterReading + " (ngày " + latestReading.getReadingDate() + ") - tiếp tục xử lý");
+                    }
+                }
+            }
+
             // Chỉ tạo mới nếu chưa tồn tại hóa đơn của kỳ này
             Optional<Invoice> existing = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), billingPeriod);
             if (existing.isPresent()) {
+                System.out.println("DEBUG: Căn hộ " + apartment.getId() + " đã có hóa đơn cho kỳ " + billingPeriod + " - bỏ qua");
                 continue;
+            } else {
+                System.out.println("DEBUG: Căn hộ " + apartment.getId() + " chưa có hóa đơn cho kỳ " + billingPeriod + " - tiếp tục tạo");
             }
+
+            System.out.println("DEBUG: Bắt đầu tạo hóa đơn cho căn hộ " + apartment.getId());
 
             // Tính toán tổng tiền ngay từ đầu để tránh vi phạm constraint
             double totalAmount = calculateTotalAmountForApartment(apartment.getId(), month, year);
@@ -169,22 +217,67 @@ public class YearlyBillingService {
                 .build();
 
             invoiceRepository.save(invoice);
+            System.out.println("DEBUG: Đã tạo hóa đơn thành công cho căn hộ " + apartment.getId() + " - Tổng tiền: " + totalAmount);
+            // Ghi nhận căn hộ đã tạo mới hoá đơn để gửi email sau khi đã tính xong các item
+            createdApartmentIds.add(apartment.getId());
         }
 
         // 2) Gọi lần lượt các dịch vụ tính phí để thêm item vào từng hóa đơn (idempotent)
-        if (feeServices != null && !feeServices.isEmpty()) {
+        // Chỉ gọi nếu có hóa đơn được tạo
+        if (feeServices != null && !feeServices.isEmpty() && !createdApartmentIds.isEmpty()) {
+            System.out.println("DEBUG: Bắt đầu thêm items cho " + createdApartmentIds.size() + " hóa đơn");
             feeServices.forEach(svc -> svc.generateFeeForMonth(billingPeriod));
+            System.out.println("DEBUG: Hoàn thành thêm items cho hóa đơn");
+        } else {
+            System.out.println("DEBUG: Bỏ qua thêm items - không có hóa đơn nào được tạo");
         }
 
-        System.out.println("DEBUG: Hoàn thành tạo hóa đơn base và thêm các items cho tháng " + month + "/" + year);
+        // Sau khi đã thêm các items vào hoá đơn, mới gửi email để bảng chi tiết không bị trống
+        System.out.println("DEBUG: Bắt đầu gửi email cho " + createdApartmentIds.size() + " hóa đơn");
+        if (createdApartmentIds.isEmpty()) {
+            System.out.println("WARNING: Không có hóa đơn nào được tạo - không gửi email");
+        } else {
+            System.out.println("DEBUG: Danh sách căn hộ cần gửi email: " + createdApartmentIds);
+            for (Long aptId : createdApartmentIds) {
+                try {
+                    System.out.println("DEBUG: ===== BẮT ĐẦU GỬI EMAIL CHO CĂN HỘ " + aptId + " KỲ " + billingPeriod + " =====");
+                    invoiceService.sendInvoiceEmailsForApartmentPeriod(aptId, billingPeriod);
+                    System.out.println("DEBUG: ===== GỬI EMAIL THÀNH CÔNG CHO CĂN HỘ " + aptId + " =====");
+                } catch (Exception e) {
+                    System.out.println("ERROR: ===== LỖI GỬI EMAIL CHO CĂN HỘ " + aptId + " =====");
+                    System.out.println("ERROR: Chi tiết lỗi: " + e.getMessage());
+                    e.printStackTrace(); // In stack trace để debug
+                }
+            }
+            System.out.println("DEBUG: Hoàn thành gửi email cho tất cả căn hộ");
+        }
+
+        System.out.println("DEBUG: Hoàn thành tạo hóa đơn base và thêm các items cho tháng " + month + "/" + year + 
+                          " - Đã tạo " + createdApartmentIds.size() + " hóa đơn");
     }
 
     /**
      * Tạo hóa đơn đồng loạt cho tất cả căn hộ trong một tháng (phiên bản phục vụ controller mới)
      */
     @Transactional
+    public void generateMonthlyInvoicesForAllApartments(int year, int month, boolean skipWaterValidation) {
+        generateInvoicesForMonth(year, month, skipWaterValidation);
+    }
+
+    /**
+     * Overload method để tương thích ngược (mặc định kiểm tra chỉ số nước)
+     */
+    @Transactional
+    public void generateInvoicesForMonth(int year, int month) {
+        generateInvoicesForMonth(year, month, false);
+    }
+
+    /**
+     * Overload method để tương thích ngược (mặc định kiểm tra chỉ số nước)
+     */
+    @Transactional
     public void generateMonthlyInvoicesForAllApartments(int year, int month) {
-        generateInvoicesForMonth(year, month);
+        generateMonthlyInvoicesForAllApartments(year, month, false);
     }
 
     /**
@@ -356,6 +449,22 @@ public class YearlyBillingService {
     public void updateFeeConfig(int month, int year, double serviceFeePerM2, 
                               double waterFeePerM3, double motorcycleFee,
                               double car4SeatsFee, double car7SeatsFee) {
+        // Chặn sửa biểu phí cho tháng quá khứ
+        YearMonth target = YearMonth.of(year, month);
+        YearMonth current = YearMonth.now();
+        if (target.isBefore(current)) {
+            throw new IllegalStateException("Không được cập nhật biểu phí của tháng quá khứ");
+        }
+
+        // Nếu là tháng hiện tại và đã tạo hóa đơn thì không cho sửa
+        if (target.equals(current)) {
+            String prefix = String.format("%04d-%02d", year, month);
+            long invoiceCount = invoiceRepository.countByBillingPeriodStartingWith(prefix);
+            if (invoiceCount > 0) {
+                throw new IllegalStateException("Không được cập nhật biểu phí tháng hiện tại vì đã tạo hóa đơn");
+            }
+        }
+
         Optional<ServiceFeeConfig> existingConfig = serviceFeeConfigRepository.findByMonthAndYear(month, year);
         
         if (existingConfig.isPresent()) {
@@ -483,5 +592,61 @@ public class YearlyBillingService {
         double waterFee = calculateWaterFee(apartmentId, month, year, feeConfig);
         
         return serviceFee + parkingFee + waterFee;
+    }
+
+    /**
+     * Kiểm tra chỉ số nước cho tháng được chỉ định và cảnh báo
+     * @param year Năm
+     * @param month Tháng
+     */
+    private void checkWaterMeterReadingsAndWarn(int year, int month) {
+        System.out.println("DEBUG: Kiểm tra chỉ số nước cho tháng " + month + "/" + year);
+        
+        // Tìm bản ghi chỉ số nước trong tháng được chỉ định
+        
+        // Lấy tất cả căn hộ
+        List<Apartment> allApartments = apartmentRepository.findAll();
+        
+        // Đếm căn hộ chưa có chỉ số nước hoặc chỉ số = 0
+        int apartmentsWithoutReadings = 0;
+        int apartmentsWithReadings = 0;
+        
+        for (Apartment apartment : allApartments) {
+            // Tìm chỉ số nước cho căn hộ này trong tháng được chỉ định (tìm trong cả tháng)
+            LocalDate startOfMonth = LocalDate.of(year, month, 1);
+            LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+            
+            List<WaterMeterReading> readingsInMonth = waterMeterReadingRepository
+                .findAllByApartmentIdOrderByReadingDateDesc(apartment.getId())
+                .stream()
+                .filter(r -> !r.getReadingDate().isBefore(startOfMonth) && !r.getReadingDate().isAfter(endOfMonth))
+                .collect(java.util.stream.Collectors.toList());
+            
+            if (readingsInMonth.isEmpty()) {
+                // Chưa có bản ghi chỉ số nước trong tháng
+                apartmentsWithoutReadings++;
+            } else {
+                // Có bản ghi chỉ số nước trong tháng (kể cả chỉ số = 0 hoặc null)
+                apartmentsWithReadings++;
+            }
+        }
+        
+        // Ghi log thông tin
+        System.out.println("DEBUG: Tổng căn hộ: " + allApartments.size() + 
+                          ", có chỉ số nước: " + apartmentsWithReadings + 
+                          ", chưa có chỉ số nước: " + apartmentsWithoutReadings);
+        
+        // Nếu có căn hộ chưa có bản ghi chỉ số nước, ghi cảnh báo nhưng vẫn tiếp tục
+        if (apartmentsWithoutReadings > 0) {
+            String warningMessage = String.format(
+                "CẢNH BÁO: Có %d căn hộ chưa có bản ghi chỉ số nước cho tháng %d/%d. " +
+                "Hệ thống sẽ tạo hóa đơn cho %d căn hộ đã có bản ghi chỉ số nước. " +
+                "Vui lòng tạo bản ghi chỉ số nước cho các căn hộ còn lại sau.",
+                apartmentsWithoutReadings, month, year, apartmentsWithReadings
+            );
+            System.out.println("WARNING: " + warningMessage);
+        } else {
+            System.out.println("DEBUG: Đã kiểm tra chỉ số nước - tất cả căn hộ đã có bản ghi chỉ số nước");
+        }
     }
 } 

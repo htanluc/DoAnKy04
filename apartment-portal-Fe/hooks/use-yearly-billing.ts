@@ -213,7 +213,8 @@ export const useYearlyBilling = () => {
         if (response.status === 404) {
           errorMessage = 'Không tìm thấy cấu hình phí cho tháng/năm này. Vui lòng tạo cấu hình mới.';
         } else if (response.status === 400) {
-          errorMessage = 'Dữ liệu cấu hình không hợp lệ. Vui lòng kiểm tra lại.';
+          // Giữ nguyên message cụ thể từ BE nếu có (ví dụ: chặn sửa quá khứ / đã tạo hóa đơn)
+          errorMessage = errorData.message || 'Dữ liệu cấu hình không hợp lệ. Vui lòng kiểm tra lại.';
         }
         
         setError(errorMessage);
@@ -250,6 +251,21 @@ export const useYearlyBilling = () => {
       return null;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Kiểm tra tháng/năm đã có hóa đơn chưa
+  const hasInvoicesForMonth = async (year: number, month: number): Promise<{ success: boolean; hasInvoices: boolean; count?: number } | null> => {
+    try {
+      const response = await api.get(`/api/admin/yearly-billing/has-invoices/${year}/${month}`);
+      if (response.ok) {
+        const result = await response.json();
+        return { success: true, hasInvoices: !!result.hasInvoices, count: result.count };
+      } else {
+        return { success: false, hasInvoices: false };
+      }
+    } catch (err) {
+      return { success: false, hasInvoices: false };
     }
   };
 
@@ -369,13 +385,16 @@ export const useYearlyBilling = () => {
   };
 
   // Tạo hóa đơn cho tất cả căn hộ theo tháng cụ thể
-  const generateMonthlyInvoices = async (year: number, month: number): Promise<GenerateInvoiceResponse | null> => {
+  const generateMonthlyInvoices = async (year: number, month: number, skipWaterValidation: boolean = false): Promise<GenerateInvoiceResponse | null> => {
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const response = await api.post(`/api/admin/yearly-billing/generate-month/${year}/${month}`, {
+      const url = `/api/admin/yearly-billing/generate-monthly-invoices?skipWaterValidation=${skipWaterValidation}`;
+      const response = await api.post(url, {
+        year: year,
+        month: month,
         serviceFeePerM2: 5000.0,
         waterFeePerM3: 15000.0,
         motorcycleFee: 50000.0,
@@ -391,7 +410,11 @@ export const useYearlyBilling = () => {
         const errorData = await response.json();
         let errorMessage = errorData.message || 'Có lỗi xảy ra khi tạo hóa đơn cho tháng này';
         
-        if (response.status === 400) {
+        // Kiểm tra lỗi cụ thể về chỉ số nước
+        if (errorData.message && errorData.message.includes('chưa ghi chỉ số nước')) {
+          // Giữ nguyên thông báo lỗi từ backend về chỉ số nước
+          errorMessage = errorData.message;
+        } else if (response.status === 400) {
           errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập vào.';
         } else if (response.status === 429) {
           errorMessage = 'Quá nhiều request. Vui lòng thử lại sau 100ms.';
@@ -571,5 +594,6 @@ export const useYearlyBilling = () => {
     clearMessages,
     getInvoiceStats,
     clearCache,
+    hasInvoicesForMonth,
   };
 }; 

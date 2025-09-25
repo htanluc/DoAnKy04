@@ -90,7 +90,7 @@ const adminMenuSections = [
     items: [
       { href: '/admin-dashboard/feedbacks', label: 'admin.feedbacks.title', icon: <MessageSquare className="h-5 w-5" /> },
       { href: '/admin-dashboard/support-requests', label: 'admin.support-requests.title', icon: <LifeBuoy className="h-5 w-5" /> },
-      { href: '/admin-dashboard/vehicle-registrations', label: 'admin.vehicle-registrations.title', icon: <Car className="h-5 w-5" /> },
+      { href: '/admin-dashboard/vehicle-registrations', label: 'admin.vehicleRegistrations.title', icon: <Car className="h-5 w-5" /> },
     ],
   },
   {
@@ -252,7 +252,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                                        item.label.includes('invoices') ? t('admin.invoices.title', 'Quản lý hóa đơn') :
                                        item.label.includes('feedbacks') ? t('admin.feedbacks.title', 'Quản lý phản hồi') :
                                        item.label.includes('support-requests') ? t('admin.support-requests.title', 'Quản lý yêu cầu hỗ trợ') :
-                                       item.label.includes('vehicle-registrations') ? t('admin.vehicle-registrations.title', 'Quản lý đăng ký xe') :
+                                       item.label.includes('vehicleRegistrations') ? t('admin.vehicleRegistrations.title', 'Quản lý đăng ký xe') :
                                        item.label.includes('reports') ? t('admin.reports.title', 'Quản lý báo cáo') :
                                        item.label.includes('history') ? t('admin.history.title', 'Lịch sử AI Q&A') : t('admin.function', 'Chức năng'))}
                             className="relative border-l-2 border-transparent hover:border-[var(--group-accent)] data-[active=true]:border-[var(--group-accent)] data-[active=true]:bg-[var(--group-accent)]/10 data-[active=true]:text-[var(--group-accent)]"
@@ -270,7 +270,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                                        item.label.includes('invoices') ? t('admin.invoices.title', 'Quản lý hóa đơn') :
                                        item.label.includes('feedbacks') ? t('admin.feedbacks.title', 'Quản lý phản hồi') :
                                        item.label.includes('support-requests') ? t('admin.support-requests.title', 'Quản lý yêu cầu hỗ trợ') :
-                                       item.label.includes('vehicle-registrations') ? t('admin.vehicle-registrations.title', 'Quản lý đăng ký xe') :
+                                       item.label.includes('vehicleRegistrations') ? t('admin.vehicleRegistrations.title', 'Quản lý đăng ký xe') :
                                        item.label.includes('reports') ? t('admin.reports.title', 'Quản lý báo cáo') :
                                        item.label.includes('history') ? t('admin.history.title', 'Lịch sử AI Q&A') : t('admin.function', 'Chức năng'))}</span>
                             </Link>

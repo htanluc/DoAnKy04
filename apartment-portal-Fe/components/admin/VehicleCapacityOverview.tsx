@@ -4,21 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Car, Bike, Truck, Van, Zap, Bicycle, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Car, Bike, AlertTriangle, CheckCircle } from 'lucide-react';
 import { VehicleCapacityConfig } from '@/lib/api';
 import { useVehicleCapacity } from '@/hooks/use-vehicle-capacity';
+import { useLanguage } from '@/lib/i18n';
 
 interface VehicleCapacityOverviewProps {
   buildingId?: number;
   showAllBuildings?: boolean;
 }
 
-const VEHICLE_TYPES = [
-  { key: 'maxCars', label: 'Ô tô (4-7 chỗ)', icon: Car, color: 'bg-blue-100 text-blue-800', apiType: 'CAR_4_SEATS' },
-  { key: 'maxMotorcycles', label: 'Xe máy', icon: Bike, color: 'bg-green-100 text-green-800', apiType: 'MOTORCYCLE' },
-];
+// Tạo danh sách loại xe dựa trên i18n trong runtime (không tạo hook ngoài component)
+const buildVehicleTypes = (t: (k: string, fallback?: string, vars?: any) => string) => ([
+  { key: 'maxCars', label: t('admin.vehicleRegistrations.capacity.labels.cars', 'Ô tô (4-7 chỗ)'), icon: Car, color: 'bg-blue-100 text-blue-800', apiType: 'CAR_4_SEATS' },
+  { key: 'maxMotorcycles', label: t('admin.vehicleRegistrations.capacity.labels.motorcycles', 'Xe máy'), icon: Bike, color: 'bg-green-100 text-green-800', apiType: 'MOTORCYCLE' },
+]);
 
 export default function VehicleCapacityOverview({ buildingId, showAllBuildings = false }: VehicleCapacityOverviewProps) {
+  const { t } = useLanguage();
   const {
     configs,
     loading,
@@ -46,24 +49,24 @@ export default function VehicleCapacityOverview({ buildingId, showAllBuildings =
 
 
   const getCapacityStatus = (current: number, max: number) => {
-    if (max === 0) return { status: 'disabled', label: 'Không hỗ trợ', color: 'bg-gray-100 text-gray-600' };
-    if (current >= max) return { status: 'full', label: 'Đã đầy', color: 'bg-red-100 text-red-800' };
-    if (current >= max * 0.8) return { status: 'warning', label: 'Gần đầy', color: 'bg-yellow-100 text-yellow-800' };
-    return { status: 'available', label: 'Còn chỗ', color: 'bg-green-100 text-green-800' };
+    if (max === 0) return { status: 'disabled', label: t('admin.vehicleRegistrations.capacity.status.disabled', 'Không hỗ trợ'), color: 'bg-gray-100 text-gray-600' };
+    if (current >= max) return { status: 'full', label: t('admin.vehicleRegistrations.capacity.status.full', 'Đã đầy'), color: 'bg-red-100 text-red-800' };
+    if (current >= max * 0.8) return { status: 'warning', label: t('admin.vehicleRegistrations.capacity.status.warning', 'Gần đầy'), color: 'bg-yellow-100 text-yellow-800' };
+    return { status: 'available', label: t('admin.vehicleRegistrations.capacity.status.available', 'Còn chỗ'), color: 'bg-green-100 text-green-800' };
   };
 
   const getBuildingName = (buildingId: number) => {
     // Trong thực tế sẽ lấy từ API buildings
-    return `Tòa ${buildingId}`;
+    return t('admin.vehicleRegistrations.capacity.labels.buildingName', 'Tòa {id}', { id: buildingId });
   };
 
   if (error) {
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <div className="text-red-600 mb-4">Lỗi: {error}</div>
+          <div className="text-red-600 mb-4">{t('admin.error.label', 'Lỗi')}: {error}</div>
           <Button onClick={() => window.location.reload()}>
-            Thử lại
+            {t('admin.action.retry', 'Thử lại')}
           </Button>
         </CardContent>
       </Card>
@@ -74,7 +77,7 @@ export default function VehicleCapacityOverview({ buildingId, showAllBuildings =
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <div className="text-gray-500">Đang tải thông tin giới hạn xe...</div>
+          <div className="text-gray-500">{t('admin.vehicleRegistrations.capacity.loading', 'Đang tải thông tin giới hạn xe...')}</div>
         </CardContent>
       </Card>
     );
@@ -84,7 +87,7 @@ export default function VehicleCapacityOverview({ buildingId, showAllBuildings =
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <div className="text-gray-500">Chưa có cấu hình giới hạn xe</div>
+          <div className="text-gray-500">{t('admin.vehicleRegistrations.capacity.empty', 'Chưa có cấu hình giới hạn xe')}</div>
         </CardContent>
       </Card>
     );
@@ -97,15 +100,15 @@ export default function VehicleCapacityOverview({ buildingId, showAllBuildings =
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              Giới hạn xe - {getBuildingName(config.buildingId)}
+              {t('admin.vehicleRegistrations.capacity.overview.cardTitle', 'Giới hạn xe - {building}', { building: getBuildingName(config.buildingId) })}
             </CardTitle>
             <CardDescription>
-              Tình trạng sức chứa xe hiện tại
+              {t('admin.vehicleRegistrations.capacity.overview.cardSubtitle', 'Tình trạng sức chứa xe hiện tại')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {VEHICLE_TYPES.map((type) => {
+              {buildVehicleTypes(t).map((type) => {
                 const currentKey = type.key.replace('max', 'current') as keyof VehicleCapacityConfig;
                 const maxValue = config[type.key as keyof VehicleCapacityConfig] as number;
                 const currentValue = config[currentKey] as number || 0;
@@ -120,17 +123,17 @@ export default function VehicleCapacityOverview({ buildingId, showAllBuildings =
                     
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Hiện tại:</span>
+                        <span className="text-sm text-gray-600">{t('admin.vehicleRegistrations.capacity.labels.current', 'Hiện tại')}:</span>
                         <span className="font-semibold">{currentValue}</span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Tối đa:</span>
+                        <span className="text-sm text-gray-600">{t('admin.vehicleRegistrations.capacity.labels.max', 'Tối đa')}:</span>
                         <span className="font-semibold">{maxValue}</span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Trạng thái:</span>
+                        <span className="text-sm text-gray-600">{t('admin.vehicleRegistrations.capacity.labels.status', 'Trạng thái')}:</span>
                         <Badge className={capacityStatus.color}>
                           {capacityStatus.label}
                         </Badge>
@@ -152,14 +155,14 @@ export default function VehicleCapacityOverview({ buildingId, showAllBuildings =
                       {capacityStatus.status === 'full' && (
                         <div className="flex items-center gap-1 text-red-600 text-xs">
                           <AlertTriangle className="h-3 w-3" />
-                          <span>Không thể đăng ký thêm</span>
+                          <span>{t('admin.vehicleRegistrations.capacity.labels.cannotRegisterMore', 'Không thể đăng ký thêm')}</span>
                         </div>
                       )}
                       
                       {capacityStatus.status === 'warning' && (
                         <div className="flex items-center gap-1 text-yellow-600 text-xs">
                           <AlertTriangle className="h-3 w-3" />
-                          <span>Chỉ còn {maxValue - currentValue} chỗ</span>
+                          <span>{t('admin.vehicleRegistrations.capacity.labels.remainingSpots', 'Chỉ còn {count} chỗ', { count: maxValue - currentValue })}</span>
                         </div>
                       )}
                     </div>
@@ -172,18 +175,18 @@ export default function VehicleCapacityOverview({ buildingId, showAllBuildings =
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant={config.isActive ? 'default' : 'secondary'}>
-                    {config.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                    {config.isActive ? t('admin.status.active', 'Hoạt động') : t('admin.status.inactive', 'Không hoạt động')}
                   </Badge>
                   {config.isActive && (
                     <span className="text-sm text-gray-600">
-                      Cấu hình đang được áp dụng
+                      {t('admin.vehicleRegistrations.capacity.labels.applied', 'Cấu hình đang được áp dụng')}
                     </span>
                   )}
                 </div>
                 
                 {!config.isActive && (
                   <div className="text-sm text-gray-500">
-                    Cấu hình đã bị tắt, không áp dụng giới hạn
+                    {t('admin.vehicleRegistrations.capacity.labels.disabledNote', 'Cấu hình đã bị tắt, không áp dụng giới hạn')}
                   </div>
                 )}
               </div>
