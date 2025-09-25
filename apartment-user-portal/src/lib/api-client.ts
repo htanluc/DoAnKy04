@@ -4,7 +4,7 @@ import { useApiCache } from '@/hooks/use-api-cache'
 
 // Base API client with caching and request deduplication
 class ApiClient {
-  private baseURL = 'http://localhost:8080/api'
+  private baseURL = `${(typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_BASE_URL) ? String(process.env.NEXT_PUBLIC_API_BASE_URL) : 'http://localhost:8080'}/api`
   private cache = new Map<string, { data: any; timestamp: number; promise?: Promise<any> }>()
   private pendingRequests = new Map<string, Promise<any>>()
   private requestQueue = new Map<string, Array<{ resolve: Function; reject: Function }>>()
@@ -162,7 +162,7 @@ class ApiClient {
 
   async getCurrentUser(forceRefresh = false) {
     if (forceRefresh) {
-      this.cache.delete('GET:http://localhost:8080/api/auth/me:')
+      this.cache.delete(`GET:${this.baseURL}/auth/me:`)
     }
     
     const result = await this.request('/auth/me') as any

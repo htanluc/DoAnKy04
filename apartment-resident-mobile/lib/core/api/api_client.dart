@@ -19,6 +19,7 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _authHeaders();
     final uri = Uri.parse('$baseUrl$path');
     final uriWithQuery = query != null
@@ -37,6 +38,7 @@ class ApiClient {
     dynamic data,
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _authHeaders();
     final uri = Uri.parse('$baseUrl$path');
     final uriWithQuery = query != null
@@ -59,6 +61,7 @@ class ApiClient {
     dynamic data,
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _authHeaders();
     final uri = Uri.parse('$baseUrl$path');
     final uriWithQuery = query != null
@@ -81,6 +84,7 @@ class ApiClient {
     dynamic data,
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _authHeaders();
     final uri = Uri.parse('$baseUrl$path');
     final uriWithQuery = query != null

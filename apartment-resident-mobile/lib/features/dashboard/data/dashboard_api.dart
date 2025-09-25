@@ -1,18 +1,16 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:apartment_resident_mobile/core/storage/secure_storage.dart';
+import 'package:apartment_resident_mobile/core/app_config.dart';
 import '../models/dashboard_stats.dart';
 import '../models/activity.dart';
 
 class DashboardApi {
-  static const String baseUrl = 'http://localhost:8080/api';
+  static String get baseUrl => '${AppConfig.apiBaseUrl}/api';
 
   // Lấy token từ SharedPreferences
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
+  Future<String?> _getToken() async => TokenStorage.instance.getToken();
 
   // Tạo headers với token
   Future<Map<String, String>> _getHeaders() async {
@@ -27,14 +25,21 @@ class DashboardApi {
   Future<DashboardStats> getDashboardStats() async {
     try {
       final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/dashboard/stats'),
-        headers: headers,
-      );
+      final uri = Uri.parse('$baseUrl/dashboard/stats');
+      final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return DashboardStats.fromJson(data);
+        // ignore: avoid_print
+        print('[DashboardApi] GET $uri => ${response.statusCode}');
+        // ignore: avoid_print
+        print('[DashboardApi] Body: ${response.body}');
+        final decoded = json.decode(response.body);
+        final data = decoded is Map<String, dynamic>
+            ? (decoded['data'] ?? decoded)
+            : decoded;
+        return DashboardStats.fromJson(
+          data is Map<String, dynamic> ? data : <String, dynamic>{},
+        );
       } else {
         throw Exception(
           'Lỗi khi lấy thống kê dashboard: ${response.statusCode}',
@@ -42,15 +47,15 @@ class DashboardApi {
       }
     } catch (e) {
       print('API Error: $e');
-      // Trả về dữ liệu mẫu nếu API lỗi
+      // Không trả mock; để UI xử lý empty/default
       return const DashboardStats(
-        totalInvoices: 5,
-        pendingInvoices: 2,
-        overdueInvoices: 1,
-        totalAmount: 2500000,
-        unreadAnnouncements: 3,
-        upcomingEvents: 2,
-        activeBookings: 1,
+        totalInvoices: 0,
+        pendingInvoices: 0,
+        overdueInvoices: 0,
+        totalAmount: 0,
+        unreadAnnouncements: 0,
+        upcomingEvents: 0,
+        activeBookings: 0,
         supportRequests: 0,
       );
     }
@@ -60,14 +65,22 @@ class DashboardApi {
   Future<List<RecentActivity>> getRecentActivities() async {
     try {
       final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/dashboard/recent-activities'),
-        headers: headers,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/activity-logs/my/recent',
+      ).replace(queryParameters: {'limit': '10'});
+      final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => RecentActivity.fromJson(json)).toList();
+        // ignore: avoid_print
+        print('[DashboardApi] GET $uri => ${response.statusCode}');
+        final decoded = json.decode(response.body);
+        final list = decoded is Map<String, dynamic>
+            ? (decoded['data'] as List<dynamic>? ?? const [])
+            : (decoded as List<dynamic>? ?? const []);
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map((json) => RecentActivity.fromJson(json))
+            .toList();
       } else {
         throw Exception(
           'Lỗi khi lấy hoạt động gần đây: ${response.statusCode}',
@@ -75,33 +88,8 @@ class DashboardApi {
       }
     } catch (e) {
       print('API Error getting activities: $e');
-      // Trả về dữ liệu mẫu nếu API lỗi
-      return [
-        const RecentActivity(
-          id: '1',
-          type: ActivityType.invoice,
-          title: 'Hóa đơn tháng 12/2024',
-          description: 'Hóa đơn dịch vụ căn hộ đã được tạo',
-          timestamp: '2024-12-20T10:30:00Z',
-          status: 'pending',
-        ),
-        const RecentActivity(
-          id: '2',
-          type: ActivityType.announcement,
-          title: 'Thông báo bảo trì thang máy',
-          description: 'Thang máy sẽ được bảo trì vào ngày 25/12',
-          timestamp: '2024-12-19T14:20:00Z',
-          status: 'active',
-        ),
-        const RecentActivity(
-          id: '3',
-          type: ActivityType.event,
-          title: 'Tiệc Giáng sinh 2024',
-          description: 'Đăng ký tham gia tiệc Giáng sinh',
-          timestamp: '2024-12-18T09:15:00Z',
-          status: 'confirmed',
-        ),
-      ];
+      // Không trả mock
+      return const <RecentActivity>[];
     }
   }
 
@@ -109,27 +97,70 @@ class DashboardApi {
   Future<ApartmentInfo> getMyApartment() async {
     try {
       final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/apartments/my'),
-        headers: headers,
-      );
+      // Ưu tiên lấy từ /auth/me để có buildingName (apartmentResident)
+      final meUri = Uri.parse('${AppConfig.apiBaseUrl}/api/auth/me');
+      final meRes = await http.get(meUri, headers: headers);
+      if (meRes.statusCode == 200) {
+        final decoded = json.decode(meRes.body);
+        final data = decoded is Map<String, dynamic>
+            ? (decoded['data'] ?? decoded)
+            : decoded;
+        if (data is Map<String, dynamic>) {
+          final apt = data['apartment'] is Map<String, dynamic>
+              ? Map<String, dynamic>.from(data['apartment'] as Map)
+              : <String, dynamic>{};
+          final link = data['apartmentResident'] is Map<String, dynamic>
+              ? Map<String, dynamic>.from(data['apartmentResident'] as Map)
+              : <String, dynamic>{};
+          final mapped = <String, dynamic>{
+            'apartmentNumber': apt['unitNumber'] ?? apt['apartmentNumber'],
+            'buildingName': link['buildingName'] ?? '',
+            'area': apt['area'],
+            'bedrooms': apt['bedrooms'] ?? 0,
+            'floor': apt['floorNumber'] ?? 0,
+          };
+          return ApartmentInfo.fromJson(mapped);
+        }
+      }
+
+      // Fallback: /apartments/my (trả về list)
+      final uri = Uri.parse('$baseUrl/apartments/my');
+      final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return ApartmentInfo.fromJson(data);
+        // ignore: avoid_print
+        print('[DashboardApi] GET $uri => ${response.statusCode}');
+        final decoded = json.decode(response.body);
+        if (decoded is List && decoded.isNotEmpty) {
+          final first = Map<String, dynamic>.from(decoded.first as Map);
+          final mapped = <String, dynamic>{
+            'apartmentNumber': first['unitNumber'],
+            'buildingName': first['buildingName'] ?? '',
+            'area': first['area'],
+            'bedrooms': first['bedrooms'] ?? 0,
+            'floor': first['floorNumber'] ?? 0,
+          };
+          return ApartmentInfo.fromJson(mapped);
+        } else if (decoded is Map<String, dynamic>) {
+          // Một số BE có thể trả trực tiếp object
+          final first = decoded;
+          final mapped = <String, dynamic>{
+            'apartmentNumber': first['unitNumber'] ?? first['apartmentNumber'],
+            'buildingName': first['buildingName'] ?? '',
+            'area': first['area'],
+            'bedrooms': first['bedrooms'] ?? 0,
+            'floor': first['floorNumber'] ?? first['floor'],
+          };
+          return ApartmentInfo.fromJson(mapped);
+        }
+        return const ApartmentInfo();
       } else {
         throw Exception('Lỗi khi lấy thông tin căn hộ: ${response.statusCode}');
       }
     } catch (e) {
       print('API Error getting apartment info: $e');
-      // Trả về dữ liệu mẫu nếu API lỗi
-      return const ApartmentInfo(
-        apartmentNumber: 'A1-101',
-        buildingName: 'Tòa A1',
-        area: 85.5,
-        bedrooms: 2,
-        floor: 1,
-      );
+      // Trả về rỗng để UI tự xử lý
+      return const ApartmentInfo();
     }
   }
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../storage/secure_storage.dart';
 import 'api_service.dart';
+import '../app_config.dart';
 
 class ApiHelper {
   static Future<Map<String, String>> _getAuthHeaders() async {
@@ -16,6 +17,7 @@ class ApiHelper {
     String path, {
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _getAuthHeaders();
     final uri = Uri.parse('${ApiService.baseUrl}$path');
     final uriWithQuery = query != null
@@ -34,6 +36,7 @@ class ApiHelper {
     dynamic data,
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _getAuthHeaders();
     final uri = Uri.parse('${ApiService.baseUrl}$path');
     final uriWithQuery = query != null
@@ -56,6 +59,7 @@ class ApiHelper {
     dynamic data,
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _getAuthHeaders();
     final uri = Uri.parse('${ApiService.baseUrl}$path');
     final uriWithQuery = query != null
@@ -78,6 +82,7 @@ class ApiHelper {
     dynamic data,
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _getAuthHeaders();
     final uri = Uri.parse('${ApiService.baseUrl}$path');
     final uriWithQuery = query != null
@@ -100,6 +105,7 @@ class ApiHelper {
     dynamic data,
     Map<String, dynamic>? query,
   }) async {
+    await AppConfig.ensureAutoDetect();
     final headers = await _getAuthHeaders();
     final uri = Uri.parse('${ApiService.baseUrl}$path');
     final uriWithQuery = query != null

@@ -64,17 +64,34 @@ class RecentActivity {
   });
 
   factory RecentActivity.fromJson(Map<String, dynamic> json) {
+    final rawType = (json['type'] ?? json['actionType'] ?? '').toString();
+    final actionDisplay =
+        (json['title'] ?? json['actionTypeDisplayName'] ?? rawType).toString();
+    final desc = (json['description'] ?? '').toString();
+
     return RecentActivity(
-      id: json['id'] ?? '',
-      type: ActivityType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => ActivityType.invoice,
-      ),
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      timestamp: json['timestamp'] ?? '',
-      status: json['status'],
+      id: (json['logId'] ?? json['id'] ?? '').toString(),
+      type: _mapActionType(rawType),
+      // Ưu tiên mô tả chi tiết làm tiêu đề; fallback sang tên hành động
+      title: desc.isNotEmpty ? desc : actionDisplay,
+      description: desc,
+      timestamp: (json['timestamp'] ?? json['createdAt'] ?? '').toString(),
+      status: (json['status'] ?? '').toString().isEmpty
+          ? null
+          : json['status'] as String?,
     );
+  }
+
+  static ActivityType _mapActionType(String action) {
+    final a = action.toUpperCase();
+    if (a.contains('INVOICE')) return ActivityType.invoice;
+    if (a.contains('ANNOUNCEMENT')) return ActivityType.announcement;
+    if (a.contains('EVENT')) return ActivityType.event;
+    if (a.contains('FACILITY') || a.contains('BOOK'))
+      return ActivityType.facilityBooking;
+    if (a.contains('PAY')) return ActivityType.payment;
+    if (a.contains('LOGIN')) return ActivityType.login;
+    return ActivityType.login;
   }
 
   Map<String, dynamic> toJson() {

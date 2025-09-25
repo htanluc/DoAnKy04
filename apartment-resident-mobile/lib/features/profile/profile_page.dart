@@ -33,13 +33,9 @@ class _ProfilePageState extends State<ProfilePage> {
       // Thử nhiều endpoint phổ biến để tương thích backend hiện tại
       Map<String, dynamic>? data;
       try {
-        final resp = await ApiHelper.get('/api/user/profile');
+        final resp = await ApiHelper.get('/api/auth/me');
         data = jsonDecode(resp.body);
       } catch (_) {}
-      if (data == null) {
-        final resp = await ApiHelper.get('/api/users/me');
-        data = jsonDecode(resp.body);
-      }
       setState(() {
         _profile = data ?? {};
       });
@@ -84,7 +80,7 @@ class _ProfilePageState extends State<ProfilePage> {
       // Upload avatar - sử dụng multipart request với http package
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('${ApiService.baseUrl}/api/users/me/avatar'),
+        Uri.parse('${ApiService.baseUrl}/api/auth/me/avatar'),
       );
       final token = await TokenStorage.instance.getToken();
       if (token != null) {

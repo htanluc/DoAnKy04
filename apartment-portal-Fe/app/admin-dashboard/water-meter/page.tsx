@@ -4,6 +4,7 @@ import { useWaterMeter } from "../../../hooks/use-water-meter";
 import { useApartments } from "../../../hooks/use-apartments";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/lib/i18n";
+import { API_BASE_URL } from "@/lib/auth";
 
 export default function WaterMeterListPage() {
   const { t } = useLanguage();
@@ -30,7 +31,7 @@ export default function WaterMeterListPage() {
     const loadAllReadings = async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        const res = await fetch('http://localhost:8080/api/admin/water-readings', {
+        const res = await fetch(`${API_BASE_URL}/api/admin/water-readings`, {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -138,7 +139,7 @@ export default function WaterMeterListPage() {
       setGenSuccess(t('admin.waterMeter.generateSuccess'));
       // Reload all readings sau khi tạo thành công
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch('http://localhost:8080/api/admin/water-readings', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/water-readings`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -165,6 +166,7 @@ export default function WaterMeterListPage() {
               value={selectedMonth}
               onChange={e => handleMonthChange(e.target.value)}
               className="border px-2 py-1 rounded"
+              title="Chọn tháng"
             >
               {months.map(month => (
                 <option key={month} value={month}>{month}</option>
@@ -184,6 +186,7 @@ export default function WaterMeterListPage() {
               value={startMonth}
               onChange={e => setStartMonth(e.target.value)}
               className="border px-2 py-1 rounded"
+              title="Chọn tháng bắt đầu"
             />
             <button
               className={`px-4 py-2 rounded ${
@@ -264,6 +267,7 @@ export default function WaterMeterListPage() {
                             value={editForm.currentReading ?? ""}
                             onChange={handleEditChange}
                             className="border px-1 py-0.5 w-20"
+                            aria-label="currentReading"
                           />
                         ) : (
                           r.currentReading

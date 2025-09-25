@@ -28,45 +28,50 @@ class _TimeSlotGridState extends State<TimeSlotGrid> {
 
   void _toggleSlot(TimeSlot slot) {
     setState(() {
-      if (_selectedSlots.contains(slot)) {
-        _selectedSlots.remove(slot);
-      } else {
-        // Kiểm tra xem slot có liền kề với các slot đã chọn không
-        if (_canAddSlot(slot)) {
-          _selectedSlots.add(slot);
-          _selectedSlots.sort((a, b) => a.startTime.compareTo(b.startTime));
+      if (_selectedSlots.isEmpty) {
+        // Chọn slot đầu tiên
+        _selectedSlots = [slot];
+      } else if (_selectedSlots.length == 1) {
+        // Chọn slot thứ hai: tự động chọn tất cả các slot ở giữa (range selection)
+        final first = _selectedSlots.first;
+        final slots = widget.availability.timeSlots
+            .where((s) => _isSelectable(s))
+            .toList();
+        final startIndex = slots.indexOf(first);
+        final endIndex = slots.indexOf(slot);
+        if (startIndex != -1 && endIndex != -1) {
+          final range = startIndex <= endIndex
+              ? slots.sublist(startIndex, endIndex + 1)
+              : slots.sublist(endIndex, startIndex + 1);
+          _selectedSlots = range;
+        } else {
+          // Nếu slot không hợp lệ, reset về slot mới
+          _selectedSlots = [slot];
         }
+      } else {
+        // Nếu đã có range -> reset chọn lại từ đầu
+        _selectedSlots = [slot];
       }
       widget.onSlotsSelected(_selectedSlots);
     });
   }
 
-  bool _canAddSlot(TimeSlot newSlot) {
-    if (_selectedSlots.isEmpty) return true;
+  // no-op: logic range selection đã thay thế
 
-    // Kiểm tra xem có slot nào liền kề không
-    for (final selectedSlot in _selectedSlots) {
-      if (_areAdjacentSlots(selectedSlot, newSlot)) {
-        return true;
-      }
-    }
+  // giữ lại để dùng khi cần mở rộng (không gọi hiện tại)
 
-    return false;
-  }
-
-  bool _areAdjacentSlots(TimeSlot slot1, TimeSlot slot2) {
-    // Kiểm tra xem 2 slots có liền kề nhau không (cùng ngày và giờ liền nhau)
-    final start1 = DateTime.parse(slot1.startTime);
-    final end1 = DateTime.parse(slot1.endTime);
-    final start2 = DateTime.parse(slot2.startTime);
-    final end2 = DateTime.parse(slot2.endTime);
-
-    // Slot1 kết thúc khi slot2 bắt đầu, hoặc ngược lại
-    return end1.isAtSameMomentAs(start2) || end2.isAtSameMomentAs(start1);
+  bool _isSelectable(TimeSlot s) {
+    return s.isAvailable && !s.isBooked;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Ẩn các thời gian đã qua trong ngày hiện tại
+    final now = DateTime.now();
+    final filteredSlots = widget.availability.timeSlots.where((s) {
+      final start = DateTime.parse(s.startTime);
+      return !start.isBefore(DateTime(now.year, now.month, now.day, now.hour));
+    }).toList();
     if (widget.availability.timeSlots.isEmpty) {
       return const Center(
         child: Padding(
@@ -156,9 +161,9 @@ class _TimeSlotGridState extends State<TimeSlotGrid> {
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
-          itemCount: widget.availability.timeSlots.length,
+          itemCount: filteredSlots.length,
           itemBuilder: (context, index) {
-            final slot = widget.availability.timeSlots[index];
+            final slot = filteredSlots[index];
             return _buildTimeSlotCard(slot);
           },
         ),

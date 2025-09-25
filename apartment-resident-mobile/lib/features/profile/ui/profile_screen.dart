@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import '../../../core/storage/secure_storage.dart';
+import '../../../core/api/api_service.dart';
+import '../../../core/ui/notification_helper.dart';
 import '../models/user_profile.dart';
 import '../data/profile_api.dart';
+import '../../settings/settings_page.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -42,6 +48,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _pickAndUploadAvatar() async {
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 85,
+      );
+      if (file == null) return;
+
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiService.baseUrl}/api/auth/me/avatar'),
+      );
+      final token = await TokenStorage.instance.getToken();
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          file.path,
+          filename: 'avatar.jpg',
+        ),
+      );
+      final streamed = await request.send();
+      final resp = await http.Response.fromStream(streamed);
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        throw Exception('Upload failed ${resp.statusCode}');
+      }
+      if (!mounted) return;
+      await _loadUserProfile();
+      if (!mounted) return;
+      AppNotify.success(context, 'Cập nhật avatar thành công');
+    } catch (e) {
+      if (!mounted) return;
+      AppNotify.error(context, 'Tải avatar thất bại: $e');
+    }
+  }
+
   Future<void> _logout() async {
     try {
       await _profileApi.logout();
@@ -49,9 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi khi đăng xuất: $e')));
+      AppNotify.error(context, 'Lỗi khi đăng xuất: $e');
     }
   }
 
@@ -245,20 +289,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Positioned(
                                 bottom: 0,
                                 right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).primaryColor,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
+                                child: InkWell(
+                                  onTap: _pickAndUploadAvatar,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
                                     ),
-                                  ),
-                                  child: const FaIcon(
-                                    FontAwesomeIcons.pencil,
-                                    color: Colors.white,
-                                    size: 16,
+                                    child: const FaIcon(
+                                      FontAwesomeIcons.pencil,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -401,13 +448,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       value: 'Thay đổi thông tin cá nhân',
                       icon: FontAwesomeIcons.edit,
                       iconColor: Colors.blue,
-                      onTap: () {
-                        // TODO: Navigate to edit profile
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Tính năng đang phát triển'),
+                      onTap: () async {
+                        // Demo: cập nhật tên hiển thị (có thể thay bằng màn form riêng)
+                        final controller = TextEditingController(
+                          text: _userProfile!.fullName,
+                        );
+                        final newName = await showDialog<String>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Cập nhật thông tin'),
+                            content: TextField(
+                              controller: controller,
+                              decoration: const InputDecoration(
+                                labelText: 'Họ và tên',
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Hủy'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    Navigator.pop(ctx, controller.text.trim()),
+                                child: const Text('Lưu'),
+                              ),
+                            ],
                           ),
                         );
+                        if (newName != null && newName.isNotEmpty) {
+                          try {
+                            await _profileApi.updateProfile({
+                              'fullName': newName,
+                            });
+                            await _loadUserProfile();
+                            AppNotify.success(
+                              context,
+                              'Cập nhật thông tin thành công',
+                            );
+                          } catch (e) {
+                            AppNotify.error(context, 'Cập nhật thất bại: $e');
+                          }
+                        }
                       },
                     ),
                     _buildInfoCard(
@@ -415,13 +497,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       value: 'Thay đổi mật khẩu đăng nhập',
                       icon: FontAwesomeIcons.lock,
                       iconColor: Colors.orange,
-                      onTap: () {
-                        // TODO: Navigate to change password
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Tính năng đang phát triển'),
+                      onTap: () async {
+                        final oldCtrl = TextEditingController();
+                        final newCtrl = TextEditingController();
+                        final confirmCtrl = TextEditingController();
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Đổi mật khẩu'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextField(
+                                  controller: oldCtrl,
+                                  obscureText: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Mật khẩu hiện tại',
+                                  ),
+                                ),
+                                TextField(
+                                  controller: newCtrl,
+                                  obscureText: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Mật khẩu mới',
+                                  ),
+                                ),
+                                TextField(
+                                  controller: confirmCtrl,
+                                  obscureText: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Xác nhận mật khẩu mới',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Hủy'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Đổi'),
+                              ),
+                            ],
                           ),
                         );
+                        if (result == true) {
+                          try {
+                            await _profileApi.changePassword(
+                              oldPassword: oldCtrl.text,
+                              newPassword: newCtrl.text,
+                              confirmNewPassword: confirmCtrl.text,
+                            );
+                            AppNotify.success(
+                              context,
+                              'Đổi mật khẩu thành công',
+                            );
+                          } catch (e) {
+                            AppNotify.error(context, '$e');
+                          }
+                        }
                       },
                     ),
                     _buildInfoCard(
@@ -430,10 +566,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: FontAwesomeIcons.cog,
                       iconColor: Colors.grey,
                       onTap: () {
-                        // TODO: Navigate to settings
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Tính năng đang phát triển'),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsPage(),
                           ),
                         );
                       },

@@ -6,17 +6,85 @@ import 'package:http_parser/http_parser.dart' show MediaType;
 import 'auth_service.dart';
 
 class ApiService {
-  static String baseUrl = const String.fromEnvironment(
+  // Cached base URL with lazy auto-detection
+  static String _baseUrl = const String.fromEnvironment(
     'API_BASE_URL',
     // For real device, use your computer's IP address instead of 10.0.3.2 (emulator only)
-    defaultValue: 'http://192.168.68.113:8080',
+    defaultValue: 'http://172.21.33.101:8080',
   );
+  static bool _autoDetected = false;
+
+  static String get baseUrl => _baseUrl;
+
+  // Ensure baseUrl is detected once per app lifetime
+  static Future<void> ensureBaseUrl() async {
+    if (_autoDetected) return;
+    _autoDetected = true;
+    try {
+      final detected = await _detectBestBaseUrl();
+      if (detected != null && detected.isNotEmpty) {
+        _baseUrl = detected;
+        // ignore: avoid_print
+        print('[ApiService] Auto-detected baseUrl: $_baseUrl');
+      }
+    } catch (_) {
+      // keep default _baseUrl if detection fails
+    }
+  }
+
+  static Future<String?> _detectBestBaseUrl() async {
+    // 1) If user supplies dart-define, honor it but still probe quickly
+    final fromDefine = const String.fromEnvironment('API_BASE_URL');
+    final current = _baseUrl;
+
+    final candidates = <String>[
+      if (fromDefine.isNotEmpty) fromDefine,
+      // Common emulator/simulator hosts
+      if (Platform.isAndroid) 'http://10.0.2.2:8080',
+      if (Platform.isIOS) 'http://localhost:8080',
+      // Desktop dev
+      'http://localhost:8080',
+      // Fallback to current configured
+      current,
+    ];
+
+    // Deduplicate while preserving order
+    final seen = <String>{};
+    final unique = <String>[];
+    for (final c in candidates) {
+      if (c.isEmpty) continue;
+      if (seen.add(c)) unique.add(c);
+    }
+
+    for (final base in unique) {
+      if (await _probeBase(base)) return base;
+    }
+    return null;
+  }
+
+  static Future<bool> _probeBase(String base) async {
+    final paths = <String>['/actuator/health', '/api/health', '/'];
+    for (final p in paths) {
+      try {
+        final uri = Uri.parse(base).replace(path: p);
+        final res =
+            await http.get(uri).timeout(const Duration(milliseconds: 900));
+        if (res.statusCode >= 200 && res.statusCode < 600) {
+          return true;
+        }
+      } catch (_) {
+        // try next path or next base
+      }
+    }
+    return false;
+  }
 
   static Future<Map<String, dynamic>> login(
     String phone,
     String password,
   ) async {
     try {
+      await ensureBaseUrl();
       // Debug logs
       // ignore: avoid_print
       print('[ApiService] POST $baseUrl/api/auth/login');
@@ -97,6 +165,7 @@ class ApiService {
   /// Get current user profile from server for [fullName], [avatarUrl],...
   static Future<Map<String, dynamic>?> getProfile() async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
       if (token == null || token.isEmpty) return null;
 
@@ -131,6 +200,7 @@ class ApiService {
   // Normalize file/image URL for emulator/device
   static String normalizeFileUrl(String url) {
     try {
+      // no need to await here; use current cached base
       if (url.isEmpty) return url;
       final base = Uri.parse(baseUrl);
 
@@ -172,6 +242,7 @@ class ApiService {
 
   static Future<List<dynamic>> getAssignedRequests(int staffId) async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
       final res = await http.get(
         Uri.parse(
@@ -210,6 +281,7 @@ class ApiService {
     List<String>? afterImages,
   }) async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
 
       // Tạo body JSON
@@ -262,6 +334,7 @@ class ApiService {
   static Future<void> changePassword(
       String oldPassword, String newPassword) async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
       final res = await http
           .post(
@@ -299,6 +372,7 @@ class ApiService {
   // Helper: find apartmentId by code (unitNumber)
   static Future<int?> _findApartmentIdByCode(String apartmentCode) async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
       final res = await http.get(Uri.parse('$baseUrl/api/apartments'),
           headers: {
@@ -335,6 +409,7 @@ class ApiService {
     String? note,
   }) async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
       final body = <String, dynamic>{
         'apartmentCode': apartmentCode,
@@ -433,6 +508,7 @@ class ApiService {
   static Future<Map<String, dynamic>?> lookupWaterReading(
       String apartmentCode) async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
       final uri = Uri.parse(
           '$baseUrl/api/staff/water-readings/lookup?apartmentCode=${Uri.encodeQueryComponent(apartmentCode)}');
@@ -516,6 +592,7 @@ class ApiService {
     required String apartmentCode,
     required String month, // yyyy-MM
   }) async {
+    await ensureBaseUrl();
     final token = await AuthService.getToken();
     // Thử staff route nếu có
     final staffUri =
@@ -621,6 +698,7 @@ class ApiService {
     required int currentReading,
   }) async {
     try {
+      await ensureBaseUrl();
       final token = await AuthService.getToken();
       final uri = Uri.parse('$baseUrl/api/admin/water-readings/$id');
       final res = await http
@@ -653,6 +731,7 @@ class ApiService {
   /// Upload ảnh service request, trả về URL ảnh từ server
   static Future<String> uploadServiceRequestFile(String filePath,
       {String? fileName, String? contentType}) async {
+    await ensureBaseUrl();
     final token = await AuthService.getToken();
     final uri = Uri.parse('$baseUrl/api/upload/service-request');
 
