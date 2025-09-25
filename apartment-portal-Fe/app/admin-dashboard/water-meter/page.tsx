@@ -5,6 +5,7 @@ import { useApartments } from "../../../hooks/use-apartments";
 import { useYearlyBilling } from "../../../hooks/use-yearly-billing";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useLanguage } from "@/lib/i18n";
+import { API_BASE_URL } from "@/lib/auth";
 
 export default function WaterMeterListPage() {
   const { t } = useLanguage();
@@ -34,6 +35,7 @@ export default function WaterMeterListPage() {
     const loadData = async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
         const endpoint = showLatestOnly ? 'latest' : '';
         const res = await fetch(`http://localhost:8080/api/admin/water-readings/${endpoint}`, {
           headers: {
@@ -187,7 +189,7 @@ export default function WaterMeterListPage() {
       setGenSuccess(t('admin.waterMeter.generateSuccess'));
       // Reload all readings sau khi tạo thành công
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch('http://localhost:8080/api/admin/water-readings', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/water-readings`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -244,6 +246,7 @@ export default function WaterMeterListPage() {
         </h1>
         <div className="mb-4 space-y-2">
           <div className="flex flex-wrap gap-2 items-center">
+
             <button
               onClick={async () => {
                 const newShowLatestOnly = !showLatestOnly;
@@ -297,7 +300,6 @@ export default function WaterMeterListPage() {
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
-            >
               {showLatestOnly ? 'Chỉ số mới nhất' : 'Tất cả chỉ số'}
             </button>
             {!showLatestOnly && (
@@ -339,6 +341,7 @@ export default function WaterMeterListPage() {
               value={startMonth}
               onChange={e => setStartMonth(e.target.value)}
               className="border px-2 py-1 rounded"
+              title="Chọn tháng bắt đầu"
             />
             <button
               className={`px-4 py-2 rounded ${
@@ -454,6 +457,7 @@ export default function WaterMeterListPage() {
                             value={editForm.currentReading ?? ""}
                             onChange={handleEditChange}
                             className="border px-1 py-0.5 w-20"
+                            aria-label="currentReading"
                           />
                         ) : (
                           r.currentReading

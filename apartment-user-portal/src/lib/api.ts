@@ -1,4 +1,7 @@
 // --- Helper: fetch and cache current user info (from /api/auth/me) ---
+const API_BASE_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_BASE_URL)
+  ? String(process.env.NEXT_PUBLIC_API_BASE_URL)
+  : 'http://localhost:8080';
 let cachedCurrentUser: any = null;
 let cachedCurrentUserPromise: Promise<any> | null = null;
 
@@ -9,7 +12,7 @@ export async function fetchCurrentUser(forceRefresh = false) {
   if (cachedCurrentUserPromise && !forceRefresh) return cachedCurrentUserPromise;
   cachedCurrentUserPromise = (async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/auth/me', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -60,7 +63,7 @@ export async function fetchInvoices() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
   
-  const res = await fetch('http://localhost:8080/api/invoices/my', {
+  const res = await fetch(`${API_BASE_URL}/api/invoices/my`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
@@ -70,7 +73,7 @@ export async function fetchInvoices() {
 }
 
 export async function loginUser(credentials: { phoneNumber: string; password: string }) {
-  const res = await fetch('http://localhost:8080/api/auth/login', {
+  const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials),
@@ -83,7 +86,7 @@ export async function loginUser(credentials: { phoneNumber: string; password: st
 }
 
 export async function registerUser(data: any) {
-  const res = await fetch('http://localhost:8080/api/auth/register', {
+  const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -99,7 +102,7 @@ export async function registerUser(data: any) {
 
 export async function resendVerification(emailOrPhone: string) {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
-  const res = await fetch('http://localhost:8080/api/auth/resend-verification', {
+  const res = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
@@ -119,7 +122,7 @@ export async function resendVerification(emailOrPhone: string) {
 export async function updateCurrentResident(update: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/residents/me', {
+  const res = await fetch(`${API_BASE_URL}/api/residents/me`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -146,7 +149,7 @@ export async function changePassword(data: { oldPassword: string; newPassword: s
       confirmNewPassword: data.newPassword
     });
     
-    const res = await fetch('http://localhost:8080/api/auth/change-password', {
+    const res = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -184,7 +187,7 @@ export async function changePassword(data: { oldPassword: string; newPassword: s
 export async function fetchMyFacilityBookings() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/facility-bookings/my', {
+  const res = await fetch(`${API_BASE_URL}/api/facility-bookings/my`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được lịch sử đặt tiện ích');
@@ -195,7 +198,7 @@ export async function fetchMyFacilityBookings() {
 export async function createFacilityBooking(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/facility-bookings', {
+  const res = await fetch(`${API_BASE_URL}/api/facility-bookings`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -211,7 +214,7 @@ export async function createFacilityBooking(data: any) {
 export async function cancelFacilityBooking(id: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/facility-bookings/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/api/facility-bookings/${id}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -224,7 +227,7 @@ export async function registerEvent(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
   
-  const res = await fetch('http://localhost:8080/api/event-registrations/register', {
+  const res = await fetch(`${API_BASE_URL}/api/event-registrations/register`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -244,7 +247,7 @@ export async function registerEvent(data: any) {
 export async function cancelEventRegistration(registrationId: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/event-registrations/${registrationId}/cancel`, {
+  const res = await fetch(`${API_BASE_URL}/api/event-registrations/${registrationId}/cancel`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -256,7 +259,7 @@ export async function cancelEventRegistration(registrationId: string) {
 export async function cancelEventRegistrationByEventId(eventId: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/event-registrations/cancel/${eventId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/event-registrations/cancel/${eventId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -268,7 +271,7 @@ export async function cancelEventRegistrationByEventId(eventId: string) {
 export async function createSupportRequest(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/support-requests', {
+  const res = await fetch(`${API_BASE_URL}/api/support-requests`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -287,7 +290,7 @@ export async function createSupportRequest(data: any) {
 export async function fetchMySupportRequests() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/support-requests/my', {
+  const res = await fetch(`${API_BASE_URL}/api/support-requests/my`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được lịch sử yêu cầu hỗ trợ');
@@ -298,7 +301,7 @@ export async function fetchMySupportRequests() {
 export async function createFeedback(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/feedback', {
+  const res = await fetch(`${API_BASE_URL}/api/feedback`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -314,7 +317,7 @@ export async function createFeedback(data: any) {
 export async function fetchMyFeedback() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/feedback/my', {
+  const res = await fetch(`${API_BASE_URL}/api/feedback/my`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được lịch sử phản hồi');
@@ -325,7 +328,7 @@ export async function fetchMyFeedback() {
 export async function fetchAnnouncements() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/announcements', {
+  const res = await fetch(`${API_BASE_URL}/api/announcements`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được thông báo');
@@ -336,7 +339,7 @@ export async function fetchAnnouncements() {
 export async function fetchEvents() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/events', {
+  const res = await fetch(`${API_BASE_URL}/api/events`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được sự kiện');
@@ -347,7 +350,7 @@ export async function fetchEvents() {
 export async function fetchFacilities() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/facilities', {
+  const res = await fetch(`${API_BASE_URL}/api/facilities`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được danh sách tiện ích');
@@ -358,7 +361,7 @@ export async function fetchFacilities() {
 export async function fetchMyInvoices() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/invoices/my', {
+  const res = await fetch(`${API_BASE_URL}/api/invoices/my`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được hóa đơn');
@@ -373,7 +376,7 @@ export async function fetchInvoiceDetail(invoiceId: string | number) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
   try {
-    const res = await fetch(`http://localhost:8080/api/invoices/${invoiceId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/invoices/${invoiceId}`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -395,7 +398,7 @@ export async function fetchInvoiceDetail(invoiceId: string | number) {
 export async function fetchPaymentsByInvoice(invoiceId: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/payments/invoice/${invoiceId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/payments/invoice/${invoiceId}`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được lịch sử thanh toán');
@@ -406,7 +409,7 @@ export async function fetchPaymentsByInvoice(invoiceId: string) {
 export async function createPaymentViaGateway(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/payments/gateway', {
+  const res = await fetch(`${API_BASE_URL}/api/payments/gateway`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -429,7 +432,7 @@ export async function createMoMoPayment(invoiceId: number, amount: number, order
     orderInfo: orderInfo
   });
   
-  const res = await fetch(`http://localhost:8080/api/payments/momo?${params}`, {
+  const res = await fetch(`${API_BASE_URL}/api/payments/momo?${params}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -452,7 +455,7 @@ export async function createVNPayPayment(invoiceId: number, amount: number, orde
     orderInfo: orderInfo
   };
   
-  const res = await fetch('http://localhost:8080/api/payments/vnpay', {
+  const res = await fetch(`${API_BASE_URL}/api/payments/vnpay`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -473,7 +476,7 @@ export async function createZaloPayPayment(invoiceId: number, amount: number, or
     amount: amount.toString(),
     orderInfo: orderInfo
   });
-  const res = await fetch(`http://localhost:8080/api/payments/zalopay?${params}`, {
+  const res = await fetch(`${API_BASE_URL}/api/payments/zalopay?${params}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -495,7 +498,7 @@ export async function createVisaPayment(invoiceId: number, amount: number, order
     orderInfo: orderInfo
   });
   
-  const res = await fetch(`http://localhost:8080/api/payments/stripe?${params}`, {
+  const res = await fetch(`${API_BASE_URL}/api/payments/stripe?${params}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -509,7 +512,7 @@ export async function createVisaPayment(invoiceId: number, amount: number, order
 export async function setupAutoPayment(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/payments/auto/setup', {
+  const res = await fetch(`${API_BASE_URL}/api/payments/auto/setup`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -525,7 +528,7 @@ export async function setupAutoPayment(data: any) {
 export async function cancelAutoPayment() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/payments/auto/cancel', {
+  const res = await fetch(`${API_BASE_URL}/api/payments/auto/cancel`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -537,7 +540,7 @@ export async function cancelAutoPayment() {
 export async function fetchAutoPaymentSettings() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/payments/auto/settings', {
+  const res = await fetch(`${API_BASE_URL}/api/payments/auto/settings`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được cài đặt thanh toán tự động');
@@ -548,7 +551,7 @@ export async function fetchAutoPaymentSettings() {
 export async function linkApartmentResident(data: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/apartment-residents/link', {
+  const res = await fetch(`${API_BASE_URL}/api/apartment-residents/link`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -564,7 +567,7 @@ export async function linkApartmentResident(data: any) {
 export async function unlinkApartmentResident(apartmentId: string, residentId: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch(`http://localhost:8080/api/apartment-residents/unlink/${apartmentId}/${residentId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/apartment-residents/unlink/${apartmentId}/${residentId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -576,7 +579,7 @@ export async function unlinkApartmentResident(apartmentId: string, residentId: s
 export async function askAI(question: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/ai/qa', {
+  const res = await fetch(`${API_BASE_URL}/api/ai/qa`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -592,7 +595,7 @@ export async function askAI(question: string) {
 export async function fetchAIHistory() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
-  const res = await fetch('http://localhost:8080/api/ai/qa/history', {
+  const res = await fetch(`${API_BASE_URL}/api/ai/qa/history`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không lấy được lịch sử hỏi đáp');
@@ -605,7 +608,7 @@ export async function fetchDashboardStats() {
   if (!token) throw new Error('Chưa đăng nhập');
   
   try {
-    const res = await fetch('http://localhost:8080/api/dashboard/stats', {
+    const res = await fetch(`${API_BASE_URL}/api/dashboard/stats`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -634,7 +637,7 @@ export async function fetchRecentActivities() {
   if (!token) throw new Error('Chưa đăng nhập');
   
   try {
-    const res = await fetch('http://localhost:8080/api/dashboard/recent-activities', {
+    const res = await fetch(`${API_BASE_URL}/api/dashboard/recent-activities`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -652,7 +655,7 @@ export async function markAnnouncementAsRead(id: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
   
-  const res = await fetch(`http://localhost:8080/api/announcements/${id}/read`, {
+  const res = await fetch(`${API_BASE_URL}/api/announcements/${id}/read`, {
     method: 'PUT',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -666,7 +669,7 @@ export async function markAllAnnouncementsAsRead(ids: string[]) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) throw new Error('Chưa đăng nhập');
   // Nếu có API batch, ưu tiên dùng
-  // const res = await fetch('http://localhost:8080/api/announcements/read-all', {
+  // const res = await fetch(`${API_BASE_URL}/api/announcements/read-all`, {
   //   method: 'PUT',
   //   headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
   //   body: JSON.stringify({ ids }),

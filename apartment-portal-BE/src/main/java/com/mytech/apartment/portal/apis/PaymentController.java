@@ -53,6 +53,8 @@ public class PaymentController {
     private final com.mytech.apartment.portal.services.UserService userService;
     private final com.mytech.apartment.portal.config.StripeConfig stripeConfig;
     private final PaymentTransactionService paymentTransactionService;
+    @org.springframework.beans.factory.annotation.Value("${payment.return.invoices-url:http://localhost:3001/dashboard/invoices}")
+    private String invoicesReturnUrl;
 
     // Cooldown mechanism to prevent rapid repeated payment attempts
     private final Map<String, LocalDateTime> paymentCooldowns = new ConcurrentHashMap<>();
@@ -556,7 +558,7 @@ public class PaymentController {
         try {
             Map<String, Object> result = paymentGatewayService.processVNPayReturn(params);
             // Tự động redirect về FE sau 3s
-            String target = "http://localhost:3001/dashboard/invoices";
+            String target = invoicesReturnUrl;
             String html = "<!DOCTYPE html>" +
                     "<html lang=\"vi\"><head><meta charset=\"UTF-8\"/>" +
                     "<meta http-equiv=\"refresh\" content=\"3;url=" + target + "\"/>" +
@@ -573,7 +575,7 @@ public class PaymentController {
                 .contentType(org.springframework.http.MediaType.TEXT_HTML)
                 .body(html);
         } catch (Exception e) {
-            String target = "http://localhost:3001/dashboard/invoices";
+            String target = invoicesReturnUrl;
             String errorHtml = "<!DOCTYPE html>" +
                     "<html lang=\"vi\"><head><meta charset=\"UTF-8\"/>" +
                     "<meta http-equiv=\"refresh\" content=\"3;url=" + target + "\"/>" +
@@ -816,11 +818,11 @@ public class PaymentController {
                         <p>Mã đơn hàng: %s</p>
                         <a href="javascript:window.close();" class="back-button">Đóng trang này</a>
                         <br><br>
-                        <a href="http://localhost:3001/dashboard/invoices" class="back-button" style="background: #10b981;">Quay lại trang hóa đơn</a>
+                        <a href="%s" class="back-button" style="background: #10b981;">Quay lại trang hóa đơn</a>
                     </div>
                 </body>
                 </html>
-                """, orderId);
+                """, orderId, invoicesReturnUrl);
 
             return ResponseEntity.ok(htmlResponse);
         } catch (Exception e) {
@@ -1092,11 +1094,11 @@ public class PaymentController {
                         <p>Session ID: %s</p>
                         <a href="javascript:window.close();" class="back-button">Đóng trang này</a>
                         <br><br>
-                        <a href="http://localhost:3001/dashboard/invoices" class="back-button" style="background: #10b981;">Quay lại trang hóa đơn</a>
+                        <a href="%s" class="back-button" style="background: #10b981;">Quay lại trang hóa đơn</a>
                     </div>
                 </body>
                 </html>
-                """, formattedAmount, orderId, session_id);
+                """, formattedAmount, orderId, session_id, invoicesReturnUrl);
 
             return ResponseEntity.ok(htmlResponse);
         } catch (Exception e) {

@@ -1,63 +1,22 @@
-class Announcement {
-  final String id;
-  final String title;
-  final String content;
-  final String type;
-  final bool read;
-  final String createdAt;
-  final String createdBy;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const Announcement({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.type,
-    required this.read,
-    required this.createdAt,
-    required this.createdBy,
-  });
+part 'announcement.freezed.dart';
+part 'announcement.g.dart';
 
-  factory Announcement.fromJson(Map<String, dynamic> json) {
-    return Announcement(
-      id: json['id']?.toString() ?? '',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      type: json['type'] ?? 'REGULAR',
-      read: json['read'] ?? false,
-      createdAt: json['createdAt'] ?? '',
-      createdBy: json['createdBy'] ?? '',
-    );
-  }
+enum AnnouncementType { news, regular, urgent, event }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'content': content,
-      'type': type,
-      'read': read,
-      'createdAt': createdAt,
-      'createdBy': createdBy,
-    };
-  }
+@freezed
+class Announcement with _$Announcement {
+  const factory Announcement({
+    required String id,
+    required String title,
+    required String content,
+    required AnnouncementType type,
+    required bool read,
+    required DateTime createdAt,
+    required String createdBy,
+  }) = _Announcement;
 
-  Announcement copyWith({
-    String? id,
-    String? title,
-    String? content,
-    String? type,
-    bool? read,
-    String? createdAt,
-    String? createdBy,
-  }) {
-    return Announcement(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      content: content ?? this.content,
-      type: type ?? this.type,
-      read: read ?? this.read,
-      createdAt: createdAt ?? this.createdAt,
-      createdBy: createdBy ?? this.createdBy,
-    );
-  }
+  factory Announcement.fromJson(Map<String, dynamic> json) =>
+      _$AnnouncementFromJson(json);
 }

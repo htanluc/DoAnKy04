@@ -56,8 +56,8 @@ class VehiclesApiClient {
       if (kDebugMode) {
         print('Lỗi tải loại xe: $e');
       }
-      // Trả về dữ liệu mẫu nếu API lỗi
-      return _getSampleVehicleTypes();
+      // Không dùng dữ liệu mẫu
+      return [];
     }
   }
 
@@ -70,8 +70,8 @@ class VehiclesApiClient {
       if (kDebugMode) {
         print('Lỗi tải căn hộ: $e');
       }
-      // Trả về dữ liệu mẫu nếu API lỗi
-      return _getSampleApartments();
+      // Không dùng dữ liệu mẫu
+      return [];
     }
   }
 
@@ -188,36 +188,5 @@ class VehiclesApiClient {
     throw Exception('Response format không hợp lệ');
   }
 
-  // Dữ liệu mẫu cho testing
-  List<VehicleTypeModel> _getSampleVehicleTypes() {
-    return [
-      const VehicleTypeModel(
-        value: 'MOTORBIKE',
-        displayName: 'Xe máy',
-        monthlyFee: 50000,
-      ),
-      const VehicleTypeModel(
-        value: 'CAR',
-        displayName: 'Ô tô',
-        monthlyFee: 200000,
-      ),
-      const VehicleTypeModel(
-        value: 'BICYCLE',
-        displayName: 'Xe đạp',
-        monthlyFee: 20000,
-      ),
-    ];
-  }
-
-  List<Map<String, dynamic>> _getSampleApartments() {
-    return [
-      {
-        'id': 1,
-        'unitNumber': 'A1-101',
-        'buildingId': 1,
-        'floorNumber': 1,
-        'area': 85.5,
-      },
-    ];
-  }
+  // Bỏ dữ liệu mẫu để tránh hiển thị sai sự thật
 }
