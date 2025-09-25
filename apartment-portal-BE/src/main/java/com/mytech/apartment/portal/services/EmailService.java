@@ -10,6 +10,12 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.context.MessageSource;
+import org.springframework.core.io.ClassPathResource;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class EmailService {
@@ -17,22 +23,57 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private MessageSource messageSource;
+
     public void sendVerificationEmail(String to, String verificationLink) {
         try {
             logger.info("[EmailService] Bắt đầu gửi email xác nhận tới: {}", to);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(to);
-            helper.setSubject("Xác nhận đăng ký tài khoản");
-            helper.setText("<p>Chào bạn,</p>"
-                + "<p>Vui lòng nhấn vào link dưới đây để xác nhận email và kích hoạt tài khoản:</p>"
-                + "<p><a href='" + verificationLink + "'>Xác nhận tài khoản</a></p>"
-                + "<br/><p>Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này.</p>", true);
+            Locale locale = Locale.getDefault();
+            String subject = messageSource.getMessage("mail.verify.subject", null, locale);
+            helper.setSubject(subject);
+            String html = renderVerifyTemplate(locale, Map.of(
+                "appName", "Apartment Portal",
+                "fullName", "User",
+                "verifyUrl", verificationLink,
+                "expireMinutes", "60",
+                "supportEmail", "support@apartment.com",
+                "currentYear", String.valueOf(java.time.Year.now().getValue())
+            ));
+            helper.setText(html, true);
             mailSender.send(message);
             logger.info("[EmailService] Gửi email xác nhận thành công tới: {}", to);
         } catch (MessagingException e) {
             logger.error("[EmailService] Lỗi khi gửi email xác nhận tới {}: {}", to, e.getMessage(), e);
             throw new RuntimeException("Không gửi được email xác nhận: " + e.getMessage());
+        }
+    }
+
+    private String renderVerifyTemplate(Locale locale, Map<String, String> model) {
+        String lang = (locale != null && "vi".equalsIgnoreCase(locale.getLanguage())) ? "vi" : "en";
+        String path = "templates/verify-email." + lang + ".html";
+        try {
+            ClassPathResource res = new ClassPathResource(path);
+            String html = new String(res.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            for (Map.Entry<String, String> e : model.entrySet()) {
+                html = html.replace("{{" + e.getKey() + "}}", e.getValue());
+            }
+            return html;
+        } catch (Exception ex) {
+            logger.warn("[EmailService] Missing template {}, fallback to EN", path);
+            try {
+                ClassPathResource res = new ClassPathResource("templates/verify-email.en.html");
+                String html = new String(res.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                for (Map.Entry<String, String> e : model.entrySet()) {
+                    html = html.replace("{{" + e.getKey() + "}}", e.getValue());
+                }
+                return html;
+            } catch (Exception e2) {
+                return "<p>Verify your email: <a href='" + model.getOrDefault("verifyUrl", "#") + "'>Open link</a></p>";
+            }
         }
     }
 
