@@ -63,6 +63,12 @@ public class DataInitializer implements CommandLineRunner {
     // @Autowired private ApartmentInvitationRepository apartmentInvitationRepository; // Comment out if not exists
     // @Autowired private ServiceFeeConfigRepository serviceFeeConfigRepository; // Comment out if not exists
 
+    // Helper method to create compact opening schedule JSON
+    private String createOpeningSchedule(boolean mon, boolean tue, boolean wed, boolean thu, boolean fri, boolean sat, boolean sun, String from, String to) {
+        return String.format("{\"mon\":{\"open\":%b,\"from\":\"%s\",\"to\":\"%s\"},\"tue\":{\"open\":%b,\"from\":\"%s\",\"to\":\"%s\"},\"wed\":{\"open\":%b,\"from\":\"%s\",\"to\":\"%s\"},\"thu\":{\"open\":%b,\"from\":\"%s\",\"to\":\"%s\"},\"fri\":{\"open\":%b,\"from\":\"%s\",\"to\":\"%s\"},\"sat\":{\"open\":%b,\"from\":\"%s\",\"to\":\"%s\"},\"sun\":{\"open\":%b,\"from\":\"%s\",\"to\":\"%s\"}}",
+            mon, from, to, tue, from, to, wed, from, to, thu, from, to, fri, from, to, sat, from, to, sun, from, to);
+    }
+
     @Override
     public void run(String... args) throws Exception {
         System.out.println("🚀 Starting comprehensive data initialization...");
@@ -627,6 +633,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Open 06:00-22:00, lockers and showers available")
             .usageFee(80000.0)
             .openingHours("06:00 - 22:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "22:00"))
             .isVisible(true)
             .build()));
         
@@ -640,6 +647,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Open 06:00-21:00, sun loungers and pool bar")
             .usageFee(120000.0)
             .openingHours("06:00 - 21:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "21:00"))
             .isVisible(true)
             .build()));
         
@@ -648,12 +656,13 @@ public class DataInitializer implements CommandLineRunner {
             .name("Basketball Court")
             .description("Outdoor basketball court with lighting")
             .location("Ground Floor - Basketball Court")
-            .capacity(20)
+            .capacity(4)
             .capacityType("GROUP")
-            .groupSize(10)
+            .groupSize(4)
             .otherDetails("Lighting and canopy, suitable for all ages")
             .usageFee(60000.0)
             .openingHours("06:00 - 22:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "22:00"))
             .isVisible(true)
             .build()));
         
@@ -662,12 +671,13 @@ public class DataInitializer implements CommandLineRunner {
             .name("Community Room")
             .description("Multi-purpose room for community activities and parties")
             .location("Ground Floor - Community Hall")
-            .capacity(100)
+            .capacity(2)
             .capacityType("GROUP")
             .groupSize(20)
             .otherDetails("Stage, audio and lighting, tables and chairs, pantry")
             .usageFee(30000.0)
             .openingHours("08:00 - 22:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "08:00", "22:00"))
             .isVisible(true)
             .build()));
         
@@ -675,12 +685,13 @@ public class DataInitializer implements CommandLineRunner {
             .name("Meeting Room")
             .description("Multi-purpose meeting room with projector and audio")
             .location("Tower B - Floor 2")
-            .capacity(40)
+            .capacity(2)
             .capacityType("GROUP")
             .groupSize(8)
             .otherDetails("Projector, audio, tables and chairs, free Wi-Fi")
             .usageFee(50000.0)
             .openingHours("08:00 - 20:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "08:00", "20:00"))
             .isVisible(true)
             .build()));
         
@@ -688,12 +699,13 @@ public class DataInitializer implements CommandLineRunner {
             .name("Outdoor BBQ Area")
             .description("Outdoor BBQ area with a nice view")
             .location("Ground Floor - BBQ Area")
-            .capacity(50)
+            .capacity(4)
             .capacityType("GROUP")
             .groupSize(15)
             .otherDetails("Benches, grills, gas stove, bar")
             .usageFee(80000.0)
             .openingHours("16:00 - 22:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "16:00", "22:00"))
             .isVisible(true)
             .build()));
         
@@ -707,6 +719,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Toys, seating for parents, canopy")
             .usageFee(0.0)
             .openingHours("06:00 - 20:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "20:00"))
             .isVisible(true)
             .build()));
         
@@ -720,6 +733,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Massage rooms, spa, sauna, professional staff")
             .usageFee(200000.0)
             .openingHours("09:00 - 21:00")
+            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "09:00", "21:00"))
             .isVisible(true)
             .build()));
         
@@ -1061,6 +1075,10 @@ public class DataInitializer implements CommandLineRunner {
             // Past booking - completed
             LocalDateTime start = LocalDateTime.now().minusDays(7 + i);
             int duration = 60;
+            double totalCost = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+            String qrCode = "QR_" + System.currentTimeMillis() + "_" + i;
+            LocalDateTime qrExpiresAt = start.plusHours(24);
+            
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
@@ -1070,12 +1088,24 @@ public class DataInitializer implements CommandLineRunner {
                 .status(FacilityBookingStatus.CONFIRMED)
                 .numberOfPeople(2 + (i % 4))
                 .purpose(purposes[i % purposes.length])
+                .totalCost(totalCost)
+                .paymentStatus(PaymentStatus.PAID)
+                .paymentMethod(PaymentMethod.VNPAY)
+                .paymentDate(start.minusDays(1))
+                .transactionId("TXN_" + System.currentTimeMillis() + "_" + i)
+                .qrCode(qrCode)
+                .qrExpiresAt(qrExpiresAt)
+                .checkedInCount(1)
+                .maxCheckins(2 + (i % 4))
+                .checkinWindowMinutes(30)
                 .build()));
             
             // Past booking - rejected
             if (i % 3 == 0) {
                 LocalDateTime start2 = LocalDateTime.now().minusDays(5 + i);
                 int duration2 = 90;
+                double totalCost2 = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+                
                 bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                     .facility(facility)
                     .user(resident)
@@ -1085,6 +1115,16 @@ public class DataInitializer implements CommandLineRunner {
                     .status(FacilityBookingStatus.REJECTED)
                     .numberOfPeople(3 + (i % 3))
                     .purpose(purposes[(i + 1) % purposes.length])
+                    .totalCost(totalCost2)
+                    .paymentStatus(PaymentStatus.PENDING)
+                    .paymentMethod(null)
+                    .paymentDate(null)
+                    .transactionId(null)
+                    .qrCode(null)
+                    .qrExpiresAt(null)
+                    .checkedInCount(0)
+                    .maxCheckins(3 + (i % 3))
+                    .checkinWindowMinutes(30)
                     .build()));
             }
         }
@@ -1097,6 +1137,8 @@ public class DataInitializer implements CommandLineRunner {
             // Current booking - pending
             LocalDateTime start = LocalDateTime.now().plusDays(1 + i);
             int duration = 120;
+            double totalCost = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+            
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
@@ -1106,12 +1148,26 @@ public class DataInitializer implements CommandLineRunner {
                 .status(FacilityBookingStatus.PENDING)
                 .numberOfPeople(4 + (i % 3))
                 .purpose(purposes[(i + 2) % purposes.length])
+                .totalCost(totalCost)
+                .paymentStatus(PaymentStatus.PENDING)
+                .paymentMethod(null)
+                .paymentDate(null)
+                .transactionId(null)
+                .qrCode(null)
+                .qrExpiresAt(null)
+                .checkedInCount(0)
+                .maxCheckins(4 + (i % 3))
+                .checkinWindowMinutes(30)
                 .build()));
             
             // Current booking - confirmed
             if (i % 2 == 0) {
                 LocalDateTime start2 = LocalDateTime.now().plusDays(2 + i);
                 int duration2 = 180;
+                double totalCost2 = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+                String qrCode2 = "QR_" + System.currentTimeMillis() + "_" + (i + 100);
+                LocalDateTime qrExpiresAt2 = start2.plusHours(24);
+                
                 bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                     .facility(facility)
                     .user(resident)
@@ -1121,6 +1177,16 @@ public class DataInitializer implements CommandLineRunner {
                     .status(FacilityBookingStatus.CONFIRMED)
                     .numberOfPeople(6 + (i % 4))
                     .purpose(purposes[(i + 3) % purposes.length])
+                    .totalCost(totalCost2)
+                    .paymentStatus(PaymentStatus.PAID)
+                    .paymentMethod(PaymentMethod.VISA)
+                    .paymentDate(start2.minusDays(1))
+                    .transactionId("TXN_" + System.currentTimeMillis() + "_" + (i + 100))
+                    .qrCode(qrCode2)
+                    .qrExpiresAt(qrExpiresAt2)
+                    .checkedInCount(0)
+                    .maxCheckins(6 + (i % 4))
+                    .checkinWindowMinutes(30)
                     .build()));
             }
         }
@@ -1133,6 +1199,10 @@ public class DataInitializer implements CommandLineRunner {
             // Future booking - confirmed
             LocalDateTime start = LocalDateTime.now().plusDays(7 + i);
             int duration = 240;
+            double totalCost = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+            String qrCode = "QR_" + System.currentTimeMillis() + "_" + (i + 200);
+            LocalDateTime qrExpiresAt = start.plusHours(24);
+            
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
@@ -1142,12 +1212,24 @@ public class DataInitializer implements CommandLineRunner {
                 .status(FacilityBookingStatus.CONFIRMED)
                 .numberOfPeople(8 + (i % 5))
                 .purpose(purposes[(i + 4) % purposes.length])
+                .totalCost(totalCost)
+                .paymentStatus(PaymentStatus.PAID)
+                .paymentMethod(PaymentMethod.VNPAY)
+                .paymentDate(start.minusDays(2))
+                .transactionId("TXN_" + System.currentTimeMillis() + "_" + (i + 200))
+                .qrCode(qrCode)
+                .qrExpiresAt(qrExpiresAt)
+                .checkedInCount(0)
+                .maxCheckins(8 + (i % 5))
+                .checkinWindowMinutes(30)
                 .build()));
             
             // Future booking - pending
             if (i % 3 == 0) {
                 LocalDateTime start2 = LocalDateTime.now().plusDays(10 + i);
                 int duration2 = 300;
+                double totalCost2 = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+                
                 bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                     .facility(facility)
                     .user(resident)
@@ -1157,6 +1239,16 @@ public class DataInitializer implements CommandLineRunner {
                     .status(FacilityBookingStatus.PENDING)
                     .numberOfPeople(10 + (i % 6))
                     .purpose(purposes[(i + 5) % purposes.length])
+                    .totalCost(totalCost2)
+                    .paymentStatus(PaymentStatus.PENDING)
+                    .paymentMethod(null)
+                    .paymentDate(null)
+                    .transactionId(null)
+                    .qrCode(null)
+                    .qrExpiresAt(null)
+                    .checkedInCount(0)
+                    .maxCheckins(10 + (i % 6))
+                    .checkinWindowMinutes(30)
                     .build()));
             }
         }
@@ -1169,6 +1261,10 @@ public class DataInitializer implements CommandLineRunner {
             // Large group booking
             LocalDateTime start = LocalDateTime.now().plusDays(15 + i);
             int duration = 480; // 8 hours
+            double totalCost = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+            String qrCode = "QR_" + System.currentTimeMillis() + "_" + (i + 300);
+            LocalDateTime qrExpiresAt = start.plusHours(24);
+            
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
@@ -1178,6 +1274,16 @@ public class DataInitializer implements CommandLineRunner {
                 .status(FacilityBookingStatus.CONFIRMED)
                 .numberOfPeople(20 + (i * 5))
                 .purpose("Large group event")
+                .totalCost(totalCost)
+                .paymentStatus(PaymentStatus.PAID)
+                .paymentMethod(PaymentMethod.VISA)
+                .paymentDate(start.minusDays(3))
+                .transactionId("TXN_" + System.currentTimeMillis() + "_" + (i + 300))
+                .qrCode(qrCode)
+                .qrExpiresAt(qrExpiresAt)
+                .checkedInCount(0)
+                .maxCheckins(20 + (i * 5))
+                .checkinWindowMinutes(60)
                 .build()));
         }
         
@@ -1188,6 +1294,8 @@ public class DataInitializer implements CommandLineRunner {
             
             LocalDateTime start = LocalDateTime.now().plusDays(3 + i);
             int duration = 60;
+            double totalCost = facility.getUsageFee() != null ? facility.getUsageFee() : 0.0;
+            
             bookings.add(facilityBookingRepository.save(FacilityBooking.builder()
                 .facility(facility)
                 .user(resident)
@@ -1197,6 +1305,16 @@ public class DataInitializer implements CommandLineRunner {
                 .status(FacilityBookingStatus.REJECTED)
                 .numberOfPeople(2)
                 .purpose("Booking rejected")
+                .totalCost(totalCost)
+                .paymentStatus(PaymentStatus.PENDING)
+                .paymentMethod(null)
+                .paymentDate(null)
+                .transactionId(null)
+                .qrCode(null)
+                .qrExpiresAt(null)
+                .checkedInCount(0)
+                .maxCheckins(2)
+                .checkinWindowMinutes(30)
                 .build()));
         }
         

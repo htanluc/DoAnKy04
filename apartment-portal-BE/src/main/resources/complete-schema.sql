@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS facilities (
     other_details TEXT,
     usage_fee DOUBLE,
     opening_hours VARCHAR(50),
+    opening_schedule LONGTEXT NULL COMMENT 'Lịch mở cửa theo tuần: {mon:{open:true,from:"06:00",to:"22:00"},...}',
     is_visible BOOLEAN DEFAULT TRUE,
     status VARCHAR(20) DEFAULT 'ACTIVE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

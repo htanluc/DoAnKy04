@@ -23,6 +23,7 @@ public class FacilityMapper {
         dto.setOtherDetails(facility.getOtherDetails());
         dto.setUsageFee(facility.getUsageFee());
         dto.setOpeningHours(facility.getOpeningHours());
+        dto.setOpeningSchedule(facility.getOpeningSchedule());
         dto.setStatus("AVAILABLE");
         dto.setIsVisible(facility.getIsVisible());
         
@@ -45,6 +46,7 @@ public class FacilityMapper {
         facility.setOtherDetails(dto.getOtherDetails());
         facility.setUsageFee(dto.getUsageFee());
         facility.setOpeningHours(dto.getOpeningHours());
+        facility.setOpeningSchedule(dto.getOpeningSchedule());
         facility.setIsVisible(dto.getIsVisible());
         
         return facility;

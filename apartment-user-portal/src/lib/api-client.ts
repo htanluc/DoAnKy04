@@ -330,6 +330,7 @@ class ApiClient {
         image: facility.image || '',
         amenities: facility.amenities || [],
         openingHours: facility.opening_hours || facility.openingHours || '',
+        openingSchedule: facility.opening_schedule || facility.openingSchedule || '',
         status: facility.status || 'AVAILABLE'
       }
     })
