@@ -50,7 +50,7 @@ class FacilityCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildCapacityBadge(facility.capacity),
+                  _buildCapacityBadge(facility),
                 ],
               ),
 
@@ -67,20 +67,22 @@ class FacilityCard extends StatelessWidget {
                   const SizedBox(width: 16),
                   _buildInfoItem(
                     icon: Icons.people,
-                    text: '${facility.capacity} người',
+                    text: facility.capacityType == 'GROUP'
+                        ? '${facility.capacity} nhóm (${facility.groupSize} người/nhóm)'
+                        : '${facility.capacity} người',
                     color: Colors.blue,
                   ),
                 ],
               ),
 
-              if (facility.usageFee > 0) ...[
-                const SizedBox(height: 8),
-                _buildInfoItem(
-                  icon: Icons.attach_money,
-                  text: '${facility.usageFee.toStringAsFixed(0)} VNĐ',
-                  color: Colors.green,
-                ),
-              ],
+              const SizedBox(height: 8),
+              _buildInfoItem(
+                icon: Icons.attach_money,
+                text: facility.usageFee > 0
+                    ? '${facility.usageFee.toStringAsFixed(0)} VNĐ/giờ'
+                    : 'Miễn phí',
+                color: facility.usageFee > 0 ? Colors.green : Colors.blue,
+              ),
 
               const SizedBox(height: 16),
 
@@ -110,20 +112,43 @@ class FacilityCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCapacityBadge(int capacity) {
+  Widget _buildCapacityBadge(Facility facility) {
+    final capacity = facility.capacity;
+    final capacityType = facility.capacityType ?? 'INDIVIDUAL';
+    final groupSize = facility.groupSize;
+
     Color badgeColor;
     String label;
 
-    if (capacity <= 20) {
-      badgeColor = Colors.green;
-      label = 'Nhỏ';
-    } else if (capacity <= 50) {
-      badgeColor = Colors.orange;
-      label = 'Trung bình';
+    if (capacityType == 'GROUP') {
+      // Logic cho nhóm người
+      if (capacity <= 5) {
+        badgeColor = Colors.green;
+        label = 'Nhỏ';
+      } else if (capacity <= 10) {
+        badgeColor = Colors.orange;
+        label = 'Trung bình';
+      } else {
+        badgeColor = Colors.blue;
+        label = 'Lớn';
+      }
     } else {
-      badgeColor = Colors.blue;
-      label = 'Lớn';
+      // Logic cho cá nhân
+      if (capacity <= 20) {
+        badgeColor = Colors.green;
+        label = 'Nhỏ';
+      } else if (capacity <= 50) {
+        badgeColor = Colors.orange;
+        label = 'Trung bình';
+      } else {
+        badgeColor = Colors.blue;
+        label = 'Lớn';
+      }
     }
+
+    final displayText = capacityType == 'GROUP'
+        ? '$label ($capacity nhóm)'
+        : '$label ($capacity người)';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -133,7 +158,7 @@ class FacilityCard extends StatelessWidget {
         border: Border.all(color: badgeColor.withOpacity(0.3)),
       ),
       child: Text(
-        '$label ($capacity)',
+        displayText,
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,

@@ -5,6 +5,8 @@ public class FacilityCreateRequest {
     private String description;
     private String location;
     private Integer capacity;
+    private String capacityType; // INDIVIDUAL hoặc GROUP
+    private Integer groupSize; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
     private String otherDetails;
     private Double usageFee;
     private Boolean isVisible = true;
@@ -38,6 +40,12 @@ public class FacilityCreateRequest {
 
     public Double getUsageFee() { return usageFee; }
     public void setUsageFee(Double usageFee) { this.usageFee = usageFee; }
+
+    public String getCapacityType() { return capacityType; }
+    public void setCapacityType(String capacityType) { this.capacityType = capacityType; }
+
+    public Integer getGroupSize() { return groupSize; }
+    public void setGroupSize(Integer groupSize) { this.groupSize = groupSize; }
 
     public Boolean getIsVisible() { return isVisible; }
     public void setIsVisible(Boolean isVisible) { this.isVisible = isVisible; }

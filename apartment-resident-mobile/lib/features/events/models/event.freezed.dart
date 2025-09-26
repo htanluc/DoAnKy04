@@ -21,7 +21,6 @@ Event _$EventFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$Event {
-  @JsonKey(fromJson: _idFromJson)
   String get id => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
@@ -30,12 +29,11 @@ mixin _$Event {
   String get location => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   int get participantCount => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _registeredFromJson, name: 'isRegistered')
   bool get registered => throw _privateConstructorUsedError;
   String? get qrCode =>
       throw _privateConstructorUsedError; // QR code for check-in
-  @JsonKey(name: 'qrExpiresAt')
-  DateTime? get qrCodeExpiresAt => throw _privateConstructorUsedError; // QR code expiration time
+  DateTime? get qrCodeExpiresAt =>
+      throw _privateConstructorUsedError; // QR code expiration time
   bool? get checkedIn => throw _privateConstructorUsedError; // Check-in status
   DateTime? get checkedInAt =>
       throw _privateConstructorUsedError; // Check-in timestamp
@@ -58,7 +56,7 @@ abstract class $EventCopyWith<$Res> {
       _$EventCopyWithImpl<$Res, Event>;
   @useResult
   $Res call({
-    @JsonKey(fromJson: _idFromJson) String id,
+    String id,
     String title,
     String description,
     DateTime startTime,
@@ -66,10 +64,9 @@ abstract class $EventCopyWith<$Res> {
     String location,
     DateTime createdAt,
     int participantCount,
-    @JsonKey(fromJson: _registeredFromJson, name: 'isRegistered')
     bool registered,
     String? qrCode,
-    @JsonKey(name: 'qrExpiresAt') DateTime? qrCodeExpiresAt,
+    DateTime? qrCodeExpiresAt,
     bool? checkedIn,
     DateTime? checkedInAt,
     DateTime? registrationDeadline,
@@ -185,7 +182,7 @@ abstract class _$$EventImplCopyWith<$Res> implements $EventCopyWith<$Res> {
   @override
   @useResult
   $Res call({
-    @JsonKey(fromJson: _idFromJson) String id,
+    String id,
     String title,
     String description,
     DateTime startTime,
@@ -193,10 +190,9 @@ abstract class _$$EventImplCopyWith<$Res> implements $EventCopyWith<$Res> {
     String location,
     DateTime createdAt,
     int participantCount,
-    @JsonKey(fromJson: _registeredFromJson, name: 'isRegistered')
     bool registered,
     String? qrCode,
-    @JsonKey(name: 'qrExpiresAt') DateTime? qrCodeExpiresAt,
+    DateTime? qrCodeExpiresAt,
     bool? checkedIn,
     DateTime? checkedInAt,
     DateTime? registrationDeadline,
@@ -305,7 +301,7 @@ class __$$EventImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$EventImpl implements _Event {
   const _$EventImpl({
-    @JsonKey(fromJson: _idFromJson) required this.id,
+    required this.id,
     required this.title,
     required this.description,
     required this.startTime,
@@ -313,10 +309,9 @@ class _$EventImpl implements _Event {
     required this.location,
     required this.createdAt,
     required this.participantCount,
-    @JsonKey(fromJson: _registeredFromJson, name: 'isRegistered')
     required this.registered,
     this.qrCode,
-    @JsonKey(name: 'qrExpiresAt') this.qrCodeExpiresAt,
+    this.qrCodeExpiresAt,
     this.checkedIn,
     this.checkedInAt,
     this.registrationDeadline,
@@ -327,7 +322,6 @@ class _$EventImpl implements _Event {
       _$$EventImplFromJson(json);
 
   @override
-  @JsonKey(fromJson: _idFromJson)
   final String id;
   @override
   final String title;
@@ -344,13 +338,11 @@ class _$EventImpl implements _Event {
   @override
   final int participantCount;
   @override
-  @JsonKey(fromJson: _registeredFromJson, name: 'isRegistered')
   final bool registered;
   @override
   final String? qrCode;
   // QR code for check-in
   @override
-  @JsonKey(name: 'qrExpiresAt')
   final DateTime? qrCodeExpiresAt;
   // QR code expiration time
   @override
@@ -441,7 +433,7 @@ class _$EventImpl implements _Event {
 
 abstract class _Event implements Event {
   const factory _Event({
-    @JsonKey(fromJson: _idFromJson) required final String id,
+    required final String id,
     required final String title,
     required final String description,
     required final DateTime startTime,
@@ -449,10 +441,9 @@ abstract class _Event implements Event {
     required final String location,
     required final DateTime createdAt,
     required final int participantCount,
-    @JsonKey(fromJson: _registeredFromJson, name: 'isRegistered')
     required final bool registered,
     final String? qrCode,
-    @JsonKey(name: 'qrExpiresAt') final DateTime? qrCodeExpiresAt,
+    final DateTime? qrCodeExpiresAt,
     final bool? checkedIn,
     final DateTime? checkedInAt,
     final DateTime? registrationDeadline,
@@ -462,7 +453,6 @@ abstract class _Event implements Event {
   factory _Event.fromJson(Map<String, dynamic> json) = _$EventImpl.fromJson;
 
   @override
-  @JsonKey(fromJson: _idFromJson)
   String get id;
   @override
   String get title;
@@ -479,12 +469,10 @@ abstract class _Event implements Event {
   @override
   int get participantCount;
   @override
-  @JsonKey(fromJson: _registeredFromJson, name: 'isRegistered')
   bool get registered;
   @override
   String? get qrCode; // QR code for check-in
   @override
-  @JsonKey(name: 'qrExpiresAt')
   DateTime? get qrCodeExpiresAt; // QR code expiration time
   @override
   bool? get checkedIn; // Check-in status

@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+// import { FixedSizeList as List } from 'react-window'
 
 interface VirtualScrollProps<T> {
   items: T[]
@@ -41,7 +41,7 @@ export function VirtualScroll<T>({
 
   return (
     <div className={className}>
-      <List
+      {/* <List
         height={height}
         itemCount={items.length}
         itemSize={itemHeight}
@@ -49,7 +49,8 @@ export function VirtualScroll<T>({
         overscanCount={overscanCount}
       >
         {({ index, style, data }) => renderItem({ index, style, data: data[index] })}
-      </List>
+      </List> */}
+      <div>Virtual scroll component disabled</div>
     </div>
   )
 }

@@ -234,7 +234,7 @@ export default function WaterMeterListPage() {
   };
 
   return (
-    <AdminLayout title={t('admin.waterMeter.title','Danh sách chỉ số nước')}>
+    <AdminLayout title={t('admin.waterMeter.title', 'Danh sách chỉ số nước')}>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">
           {t('admin.waterMeter.title')}
@@ -300,6 +300,7 @@ export default function WaterMeterListPage() {
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
+              >
               {showLatestOnly ? 'Chỉ số mới nhất' : 'Tất cả chỉ số'}
             </button>
             {!showLatestOnly && (

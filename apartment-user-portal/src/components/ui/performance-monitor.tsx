@@ -160,7 +160,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ classNam
               >
                 Reset
               </Button>
-              <Button
+              {/* <Button
                 onClick={() => {
                   const stats = performanceMonitor.getCacheStats()
                   console.log('Cache Stats:', stats)
@@ -170,7 +170,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ classNam
                 className="flex-1"
               >
                 Cache Stats
-              </Button>
+              </Button> */}
             </div>
           </CardContent>
         </Card>

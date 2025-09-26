@@ -24,8 +24,8 @@ function LoadingSpinner() {
           </p>
           <div className="flex justify-center space-x-1 mt-4">
             <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce delay-100"></div>
+            <div className="w-2 h-2 bg-brand-accent rounded-full animate-bounce delay-200"></div>
           </div>
         </div>
       </div>

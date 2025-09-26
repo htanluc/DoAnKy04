@@ -9,10 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { facilitiesApi, FacilityCreateRequest } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { FACILITY_LOCATIONS, CAPACITY_TYPES } from '@/lib/constants';
 
 export default function CreateFacilityPage() {
   const { t } = useLanguage();
@@ -22,18 +24,31 @@ export default function CreateFacilityPage() {
   const [formData, setFormData] = useState<FacilityCreateRequest>({
     name: '',
     description: '',
+    location: '',
     capacity: 0,
+    capacityType: 'INDIVIDUAL',
+    groupSize: undefined,
     otherDetails: '',
-    usageFee: '',
+    usageFee: 0,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.description.trim() || formData.capacity <= 0) {
+    if (!formData.name.trim() || !formData.description.trim() || !formData.location.trim() || formData.capacity <= 0) {
       toast({
         title: t('admin.error.save', 'Lỗi'),
         description: t('admin.facilities.createError', 'Không thể tạo tiện ích'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Kiểm tra groupSize khi capacityType là GROUP
+    if (formData.capacityType === 'GROUP' && (!formData.groupSize || formData.groupSize <= 0)) {
+      toast({
+        title: t('admin.error.save', 'Lỗi'),
+        description: t('admin.facilities.groupSizeError', 'Vui lòng nhập số người trong nhóm'),
         variant: "destructive",
       });
       return;
@@ -120,6 +135,40 @@ export default function CreateFacilityPage() {
                 />
               </div>
 
+              {/* Location */}
+              <div className="space-y-2">
+                <Label htmlFor="location">{t('admin.facilities.location', 'Vị trí diễn ra')} *</Label>
+                <Select value={formData.location} onValueChange={(value) => handleInputChange('location', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('admin.facilities.location.placeholder', 'Chọn vị trí diễn ra')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FACILITY_LOCATIONS.map((location) => (
+                      <SelectItem key={location.value} value={location.value}>
+                        {location.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Capacity Type */}
+              <div className="space-y-2">
+                <Label htmlFor="capacityType">{t('admin.facilities.capacityType', 'Loại sức chứa')} *</Label>
+                <Select value={formData.capacityType} onValueChange={(value) => handleInputChange('capacityType', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('admin.facilities.capacityType.placeholder', 'Chọn loại sức chứa')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAPACITY_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Capacity */}
               <div className="space-y-2">
                 <Label htmlFor="capacity">{t('admin.facilities.capacity', 'Sức chứa')} *</Label>
@@ -129,11 +178,48 @@ export default function CreateFacilityPage() {
                   min="1"
                   value={formData.capacity}
                   onChange={(e) => handleInputChange('capacity', parseInt(e.target.value) || 0)}
-                  placeholder={t('admin.facilities.capacity.placeholder', 'Nhập sức chứa tối đa')}
+                  placeholder={formData.capacityType === 'INDIVIDUAL' 
+                    ? t('admin.facilities.capacity.placeholder', 'Nhập số người tối đa') 
+                    : t('admin.facilities.capacity.group.placeholder', 'Nhập số nhóm tối đa')}
                   required
                 />
                 <p className="text-sm text-gray-500">
-                  {t('admin.facilities.capacity.desc', 'Số người tối đa có thể sử dụng tiện ích cùng lúc')}
+                  {formData.capacityType === 'INDIVIDUAL' 
+                    ? t('admin.facilities.capacity.desc', 'Số người tối đa có thể sử dụng tiện ích cùng lúc')
+                    : t('admin.facilities.capacity.group.desc', 'Số nhóm tối đa có thể sử dụng tiện ích cùng lúc')}
+                </p>
+              </div>
+
+              {/* Group Size - chỉ hiển thị khi chọn GROUP */}
+              {formData.capacityType === 'GROUP' && (
+                <div className="space-y-2">
+                  <Label htmlFor="groupSize">{t('admin.facilities.groupSize', 'Số người trong nhóm')} *</Label>
+                  <Input
+                    id="groupSize"
+                    type="number"
+                    min="1"
+                    value={formData.groupSize || ''}
+                    onChange={(e) => handleInputChange('groupSize', parseInt(e.target.value) || undefined)}
+                    placeholder={t('admin.facilities.groupSize.placeholder', 'Nhập số người trong mỗi nhóm')}
+                    required
+                  />
+                  <p className="text-sm text-gray-500">
+                    {t('admin.facilities.groupSize.desc', 'Số người tối đa trong mỗi nhóm')}
+                  </p>
+                </div>
+              )}
+
+              {/* Opening Hours */}
+              <div className="space-y-2">
+                <Label htmlFor="openingHours">{t('admin.facilities.openingHours', 'Giờ hoạt động')}</Label>
+                <Input
+                  id="openingHours"
+                  value={formData.openingHours || ''}
+                  onChange={(e) => handleInputChange('openingHours', e.target.value)}
+                  placeholder={t('admin.facilities.openingHours.placeholder', 'Ví dụ: 06:00 - 22:00')}
+                />
+                <p className="text-sm text-gray-500">
+                  {t('admin.facilities.openingHours.desc', 'Thời gian tiện ích hoạt động trong ngày')}
                 </p>
               </div>
 
@@ -142,8 +228,11 @@ export default function CreateFacilityPage() {
                 <Label htmlFor="usageFee">{t('admin.facilities.usageFee', 'Phí sử dụng')}</Label>
                 <Input
                   id="usageFee"
+                  type="number"
+                  min="0"
+                  step="0.01"
                   value={formData.usageFee || ''}
-                  onChange={(e) => handleInputChange('usageFee', e.target.value)}
+                  onChange={(e) => handleInputChange('usageFee', parseFloat(e.target.value) || 0)}
                   placeholder={t('admin.facilities.usageFee.placeholder', 'Nhập phí sử dụng (nếu có)')}
                 />
               </div>

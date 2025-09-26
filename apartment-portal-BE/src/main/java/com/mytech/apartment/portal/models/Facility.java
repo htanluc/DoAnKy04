@@ -25,6 +25,8 @@ public class Facility {
     private String description;
     private String location;
     private Integer capacity;
+    private String capacityType; // INDIVIDUAL hoặc GROUP
+    private Integer groupSize; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
     private String otherDetails;
     private Double usageFee;
     private String openingHours;

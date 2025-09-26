@@ -26,6 +26,10 @@ mixin _$Facility {
   String get description => throw _privateConstructorUsedError;
   String get location => throw _privateConstructorUsedError;
   int get capacity => throw _privateConstructorUsedError;
+  String? get capacityType =>
+      throw _privateConstructorUsedError; // INDIVIDUAL hoặc GROUP
+  int? get groupSize =>
+      throw _privateConstructorUsedError; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   String get otherDetails => throw _privateConstructorUsedError;
   double get usageFee => throw _privateConstructorUsedError;
   String? get openingHours => throw _privateConstructorUsedError;
@@ -52,6 +56,8 @@ abstract class $FacilityCopyWith<$Res> {
     String description,
     String location,
     int capacity,
+    String? capacityType,
+    int? groupSize,
     String otherDetails,
     double usageFee,
     String? openingHours,
@@ -79,6 +85,8 @@ class _$FacilityCopyWithImpl<$Res, $Val extends Facility>
     Object? description = null,
     Object? location = null,
     Object? capacity = null,
+    Object? capacityType = freezed,
+    Object? groupSize = freezed,
     Object? otherDetails = null,
     Object? usageFee = null,
     Object? openingHours = freezed,
@@ -106,6 +114,14 @@ class _$FacilityCopyWithImpl<$Res, $Val extends Facility>
                 ? _value.capacity
                 : capacity // ignore: cast_nullable_to_non_nullable
                       as int,
+            capacityType: freezed == capacityType
+                ? _value.capacityType
+                : capacityType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            groupSize: freezed == groupSize
+                ? _value.groupSize
+                : groupSize // ignore: cast_nullable_to_non_nullable
+                      as int?,
             otherDetails: null == otherDetails
                 ? _value.otherDetails
                 : otherDetails // ignore: cast_nullable_to_non_nullable
@@ -143,6 +159,8 @@ abstract class _$$FacilityImplCopyWith<$Res>
     String description,
     String location,
     int capacity,
+    String? capacityType,
+    int? groupSize,
     String otherDetails,
     double usageFee,
     String? openingHours,
@@ -169,6 +187,8 @@ class __$$FacilityImplCopyWithImpl<$Res>
     Object? description = null,
     Object? location = null,
     Object? capacity = null,
+    Object? capacityType = freezed,
+    Object? groupSize = freezed,
     Object? otherDetails = null,
     Object? usageFee = null,
     Object? openingHours = freezed,
@@ -196,6 +216,14 @@ class __$$FacilityImplCopyWithImpl<$Res>
             ? _value.capacity
             : capacity // ignore: cast_nullable_to_non_nullable
                   as int,
+        capacityType: freezed == capacityType
+            ? _value.capacityType
+            : capacityType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        groupSize: freezed == groupSize
+            ? _value.groupSize
+            : groupSize // ignore: cast_nullable_to_non_nullable
+                  as int?,
         otherDetails: null == otherDetails
             ? _value.otherDetails
             : otherDetails // ignore: cast_nullable_to_non_nullable
@@ -226,6 +254,8 @@ class _$FacilityImpl implements _Facility {
     required this.description,
     required this.location,
     required this.capacity,
+    this.capacityType,
+    this.groupSize,
     required this.otherDetails,
     required this.usageFee,
     this.openingHours,
@@ -246,6 +276,12 @@ class _$FacilityImpl implements _Facility {
   @override
   final int capacity;
   @override
+  final String? capacityType;
+  // INDIVIDUAL hoặc GROUP
+  @override
+  final int? groupSize;
+  // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
+  @override
   final String otherDetails;
   @override
   final double usageFee;
@@ -257,7 +293,7 @@ class _$FacilityImpl implements _Facility {
 
   @override
   String toString() {
-    return 'Facility(id: $id, name: $name, description: $description, location: $location, capacity: $capacity, otherDetails: $otherDetails, usageFee: $usageFee, openingHours: $openingHours, isVisible: $isVisible)';
+    return 'Facility(id: $id, name: $name, description: $description, location: $location, capacity: $capacity, capacityType: $capacityType, groupSize: $groupSize, otherDetails: $otherDetails, usageFee: $usageFee, openingHours: $openingHours, isVisible: $isVisible)';
   }
 
   @override
@@ -273,6 +309,10 @@ class _$FacilityImpl implements _Facility {
                 other.location == location) &&
             (identical(other.capacity, capacity) ||
                 other.capacity == capacity) &&
+            (identical(other.capacityType, capacityType) ||
+                other.capacityType == capacityType) &&
+            (identical(other.groupSize, groupSize) ||
+                other.groupSize == groupSize) &&
             (identical(other.otherDetails, otherDetails) ||
                 other.otherDetails == otherDetails) &&
             (identical(other.usageFee, usageFee) ||
@@ -292,6 +332,8 @@ class _$FacilityImpl implements _Facility {
     description,
     location,
     capacity,
+    capacityType,
+    groupSize,
     otherDetails,
     usageFee,
     openingHours,
@@ -319,6 +361,8 @@ abstract class _Facility implements Facility {
     required final String description,
     required final String location,
     required final int capacity,
+    final String? capacityType,
+    final int? groupSize,
     required final String otherDetails,
     required final double usageFee,
     final String? openingHours,
@@ -338,6 +382,10 @@ abstract class _Facility implements Facility {
   String get location;
   @override
   int get capacity;
+  @override
+  String? get capacityType; // INDIVIDUAL hoặc GROUP
+  @override
+  int? get groupSize; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   @override
   String get otherDetails;
   @override
@@ -367,6 +415,10 @@ mixin _$FacilityCreateRequest {
   String get description => throw _privateConstructorUsedError;
   String get location => throw _privateConstructorUsedError;
   int get capacity => throw _privateConstructorUsedError;
+  String? get capacityType =>
+      throw _privateConstructorUsedError; // INDIVIDUAL hoặc GROUP
+  int? get groupSize =>
+      throw _privateConstructorUsedError; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   String get otherDetails => throw _privateConstructorUsedError;
   double get usageFee => throw _privateConstructorUsedError;
   String? get openingHours => throw _privateConstructorUsedError;
@@ -394,6 +446,8 @@ abstract class $FacilityCreateRequestCopyWith<$Res> {
     String description,
     String location,
     int capacity,
+    String? capacityType,
+    int? groupSize,
     String otherDetails,
     double usageFee,
     String? openingHours,
@@ -423,6 +477,8 @@ class _$FacilityCreateRequestCopyWithImpl<
     Object? description = null,
     Object? location = null,
     Object? capacity = null,
+    Object? capacityType = freezed,
+    Object? groupSize = freezed,
     Object? otherDetails = null,
     Object? usageFee = null,
     Object? openingHours = freezed,
@@ -446,6 +502,14 @@ class _$FacilityCreateRequestCopyWithImpl<
                 ? _value.capacity
                 : capacity // ignore: cast_nullable_to_non_nullable
                       as int,
+            capacityType: freezed == capacityType
+                ? _value.capacityType
+                : capacityType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            groupSize: freezed == groupSize
+                ? _value.groupSize
+                : groupSize // ignore: cast_nullable_to_non_nullable
+                      as int?,
             otherDetails: null == otherDetails
                 ? _value.otherDetails
                 : otherDetails // ignore: cast_nullable_to_non_nullable
@@ -482,6 +546,8 @@ abstract class _$$FacilityCreateRequestImplCopyWith<$Res>
     String description,
     String location,
     int capacity,
+    String? capacityType,
+    int? groupSize,
     String otherDetails,
     double usageFee,
     String? openingHours,
@@ -508,6 +574,8 @@ class __$$FacilityCreateRequestImplCopyWithImpl<$Res>
     Object? description = null,
     Object? location = null,
     Object? capacity = null,
+    Object? capacityType = freezed,
+    Object? groupSize = freezed,
     Object? otherDetails = null,
     Object? usageFee = null,
     Object? openingHours = freezed,
@@ -531,6 +599,14 @@ class __$$FacilityCreateRequestImplCopyWithImpl<$Res>
             ? _value.capacity
             : capacity // ignore: cast_nullable_to_non_nullable
                   as int,
+        capacityType: freezed == capacityType
+            ? _value.capacityType
+            : capacityType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        groupSize: freezed == groupSize
+            ? _value.groupSize
+            : groupSize // ignore: cast_nullable_to_non_nullable
+                  as int?,
         otherDetails: null == otherDetails
             ? _value.otherDetails
             : otherDetails // ignore: cast_nullable_to_non_nullable
@@ -560,6 +636,8 @@ class _$FacilityCreateRequestImpl implements _FacilityCreateRequest {
     required this.description,
     required this.location,
     required this.capacity,
+    this.capacityType,
+    this.groupSize,
     required this.otherDetails,
     required this.usageFee,
     this.openingHours,
@@ -578,6 +656,12 @@ class _$FacilityCreateRequestImpl implements _FacilityCreateRequest {
   @override
   final int capacity;
   @override
+  final String? capacityType;
+  // INDIVIDUAL hoặc GROUP
+  @override
+  final int? groupSize;
+  // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
+  @override
   final String otherDetails;
   @override
   final double usageFee;
@@ -589,7 +673,7 @@ class _$FacilityCreateRequestImpl implements _FacilityCreateRequest {
 
   @override
   String toString() {
-    return 'FacilityCreateRequest(name: $name, description: $description, location: $location, capacity: $capacity, otherDetails: $otherDetails, usageFee: $usageFee, openingHours: $openingHours, isVisible: $isVisible)';
+    return 'FacilityCreateRequest(name: $name, description: $description, location: $location, capacity: $capacity, capacityType: $capacityType, groupSize: $groupSize, otherDetails: $otherDetails, usageFee: $usageFee, openingHours: $openingHours, isVisible: $isVisible)';
   }
 
   @override
@@ -604,6 +688,10 @@ class _$FacilityCreateRequestImpl implements _FacilityCreateRequest {
                 other.location == location) &&
             (identical(other.capacity, capacity) ||
                 other.capacity == capacity) &&
+            (identical(other.capacityType, capacityType) ||
+                other.capacityType == capacityType) &&
+            (identical(other.groupSize, groupSize) ||
+                other.groupSize == groupSize) &&
             (identical(other.otherDetails, otherDetails) ||
                 other.otherDetails == otherDetails) &&
             (identical(other.usageFee, usageFee) ||
@@ -622,6 +710,8 @@ class _$FacilityCreateRequestImpl implements _FacilityCreateRequest {
     description,
     location,
     capacity,
+    capacityType,
+    groupSize,
     otherDetails,
     usageFee,
     openingHours,
@@ -652,6 +742,8 @@ abstract class _FacilityCreateRequest implements FacilityCreateRequest {
     required final String description,
     required final String location,
     required final int capacity,
+    final String? capacityType,
+    final int? groupSize,
     required final String otherDetails,
     required final double usageFee,
     final String? openingHours,
@@ -669,6 +761,10 @@ abstract class _FacilityCreateRequest implements FacilityCreateRequest {
   String get location;
   @override
   int get capacity;
+  @override
+  String? get capacityType; // INDIVIDUAL hoặc GROUP
+  @override
+  int? get groupSize; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   @override
   String get otherDetails;
   @override
@@ -698,6 +794,10 @@ mixin _$FacilityUpdateRequest {
   String? get description => throw _privateConstructorUsedError;
   String? get location => throw _privateConstructorUsedError;
   int? get capacity => throw _privateConstructorUsedError;
+  String? get capacityType =>
+      throw _privateConstructorUsedError; // INDIVIDUAL hoặc GROUP
+  int? get groupSize =>
+      throw _privateConstructorUsedError; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   String? get otherDetails => throw _privateConstructorUsedError;
   double? get usageFee => throw _privateConstructorUsedError;
   String? get openingHours => throw _privateConstructorUsedError;
@@ -725,6 +825,8 @@ abstract class $FacilityUpdateRequestCopyWith<$Res> {
     String? description,
     String? location,
     int? capacity,
+    String? capacityType,
+    int? groupSize,
     String? otherDetails,
     double? usageFee,
     String? openingHours,
@@ -754,6 +856,8 @@ class _$FacilityUpdateRequestCopyWithImpl<
     Object? description = freezed,
     Object? location = freezed,
     Object? capacity = freezed,
+    Object? capacityType = freezed,
+    Object? groupSize = freezed,
     Object? otherDetails = freezed,
     Object? usageFee = freezed,
     Object? openingHours = freezed,
@@ -776,6 +880,14 @@ class _$FacilityUpdateRequestCopyWithImpl<
             capacity: freezed == capacity
                 ? _value.capacity
                 : capacity // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            capacityType: freezed == capacityType
+                ? _value.capacityType
+                : capacityType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            groupSize: freezed == groupSize
+                ? _value.groupSize
+                : groupSize // ignore: cast_nullable_to_non_nullable
                       as int?,
             otherDetails: freezed == otherDetails
                 ? _value.otherDetails
@@ -813,6 +925,8 @@ abstract class _$$FacilityUpdateRequestImplCopyWith<$Res>
     String? description,
     String? location,
     int? capacity,
+    String? capacityType,
+    int? groupSize,
     String? otherDetails,
     double? usageFee,
     String? openingHours,
@@ -839,6 +953,8 @@ class __$$FacilityUpdateRequestImplCopyWithImpl<$Res>
     Object? description = freezed,
     Object? location = freezed,
     Object? capacity = freezed,
+    Object? capacityType = freezed,
+    Object? groupSize = freezed,
     Object? otherDetails = freezed,
     Object? usageFee = freezed,
     Object? openingHours = freezed,
@@ -861,6 +977,14 @@ class __$$FacilityUpdateRequestImplCopyWithImpl<$Res>
         capacity: freezed == capacity
             ? _value.capacity
             : capacity // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        capacityType: freezed == capacityType
+            ? _value.capacityType
+            : capacityType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        groupSize: freezed == groupSize
+            ? _value.groupSize
+            : groupSize // ignore: cast_nullable_to_non_nullable
                   as int?,
         otherDetails: freezed == otherDetails
             ? _value.otherDetails
@@ -891,6 +1015,8 @@ class _$FacilityUpdateRequestImpl implements _FacilityUpdateRequest {
     this.description,
     this.location,
     this.capacity,
+    this.capacityType,
+    this.groupSize,
     this.otherDetails,
     this.usageFee,
     this.openingHours,
@@ -909,6 +1035,12 @@ class _$FacilityUpdateRequestImpl implements _FacilityUpdateRequest {
   @override
   final int? capacity;
   @override
+  final String? capacityType;
+  // INDIVIDUAL hoặc GROUP
+  @override
+  final int? groupSize;
+  // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
+  @override
   final String? otherDetails;
   @override
   final double? usageFee;
@@ -919,7 +1051,7 @@ class _$FacilityUpdateRequestImpl implements _FacilityUpdateRequest {
 
   @override
   String toString() {
-    return 'FacilityUpdateRequest(name: $name, description: $description, location: $location, capacity: $capacity, otherDetails: $otherDetails, usageFee: $usageFee, openingHours: $openingHours, isVisible: $isVisible)';
+    return 'FacilityUpdateRequest(name: $name, description: $description, location: $location, capacity: $capacity, capacityType: $capacityType, groupSize: $groupSize, otherDetails: $otherDetails, usageFee: $usageFee, openingHours: $openingHours, isVisible: $isVisible)';
   }
 
   @override
@@ -934,6 +1066,10 @@ class _$FacilityUpdateRequestImpl implements _FacilityUpdateRequest {
                 other.location == location) &&
             (identical(other.capacity, capacity) ||
                 other.capacity == capacity) &&
+            (identical(other.capacityType, capacityType) ||
+                other.capacityType == capacityType) &&
+            (identical(other.groupSize, groupSize) ||
+                other.groupSize == groupSize) &&
             (identical(other.otherDetails, otherDetails) ||
                 other.otherDetails == otherDetails) &&
             (identical(other.usageFee, usageFee) ||
@@ -952,6 +1088,8 @@ class _$FacilityUpdateRequestImpl implements _FacilityUpdateRequest {
     description,
     location,
     capacity,
+    capacityType,
+    groupSize,
     otherDetails,
     usageFee,
     openingHours,
@@ -982,6 +1120,8 @@ abstract class _FacilityUpdateRequest implements FacilityUpdateRequest {
     final String? description,
     final String? location,
     final int? capacity,
+    final String? capacityType,
+    final int? groupSize,
     final String? otherDetails,
     final double? usageFee,
     final String? openingHours,
@@ -999,6 +1139,10 @@ abstract class _FacilityUpdateRequest implements FacilityUpdateRequest {
   String? get location;
   @override
   int? get capacity;
+  @override
+  String? get capacityType; // INDIVIDUAL hoặc GROUP
+  @override
+  int? get groupSize; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   @override
   String? get otherDetails;
   @override

@@ -53,8 +53,13 @@ public class FacilityBookingService {
 
     public FacilityBookingDto createFacilityBooking(FacilityBookingCreateRequest request) {
         // Validate dữ liệu đầu vào
-        if (request.getFacilityId() == null || request.getBookingTime() == null || request.getDuration() == null || request.getUserId() == null) {
+        if (request.getFacilityId() == null || request.getBookingTime() == null || request.getDuration() == null) {
             throw new RuntimeException("Thiếu thông tin đặt chỗ");
+        }
+        
+        // userId có thể null nếu chưa được set từ controller
+        if (request.getUserId() == null) {
+            throw new RuntimeException("User ID không được xác định");
         }
         
         Facility facility = facilityRepository.findById(request.getFacilityId())
@@ -122,29 +127,29 @@ public class FacilityBookingService {
         double totalCost = usageFee * hours * numberOfPeople;
         booking.setTotalCost(totalCost);
         
-        // Set payment status from request
-        if (request.getPaymentStatus() != null && "PAID".equals(request.getPaymentStatus())) {
-            // Chuyển status từ PENDING thành CONFIRMED khi thanh toán
-            booking.setStatus(FacilityBookingStatus.CONFIRMED);
-            booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PAID);
-            
-            // Convert payment method string to enum
+        // Logic thanh toán: Luôn tạo booking với trạng thái PENDING trước
+        booking.setStatus(FacilityBookingStatus.PENDING);
+        booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PENDING);
+        
+        if (totalCost > 0) {
+            // Có phí - yêu cầu thanh toán sau
+            // Convert payment method string to enum nếu có
             if (request.getPaymentMethod() != null) {
                 try {
                     booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.valueOf(request.getPaymentMethod()));
                 } catch (IllegalArgumentException e) {
-                    // Default to MOMO if invalid payment method
-                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.MOMO);
+                    // Default to VNPAY if invalid payment method
+                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.VNPAY);
                 }
-            }
-            
-            booking.setPaymentDate(LocalDateTime.now());
-            // Set totalCost from request if provided
-            if (request.getTotalCost() != null) {
-                booking.setTotalCost(request.getTotalCost());
+            } else {
+                booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.VNPAY);
             }
         } else {
-            booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PENDING);
+            // Tiện ích miễn phí - tự động thanh toán
+            booking.setStatus(FacilityBookingStatus.CONFIRMED);
+            booking.setPaymentStatus(com.mytech.apartment.portal.models.enums.PaymentStatus.PAID);
+            booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.FREE);
+            booking.setPaymentDate(LocalDateTime.now());
         }
 
         FacilityBooking savedBooking = facilityBookingRepository.save(booking);
@@ -500,8 +505,8 @@ public class FacilityBookingService {
                 try {
                     booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.valueOf(paymentMethod));
                 } catch (IllegalArgumentException e) {
-                    // Default to MOMO if invalid payment method
-                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.MOMO);
+                    // Default to VNPAY if invalid payment method
+                    booking.setPaymentMethod(com.mytech.apartment.portal.models.enums.PaymentMethod.VNPAY);
                 }
             }
             

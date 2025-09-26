@@ -7,25 +7,19 @@ part of 'event.dart';
 // **************************************************************************
 
 _$EventImpl _$$EventImplFromJson(Map<String, dynamic> json) => _$EventImpl(
-  id: _idFromJson(json['id']),
-  title: json['title'] as String? ?? '',
-  description: json['description'] as String? ?? '',
-  startTime: DateTime.parse(
-    json['startTime'] as String? ?? DateTime.now().toIso8601String(),
-  ),
-  endTime: DateTime.parse(
-    json['endTime'] as String? ?? DateTime.now().toIso8601String(),
-  ),
-  location: json['location'] as String? ?? '',
-  createdAt: DateTime.parse(
-    json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
-  ),
-  participantCount: (json['participantCount'] as num?)?.toInt() ?? 0,
-  registered: _registeredFromJson(json['isRegistered'] ?? json['registered']),
+  id: json['id'] as String,
+  title: json['title'] as String,
+  description: json['description'] as String,
+  startTime: DateTime.parse(json['startTime'] as String),
+  endTime: DateTime.parse(json['endTime'] as String),
+  location: json['location'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  participantCount: (json['participantCount'] as num).toInt(),
+  registered: json['registered'] as bool,
   qrCode: json['qrCode'] as String?,
-  qrCodeExpiresAt: json['qrExpiresAt'] == null
+  qrCodeExpiresAt: json['qrCodeExpiresAt'] == null
       ? null
-      : DateTime.parse(json['qrExpiresAt'] as String),
+      : DateTime.parse(json['qrCodeExpiresAt'] as String),
   checkedIn: json['checkedIn'] as bool?,
   checkedInAt: json['checkedInAt'] == null
       ? null
@@ -46,9 +40,9 @@ Map<String, dynamic> _$$EventImplToJson(_$EventImpl instance) =>
       'location': instance.location,
       'createdAt': instance.createdAt.toIso8601String(),
       'participantCount': instance.participantCount,
-      'isRegistered': instance.registered,
+      'registered': instance.registered,
       'qrCode': instance.qrCode,
-      'qrExpiresAt': instance.qrCodeExpiresAt?.toIso8601String(),
+      'qrCodeExpiresAt': instance.qrCodeExpiresAt?.toIso8601String(),
       'checkedIn': instance.checkedIn,
       'checkedInAt': instance.checkedInAt?.toIso8601String(),
       'registrationDeadline': instance.registrationDeadline?.toIso8601String(),

@@ -1,7 +1,7 @@
 // API configuration with authentication
 import { getToken, refreshToken, removeTokens } from './auth'
 
-const API_BASE_URL = 'http://localhost:8080'
+const API_BASE_URL = 'http://10.119.54.101:8080'
 
 // Custom fetch wrapper with authentication
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
@@ -180,6 +180,8 @@ export interface Facility {
   description: string;
   location: string;
   capacity: number;
+  capacityType?: string; // INDIVIDUAL hoặc GROUP
+  groupSize?: number; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   otherDetails: string;
   usageFee: number; // number thay vì string|null
   openingHours?: string;
@@ -204,10 +206,16 @@ export interface FacilityBooking {
 export interface FacilityBookingCreateRequest {
   facilityId: number;
   userId: number;
+  startTime?: string;
+  endTime?: string;
   bookingTime: string;
   duration: number;
   numberOfPeople: number;
   purpose: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  totalCost?: number;
+  transactionId?: string;
 }
 
 // Event
@@ -421,11 +429,20 @@ export const eventRegistrationsApi = {
 
 // Facilities API
 export const facilitiesApi = {
-  // Get all facilities
+  // Get all facilities (Admin only)
   getAll: async (): Promise<Facility[]> => {
     const response = await api.get('/api/admin/facilities');
     if (!response.ok) {
       throw new Error('Failed to fetch facilities');
+    }
+    return response.json();
+  },
+
+  // Get visible facilities (For residents)
+  getVisible: async (): Promise<Facility[]> => {
+    const response = await api.get('/api/facilities');
+    if (!response.ok) {
+      throw new Error('Failed to fetch visible facilities');
     }
     return response.json();
   },
@@ -534,6 +551,24 @@ export const facilityBookingsApi = {
       throw new Error('Failed to cancel facility booking');
     }
   },
+
+  // Create payment for facility booking
+  createPayment: async (bookingId: number, paymentMethod: string): Promise<any> => {
+    const response = await api.post(`/api/facility-bookings/${bookingId}/create-payment?paymentMethod=${paymentMethod}`);
+    if (!response.ok) {
+      throw new Error('Failed to create payment for facility booking');
+    }
+    return response.json();
+  },
+
+  // Process payment for facility booking
+  processPayment: async (bookingId: number, paymentMethod: string): Promise<FacilityBooking> => {
+    const response = await api.post(`/api/facility-bookings/${bookingId}/payment?paymentMethod=${paymentMethod}`);
+    if (!response.ok) {
+      throw new Error('Failed to process payment for facility booking');
+    }
+    return response.json();
+  },
 };
 
 // Residents API
@@ -592,6 +627,8 @@ export interface FacilityCreateRequest {
   description: string;
   location: string;
   capacity: number;
+  capacityType?: string; // INDIVIDUAL hoặc GROUP
+  groupSize?: number; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   otherDetails: string;
   usageFee: number;
   openingHours?: string;
@@ -603,6 +640,8 @@ export interface FacilityUpdateRequest {
   description?: string;
   location?: string;
   capacity?: number;
+  capacityType?: string; // INDIVIDUAL hoặc GROUP
+  groupSize?: number; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
   otherDetails?: string;
   usageFee?: number;
   openingHours?: string;

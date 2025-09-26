@@ -64,7 +64,8 @@ class FacilitiesRepository {
   /// Lọc tiện ích theo tên hoặc mô tả
   Future<List<Facility>> searchFacilities(String query) async {
     try {
-      final facilities = await FacilitiesApi.getAll();
+      // Chỉ tìm kiếm trong facilities visible
+      final facilities = await getVisibleFacilities();
       if (query.isEmpty) return facilities;
 
       final lowercaseQuery = query.toLowerCase();
@@ -81,8 +82,9 @@ class FacilitiesRepository {
   /// Lấy danh sách tiện ích hiển thị (isVisible = true)
   Future<List<Facility>> getVisibleFacilities() async {
     try {
-      final facilities = await FacilitiesApi.getAll();
-      return facilities.where((facility) => facility.isVisible).toList();
+      // Sử dụng API endpoint dành cho residents (/api/facilities)
+      // Backend đã filter chỉ trả về facilities có isVisible = true
+      return await FacilitiesApi.getAll();
     } catch (e) {
       throw Exception('Không thể tải danh sách tiện ích hiển thị: $e');
     }
@@ -91,7 +93,8 @@ class FacilitiesRepository {
   /// Lấy danh sách tiện ích theo sức chứa
   Future<List<Facility>> getFacilitiesByCapacity(int minCapacity) async {
     try {
-      final facilities = await FacilitiesApi.getAll();
+      // Chỉ filter trong facilities visible
+      final facilities = await getVisibleFacilities();
       return facilities
           .where((facility) => facility.capacity >= minCapacity)
           .toList();

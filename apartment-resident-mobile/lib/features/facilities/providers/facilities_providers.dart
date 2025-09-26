@@ -59,7 +59,8 @@ class FacilitiesSearchNotifier
   Future<void> loadFacilities() async {
     try {
       state = const AsyncValue.loading();
-      final facilities = await _repository.getAllFacilities();
+      final facilities = await _repository
+          .getVisibleFacilities(); // Chỉ lấy facilities visible
       state = AsyncValue.data(facilities);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
@@ -102,7 +103,8 @@ class FacilitiesByCapacityNotifier
   Future<void> loadFacilities() async {
     try {
       state = const AsyncValue.loading();
-      final facilities = await _repository.getAllFacilities();
+      final facilities = await _repository
+          .getVisibleFacilities(); // Chỉ lấy facilities visible
       state = AsyncValue.data(facilities);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);

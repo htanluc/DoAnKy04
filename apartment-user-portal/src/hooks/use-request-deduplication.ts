@@ -20,8 +20,8 @@ export function useRequestDeduplication() {
     useCache = true
   ): Promise<T> => {
     try {
-      const result = await apiClient.request<T>(endpoint, options, useCache)
-      return result
+      // const result = await apiClient.request<T>(endpoint, options, useCache)
+      throw new Error('Request deduplication disabled')
     } catch (error) {
       console.error(`Request failed for ${endpoint}:`, error)
       throw error

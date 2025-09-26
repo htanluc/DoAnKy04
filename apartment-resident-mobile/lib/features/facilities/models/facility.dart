@@ -11,6 +11,9 @@ class Facility with _$Facility {
     required String description,
     required String location,
     required int capacity,
+    String? capacityType, // INDIVIDUAL hoặc GROUP
+    int?
+    groupSize, // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
     required String otherDetails,
     required double usageFee,
     String? openingHours,
@@ -28,6 +31,9 @@ class FacilityCreateRequest with _$FacilityCreateRequest {
     required String description,
     required String location,
     required int capacity,
+    String? capacityType, // INDIVIDUAL hoặc GROUP
+    int?
+    groupSize, // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
     required String otherDetails,
     required double usageFee,
     String? openingHours,
@@ -45,6 +51,9 @@ class FacilityUpdateRequest with _$FacilityUpdateRequest {
     String? description,
     String? location,
     int? capacity,
+    String? capacityType, // INDIVIDUAL hoặc GROUP
+    int?
+    groupSize, // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
     String? otherDetails,
     double? usageFee,
     String? openingHours,

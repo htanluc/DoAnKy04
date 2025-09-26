@@ -129,3 +129,57 @@ class FacilitiesApi {
     }
   }
 }
+
+/// API cho Facility Bookings
+class FacilityBookingsApi {
+  static const String _basePath = '/api/facility-bookings';
+
+  /// Tạo booking mới
+  static Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    try {
+      final response = await ApiHelper.post(_basePath, data: data);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to create booking: ${response.statusCode}');
+      }
+      return jsonDecode(response.body);
+    } catch (e) {
+      throw Exception('Error creating booking: $e');
+    }
+  }
+
+  /// Tạo thanh toán cho booking
+  static Future<Map<String, dynamic>> createPayment(
+    int bookingId,
+    String paymentMethod,
+  ) async {
+    try {
+      final response = await ApiHelper.post(
+        '$_basePath/$bookingId/create-payment?paymentMethod=$paymentMethod',
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to create payment: ${response.statusCode}');
+      }
+      return jsonDecode(response.body);
+    } catch (e) {
+      throw Exception('Error creating payment: $e');
+    }
+  }
+
+  /// Xử lý thanh toán cho booking
+  static Future<Map<String, dynamic>> processPayment(
+    int bookingId,
+    String paymentMethod,
+  ) async {
+    try {
+      final response = await ApiHelper.post(
+        '$_basePath/$bookingId/payment?paymentMethod=$paymentMethod',
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to process payment: ${response.statusCode}');
+      }
+      return jsonDecode(response.body);
+    } catch (e) {
+      throw Exception('Error processing payment: $e');
+    }
+  }
+}

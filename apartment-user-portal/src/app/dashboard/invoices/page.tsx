@@ -26,7 +26,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { fetchMyInvoices, fetchPaymentsByInvoice, fetchInvoiceDetail } from '@/lib/api'
-import { createVNPayPayment, createMoMoPayment, createZaloPayPayment, createVisaPayment } from '@/lib/api'
+import { createVNPayPayment, createVisaPayment } from '@/lib/api'
 
 // Custom CSS for animations
 const customStyles = `
@@ -213,28 +213,16 @@ interface PaymentMethod {
 
 const paymentMethods: PaymentMethod[] = [
   {
-    id: 'momo',
-    name: 'MoMo',
-    icon: <Wallet className="w-5 h-5" />,
-    description: 'Thanh toán qua ví MoMo'
-  },
-  {
     id: 'vnpay',
     name: 'VNPay',
     icon: <CreditCard className="w-5 h-5" />,
     description: 'Thanh toán qua VNPay'
   },
   {
-    id: 'zalopay',
-    name: 'ZaloPay',
-    icon: <Smartphone className="w-5 h-5" />,
-    description: 'Thanh toán qua ZaloPay'
-  },
-  {
     id: 'visa',
-    name: 'Visa/Mastercard',
-    icon: <Globe className="w-5 h-5" />,
-    description: 'Thanh toán thẻ quốc tế'
+    name: 'Visa',
+    icon: <CreditCard className="w-5 h-5" />,
+    description: 'Thẻ Visa'
   }
 ]
 

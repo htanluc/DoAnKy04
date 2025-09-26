@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import com.mytech.apartment.portal.services.UserService;
 import com.mytech.apartment.portal.services.LoggingService;
 import com.mytech.apartment.portal.services.ActivityLogService;
+import com.mytech.apartment.portal.services.PaymentGatewayService;
 import com.mytech.apartment.portal.models.enums.ActivityActionType;
 import com.mytech.apartment.portal.security.UserDetailsImpl;
 
@@ -33,6 +34,7 @@ public class FacilityBookingController {
     @Autowired private LoggingService loggingService;
     // Removed unused mapper field to avoid warnings
     @Autowired private ActivityLogService activityLogService;
+    @Autowired private PaymentGatewayService paymentGatewayService;
 
     // Admin endpoint to get all bookings
     @GetMapping("/admin/facility-bookings")
@@ -44,12 +46,21 @@ public class FacilityBookingController {
     @PostMapping("/facility-bookings")
     public ResponseEntity<?> createFacilityBooking(@Valid @RequestBody FacilityBookingCreateRequest req, Authentication authentication) {
         try {
+            System.out.println("=== CREATE FACILITY BOOKING DEBUG ===");
+            System.out.println("Request: " + req);
+            System.out.println("Authentication: " + (authentication != null ? authentication.getName() : "null"));
+            
             Long userId = null;
             if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
                 userId = userDetails.getId();
+                System.out.println("User ID from auth: " + userId);
             }
-            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
+            if (userId == null) {
+                System.out.println("ERROR: No user ID found");
+                return ResponseEntity.status(401).body("Không xác định được người dùng");
+            }
             req.setUserId(userId); // Changed from setResidentId to setUserId
+            System.out.println("Request after setting userId: " + req);
             FacilityBookingDto saved = facilityBookingService.createFacilityBooking(req);
             // Ghi log với LoggingService (giữ nguyên)
             String facilityName = saved.getFacilityName() != null ? saved.getFacilityName() : "";
@@ -318,6 +329,59 @@ public class FacilityBookingController {
             );
             
             return ResponseEntity.ok(paymentInfo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    // API tạo thanh toán cho facility booking qua payment gateway
+    @PostMapping("/facility-bookings/{id}/create-payment")
+    public ResponseEntity<?> createPaymentForBooking(
+            @PathVariable("id") Long bookingId,
+            @RequestParam("paymentMethod") String paymentMethod,
+            Authentication authentication) {
+        try {
+            // Kiểm tra quyền - chỉ user sở hữu booking mới được thanh toán
+            Long userId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+                userId = userDetails.getId();
+            }
+            if (userId == null) return ResponseEntity.status(401).body("Không xác định được người dùng");
+            
+            // Lấy thông tin booking
+            Optional<FacilityBookingDto> bookingOpt = facilityBookingService.getFacilityBookingById(bookingId);
+            if (bookingOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("Booking không tồn tại");
+            }
+            FacilityBookingDto booking = bookingOpt.get();
+            
+            // Kiểm tra quyền sở hữu
+            if (!booking.getUserId().equals(userId)) {
+                return ResponseEntity.status(403).body("Bạn không có quyền thanh toán cho booking này");
+            }
+            
+            // Kiểm tra trạng thái booking
+            if (!"PENDING".equals(booking.getStatus())) {
+                return ResponseEntity.badRequest().body("Chỉ có thể thanh toán cho booking có trạng thái PENDING");
+            }
+            
+            // Kiểm tra trạng thái thanh toán
+            if ("PAID".equals(booking.getPaymentStatus())) {
+                return ResponseEntity.badRequest().body("Booking này đã được thanh toán");
+            }
+            
+            // Tạo payment gateway request
+            com.mytech.apartment.portal.dtos.PaymentGatewayRequest paymentRequest = 
+                new com.mytech.apartment.portal.dtos.PaymentGatewayRequest();
+            paymentRequest.setInvoiceId(bookingId); // Sử dụng bookingId làm invoiceId
+            paymentRequest.setAmount(booking.getTotalCost());
+            paymentRequest.setPaymentMethod(paymentMethod);
+            
+            // Gọi payment gateway service
+            com.mytech.apartment.portal.dtos.PaymentGatewayResponse paymentResponse = 
+                paymentGatewayService.createPayment(paymentRequest);
+            
+            return ResponseEntity.ok(paymentResponse);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

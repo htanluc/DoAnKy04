@@ -100,22 +100,45 @@ export default function ViewFacilityPage() {
     });
   };
 
-  const getCapacityBadge = (capacity: number) => {
-    if (capacity <= 20) {
-      return <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-        <Users className="h-3 w-3 mr-1" />
-        {t('admin.facilities.capacity.label.small', 'Nhỏ')} ({capacity})
-      </Badge>;
-    } else if (capacity <= 50) {
-      return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-        <Users className="h-3 w-3 mr-1" />
-        {t('admin.facilities.capacity.label.medium', 'Trung bình')} ({capacity})
-      </Badge>;
+  const getCapacityBadge = (facility: Facility) => {
+    const { capacity, capacityType, groupSize } = facility;
+    
+    if (capacityType === 'GROUP') {
+      // Hiển thị cho nhóm người
+      if (capacity <= 5) {
+        return <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.small', 'Nhỏ')} ({capacity} nhóm)
+        </Badge>;
+      } else if (capacity <= 10) {
+        return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.medium', 'Trung bình')} ({capacity} nhóm)
+        </Badge>;
+      } else {
+        return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.large', 'Lớn')} ({capacity} nhóm)
+        </Badge>;
+      }
     } else {
-      return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-        <Users className="h-3 w-3 mr-1" />
-        {t('admin.facilities.capacity.label.large', 'Lớn')} ({capacity})
-      </Badge>;
+      // Hiển thị cho cá nhân
+      if (capacity <= 20) {
+        return <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.small', 'Nhỏ')} ({capacity} người)
+        </Badge>;
+      } else if (capacity <= 50) {
+        return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.medium', 'Trung bình')} ({capacity} người)
+        </Badge>;
+      } else {
+        return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.large', 'Lớn')} ({capacity} người)
+        </Badge>;
+      }
     }
   };
 
@@ -439,7 +462,7 @@ export default function ViewFacilityPage() {
                   
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">{t('admin.facilities.capacity', 'Sức chứa')}:</span>
-                    {getCapacityBadge(facility.capacity)}
+                    {getCapacityBadge(facility)}
                   </div>
                   
                   <div className="flex items-center justify-between">

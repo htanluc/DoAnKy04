@@ -48,6 +48,8 @@ export default function EditFacilityPage() {
     description: '',
     location: '',
     capacity: 0,
+    capacityType: 'INDIVIDUAL',
+    groupSize: undefined,
     otherDetails: '',
     usageFee: 0,
     openingHours: '',
@@ -64,6 +66,8 @@ export default function EditFacilityPage() {
         description: data.description,
         location: data.location || '',
         capacity: data.capacity,
+        capacityType: data.capacityType || 'INDIVIDUAL',
+        groupSize: data.groupSize || undefined,
         otherDetails: data.otherDetails || '',
         usageFee: data.usageFee || 0,
         openingHours: data.openingHours || '',
@@ -321,6 +325,26 @@ export default function EditFacilityPage() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Capacity Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="capacityType" className="text-sm font-medium text-gray-700 flex items-center space-x-1">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span>{t('admin.facilities.capacityType', 'Loại sức chứa')} *</span>
+                    </Label>
+                    <select
+                      id="capacityType"
+                      value={formData.capacityType || 'INDIVIDUAL'}
+                      onChange={(e) => handleInputChange('capacityType', e.target.value)}
+                      className="h-11 w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      required
+                      aria-label="Loại sức chứa"
+                      title="Loại sức chứa"
+                    >
+                      <option value="INDIVIDUAL">{t('admin.facilities.capacityType.individual', 'Cá nhân')}</option>
+                      <option value="GROUP">{t('admin.facilities.capacityType.group', 'Nhóm')}</option>
+                    </select>
+                  </div>
+
                   {/* Capacity */}
                   <div className="space-y-2">
                     <Label htmlFor="capacity" className="text-sm font-medium text-gray-700 flex items-center space-x-1">
@@ -333,12 +357,39 @@ export default function EditFacilityPage() {
                       min="1"
                       value={formData.capacity}
                       onChange={(e) => handleInputChange('capacity', parseInt(e.target.value))}
-                      placeholder={t('admin.facilities.capacity.placeholder', 'Nhập sức chứa tối đa')}
+                      placeholder={formData.capacityType === 'INDIVIDUAL' 
+                        ? t('admin.facilities.capacity.placeholder', 'Nhập số người tối đa') 
+                        : t('admin.facilities.capacity.group.placeholder', 'Nhập số nhóm tối đa')}
                       className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                     />
                   </div>
+                </div>
 
+                {/* Group Size - chỉ hiển thị khi chọn GROUP */}
+                {formData.capacityType === 'GROUP' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="groupSize" className="text-sm font-medium text-gray-700 flex items-center space-x-1">
+                        <Users className="h-4 w-4 text-gray-500" />
+                        <span>{t('admin.facilities.groupSize', 'Số người trong nhóm')} *</span>
+                      </Label>
+                      <Input
+                        id="groupSize"
+                        type="number"
+                        min="1"
+                        value={formData.groupSize || ''}
+                        onChange={(e) => handleInputChange('groupSize', parseInt(e.target.value) || undefined)}
+                        placeholder={t('admin.facilities.groupSize.placeholder', 'Nhập số người trong mỗi nhóm')}
+                        className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div></div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Opening Hours */}
                   <div className="space-y-2">
                     <Label htmlFor="openingHours" className="text-sm font-medium text-gray-700 flex items-center space-x-1">
@@ -353,6 +404,7 @@ export default function EditFacilityPage() {
                       className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
+                  <div></div>
                 </div>
               </div>
 
@@ -427,6 +479,8 @@ export default function EditFacilityPage() {
                           checked={formData.isVisible === true}
                           onChange={() => handleInputChange('isVisible', true)}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          aria-label="Hiển thị tiện ích"
+                          title="Hiển thị tiện ích"
                         />
                         <Label htmlFor="visible" className="flex items-center space-x-2 cursor-pointer">
                           <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
@@ -443,6 +497,8 @@ export default function EditFacilityPage() {
                           checked={formData.isVisible === false}
                           onChange={() => handleInputChange('isVisible', false)}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          aria-label="Ẩn tiện ích"
+                          title="Ẩn tiện ích"
                         />
                         <Label htmlFor="hidden" className="flex items-center space-x-2 cursor-pointer">
                           <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
