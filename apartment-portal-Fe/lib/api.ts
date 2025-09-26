@@ -635,6 +635,7 @@ export interface FacilityCreateRequest {
   otherDetails: string;
   usageFee: number;
   openingHours?: string;
+  openingSchedule?: string; // JSON string cho lịch tuần
   isVisible?: boolean;
 }
 
@@ -648,6 +649,7 @@ export interface FacilityUpdateRequest {
   otherDetails?: string;
   usageFee?: number;
   openingHours?: string;
+  openingSchedule?: string; // JSON string cho lịch tuần
   isVisible?: boolean;
 }
 

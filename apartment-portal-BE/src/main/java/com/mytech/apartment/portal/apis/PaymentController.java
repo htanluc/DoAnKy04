@@ -27,6 +27,7 @@ import com.mytech.apartment.portal.services.AutoPaymentService;
 import com.mytech.apartment.portal.services.PaymentGatewayService;
 import com.mytech.apartment.portal.services.PaymentService;
 import com.mytech.apartment.portal.services.PaymentTransactionService;
+import com.mytech.apartment.portal.services.FacilityBookingService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,6 +54,7 @@ public class PaymentController {
     private final com.mytech.apartment.portal.services.UserService userService;
     private final com.mytech.apartment.portal.config.StripeConfig stripeConfig;
     private final PaymentTransactionService paymentTransactionService;
+    private final FacilityBookingService facilityBookingService;
     @org.springframework.beans.factory.annotation.Value("${payment.return.invoices-url:http://localhost:3001/dashboard/invoices}")
     private String invoicesReturnUrl;
 
@@ -714,6 +716,24 @@ public class PaymentController {
                     } catch (Exception e) {
                         System.err.println("❌ Webhook: Error recording payment: " + e.getMessage());
                     }
+
+                    // Nếu invoiceId thực chất là FacilityBookingId, cập nhật trạng thái booking
+                    try {
+                        if (invoiceIdStr != null) {
+                            Long bookingId = Long.parseLong(invoiceIdStr);
+                            // Cập nhật trạng thái thanh toán cho booking
+                            facilityBookingService.updatePaymentStatus(
+                                bookingId,
+                                "PAID",
+                                "VISA",
+                                session.getAmountTotal() != null ? (double) session.getAmountTotal() : null,
+                                session.getId()
+                            );
+                            System.out.println("✅ Webhook: FacilityBooking #" + bookingId + " marked as PAID (Stripe)");
+                        }
+                    } catch (Exception ignore) {
+                        // Không phải booking; bỏ qua
+                    }
                 }
             }
 
@@ -1007,6 +1027,27 @@ public class PaymentController {
                 System.err.println("❌ Lỗi khi verify payment với Stripe: " + e.getMessage());
                 e.printStackTrace();
             }
+
+            // Sau khi verify, thử cập nhật FacilityBooking nếu invoiceId trong metadata thực chất là bookingId
+            try {
+                com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.retrieve(session_id);
+                String invoiceIdStr = session.getMetadata() != null ? session.getMetadata().get("invoiceId") : null;
+                if ("paid".equals(session.getPaymentStatus()) && invoiceIdStr != null && !invoiceIdStr.trim().isEmpty()) {
+                    try {
+                        Long bookingId = Long.parseLong(invoiceIdStr.trim());
+                        facilityBookingService.updatePaymentStatus(
+                            bookingId,
+                            "PAID",
+                            "VISA",
+                            session.getAmountTotal() != null ? (double) session.getAmountTotal() : null,
+                            session_id
+                        );
+                        System.out.println("✅ Stripe success: FacilityBooking #" + bookingId + " marked as PAID");
+                    } catch (NumberFormatException ignore) {
+                        // Không phải bookingId, bỏ qua
+                    }
+                }
+            } catch (Exception ignore) {}
 
             // Xử lý an toàn số tiền từ session
             String formattedAmount = "0";

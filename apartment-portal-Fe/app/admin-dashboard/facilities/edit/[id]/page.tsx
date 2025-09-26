@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { 
   ArrowLeft, 
   Save, 
@@ -27,7 +28,8 @@ import {
   Settings,
   Loader2,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Calendar
 } from 'lucide-react';
 import Link from 'next/link';
 import { facilitiesApi, Facility, FacilityUpdateRequest } from '@/lib/api';
@@ -53,7 +55,19 @@ export default function EditFacilityPage() {
     otherDetails: '',
     usageFee: 0,
     openingHours: '',
+    openingSchedule: '',
     isVisible: true,
+  });
+
+  // State cho lịch tuần
+  const [weeklySchedule, setWeeklySchedule] = useState({
+    mon: { open: true, from: '06:00', to: '22:00' },
+    tue: { open: true, from: '06:00', to: '22:00' },
+    wed: { open: true, from: '06:00', to: '22:00' },
+    thu: { open: true, from: '06:00', to: '22:00' },
+    fri: { open: true, from: '06:00', to: '22:00' },
+    sat: { open: true, from: '06:00', to: '22:00' },
+    sun: { open: true, from: '06:00', to: '22:00' }
   });
 
   const fetchFacility = async () => {
@@ -71,8 +85,25 @@ export default function EditFacilityPage() {
         otherDetails: data.otherDetails || '',
         usageFee: data.usageFee || 0,
         openingHours: data.openingHours || '',
+        openingSchedule: data.openingSchedule || '',
         isVisible: data.isVisible !== undefined ? data.isVisible : true,
       });
+
+      // Load weekly schedule từ openingSchedule
+      if (data.openingSchedule) {
+        try {
+          const schedule = JSON.parse(data.openingSchedule);
+          setWeeklySchedule(schedule);
+          // Cập nhật openingHours từ schedule
+          const openingHours = generateOpeningHoursFromSchedule(schedule);
+          setFormData(prev => ({
+            ...prev,
+            openingHours: openingHours
+          }));
+        } catch (error) {
+          console.error('Error parsing openingSchedule:', error);
+        }
+      }
     } catch (error) {
       toast({
         title: t('admin.error.load', 'Lỗi'),
@@ -99,7 +130,12 @@ export default function EditFacilityPage() {
 
     try {
       setSaving(true);
-      await facilitiesApi.update(facilityId, formData);
+      // Cập nhật openingSchedule từ weeklySchedule
+      const submitData = {
+        ...formData,
+        openingSchedule: JSON.stringify(weeklySchedule)
+      };
+      await facilitiesApi.update(facilityId, submitData);
       toast({
         title: t('admin.success.save', 'Thành công'),
         description: t('admin.facilities.editSuccess', 'Đã cập nhật cơ sở vật chất'),
@@ -121,6 +157,48 @@ export default function EditFacilityPage() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  // Hàm xử lý thay đổi lịch tuần
+  const handleScheduleChange = (day: string, field: 'open' | 'from' | 'to', value: any) => {
+    const newSchedule = {
+      ...weeklySchedule,
+      [day]: {
+        ...weeklySchedule[day as keyof typeof weeklySchedule],
+        [field]: value
+      }
+    };
+    setWeeklySchedule(newSchedule);
+    
+    // Cập nhật openingHours khi thay đổi lịch
+    const newOpeningHours = generateOpeningHoursFromSchedule(newSchedule);
+    setFormData(prev => ({
+      ...prev,
+      openingHours: newOpeningHours
+    }));
+  };
+
+  // Hàm tạo giờ mở cửa từ lịch tuần (cho hiển thị)
+  const generateOpeningHours = () => {
+    return generateOpeningHoursFromSchedule(weeklySchedule);
+  };
+
+  // Hàm tạo giờ mở cửa từ lịch tuần (có thể dùng với bất kỳ schedule nào)
+  const generateOpeningHoursFromSchedule = (schedule: typeof weeklySchedule) => {
+    const days = Object.keys(schedule);
+    const openDays = days.filter(day => schedule[day as keyof typeof schedule].open);
+    
+    if (openDays.length === 0) return 'Đóng cửa';
+    if (openDays.length === 7) {
+      const firstDay = schedule.mon;
+      return `${firstDay.from} - ${firstDay.to}`;
+    }
+    
+    return openDays.map(day => {
+      const daySchedule = schedule[day as keyof typeof schedule];
+      const dayNames = { mon: 'T2', tue: 'T3', wed: 'T4', thu: 'T5', fri: 'T6', sat: 'T7', sun: 'CN' };
+      return `${dayNames[day as keyof typeof dayNames]}: ${daySchedule.from}-${daySchedule.to}`;
+    }).join(', ');
   };
 
   const handleDelete = async () => {
@@ -389,22 +467,69 @@ export default function EditFacilityPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Opening Hours */}
-                  <div className="space-y-2">
-                    <Label htmlFor="openingHours" className="text-sm font-medium text-gray-700 flex items-center space-x-1">
-                      <Clock className="h-4 w-4 text-gray-500" />
-                      <span>{t('admin.facilities.openingHours', 'Giờ mở cửa')}</span>
-                    </Label>
-                    <Input
-                      id="openingHours"
-                      value={formData.openingHours || ''}
-                      onChange={(e) => handleInputChange('openingHours', e.target.value)}
-                      placeholder={t('admin.facilities.openingHours.placeholder', 'Nhập giờ mở cửa (ví dụ: 06:00-22:00)')}
-                      className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                    />
+                {/* Weekly Schedule */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                    <Label className="text-base font-semibold">{t('admin.facilities.weeklySchedule', 'Lịch hoạt động theo tuần')}</Label>
                   </div>
-                  <div></div>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    {Object.entries(weeklySchedule).map(([day, schedule]) => {
+                      const dayNames = { 
+                        mon: 'Thứ 2', tue: 'Thứ 3', wed: 'Thứ 4', thu: 'Thứ 5', 
+                        fri: 'Thứ 6', sat: 'Thứ 7', sun: 'Chủ nhật' 
+                      };
+                      
+                      return (
+                        <div key={day} className="flex items-center gap-4 p-4 border rounded-lg">
+                          <div className="w-20">
+                            <Label className="text-sm font-medium">{dayNames[day as keyof typeof dayNames]}</Label>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={schedule.open}
+                              onCheckedChange={(checked) => handleScheduleChange(day, 'open', checked)}
+                            />
+                            <span className="text-sm text-gray-600">
+                              {schedule.open ? 'Mở cửa' : 'Đóng cửa'}
+                            </span>
+                          </div>
+                          
+                          {schedule.open && (
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4 text-gray-500" />
+                                <Label className="text-sm">Từ:</Label>
+                                <Input
+                                  type="time"
+                                  value={schedule.from}
+                                  onChange={(e) => handleScheduleChange(day, 'from', e.target.value)}
+                                  className="w-24 h-8"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Label className="text-sm">Đến:</Label>
+                                <Input
+                                  type="time"
+                                  value={schedule.to}
+                                  onChange={(e) => handleScheduleChange(day, 'to', e.target.value)}
+                                  className="w-24 h-8"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Xem trước:</strong> {generateOpeningHours()}
+                    </p>
+                  </div>
                 </div>
               </div>
 

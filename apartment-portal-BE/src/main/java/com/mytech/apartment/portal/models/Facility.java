@@ -30,5 +30,6 @@ public class Facility {
     private String otherDetails;
     private Double usageFee;
     private String openingHours;
+    private String openingSchedule; // JSON string cho lịch mở cửa theo tuần
     private Boolean isVisible = true; // Trường để ẩn/hiển thị tiện ích, mặc định là true
 } 
