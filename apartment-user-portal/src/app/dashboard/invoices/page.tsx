@@ -332,12 +332,6 @@ export default function InvoicesPage() {
         data = await createVNPayPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
         // Backend mới trả về trực tiếp payUrl ở root level
         payUrl = data.payUrl || data.data?.payUrl || data.data?.payurl;
-      } else if (selectedPaymentMethod === 'momo') {
-        data = await createMoMoPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
-        payUrl = data.data?.payUrl || data.data?.payurl;
-      } else if (selectedPaymentMethod === 'zalopay') {
-        data = await createZaloPayPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
-        payUrl = data.data?.payUrl || data.data?.payurl;
       } else if (selectedPaymentMethod === 'visa') {
         data = await createVisaPayment(selectedInvoice.id, selectedInvoice.totalAmount, `Thanh toán hóa đơn ${selectedInvoice.billingPeriod}`);
         payUrl = data.data?.payUrl || data.data?.payurl;
