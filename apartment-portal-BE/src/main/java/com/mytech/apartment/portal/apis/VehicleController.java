@@ -244,4 +244,11 @@ public class VehicleController {
 
         return ResponseEntity.noContent().build();
     }
+
+    // Test endpoint không cần authentication
+    @GetMapping("/public/vehicles")
+    public ResponseEntity<List<VehicleDto>> getPublicVehicles() {
+        List<VehicleDto> vehicles = vehicleService.getAllVehicles();
+        return ResponseEntity.ok(vehicles);
+    }
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,24 +31,25 @@
         header .nav button:hover { background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); color: white; transform: translateY(-1px); }
 
         .slides { position: relative; height: 100%; }
-        .slide { position: absolute; inset: 0; padding: 32px; display: grid; grid-template-rows: auto 1fr auto; opacity: 0; transform: scale(.98) translateY(8px); transition: opacity .35s ease, transform .35s ease; overflow: hidden; }
-        .slide .fit { transform-origin: top left; }
+        .slide { position: absolute; inset: 0; padding: 40px; display: grid; grid-template-rows: auto 1fr auto; opacity: 0; transform: scale(.98) translateY(8px); transition: opacity .35s ease, transform .35s ease; overflow: hidden; }
+        .slide .fit { transform-origin: center center; }
         .slide.active { opacity: 1; transform: scale(1) translateY(0); }
-        .slide .heading { font-size: 36px; font-weight: 900; margin: 0 0 14px 0; letter-spacing: .3px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .slide .sub { color: var(--muted); margin-bottom: 18px; }
-        .slide .content { align-self: start; display: grid; gap: 14px; }
+        .slide .heading { font-size: 48px; font-weight: 900; margin: 0 0 20px 0; letter-spacing: .3px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-align: center; }
+        .slide .sub { color: var(--muted); margin-bottom: 24px; font-size: 18px; text-align: center; }
+        .slide .content { align-self: start; display: grid; gap: 20px; }
+        .slide .content.fit { max-width: 1200px; margin-left: auto; margin-right: auto; }
 
         .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
         .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 25px var(--shadow); transition: all 0.3s ease; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: 0 8px 25px var(--shadow); transition: all 0.3s ease; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 12px 35px var(--shadow); }
         .pill { display:inline-block; padding:6px 12px; border-radius: 999px; border:1px solid var(--border); background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6)); color: var(--fg); margin: 2px 6px 0 0; font-weight: 700; font-size: 12px; box-shadow: 0 2px 8px var(--shadow); }
         .list { margin: 0; padding-left: 18px; line-height: 1.7; color: var(--fg); }
         .muted { color: var(--muted); }
 
         .hero { display:grid; place-items:center; text-align:center; }
-        .hero h1 { font-size: 54px; margin: 0; letter-spacing: .5px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary), var(--brand-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .hero p { color: var(--muted); font-size: 18px; }
+        .hero h1 { font-size: 72px; margin: 0; letter-spacing: .5px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary), var(--brand-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero p { color: var(--muted); font-size: 24px; }
         .hero .tags { margin-top: 24px; }
 
         .progress { height: 8px; background: var(--card-bg); border-top:1px solid var(--border); box-shadow: inset 0 3px 6px var(--shadow); }
@@ -66,13 +67,200 @@
 
         /* Tối ưu cho màn hình 18 inch */
         @media (min-width: 1920px) {
-            .slide { padding: 48px; }
-            .hero h1 { font-size: 72px; }
-            .slide .heading { font-size: 48px; }
-            .grid-2 { gap: 32px; }
-            .grid-3 { gap: 32px; }
-            .card { padding: 28px; }
+            .slide { padding: 60px; }
+            .hero h1 { font-size: 84px; }
+            .hero p { font-size: 28px; }
+            .slide .heading { font-size: 56px; }
+            .slide .sub { font-size: 22px; }
+            .grid-2 { gap: 40px; }
+            .grid-3 { gap: 40px; }
+            .card { padding: 32px; font-size: 18px; }
+            .card h3 { font-size: 24px; }
+            .card p { font-size: 16px; }
         }
+        
+        /* Đơn giản hóa - không cần media query phức tạp */
+
+        /* Tối ưu cho laptop 15-16 inch */
+        @media (min-width: 1400px) and (max-width: 1919px) {
+            .slide { padding: 50px; }
+            .hero h1 { font-size: 78px; }
+            .hero p { font-size: 26px; }
+            .slide .heading { font-size: 52px; }
+            .slide .sub { font-size: 20px; }
+            .grid-2 { gap: 35px; }
+            .grid-3 { gap: 35px; }
+            .card { padding: 28px; font-size: 16px; }
+            .card h3 { font-size: 22px; }
+            .card p { font-size: 15px; }
+        }
+
+        /* Tối ưu cho Thank You slide */
+        .slide[data-title="Thank You"] .hero h1 {
+            font-size: 72px;
+        }
+        @media (min-width: 1920px) {
+            .slide[data-title="Thank You"] .hero h1 {
+                font-size: 84px;
+            }
+        }
+        @media (min-width: 1400px) and (max-width: 1919px) {
+            .slide[data-title="Thank You"] .hero h1 {
+                font-size: 78px;
+            }
+        }
+
+        /* Tối ưu cho slide Why (slide 3) */
+        .slide[data-title="Why"] .card h3 {
+            font-size: 24px;
+        }
+        .slide[data-title="Why"] .card p {
+            font-size: 16px;
+        }
+        .slide[data-title="Why"] .card p:first-child {
+            font-size: 18px;
+        }
+        @media (min-width: 1920px) {
+            .slide[data-title="Why"] .card h3 {
+                font-size: 28px;
+            }
+            .slide[data-title="Why"] .card p {
+                font-size: 18px;
+            }
+            .slide[data-title="Why"] .card p:first-child {
+                font-size: 20px;
+            }
+            .slide[data-title="Why"] .card {
+                padding: 32px;
+            }
+        }
+        @media (min-width: 1400px) and (max-width: 1919px) {
+            .slide[data-title="Why"] .card h3 {
+                font-size: 26px;
+            }
+            .slide[data-title="Why"] .card p {
+                font-size: 17px;
+            }
+            .slide[data-title="Why"] .card p:first-child {
+                font-size: 19px;
+            }
+            .slide[data-title="Why"] .card {
+                padding: 28px;
+            }
+        }
+
+        /* Tối ưu cho slide Demo1 và Demo2 (Core Features & Advanced Features) */
+        .slide[data-title="Demo1"],
+        .slide[data-title="Demo2"] {
+            padding: 50px 60px;
+        }
+        /* Tăng cỡ chữ cho tiêu đề và mô tả phụ của Demo1/Demo2 */
+        .slide[data-title="Demo1"] .heading,
+        .slide[data-title="Demo2"] .heading { font-size: 56px; }
+        .slide[data-title="Demo1"] .sub,
+        .slide[data-title="Demo2"] .sub { font-size: 20px; }
+        .slide[data-title="Demo1"] .card h3,
+        .slide[data-title="Demo2"] .card h3 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .slide[data-title="Demo1"] .card p,
+        .slide[data-title="Demo2"] .card p {
+            font-size: 16px;
+        }
+        .slide[data-title="Demo1"] .card,
+        .slide[data-title="Demo2"] .card {
+            padding: 24px;
+            width: 100%;
+        }
+        .slide[data-title="Demo1"] .grid-2,
+        .slide[data-title="Demo2"] .grid-2 {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start; /* Đơn giản như slide Why */
+        }
+        .slide[data-title="Demo1"] .content.fit,
+        .slide[data-title="Demo2"] .content.fit {
+            width: 100%;
+            max-width: none;
+        }
+        .slide[data-title="Demo1"] .card > div,
+        .slide[data-title="Demo2"] .card > div {
+            width: 100%;
+        }
+        
+        /* Đơn giản hóa như slide Why - chỉ cần grid cơ bản */
+        .slide[data-title="Demo1"] .grid-2,
+        .slide[data-title="Demo2"] .grid-2 {
+            align-items: start; /* Trở lại start như slide Why */
+        }
+
+        @media (min-width: 1920px) {
+            .slide[data-title="Demo1"],
+            .slide[data-title="Demo2"] {
+                padding: 60px 80px;
+            }
+            .slide .content.fit { max-width: 1360px; }
+            .slide[data-title="Demo1"] .heading,
+            .slide[data-title="Demo2"] .heading { font-size: 64px; }
+            .slide[data-title="Demo1"] .sub,
+            .slide[data-title="Demo2"] .sub { font-size: 22px; }
+            .slide[data-title="Demo1"] .card h3,
+            .slide[data-title="Demo2"] .card h3 {
+                font-size: 28px;
+            }
+            .slide[data-title="Demo1"] .card p,
+            .slide[data-title="Demo2"] .card p {
+                font-size: 20px;
+            }
+            .slide[data-title="Demo1"] .card,
+            .slide[data-title="Demo2"] .card {
+                padding: 40px;
+            }
+            .slide[data-title="Demo1"] .grid-2,
+            .slide[data-title="Demo2"] .grid-2 {
+                gap: 80px;
+            }
+            /* Đơn giản hóa - không cần min-height phức tạp */
+        }
+        @media (min-width: 1400px) and (max-width: 1919px) {
+            .slide[data-title="Demo1"],
+            .slide[data-title="Demo2"] {
+                padding: 50px 70px;
+            }
+            .slide .content.fit { max-width: 1280px; }
+            .slide[data-title="Demo1"] .heading,
+            .slide[data-title="Demo2"] .heading { font-size: 60px; }
+            .slide[data-title="Demo1"] .sub,
+            .slide[data-title="Demo2"] .sub { font-size: 21px; }
+            .slide[data-title="Demo1"] .card h3,
+            .slide[data-title="Demo2"] .card h3 {
+                font-size: 26px;
+            }
+            .slide[data-title="Demo1"] .card p,
+            .slide[data-title="Demo2"] .card p {
+                font-size: 18px;
+            }
+            .slide[data-title="Demo1"] .card,
+            .slide[data-title="Demo2"] .card {
+                padding: 36px;
+            }
+            .slide[data-title="Demo1"] .grid-2,
+            .slide[data-title="Demo2"] .grid-2 {
+                gap: 60px;
+            }
+            /* Đơn giản hóa - không cần min-height phức tạp */
+        }
+
+        /* Căn giữa và tránh bóp méo cho slide 6 (Demo1) */
+        .slide[data-title="Demo1"] .content { align-self: center; }
+        .slide[data-title="Demo1"] .content.fit { margin-left: auto; margin-right: auto; }
+
+        /* Căn giữa cho slide 7 (Demo2) để đồng nhất UI */
+        .slide[data-title="Demo2"] .content { align-self: center; }
+        .slide[data-title="Demo2"] .content.fit { margin-left: auto; margin-right: auto; }
     </style>
 </head>
 <body>
@@ -92,7 +280,7 @@
             <section class="slide active" data-title="Title">
                 <div class="hero content fit">
                     <div style="margin-bottom: 20px;">
-                        <h2 style="color: var(--brand-primary); font-weight: 800; margin-bottom: 10px; font-size: 24px;">🌟 FPT University</h2>
+                        <h2 style="color: var(--brand-primary); font-weight: 800; margin-bottom: 10px; font-size: 24px;">🌟 FPT Aptech</h2>
                         <h3 style="color: var(--brand-secondary); font-weight: 700; margin-bottom: 20px;">Course Project Presentation</h3>
                     </div>
                     <h1 style="font-size: 60px; margin-bottom: 15px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary), var(--brand-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Smart Building<br/>Management System</h1>
@@ -112,8 +300,8 @@
             <!-- Slide 2: Team Introduction -->
             <section class="slide" data-title="Team">
                 <div class="hero content fit" style="text-align: center;">
-                    <h1 style="font-size: 32px; margin-bottom: 4px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Project Team</h1>
-                    <p style="color: var(--muted); font-size: 12px; margin-bottom: 8px;">Meet our dedicated team members</p>
+                    <h1 style="font-size: 42px; margin-bottom: 8px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Project Team</h1>
+                    <p style="color: var(--muted); font-size: 18px; margin-bottom: 12px;">Meet our dedicated team members</p>
 
                     <!-- Supervisor - Top Center -->
                     <div style="margin-bottom: 16px;">
@@ -165,71 +353,50 @@
                 <div class="content fit">
                     <div class="grid-2">
                         <div class="card">
-                            <h3 style="margin-bottom: 12px; color: var(--brand-primary);">🚨 Current Problems</h3>
-                            <div style="display: grid; gap: 12px;">
-                                <div style="background: rgba(255,107,157,0.1); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
-                                    <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-primary);">📝 Manual Processes</p>
-                                    <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">Time-consuming paperwork, prone to errors and loss</p>
+                            <h3 style="margin-bottom: 16px; color: var(--brand-primary); font-size: 22px;">🚨 Current Problems</h3>
+                            <div style="display: grid; gap: 10px;">
+                                <div style="background: rgba(255,107,157,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-primary);">📝 Manual Processes</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Time-consuming paperwork, prone to errors and loss</p>
                                 </div>
-                                <div style="background: rgba(78,205,196,0.1); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
-                                    <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-secondary);">💬 Poor Communication</p>
-                                    <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">Delayed notifications and ineffective resident engagement</p>
+                                <div style="background: rgba(78,205,196,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-secondary);">💬 Poor Communication</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Delayed notifications and ineffective resident engagement</p>
                                 </div>
-                                <div style="background: rgba(69,183,209,0.1); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
-                                    <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-accent);">💰 Lack of Transparency</p>
-                                    <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">Unclear billing and financial management</p>
+                                <div style="background: rgba(69,183,209,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-accent);">💰 Lack of Transparency</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Unclear billing and financial management</p>
                                 </div>
-                                <div style="background: rgba(249,202,36,0.1); padding: 10px; border-radius: 8px;">
-                                    <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-warm);">📱 Limited Access</p>
-                                    <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">No mobile access for modern residents</p>
+                                <div style="background: rgba(249,202,36,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-warm);">📱 Limited Access</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">No mobile access for modern residents</p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="card">
-                            <h3 style="margin-bottom: 12px; color: var(--brand-accent);">💡 Our Solution</h3>
-                            <div style="display: grid; gap: 12px;">
-                                <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(255,107,157,0.2);">
-                                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: var(--brand-primary);">⚡ Digital Transformation</p>
-                                    <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted);">Automate all building management processes</p>
+                            <h3 style="margin-bottom: 16px; color: var(--brand-accent); font-size: 22px;">💡 Our Solution</h3>
+                            <div style="display: grid; gap: 10px;">
+                                <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,107,157,0.2);">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-primary);">⚡ Digital Transformation</p>
+                                    <p style="margin: 6px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Automate all building management processes</p>
                                 </div>
-                                <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(78,205,196,0.2);">
-                                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: var(--brand-secondary);">📱 Mobile-First Experience</p>
-                                    <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted);">24/7 access for residents and staff</p>
+                                <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(78,205,196,0.2);">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-secondary);">📱 Mobile-First Experience</p>
+                                    <p style="margin: 6px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">24/7 access for residents and staff</p>
                                 </div>
-                                <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(69,183,209,0.2);">
-                                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: var(--brand-accent);">💎 Transparency & Trust</p>
-                                    <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted);">Clear billing, instant notifications</p>
+                                <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(69,183,209,0.2);">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-accent);">💎 Transparency & Trust</p>
+                                    <p style="margin: 6px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Clear billing, instant notifications</p>
                                 </div>
                                 <div style="background: linear-gradient(135deg, rgba(249,202,36,0.1), rgba(249,202,36,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(249,202,36,0.2);">
-                                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: var(--brand-warm);">🎯 Efficiency & Savings</p>
-                                    <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted);">Reduce costs, improve satisfaction</p>
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-warm);">🎯 Efficiency & Savings</p>
+                                    <p style="margin: 6px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Reduce costs, improve satisfaction</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card" style="margin-top: 16px;">
-                        <h3 style="margin-bottom: 12px; color: var(--brand-secondary);">🌟 Impact & Benefits</h3>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                            <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); border-radius: 10px; border: 1px solid rgba(255,107,157,0.2);">
-                                <div style="font-size: 20px; margin-bottom: 4px;">📈</div>
-                                <p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--brand-primary);">30% Time Savings</p>
-                            </div>
-                            <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); border-radius: 10px; border: 1px solid rgba(78,205,196,0.2);">
-                                <div style="font-size: 20px; margin-bottom: 4px;">😊</div>
-                                <p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--brand-secondary);">95% Satisfaction</p>
-                            </div>
-                            <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); border-radius: 10px; border: 1px solid rgba(69,183,209,0.2);">
-                                <div style="font-size: 20px; margin-bottom: 4px;">💰</div>
-                                <p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--brand-accent);">Cost Reduction</p>
-                            </div>
-                            <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, rgba(249,202,36,0.1), rgba(249,202,36,0.05)); border-radius: 10px; border: 1px solid rgba(249,202,36,0.2);">
-                                <div style="font-size: 20px; margin-bottom: 4px;">🔒</div>
-                                <p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--brand-warm);">Enhanced Security</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </section>
 
@@ -252,7 +419,6 @@
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <span style="background: linear-gradient(135deg, var(--brand-warm), var(--brand-accent)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">🔐 JWT</span>
-                                    <span style="background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">🌐 WebSocket</span>
                                 </div>
                             </div>
                         </div>
@@ -286,11 +452,6 @@
                             <div style="display: flex; flex-direction: column; gap: 8px;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <span style="background: linear-gradient(135deg, var(--brand-purple), var(--brand-secondary)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">🗄️ MySQL 8</span>
-                                    <span style="background: linear-gradient(135deg, var(--brand-warm), var(--brand-accent)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">🔴 Redis</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span style="background: linear-gradient(135deg, var(--brand-primary), var(--brand-warm)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">📧 SMTP</span>
-                                    <span style="background: linear-gradient(135deg, var(--brand-secondary), var(--brand-purple)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">☁️ Cloudinary</span>
                                 </div>
                             </div>
                         </div>
@@ -307,62 +468,8 @@
                 </div>
             </section>
 
-            <!-- Slide 4: Limitations & Solutions -->
-            <section class="slide" data-title="Limitations">
-                <h2 class="heading">Limitations & Solutions</h2>
-                <p class="sub">Challenges & future improvements</p>
-                <div class="content fit">
-                    <div class="grid-2">
-                        <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-primary); font-size: 16px;">⚠️ Current Limitations</h3>
-                            <ul class="list" style="margin: 0; font-size: 12px;">
-                                <li style="margin-bottom: 6px;"><strong>Performance:</strong> Latency with large datasets</li>
-                                <li style="margin-bottom: 6px;"><strong>Scalability:</strong> Limited concurrent users</li>
-                                <li style="margin-bottom: 6px;"><strong>Integration:</strong> Manual third-party connections</li>
-                                <li style="margin-bottom: 6px;"><strong>Security:</strong> Rate limiting needed</li>
-                                <li style="margin-bottom: 0;"><strong>Mobile UX:</strong> Limited offline capabilities</li>
-                            </ul>
-                        </div>
 
-                        <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-accent); font-size: 16px;">💡 Proposed Solutions</h3>
-                            <ul class="list" style="margin: 0; font-size: 12px;">
-                                <li style="margin-bottom: 6px;"><strong>Performance:</strong> Database optimization & caching</li>
-                                <li style="margin-bottom: 6px;"><strong>Scalability:</strong> Horizontal scaling & load balancing</li>
-                                <li style="margin-bottom: 6px;"><strong>Integration:</strong> Standardized API gateways</li>
-                                <li style="margin-bottom: 6px;"><strong>Security:</strong> Enhanced rate limiting</li>
-                                <li style="margin-bottom: 0;"><strong>Mobile UX:</strong> Offline-first architecture</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="card" style="margin-top: 12px;">
-                        <h3 style="margin-bottom: 6px; color: var(--brand-secondary); font-size: 16px;">🚀 Future Enhancements</h3>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                            <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 8px; border-radius: 8px; border: 1px solid rgba(78,205,196,0.2);">
-                                <h4 style="margin: 0 0 4px 0; color: var(--brand-secondary); font-size: 12px;">🧠 AI Integration</h4>
-                                <p style="margin: 0; font-size: 10px; color: var(--muted);">Smart recommendations & predictive analytics</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,107,157,0.2);">
-                                <h4 style="margin: 0 0 4px 0; color: var(--brand-primary); font-size: 12px;">🌐 IoT Support</h4>
-                                <p style="margin: 0; font-size: 10px; color: var(--muted);">Smart sensors & automated controls</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 8px; border-radius: 8px; border: 1px solid rgba(69,183,209,0.2);">
-                                <h4 style="margin: 0 0 4px 0; color: var(--brand-accent); font-size: 12px;">☁️ Cloud Migration</h4>
-                                <p style="margin: 0; font-size: 10px; color: var(--muted);">Serverless architecture</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(249,202,36,0.1), rgba(249,202,36,0.05)); padding: 8px; border-radius: 8px; border: 1px solid rgba(249,202,36,0.2);">
-                                <h4 style="margin: 0 0 4px 0; color: var(--brand-warm); font-size: 12px;">📊 Advanced Analytics</h4>
-                                <p style="margin: 0; font-size: 10px; color: var(--muted);">Real-time dashboards</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            
-
-            <!-- Slide 6: Application Overview -->
+            <!-- Slide 5: Application Overview -->
             <section class="slide" data-title="Overview">
                 <h2 class="heading">Application Overview</h2>
                 <p class="sub">Smart Building Management System</p>
@@ -423,370 +530,165 @@
                 </div>
             </section>
 
-
-            <!-- Slide 7: Technology & Architecture -->
-            <section class="slide" data-title="Technology">
-                <h2 class="heading">Technology Stack</h2>
-                <p class="sub">Modern technologies powering our system</p>
+            <!-- Slide 6: Core Features - Part 1 -->
+            <section class="slide" data-title="Demo1">
+                
                 <div class="content fit">
                     <div class="grid-2">
                         <div class="card">
-                            <h3 style="margin-bottom: 12px; color: var(--brand-primary); font-size: 16px;">🏗️ Architecture</h3>
-                            <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,107,157,0.2); margin-bottom: 10px;">
-                                <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-primary);">Modular Monolith</p>
-                                <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted);">Single deployable with modular design</p>
+                            <h3 style="margin-bottom: 16px; color: var(--brand-primary); font-size: 22px;">1️⃣ User Registration & Apartment Linking</h3>
+                            <div style="display: grid; gap: 10px;">
+                                <div style="background: rgba(255,107,157,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-primary);">👤 User creates account</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Register with personal information</p>
+                                </div>
+                                <div style="background: rgba(78,205,196,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-secondary);">✅ Admin approves & assigns apartment</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Review and link to apartment unit</p>
+                                </div>
+                                <div style="background: rgba(69,183,209,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-accent);">🔔 User receives confirmation notification</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Email and SMS confirmation sent</p>
+                                </div>
                             </div>
-                            <ul class="list" style="margin: 0; font-size: 12px;">
-                                <li style="margin-bottom: 4px;">🔧 Spring Boot 3.2 (Java 20)</li>
-                                <li style="margin-bottom: 4px;">⚡ Next.js 15/14 (React 19/18)</li>
-                                <li style="margin-bottom: 4px;">📱 Flutter (Mobile)</li>
-                                <li style="margin-bottom: 0;">🗄️ MySQL 8.x</li>
-                            </ul>
                         </div>
 
                         <div class="card">
-                            <h3 style="margin-bottom: 12px; color: var(--brand-accent); font-size: 16px;">⚙️ Technical Features</h3>
-                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(69,183,209,0.2); margin-bottom: 10px;">
-                                <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-accent);">Security & Payments</p>
-                                <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted);">JWT, RBAC, Stripe, VNPay integration</p>
-                            </div>
-                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                                <span style="background: linear-gradient(135deg, var(--brand-primary), var(--brand-warm)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">🔐 Security</span>
-                                <span style="background: linear-gradient(135deg, var(--brand-secondary), var(--brand-purple)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">💳 Payments</span>
-                                <span style="background: linear-gradient(135deg, var(--brand-accent), var(--brand-primary)); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">📡 Realtime</span>
+                            <h3 style="margin-bottom: 16px; color: var(--brand-secondary); font-size: 22px;">2️⃣ Event Registration & Facility Booking</h3>
+                            <div style="display: grid; gap: 10px;">
+                                <div style="background: rgba(78,205,196,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-secondary);">📅 Events (Admin creates)</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Admin creates → Notifications sent → Users register to participate</p>
+                                </div>
+                                <div style="background: rgba(69,183,209,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-accent);">🏊‍♂️ Facilities (User books)</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">User selects slot → Payment → Check-in to use facility</p>
+                                </div>
+                                <div style="background: rgba(249,202,36,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-warm);">✨ Seamless booking experience</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">24/7 access with instant confirmations</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card" style="margin-top: 12px;">
-                        <h3 style="margin-bottom: 8px; color: var(--brand-secondary); font-size: 16px;">🚀 Key Capabilities</h3>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                            <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,107,157,0.2); text-align: center;">
-                                <div style="font-size: 16px; margin-bottom: 4px;">🌐</div>
-                                <p style="margin: 0; font-size: 10px; font-weight: 600; color: var(--brand-primary);">Multi-platform</p>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3 style="margin-bottom: 16px; color: var(--brand-accent); font-size: 20px;">3️⃣ Support Request System</h3>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                            <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,107,157,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">👤</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-primary);">User Requests</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Creates support ticket</p>
                             </div>
-                            <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 8px; border-radius: 8px; border: 1px solid rgba(78,205,196,0.2); text-align: center;">
-                                <div style="font-size: 16px; margin-bottom: 4px;">🔄</div>
-                                <p style="margin: 0; font-size: 10px; font-weight: 600; color: var(--brand-secondary);">Real-time Sync</p>
+                            <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(78,205,196,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">👨‍💼</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-secondary);">Admin Assigns</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Assigns staff to handle</p>
                             </div>
-                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 8px; border-radius: 8px; border: 1px solid rgba(69,183,209,0.2); text-align: center;">
-                                <div style="font-size: 16px; margin-bottom: 4px;">📱</div>
-                                <p style="margin: 0; font-size: 10px; font-weight: 600; color: var(--brand-accent);">Mobile-first</p>
+                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(69,183,209,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">👷</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-accent);">Staff Contacts</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Provides support</p>
+                            </div>
+                            <div style="background: linear-gradient(135deg, rgba(249,202,36,0.1), rgba(249,202,36,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(249,202,36,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">✅</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-warm);">Completed</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Closes ticket</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Slide 9: Database Schema - Core -->
-            <section class="slide" data-title="Database1">
-                <h2 class="heading">Database Schema</h2>
-                <p class="sub">MySQL 8.0 - Core Entities & Structure</p>
+            <!-- Slide 7: Advanced Features -->
+            <section class="slide" data-title="Demo2">
+                
                 <div class="content fit">
-                    <!-- Core Tables -->
                     <div class="grid-2">
                         <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-primary); font-size: 16px;">🏢 Building Management</h3>
-                            <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,107,157,0.2); margin-bottom: 12px;">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-primary);">📊 buildings</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, building_name, address, floors, description</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(78,205,196,0.2);">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-secondary);">🏠 apartments</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, building_id, floor_number, unit_number, area, status</p>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-accent); font-size: 16px;">👥 User Management</h3>
-                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(69,183,209,0.2); margin-bottom: 12px;">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-accent);">👤 users</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, username, email, phone, full_name, date_of_birth</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(249,202,36,0.1), rgba(249,202,36,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(249,202,36,0.2);">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-warm);">🔐 roles</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, name (Admin, Staff, Resident)</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Key Relationships -->
-                    <div class="card" style="margin-top: 12px;">
-                        <h3 style="margin-bottom: 8px; color: var(--brand-secondary); font-size: 16px;">🔗 Core Relationships</h3>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                            <div style="background: linear-gradient(135deg, rgba(255,107,157,0.05), rgba(255,107,157,0.02)); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,107,157,0.1); text-align: center;">
-                                <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-primary);">Building → Apartments</p>
-                                <p style="margin: 4px 0 0 0; font-size: 11px; color: var(--muted);">One-to-Many (1:N)</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(249,202,36,0.05), rgba(249,202,36,0.02)); padding: 10px; border-radius: 8px; border: 1px solid rgba(249,202,36,0.1); text-align: center;">
-                                <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--brand-warm);">User ↔ Roles</p>
-                                <p style="margin: 4px 0 0 0; font-size: 11px; color: var(--muted);">Many-to-Many (N:M)</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Slide 10: Database Schema - Business -->
-            <section class="slide" data-title="Database2">
-                <h2 class="heading">Database Schema</h2>
-                <p class="sub">MySQL 8.0 - Business & Operational Entities</p>
-                <div class="content fit">
-                    <!-- Business Tables -->
-                    <div class="grid-2">
-                        <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-secondary); font-size: 16px;">💰 Billing & Payments</h3>
-                            <div style="background: linear-gradient(135deg, rgba(249,202,36,0.1), rgba(249,202,36,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(249,202,36,0.2); margin-bottom: 12px;">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-warm);">📄 invoices</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, apartment_id, billing_period, total_amount, status, due_date</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(168,164,230,0.1), rgba(168,164,230,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(168,164,230,0.2);">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-purple);">💳 payments</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, invoice_id, amount, method, transaction_id, created_at</p>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-accent); font-size: 16px;">🏢 Facility Management</h3>
-                            <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(78,205,196,0.2); margin-bottom: 12px;">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-secondary);">🏊‍♂️ facilities</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, name, capacity, usage_fee, opening_hours, location</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 12px; border-radius: 10px; border: 1px solid rgba(69,183,209,0.2);">
-                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-accent);">📅 facility_bookings</h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--muted);">id, facility_id, user_id, booking_date, status</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Business Relationships & Supporting Tables -->
-                    <div class="grid-2" style="margin-top: 12px;">
-                        <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-purple); font-size: 16px;">🔗 Business Relationships</h3>
-                            <div style="background: linear-gradient(135deg, rgba(78,205,196,0.05), rgba(78,205,196,0.02)); padding: 8px; border-radius: 8px; border: 1px solid rgba(78,205,196,0.1); margin-bottom: 8px;">
-                                <p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--brand-secondary);">Apartment → Invoices</p>
-                                <p style="margin: 2px 0 0 0; font-size: 10px; color: var(--muted);">One-to-Many</p>
-                            </div>
-                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.05), rgba(69,183,209,0.02)); padding: 8px; border-radius: 8px; border: 1px solid rgba(69,183,209,0.1);">
-                                <p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--brand-accent);">Invoice → Payments</p>
-                                <p style="margin: 2px 0 0 0; font-size: 10px; color: var(--muted);">One-to-Many</p>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <h3 style="margin-bottom: 8px; color: var(--brand-primary); font-size: 16px;">📋 Supporting Tables</h3>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-                                <div style="background: linear-gradient(135deg, rgba(255,107,157,0.05), rgba(255,107,157,0.02)); padding: 6px; border-radius: 6px; border: 1px solid rgba(255,107,157,0.1); text-align: center;">
-                                    <p style="margin: 0; font-size: 11px; font-weight: 600; color: var(--brand-primary);">service_requests</p>
+                            <h3 style="margin-bottom: 16px; color: var(--brand-primary); font-size: 22px;">4️⃣ Vehicle Registration</h3>
+                            <div style="display: grid; gap: 10px;">
+                                <div style="background: rgba(255,107,157,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-primary);">🚗 User registers vehicle information</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Submit vehicle details and documents</p>
                                 </div>
-                                <div style="background: linear-gradient(135deg, rgba(78,205,196,0.05), rgba(78,205,196,0.02)); padding: 6px; border-radius: 6px; border: 1px solid rgba(78,205,196,0.1); text-align: center;">
-                                    <p style="margin: 0; font-size: 11px; font-weight: 600; color: var(--brand-secondary);">announcements</p>
+                                <div style="background: rgba(78,205,196,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-secondary);">✅ Admin reviews & approves</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Verify information and approve registration</p>
                                 </div>
-                                <div style="background: linear-gradient(135deg, rgba(69,183,209,0.05), rgba(69,183,209,0.02)); padding: 6px; border-radius: 6px; border: 1px solid rgba(69,183,209,0.1); text-align: center;">
-                                    <p style="margin: 0; font-size: 11px; font-weight: 600; color: var(--brand-accent);">water_meter_readings</p>
+                                <div style="background: rgba(69,183,209,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-accent);">🆔 Issues vehicle card & notifies</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Generate vehicle access card and notify user</p>
                                 </div>
-                                <div style="background: linear-gradient(135deg, rgba(168,164,230,0.05), rgba(168,164,230,0.02)); padding: 6px; border-radius: 6px; border: 1px solid rgba(168,164,230,0.1); text-align: center;">
-                                    <p style="margin: 0; font-size: 11px; font-weight: 600; color: var(--brand-purple);">events</p>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3 style="margin-bottom: 16px; color: var(--brand-secondary); font-size: 22px;">5️⃣ Water Meter Reading</h3>
+                            <div style="display: grid; gap: 10px;">
+                                <div style="background: rgba(78,205,196,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-secondary);">📱 Mobile Application</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Staff uses mobile app to record readings</p>
+                                </div>
+                                <div style="background: rgba(69,183,209,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-accent);">👤 Assigned Staff</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Staff assigned to record meter readings</p>
+                                </div>
+                                <div style="background: rgba(249,202,36,0.1); padding: 12px; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: var(--brand-warm);">⏰ Schedule</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted); line-height: 1.3;">Recorded on regular monthly cycles</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
 
-            <!-- Slide 11: API -->
-            <section class="slide" data-title="API">
-                <h2 class="heading">API chính (REST)</h2>
-                <div class="grid-3 content fit">
-                    <div class="card">
-                        <h3>Auth</h3>
-                        <ul class="list">
-                            <li>POST /api/auth/login</li>
-                            <li>POST /api/auth/register</li>
-                            <li>POST /api/auth/refresh</li>
-                            <li>POST /api/auth/logout</li>
-                        </ul>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3 style="margin-bottom: 16px; color: var(--brand-accent); font-size: 20px;">6️⃣ Invoice Generation & Payment</h3>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                            <div style="background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,107,157,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,107,157,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">📋</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-primary);">Invoice Creation</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Admin generates recurring invoices</p>
+                            </div>
+                            <div style="background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(78,205,196,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(78,205,196,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">🔔</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-secondary);">Notification</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Users receive invoice alerts</p>
+                            </div>
+                            <div style="background: linear-gradient(135deg, rgba(69,183,209,0.1), rgba(69,183,209,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(69,183,209,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">💳</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-accent);">Payment</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Users pay online</p>
+                            </div>
+                            <div style="background: linear-gradient(135deg, rgba(249,202,36,0.1), rgba(249,202,36,0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(249,202,36,0.2); text-align: center;">
+                                <div style="font-size: 28px; margin-bottom: 8px;">✅</div>
+                                <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--brand-warm);">Completed</h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Status updated</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card">
-                        <h3>Quản lý</h3>
-                        <ul class="list">
-                            <li>/api/users, /api/users/profile</li>
-                            <li>/api/apartments, /{id}/residents</li>
-                            <li>/api/facilities, /{id}/bookings</li>
-                            <li>/api/announcements, /api/events</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <h3>Hóa đơn & Thanh toán</h3>
-                        <ul class="list">
-                            <li>/api/invoices, /{id}/pay</li>
-                            <li>/api/admin/yearly-billing/**</li>
-                            <li>/api/payments/** (webhook/return)</li>
-                            <li>Swagger UI: /swagger-ui/index.html</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
 
-            <!-- Slide 12: Security -->
-            <section class="slide" data-title="Bảo mật">
-                <h2 class="heading">Bảo mật</h2>
-                <div class="grid-3 content fit">
-                    <div class="card">
-                        <h3>Xác thực</h3>
-                        <ul class="list">
-                            <li>JWT Bearer Token</li>
-                            <li>Refresh token mechanism</li>
-                            <li>Email verification</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <h3>Phân quyền</h3>
-                        <ul class="list">
-                            <li>RBAC: ROLE_USER, ROLE_STAFF, ROLE_ADMIN</li>
-                            <li>Guard frontend theo vai trò</li>
-                            <li>CORS theo môi trường</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <h3>Bảo vệ API</h3>
-                        <ul class="list">
-                            <li>BCrypt password</li>
-                            <li>SQLi/XSS prevention</li>
-                            <li>Rate limiting (định hướng)</li>
-                        </ul>
+                    <div class="card" style="margin-top: 16px;">
+                        <h3 style="margin-bottom: 12px; color: var(--brand-purple); font-size: 18px;">💡 Payment Integration</h3>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                            <span style="background: linear-gradient(135deg, var(--brand-primary), var(--brand-warm)); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">💳 Stripe</span>
+                            <span style="background: linear-gradient(135deg, var(--brand-secondary), var(--brand-purple)); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">💰 VNPay</span>
+                            <span style="background: linear-gradient(135deg, var(--brand-accent), var(--brand-primary)); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">📱 QR Code</span>
+                            <span style="background: linear-gradient(135deg, var(--brand-warm), var(--brand-accent)); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">🏦 Bank Transfer</span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Slide 13: Database -->
-            <section class="slide" data-title="CSDL">
-                <h2 class="heading">Cơ sở dữ liệu</h2>
-                <div class="grid-3 content fit">
-                    <div class="card">
-                        <h3>Core Entities</h3>
-                        <ul class="list">
-                            <li>Users, Roles, RefreshTokens</li>
-                            <li>Apartments, Residents, Buildings</li>
-                            <li>Facilities, Bookings</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <h3>Nghiệp vụ</h3>
-                        <ul class="list">
-                            <li>Invoices, PaymentTransactions</li>
-                            <li>Announcements, Events</li>
-                            <li>Vehicles, VehicleCapacityConfigs</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <h3>Mở rộng</h3>
-                        <ul class="list">
-                            <li>WaterMeterReadings</li>
-                            <li>SupportTickets, Feedback</li>
-                            <li>ActivityLogs, AiQaHistory</li>
-                        </ul>
-                    </div>
-                </div>
-                <p class="sub">MySQL 8.x • ACID • Index/Relations • Backup • (định hướng) Flyway</p>
-            </section>
 
-            <!-- Slide 14: Deployment -->
-            <section class="slide" data-title="Triển khai">
-                <h2 class="heading">Triển khai</h2>
-                <div class="grid-2 content fit">
-                    <div class="card">
-                        <h3>Development</h3>
-                        <ul class="list">
-                            <li>BE: ./gradlew bootRun → :8080</li>
-                            <li>FE Admin: npm run dev → :3000</li>
-                            <li>FE User: npm run dev → :3001</li>
-                            <li>ENV: admin-frontend-url, user-frontend-url</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <h3>Production</h3>
-                        <ul class="list">
-                            <li>BE: gradlew build → run JAR</li>
-                            <li>FE: npm run build && start</li>
-                            <li>Nginx reverse proxy + HTTPS</li>
-                            <li>Actuator + Prometheus (Observability)</li>
-                        </ul>
-                    </div>
-                </div>
-                <p class="sub">Định hướng: Docker Compose, CI/CD (GitHub Actions), Secrets, Sentry</p>
-            </section>
-
-            <!-- Slide 15: Demo Flow -->
-            <section class="slide" data-title="Demo">
-                <h2 class="heading">Demo – Flow chính</h2>
-                <div class="grid-2 content fit">
-                    <div class="card">
-                        <h3>Luồng cư dân</h3>
-                        <ol class="list">
-                            <li>Đăng nhập → Xem hóa đơn</li>
-                            <li>Thanh toán → Nhận thông báo</li>
-                            <li>Đặt tiện ích → Check-in</li>
-                        </ol>
-                    </div>
-                    <div class="card">
-                        <h3>Luồng admin</h3>
-                        <ol class="list">
-                            <li>Tạo biểu phí → Sinh hóa đơn</li>
-                            <li>Xem báo cáo → Nhật ký hoạt động</li>
-                            <li>Quản trị user/role</li>
-                        </ol>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Slide 16: Timeline -->
-            <section class="slide" data-title="Timeline">
-                <h2 class="heading">Kế hoạch & Timeline</h2>
-                <div class="content grid-2 fit">
-                    <div class="card">
-                        <h3>Mốc chính</h3>
-                        <ul class="list">
-                            <li>Week 1–2: Phân tích & thiết kế</li>
-                            <li>Week 3–5: Backend + DB</li>
-                            <li>Week 4–7: Frontend Admin/User</li>
-                            <li>Week 6–8: Mobile Staff</li>
-                            <li>Week 8–9: Tích hợp & kiểm thử</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <h3>Rủi ro & Giảm thiểu</h3>
-                        <ul class="list">
-                            <li>Thanh toán: sandbox/prod keys → profile tách biệt</li>
-                            <li>Dữ liệu: migration → Flyway trong tương lai</li>
-                            <li>Hiệu năng: cache, index, pagination</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Slide 17: Team -->
-            <section class="slide" data-title="Team">
-                <h2 class="heading">Nhân sự & Phân công</h2>
-                <div class="grid-3 content fit">
-                    <div class="card"><strong>BE Lead</strong><p class="muted">API, Security, Payments</p></div>
-                    <div class="card"><strong>FE Admin</strong><p class="muted">Dashboard, Quản trị</p></div>
-                    <div class="card"><strong>FE User</strong><p class="muted">Cư dân, Thanh toán</p></div>
-                    <div class="card"><strong>Mobile</strong><p class="muted">Staff App</p></div>
-                    <div class="card"><strong>QA</strong><p class="muted">Test, Evidence</p></div>
-                    <div class="card"><strong>DevOps</strong><p class="muted">Build, Deploy</p></div>
-                </div>
-            </section>
-
-            <!-- Slide 18: Q&A -->
-            <section class="slide" data-title="Q&A">
-                <h2 class="heading">Hỏi & Đáp</h2>
-                <div class="content fit">
-                    <div class="card">
-                        <p class="muted">Cảm ơn đã theo dõi. Vui lòng đặt câu hỏi!</p>
-                        <p>
-                            Tài liệu chi tiết: <a class="pill" href="GROUP1_Smart_Building_Management_System.docx">GROUP1_Smart_Building_Management_System.docx</a>
-                        </p>
+            <!-- Slide 8: Thank You -->
+            <section class="slide" data-title="Thank You">
+                <div class="hero content fit">
+                    <h1 style="font-size: 64px; margin-bottom: 24px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary), var(--brand-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Thank You!</h1>
+                    <p style="font-size: 24px; color: var(--muted); margin-bottom: 40px; font-weight: 500;">Smart Building Management System</p>
+                    <div style="background: var(--card-bg); border-radius: 20px; padding: 32px; border: 2px solid var(--border); box-shadow: 0 8px 24px var(--shadow); max-width: 600px; margin: 0 auto;">
+                        <p style="color: var(--fg); margin: 0; text-align: center; font-weight: 700; font-size: 20px;">🎯 Group 1 • FPT Aptech</p>
+                        <p style="color: var(--muted); margin: 8px 0 0 0; text-align: center; font-size: 16px; font-weight: 500;">Batch T3.2308.A0 • September 2025</p>
                     </div>
                 </div>
             </section>

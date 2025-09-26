@@ -47,6 +47,8 @@ function getStatusBadge(raw?: string, t?: any) {
       return <Badge className="bg-orange-100 text-orange-800">{t('admin.support-requests.detail.status.inProgress', 'Đang xử lý')}</Badge>;
     case "COMPLETED":
       return <Badge className="bg-green-100 text-green-800">{t('admin.support-requests.detail.status.completed', 'Hoàn thành')}</Badge>;
+    case "CANCELLED":
+      return <Badge className="bg-red-100 text-red-800">{t('admin.support-requests.detail.status.cancelled', 'Đã hủy')}</Badge>;
     default:
       return <Badge className="bg-gray-100 text-gray-800">{raw || "-"}</Badge>;
   }
@@ -186,6 +188,8 @@ export default function SupportRequestDetailPage() {
           priority: (item as any).priority,
           status: (item as any).status,
           assignedTo: (item as any).assignedTo,
+          assignedAt: (item as any).assignedAt,
+          assignedDate: (item as any).assignedDate,
           createdAt: (item as any).createdAt,
           resolvedAt: (item as any).resolvedAt,
           resolution: (item as any).resolution
@@ -266,7 +270,7 @@ export default function SupportRequestDetailPage() {
           createdAt: (item as any).createdAt || "", // Sử dụng createdAt từ backend DTO
           completedAt: (item as any).resolvedAt || "", // Sử dụng resolvedAt từ backend DTO
           resolutionNotes: (item as any).resolution || "", // Sử dụng resolution từ backend DTO
-          assignedAt: (item as any).assignedAt || "", // Lấy assignedAt từ backend DTO
+          assignedAt: (item as any).assignedAt || (item as any).assignedDate || "", // Lấy assignedAt từ backend DTO
           attachmentUrls,
           beforeImages,
           afterImages,
@@ -341,17 +345,21 @@ export default function SupportRequestDetailPage() {
     setAssigning(true);
     setAssignError("");
     try {
-      await supportRequestsApi.assign(Number(id), {
+      const response = await supportRequestsApi.assign(Number(id), {
         assignedToUserId: Number(selectedStaff),
         serviceCategory: data.categoryCode!,
         priority: selectedPriority,
       });
+      console.log('Assign response:', response); // Debug: xem response từ backend
       const u = staffList.find((s) => s.id === Number(selectedStaff));
+      const currentTime = new Date().toISOString();
+      const responseStatus = (response as any)?.status || "ASSIGNED";
+      console.log('Response status:', responseStatus); // Debug: xem trạng thái từ backend
       setData((d) => ({ 
         ...d!, 
-        status: "ASSIGNED", // Tự động chuyển sang trạng thái "Đã giao"
+        status: responseStatus, // Sử dụng trạng thái từ backend thay vì hardcode
         assignedTo: u?.username || "", 
-        assignedAt: new Date().toISOString(),
+        assignedAt: (response as any)?.assignedAt || currentTime, // Ưu tiên thời gian từ backend
         staffPhone: u?.phoneNumber || d!.staffPhone || "",
         resolutionNotes: d!.resolutionNotes || ""
       }));
@@ -390,6 +398,16 @@ export default function SupportRequestDetailPage() {
     } finally {
       setStatusUpdating(false);
     }
+  };
+
+  // Xác nhận trước khi hủy
+  const handleCancelClick = async () => {
+    if (!data) return;
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm('Bạn có chắc chắn muốn hủy yêu cầu này? Hành động này không thể hoàn tác.')
+      : true;
+    if (!confirmed) return;
+    await handleStatusChange('CANCELLED');
   };
 
   if (loading) return <div className="p-8">{t('admin.support-requests.loading', 'Đang tải...')}</div>;
@@ -532,27 +550,6 @@ export default function SupportRequestDetailPage() {
 
             {data.resolutionNotes && <div className="p-4 rounded-lg border bg-white"><b>Kết quả xử lý:</b> {data.resolutionNotes}</div>}
 
-            {data.assignedTo && (
-              <div className="mt-2 p-4 border rounded bg-blue-50">
-                <div className="mb-2 font-semibold text-blue-800">📋 {t('admin.support-requests.detail.assignStaff', 'Gán nhân viên')}</div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{t('admin.support-requests.detail.staff', 'Nhân viên')} {t('admin.support-requests.detail.assigned', 'được gán')}:</span>
-                    <span className="text-blue-700">{data.assignedTo}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{t('admin.support-requests.detail.assignmentTime', 'Thời gian gán')}:</span>
-                    <span className="text-blue-700">{data.assignedAt ? formatDate(data.assignedAt) : t('admin.support-requests.unknown', 'Không xác định')}</span>
-                  </div>
-                  {data.resolutionNotes && (
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium">{t('admin.support-requests.detail.assignmentNotes', 'Ghi chú khi gán')}:</span>
-                      <span className="text-blue-700 bg-white p-2 rounded border flex-1">{data.resolutionNotes}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             <div className="mt-2 p-4 border rounded bg-gray-50">
               <div className="mb-2 font-semibold">Quản lý yêu cầu</div>
@@ -583,12 +580,12 @@ export default function SupportRequestDetailPage() {
                   </div>
                 )}
 
-                {/* Nút Hủy: ẩn khi đã COMPLETED */}
-                {normalizeStatus(data.status) !== 'COMPLETED' && (
+                {/* Nút Hủy: ẩn khi đã COMPLETED hoặc CANCELLED */}
+                {normalizeStatus(data.status) !== 'COMPLETED' && normalizeStatus(data.status) !== 'CANCELLED' && (
                   <div className="flex items-center gap-2">
                     <Button
                       variant="destructive"
-                      onClick={() => handleStatusChange('CANCELLED')}
+                      onClick={handleCancelClick}
                       disabled={statusUpdating || normalizeStatus(data.status) === 'CANCELLED'}
                       className="w-fit"
                     >

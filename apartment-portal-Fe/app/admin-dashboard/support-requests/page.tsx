@@ -42,6 +42,7 @@ import {
 import Link from 'next/link';
 import { supportRequestsApi } from '@/lib/api';
 import ServiceRequestMiniProgress from '@/components/admin/ServiceRequestMiniProgress';
+import { buildImageUrlWithToken } from '@/lib/config';
 
 interface SupportRequest {
   id: string;
@@ -81,6 +82,9 @@ function SupportRequestsPageContent() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+
+  // Sử dụng helper function từ config
+  const buildImageUrl = buildImageUrlWithToken;
 
   const truncateTitle = (title: string, max: number = 10) => {
     if (!title) return '';
@@ -710,12 +714,21 @@ function SupportRequestsPageContent() {
                                              {request.attachmentUrls.map((url, index) => (
                                                <div key={index} className="relative group">
                                                  <img
-                                                   src={url}
+                                                   src={buildImageUrl(url)}
                                                    alt={t('admin.support-requests.imageAlt', 'Hình ảnh') + ` ${index + 1}`}
                                                    className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
-                                                   onClick={() => openLightbox(request.attachmentUrls!, index)}
+                                                   onClick={() => openLightbox(request.attachmentUrls!.map(u => buildImageUrl(u)), index)}
                                                    title={t('admin.support-requests.clickToView', 'Click để xem ảnh đầy đủ')}
+                                                   onError={(e) => {
+                                                     const img = e.target as HTMLImageElement;
+                                                     img.style.display = 'none';
+                                                     img.nextElementSibling?.classList.remove('hidden');
+                                                   }}
                                                  />
+                                                 <div className="hidden w-full h-20 bg-red-50 border-2 border-red-200 rounded-lg flex flex-col items-center justify-center text-red-600">
+                                                   <div className="text-2xl mb-1">❌</div>
+                                                   <div className="text-xs text-center">Lỗi tải ảnh</div>
+                                                 </div>
                                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center pointer-events-none">
                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                                      <div className="bg-white bg-opacity-90 rounded-full p-1">
@@ -809,7 +822,19 @@ function SupportRequestsPageContent() {
                 src={currentImages[currentImageIndex]}
                 alt={t('admin.support-requests.imageAlt', 'Hình ảnh') + ` ${currentImageIndex + 1}`}
                 className="max-w-[90vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg"
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  img.style.display = 'none';
+                  img.nextElementSibling?.classList.remove('hidden');
+                }}
               />
+              <div className="hidden max-w-[90vw] max-h-[85vh] bg-red-50 border-2 border-red-200 rounded-lg flex flex-col items-center justify-center text-red-600">
+                <div className="text-4xl mb-2">❌</div>
+                <div className="text-lg font-medium">Lỗi tải hình ảnh</div>
+                <div className="text-sm text-center mt-1">
+                  Backend không khả dụng
+                </div>
+              </div>
             </div>
 
             {/* Image counter */}
