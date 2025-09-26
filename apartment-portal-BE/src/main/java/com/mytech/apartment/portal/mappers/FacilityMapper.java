@@ -18,6 +18,8 @@ public class FacilityMapper {
         dto.setDescription(facility.getDescription());
         dto.setLocation(facility.getLocation());
         dto.setCapacity(facility.getCapacity());
+        dto.setCapacityType(facility.getCapacityType());
+        dto.setGroupSize(facility.getGroupSize());
         dto.setOtherDetails(facility.getOtherDetails());
         dto.setUsageFee(facility.getUsageFee());
         dto.setOpeningHours(facility.getOpeningHours());
@@ -38,6 +40,8 @@ public class FacilityMapper {
         facility.setDescription(dto.getDescription());
         facility.setLocation(dto.getLocation());
         facility.setCapacity(dto.getCapacity());
+        facility.setCapacityType(dto.getCapacityType());
+        facility.setGroupSize(dto.getGroupSize());
         facility.setOtherDetails(dto.getOtherDetails());
         facility.setUsageFee(dto.getUsageFee());
         facility.setOpeningHours(dto.getOpeningHours());

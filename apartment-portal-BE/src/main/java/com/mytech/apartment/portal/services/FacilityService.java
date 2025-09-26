@@ -28,8 +28,8 @@ public class FacilityService {
     }
 
     public List<FacilityDto> getVisibleFacilities() {
-        // Trả về tất cả facilities (cho residents xem tất cả tiện ích có sẵn)
-        return facilityRepository.findAll().stream()
+        // Trả về chỉ những facilities có isVisible = true (cho residents)
+        return facilityRepository.findByIsVisibleTrue().stream()
                 .map(facilityMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -44,6 +44,8 @@ public class FacilityService {
         facility.setDescription(request.getDescription());
         facility.setLocation(request.getLocation());
         facility.setCapacity(request.getCapacity());
+        facility.setCapacityType(request.getCapacityType());
+        facility.setGroupSize(request.getGroupSize());
         facility.setOtherDetails(request.getOtherDetails());
         facility.setUsageFee(request.getUsageFee());
         facility.setIsVisible(request.getIsVisible() != null ? request.getIsVisible() : true);
@@ -62,8 +64,17 @@ public class FacilityService {
         if (request.getDescription() != null) {
             facility.setDescription(request.getDescription());
         }
+        if (request.getLocation() != null) {
+            facility.setLocation(request.getLocation());
+        }
         if (request.getCapacity() != null) {
             facility.setCapacity(request.getCapacity());
+        }
+        if (request.getCapacityType() != null) {
+            facility.setCapacityType(request.getCapacityType());
+        }
+        if (request.getGroupSize() != null) {
+            facility.setGroupSize(request.getGroupSize());
         }
         if (request.getOtherDetails() != null) {
             facility.setOtherDetails(request.getOtherDetails());

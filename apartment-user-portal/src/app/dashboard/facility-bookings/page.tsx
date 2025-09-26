@@ -301,10 +301,8 @@ const FacilityBookingsPage: FC = () => {
   const [rangeEndHour, setRangeEndHour] = useState<number | null>(null)
   const [rangeError, setRangeError] = useState<string | null>(null)
   const paymentMethods = [
-    { id: 'momo', name: 'MoMo', description: 'Thanh toán qua ví MoMo' },
     { id: 'vnpay', name: 'VNPay', description: 'Thanh toán qua VNPay' },
-    { id: 'zalopay', name: 'ZaloPay', description: 'Thanh toán qua ZaloPay' },
-    { id: 'visa', name: 'Visa/Mastercard', description: 'Thanh toán thẻ quốc tế' },
+    { id: 'visa', name: 'Visa', description: 'Thẻ Visa' },
   ];
   const [payBefore, setPayBefore] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
@@ -344,7 +342,7 @@ const FacilityBookingsPage: FC = () => {
               image: '',
               amenities: ['Máy chạy bộ', 'Tạ tay', 'Xe đạp tập'],
               openingHours: '06:00 - 22:00',
-              status: 'AVAILABLE'
+              status: 'AVAILABLE' as const
             },
             {
               id: '2',
@@ -356,7 +354,7 @@ const FacilityBookingsPage: FC = () => {
               image: '',
               amenities: ['Hồ bơi 25m', 'Khu vực trẻ em', 'Ghế nằm'],
               openingHours: '05:00 - 21:00',
-              status: 'AVAILABLE'
+              status: 'AVAILABLE' as const
             },
             {
               id: '3',
@@ -368,7 +366,7 @@ const FacilityBookingsPage: FC = () => {
               image: '',
               amenities: ['Sân tennis tiêu chuẩn', 'Đèn chiếu sáng', 'Ghế ngồi'],
               openingHours: '06:00 - 22:00',
-              status: 'AVAILABLE'
+              status: 'AVAILABLE' as const
             },
             {
               id: '4',
@@ -380,7 +378,7 @@ const FacilityBookingsPage: FC = () => {
               image: '',
               amenities: ['Sân bóng rổ tiêu chuẩn', 'Đèn chiếu sáng'],
               openingHours: '06:00 - 22:00',
-              status: 'AVAILABLE'
+              status: 'AVAILABLE' as const
             },
             {
               id: '5',
@@ -392,7 +390,7 @@ const FacilityBookingsPage: FC = () => {
               image: '',
               amenities: ['Sân khấu', 'Hệ thống âm thanh', 'Bàn ghế'],
               openingHours: '08:00 - 22:00',
-              status: 'AVAILABLE'
+              status: 'AVAILABLE' as const
             },
             {
               id: '6',
@@ -404,7 +402,7 @@ const FacilityBookingsPage: FC = () => {
               image: '',
               amenities: ['Máy chiếu', 'Hệ thống âm thanh', 'Bàn ghế'],
               openingHours: '08:00 - 20:00',
-              status: 'AVAILABLE'
+              status: 'AVAILABLE' as const
             }
           ]
           setFacilities(fallbackFacilities)

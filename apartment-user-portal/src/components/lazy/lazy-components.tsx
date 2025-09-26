@@ -13,21 +13,21 @@ const LoadingSpinner = () => (
 )
 
 // Lazy load heavy components
-export const LazyInvoiceDetail = dynamic(
-  () => import('@/app/dashboard/invoices/[id]/page'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false
-  }
-)
+// export const LazyInvoiceDetail = dynamic(
+//   () => import('@/app/dashboard/invoices/[id]/page'),
+//   {
+//     loading: () => <LoadingSpinner />,
+//     ssr: false
+//   }
+// )
 
-export const LazyEventDetail = dynamic(
-  () => import('@/app/dashboard/events/[id]/page'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false
-  }
-)
+// export const LazyEventDetail = dynamic(
+//   () => import('@/app/dashboard/events/[id]/page'),
+//   {
+//     loading: () => <LoadingSpinner />,
+//     ssr: false
+//   }
+// )
 
 export const LazyFacilityBooking = dynamic(
   () => import('@/app/dashboard/facility-bookings/page'),
@@ -37,37 +37,37 @@ export const LazyFacilityBooking = dynamic(
   }
 )
 
-export const LazySupportRequests = dynamic(
-  () => import('@/app/dashboard/support-requests/page'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false
-  }
-)
+// export const LazySupportRequests = dynamic(
+//   () => import('@/app/dashboard/support-requests/page'),
+//   {
+//     loading: () => <LoadingSpinner />,
+//     ssr: false
+//   }
+// )
 
-export const LazyAnnouncements = dynamic(
-  () => import('@/app/dashboard/announcements/page'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false
-  }
-)
+// export const LazyAnnouncements = dynamic(
+//   () => import('@/app/dashboard/announcements/page'),
+//   {
+//     loading: () => <LoadingSpinner />,
+//     ssr: false
+//   }
+// )
 
-export const LazyEvents = dynamic(
-  () => import('@/app/dashboard/events/page'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false
-  }
-)
+// export const LazyEvents = dynamic(
+//   () => import('@/app/dashboard/events/page'),
+//   {
+//     loading: () => <LoadingSpinner />,
+//     ssr: false
+//   }
+// )
 
-export const LazyInvoices = dynamic(
-  () => import('@/app/dashboard/invoices/page'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false
-  }
-)
+// export const LazyInvoices = dynamic(
+//   () => import('@/app/dashboard/invoices/page'),
+//   {
+//     loading: () => <LoadingSpinner />,
+//     ssr: false
+//   }
+// )
 
 // Lazy load charts and heavy UI components
 export const LazyRecharts = dynamic(

@@ -13,6 +13,7 @@ const beVietnam = Be_Vietnam_Pro({ subsets: ['latin'], variable: '--font-be-viet
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#3b82f6',
 }
 
 export const metadata: Metadata = {

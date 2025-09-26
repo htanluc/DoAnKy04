@@ -6,6 +6,7 @@ import 'facility_detail_screen.dart';
 import 'widgets/facility_card.dart';
 import 'widgets/facility_search_bar.dart';
 import 'widgets/facility_filter_sheet.dart';
+import 'widgets/facility_booking_dialog.dart';
 
 class FacilitiesScreen extends ConsumerStatefulWidget {
   const FacilitiesScreen({super.key});
@@ -38,7 +39,9 @@ class _FacilitiesScreenState extends ConsumerState<FacilitiesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final facilitiesAsync = ref.watch(facilitiesProvider);
+    final facilitiesAsync = ref.watch(
+      visibleFacilitiesProvider,
+    ); // Chỉ hiển thị facilities visible
     final searchQuery = ref.watch(facilitiesSearchQueryProvider);
     final minCapacity = ref.watch(minCapacityProvider);
 
@@ -170,7 +173,7 @@ class _FacilitiesScreenState extends ConsumerState<FacilitiesScreen> {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                ref.invalidate(facilitiesProvider);
+                ref.invalidate(visibleFacilitiesProvider);
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Thử lại'),
@@ -211,7 +214,7 @@ class _FacilitiesScreenState extends ConsumerState<FacilitiesScreen> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(facilitiesProvider);
+        ref.invalidate(visibleFacilitiesProvider);
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -222,7 +225,7 @@ class _FacilitiesScreenState extends ConsumerState<FacilitiesScreen> {
             padding: const EdgeInsets.only(bottom: 16),
             child: FacilityCard(
               facility: facility,
-              onTap: () => _navigateToFacilityDetail(context, facility),
+              onTap: () => _showBookingDialog(context, facility),
             ),
           );
         },
@@ -251,6 +254,19 @@ class _FacilitiesScreenState extends ConsumerState<FacilitiesScreen> {
     }
 
     return filtered;
+  }
+
+  void _showBookingDialog(BuildContext context, Facility facility) {
+    showDialog(
+      context: context,
+      builder: (context) => FacilityBookingDialog(
+        facility: facility,
+        onBookingSuccess: () {
+          // Refresh facilities list
+          ref.invalidate(visibleFacilitiesProvider);
+        },
+      ),
+    );
   }
 
   void _navigateToFacilityDetail(BuildContext context, Facility facility) {

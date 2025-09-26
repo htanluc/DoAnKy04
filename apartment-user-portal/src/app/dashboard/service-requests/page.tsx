@@ -869,6 +869,8 @@ export default function ServiceRequestsPage() {
             <button
               onClick={closeLightbox}
               className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+              aria-label="Đóng ảnh"
+              title="Đóng ảnh"
             >
               <X className="h-8 w-8" />
             </button>
@@ -879,12 +881,16 @@ export default function ServiceRequestsPage() {
                 <button
                   onClick={prevImage}
                   className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                  aria-label="Ảnh trước"
+                  title="Ảnh trước"
                 >
                   <ChevronLeft className="h-8 w-8" />
                 </button>
                 <button
                   onClick={nextImage}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+                  aria-label="Ảnh tiếp theo"
+                  title="Ảnh tiếp theo"
                 >
                   <ChevronRight className="h-8 w-8" />
                 </button>

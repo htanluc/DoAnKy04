@@ -233,22 +233,7 @@ export default function EnhancedSidebar({
             </span>
           </button>
 
-          <Link href="/dashboard/settings" className={cn(
-            "flex items-center px-4 py-3 rounded-xl transition-colors duration-200 group",
-            isDarkMode 
-              ? "text-slate-300 hover:text-white hover:bg-slate-800/50" 
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
-          )}>
-            <div className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300",
-              isDarkMode 
-                ? "bg-slate-700/50 text-slate-400 group-hover:bg-white/10 group-hover:text-white" 
-                : "bg-slate-100/50 text-slate-500 group-hover:bg-white/10 group-hover:text-slate-700"
-            )}>
-              <Shield className="h-5 w-5" />
-            </div>
-            <span className="ml-4 font-medium">Cài đặt bảo mật</span>
-          </Link>
+          
         </div>
 
         {isMobile && (

@@ -24,20 +24,8 @@ class InvoicesRepository {
     required String orderInfo,
   }) async {
     switch (method) {
-      case PaymentMethod.momo:
-        return _paymentsApi.createMomoPayment(
-          invoiceId: invoiceId,
-          amount: amount,
-          orderInfo: orderInfo,
-        );
       case PaymentMethod.vnpay:
         return _paymentsApi.createVNPayPayment(
-          invoiceId: invoiceId,
-          amount: amount,
-          orderInfo: orderInfo,
-        );
-      case PaymentMethod.zalopay:
-        return _paymentsApi.createZaloPayPayment(
           invoiceId: invoiceId,
           amount: amount,
           orderInfo: orderInfo,

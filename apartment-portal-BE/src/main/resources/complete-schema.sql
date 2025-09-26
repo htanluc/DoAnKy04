@@ -92,9 +92,12 @@ CREATE TABLE IF NOT EXISTS facilities (
     description TEXT,
     location VARCHAR(255),
     capacity INT,
+    capacity_type VARCHAR(20) DEFAULT 'INDIVIDUAL',
+    group_size INT,
     other_details TEXT,
     usage_fee DOUBLE,
     opening_hours VARCHAR(50),
+    is_visible BOOLEAN DEFAULT TRUE,
     status VARCHAR(20) DEFAULT 'ACTIVE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

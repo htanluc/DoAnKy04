@@ -29,8 +29,8 @@ Map<String, dynamic> _$$AnnouncementImplToJson(_$AnnouncementImpl instance) =>
     };
 
 const _$AnnouncementTypeEnumMap = {
-  AnnouncementType.news: 'NEWS',
-  AnnouncementType.regular: 'REGULAR',
-  AnnouncementType.urgent: 'URGENT',
-  AnnouncementType.event: 'EVENT',
+  AnnouncementType.news: 'news',
+  AnnouncementType.regular: 'regular',
+  AnnouncementType.urgent: 'urgent',
+  AnnouncementType.event: 'event',
 };

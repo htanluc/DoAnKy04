@@ -166,12 +166,7 @@ Future<void> _showPaymentMethods(BuildContext context, _Invoice iv) async {
           ),
           const Divider(height: 1),
           _PayItem(title: 'VNPay', onTap: () => _pay(context, iv, 'vnpay')),
-          _PayItem(title: 'MoMo', onTap: () => _pay(context, iv, 'momo')),
-          _PayItem(title: 'ZaloPay', onTap: () => _pay(context, iv, 'zalopay')),
-          _PayItem(
-            title: 'Visa/Mastercard',
-            onTap: () => _pay(context, iv, 'visa'),
-          ),
+          _PayItem(title: 'Visa', onTap: () => _pay(context, iv, 'visa')),
           const SizedBox(height: 8),
         ],
       ),

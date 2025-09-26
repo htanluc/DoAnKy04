@@ -20,7 +20,6 @@ import {
   Plus, 
   Search, 
   Edit, 
-  Trash2, 
   Building2,
   Users,
   DollarSign,
@@ -56,7 +55,6 @@ function FacilitiesPageContent() {
     facilities, 
     loading, 
     error, 
-    deleteFacility, 
     toggleFacilityVisibility,
     fetchFacilities 
   } = useFacilities();
@@ -67,23 +65,6 @@ function FacilitiesPageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm(t('admin.facilities.confirmDelete', 'Bạn có chắc chắn muốn xóa tiện ích này?'))) {
-      try {
-        await deleteFacility(id);
-        toast({
-          title: t('admin.success.delete', 'Thành công'),
-          description: t('admin.facilities.deleteSuccess', 'Đã xóa tiện ích thành công'),
-        });
-      } catch (error) {
-        toast({
-          title: t('admin.error.delete', 'Lỗi'),
-          description: t('admin.facilities.deleteError', 'Không thể xóa tiện ích'),
-          variant: "destructive",
-        });
-      }
-    }
-  };
 
   const handleToggleVisibility = async (id: number) => {
     try {
@@ -170,22 +151,45 @@ function FacilitiesPageContent() {
     setCurrentPage(1);
   }, [searchTerm, filterCapacity]);
 
-  const getCapacityBadge = (capacity: number) => {
-    if (capacity <= 20) {
-      return <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-        <Users className="h-3 w-3 mr-1" />
-        {t('admin.facilities.capacity.label.small', 'Nhỏ')} ({capacity})
-      </Badge>;
-    } else if (capacity <= 50) {
-      return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-        <Users className="h-3 w-3 mr-1" />
-        {t('admin.facilities.capacity.label.medium', 'Trung bình')} ({capacity})
-      </Badge>;
+  const getCapacityBadge = (facility: Facility) => {
+    const { capacity, capacityType, groupSize } = facility;
+    
+    if (capacityType === 'GROUP') {
+      // Hiển thị cho nhóm người
+      if (capacity <= 5) {
+        return <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.small', 'Nhỏ')} ({capacity} nhóm)
+        </Badge>;
+      } else if (capacity <= 10) {
+        return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.medium', 'Trung bình')} ({capacity} nhóm)
+        </Badge>;
+      } else {
+        return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.large', 'Lớn')} ({capacity} nhóm)
+        </Badge>;
+      }
     } else {
-      return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-        <Users className="h-3 w-3 mr-1" />
-        {t('admin.facilities.capacity.label.large', 'Lớn')} ({capacity})
-      </Badge>;
+      // Hiển thị cho cá nhân
+      if (capacity <= 20) {
+        return <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.small', 'Nhỏ')} ({capacity} người)
+        </Badge>;
+      } else if (capacity <= 50) {
+        return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.medium', 'Trung bình')} ({capacity} người)
+        </Badge>;
+      } else {
+        return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Users className="h-3 w-3 mr-1" />
+          {t('admin.facilities.capacity.label.large', 'Lớn')} ({capacity} người)
+        </Badge>;
+      }
     }
   };
 
@@ -378,6 +382,8 @@ function FacilitiesPageContent() {
                   value={filterCapacity}
                   onChange={(e) => setFilterCapacity(e.target.value)}
                   className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  aria-label="Lọc theo sức chứa"
+                  title="Lọc theo sức chứa"
                 >
                   <option value="all">{t('admin.facilities.capacity.all', 'Tất cả sức chứa')}</option>
                   <option value="small">{t('admin.facilities.capacity.small', 'Nhỏ (1-20)')}</option>
@@ -419,6 +425,8 @@ function FacilitiesPageContent() {
                       setCurrentPage(1);
                     }}
                     className="text-sm border border-gray-200 rounded px-2 py-1"
+                    aria-label="Số lượng hiển thị"
+                    title="Số lượng hiển thị"
                   >
                     <option value={5}>5</option>
                     <option value={10}>10</option>
@@ -484,7 +492,9 @@ function FacilitiesPageContent() {
                             </div>
                           </TableCell>
                           <TableCell>{facility.location}</TableCell>
-                          <TableCell className="text-center">{facility.capacity}</TableCell>
+                          <TableCell className="text-center">
+                            {getCapacityBadge(facility)}
+                          </TableCell>
                           <TableCell className="text-center">
                             {getFeeDisplay(facility.usageFee)}
                           </TableCell>
@@ -512,14 +522,6 @@ function FacilitiesPageContent() {
                                 ) : (
                                   <EyeIcon className="h-4 w-4" />
                                 )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(facility.id)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>

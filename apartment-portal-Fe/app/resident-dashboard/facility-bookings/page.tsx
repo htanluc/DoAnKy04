@@ -36,13 +36,19 @@ export default function ResidentFacilityBookingsPage() {
     purpose: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  
+  // Payment states
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [pendingBookingData, setPendingBookingData] = useState<FacilityBookingCreateRequest | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('VNPAY');
 
   useRequireResidentInfo();
 
   const fetchFacilities = async () => {
     try {
       setLoading(true);
-      const data = await facilitiesApi.getAll();
+      const data = await facilitiesApi.getVisible(); // Chỉ lấy facilities visible
       setFacilities(data);
     } catch (error) {
       toast({
@@ -104,24 +110,110 @@ export default function ResidentFacilityBookingsPage() {
 
     try {
       setSubmitting(true);
-      await facilityBookingsApi.create(bookingData);
-      toast({
-        title: "Thành công",
-        description: "Đã đặt tiện ích thành công",
-      });
-      setShowBookingForm(false);
-      setSelectedFacility(null);
-      setBookingData({
-        facilityId: 0,
-        residentId: 1,
-        startTime: '',
-        endTime: '',
-        purpose: '',
-      });
-    } catch (error) {
+      
+      // Tính toán phí sử dụng
+      const facility = selectedFacility!;
+      const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+      const totalCost = facility.usageFee * durationHours;
+      
+      if (totalCost > 0) {
+        // Có phí - tạo booking PENDING và hiển thị dialog thanh toán
+        const bookingRequest = {
+          facilityId: bookingData.facilityId,
+          bookingTime: startTime.toISOString().slice(0, 19), // Format: YYYY-MM-DDTHH:mm:ss
+          duration: Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)), // duration in minutes
+          numberOfPeople: 1,
+          purpose: bookingData.purpose,
+          paymentStatus: "PENDING",
+          totalCost: totalCost
+        };
+        
+        console.log('Creating booking request:', bookingRequest);
+        const booking = await facilityBookingsApi.create(bookingRequest);
+        
+        // Hiển thị dialog thanh toán
+        setShowPaymentDialog(true);
+        setPaymentAmount(totalCost);
+        setPendingBookingData({ ...bookingData, id: booking.id });
+        return;
+      } else {
+        // Miễn phí - đặt trực tiếp
+        const bookingRequest = {
+          facilityId: bookingData.facilityId,
+          bookingTime: startTime.toISOString().slice(0, 19), // Format: YYYY-MM-DDTHH:mm:ss
+          duration: Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)), // duration in minutes
+          numberOfPeople: 1,
+          purpose: bookingData.purpose,
+          paymentStatus: "PAID",
+          paymentMethod: "FREE",
+          totalCost: 0
+        };
+        
+        await facilityBookingsApi.create(bookingRequest);
+        toast({
+          title: "Thành công",
+          description: "Đã đặt tiện ích miễn phí thành công",
+        });
+        
+        setShowBookingForm(false);
+        setSelectedFacility(null);
+        setBookingData({
+          facilityId: 0,
+          residentId: 1,
+          startTime: '',
+          endTime: '',
+          purpose: '',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error creating facility booking:', error);
+      console.error('Error details:', error.message);
+      console.error('Error response:', error.response);
       toast({
         title: "Lỗi",
-        description: "Không thể đặt tiện ích",
+        description: error.message || "Không thể đặt tiện ích",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePayment = async (paymentMethod: string) => {
+    if (!pendingBookingData) return;
+    
+    try {
+      setSubmitting(true);
+      
+      // Tạo thanh toán cho booking đã tạo
+      const paymentResponse = await facilityBookingsApi.createPayment(pendingBookingData.id!, paymentMethod);
+      
+      if (paymentResponse.paymentUrl) {
+        // Redirect đến trang thanh toán
+        window.open(paymentResponse.paymentUrl, '_blank');
+        
+        toast({
+          title: "Chuyển hướng thanh toán",
+          description: "Đang chuyển hướng đến trang thanh toán...",
+        });
+        
+        // Đóng dialog và reset form
+        setShowPaymentDialog(false);
+        setShowBookingForm(false);
+        setSelectedFacility(null);
+        setBookingData({
+          facilityId: 0,
+          residentId: 1,
+          startTime: '',
+          endTime: '',
+          purpose: '',
+        });
+        setPendingBookingData(null);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Lỗi thanh toán",
+        description: error.message || "Không thể tạo thanh toán",
         variant: "destructive",
       });
     } finally {
@@ -134,13 +226,28 @@ export default function ResidentFacilityBookingsPage() {
            facility.description.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const getCapacityBadge = (capacity: number) => {
-    if (capacity <= 20) {
-      return <Badge className="bg-green-100 text-green-800">Nhỏ ({capacity})</Badge>;
-    } else if (capacity <= 50) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Trung bình ({capacity})</Badge>;
+  const getCapacityBadge = (facility: Facility) => {
+    const { capacity, capacityType, groupSize } = facility;
+    
+    if (capacityType === 'GROUP') {
+      // Hiển thị cho nhóm người
+      const totalPeople = capacity * (groupSize || 1);
+      if (capacity <= 5) {
+        return <Badge className="bg-green-100 text-green-800">Nhỏ ({capacity} nhóm)</Badge>;
+      } else if (capacity <= 10) {
+        return <Badge className="bg-yellow-100 text-yellow-800">Trung bình ({capacity} nhóm)</Badge>;
+      } else {
+        return <Badge className="bg-blue-100 text-blue-800">Lớn ({capacity} nhóm)</Badge>;
+      }
     } else {
-      return <Badge className="bg-blue-100 text-blue-800">Lớn ({capacity})</Badge>;
+      // Hiển thị cho cá nhân
+      if (capacity <= 20) {
+        return <Badge className="bg-green-100 text-green-800">Nhỏ ({capacity} người)</Badge>;
+      } else if (capacity <= 50) {
+        return <Badge className="bg-yellow-100 text-yellow-800">Trung bình ({capacity} người)</Badge>;
+      } else {
+        return <Badge className="bg-blue-100 text-blue-800">Lớn ({capacity} người)</Badge>;
+      }
     }
   };
 
@@ -204,7 +311,7 @@ export default function ResidentFacilityBookingsPage() {
                         </p>
                       </div>
                       <div className="ml-2">
-                        {getCapacityBadge(facility.capacity)}
+                        {getCapacityBadge(facility)}
                       </div>
                     </div>
                   </CardHeader>
@@ -212,8 +319,25 @@ export default function ResidentFacilityBookingsPage() {
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-gray-600">
                         <Users className="h-4 w-4 mr-2" />
-                        <span>Sức chứa: {facility.capacity} người</span>
+                        <span>
+                          {facility.capacityType === 'GROUP' 
+                            ? `Sức chứa: ${facility.capacity} nhóm (${facility.groupSize} người/nhóm)`
+                            : `Sức chứa: ${facility.capacity} người`
+                          }
+                        </span>
                       </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        <span>
+                          Phí sử dụng: {facility.usageFee > 0 ? `${facility.usageFee.toLocaleString()} VNĐ/giờ` : 'Miễn phí'}
+                        </span>
+                      </div>
+                      {facility.openingHours && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Clock className="h-4 w-4 mr-2" />
+                          <span>Giờ hoạt động: {facility.openingHours}</span>
+                        </div>
+                      )}
                       {facility.otherDetails && (
                         <div className="flex items-start text-sm text-gray-600">
                           <MapPin className="h-4 w-4 mr-2 mt-0.5" />
@@ -305,6 +429,60 @@ export default function ResidentFacilityBookingsPage() {
             </div>
           )}
         </div>
+        
+        {/* Payment Dialog */}
+        {showPaymentDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Thanh toán đặt tiện ích</h3>
+              
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Tiện ích: <span className="font-medium">{selectedFacility?.name}</span></p>
+                  <p className="text-sm text-gray-600">Số tiền: <span className="font-medium text-red-600">{paymentAmount.toLocaleString()} VNĐ</span></p>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Phương thức thanh toán</label>
+                  <select 
+                    value={selectedPaymentMethod}
+                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="VNPAY">VNPay</option>
+                    <option value="VISA">Thẻ Visa</option>
+                  </select>
+                </div>
+                
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setShowPaymentDialog(false);
+                      setPendingBookingData(null);
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                  <Button 
+                    onClick={() => handlePayment(selectedPaymentMethod)}
+                    disabled={submitting}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      'Thanh toán'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AuthGuard>
   );
