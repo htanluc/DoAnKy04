@@ -46,8 +46,7 @@ public class WaterMeterReading {
     @PrePersist
     @PreUpdate
     public void setCreatedAt() {
-        if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
-        }
+        // Luôn cập nhật thời gian khi có thay đổi để admin biết thời điểm ghi cuối cùng
+        this.createdAt = LocalDateTime.now();
     }
 }

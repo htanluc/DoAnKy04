@@ -10,8 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Car, ArrowLeft, Eye, Check, X, Calendar, User, Hash, Palette, Home, Clock, Car as CarIcon } from 'lucide-react';
 import { vehiclesApi, Vehicle } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import { buildImageUrlWithToken } from '@/lib/config';
 import { useVehicleCapacity } from '@/hooks/use-vehicle-capacity';
 import Link from 'next/link';
+import ImagePlaceholder from '@/components/ui/image-placeholder';
 
 export default function PendingCarsPage() {
   const { t } = useLanguage();
@@ -26,42 +28,20 @@ export default function PendingCarsPage() {
   const [thumbIndexByVehicle, setThumbIndexByVehicle] = useState<Record<number, number>>({});
   const [validUrlsByVehicle, setValidUrlsByVehicle] = useState<Record<number, string[]>>({});
 
-  const buildImageUrl = (rawUrl: string): string => {
-    try {
-      const token = getToken() || '';
-      const encoded = encodeURIComponent(rawUrl);
-      return `/api/image-proxy?url=${encoded}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-    } catch {
-      return rawUrl;
-    }
-  };
+  // Sử dụng helper function từ config
+  const buildImageUrl = buildImageUrlWithToken;
 
-  const getImageSrc = (rawUrl: string, useProxyFirst = true, cacheBust?: string | number): string => {
-    const cacheParam = cacheBust ? `&v=${cacheBust}` : '';
-    if (useProxyFirst) {
-      const proxy = buildImageUrl(rawUrl) + cacheParam;
-      return proxy;
-    }
-    const url = new URL(rawUrl, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
-    if (cacheBust) {
-      url.searchParams.set('v', String(cacheBust));
-    }
-    return url.toString();
-  };
 
   const validateImageUrl = async (rawUrl: string): Promise<string | null> => {
-    const tryList = [getImageSrc(rawUrl, true, Date.now()), getImageSrc(rawUrl, false, Date.now())];
-    for (const url of tryList) {
-      try {
-        const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-        // Some backends return application/octet-stream; accept any OK response
-        if (res.ok) {
-          return url; // valid reachable URL
-        }
-      } catch (err) {
-        console.warn('Validate image failed:', url, err);
-        // ignore and try next
+    // Chỉ thử URL qua proxy
+    const proxyUrl = buildImageUrl(rawUrl);
+    try {
+      const res = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
+      if (res.ok) {
+        return proxyUrl; // valid reachable URL
       }
+    } catch (err) {
+      console.warn('Validate image failed:', proxyUrl, err);
     }
     return null;
   };
@@ -283,8 +263,14 @@ export default function PendingCarsPage() {
     if (source.length === 0) return null;
     const idx = thumbIndexByVehicle[vehicle.id] ?? 0;
     const chosen = source[idx] || source[0];
-    // chosen may already be proxied; if raw, wrap via proxy for consistency
-    return chosen.includes('/api/image-proxy') ? chosen : getImageSrc(chosen, true, Date.now());
+
+    // Nếu URL đã là proxy URL (từ validated), sử dụng trực tiếp
+    // Nếu chưa phải proxy URL (từ fallback), thì proxy nó
+    if (chosen.includes('/api/image-proxy')) {
+      return chosen;
+    } else {
+      return buildImageUrl(chosen);
+    }
   };
 
   // Mobile Card Component
@@ -336,7 +322,14 @@ export default function PendingCarsPage() {
                     if (nextIdx < urls.length) {
                       setThumbIndexByVehicle(prev => ({ ...prev, [vehicle.id]: nextIdx }));
                       const nextUrl = urls[nextIdx];
-                      img.src = nextUrl.includes('/api/image-proxy') ? nextUrl : getImageSrc(nextUrl, true, Date.now());
+
+                      // Logic tương tự như getThumbnailUrl: nếu đã là proxy URL thì dùng trực tiếp
+                      let finalUrl = nextUrl;
+                      if (!nextUrl.includes('/api/image-proxy')) {
+                        finalUrl = buildImageUrl(nextUrl);
+                      }
+
+                      img.src = finalUrl;
                       return;
                     }
 
@@ -344,9 +337,11 @@ export default function PendingCarsPage() {
                     img.nextElementSibling?.classList.remove('hidden');
                   }}
                 />
-                <div className="hidden w-24 h-24 bg-red-50 rounded-lg border border-red-200 flex items-center justify-center text-[10px] text-red-600">
-                  {t('admin.vehicleRegistrations.image.errorLoading', 'Lỗi tải ảnh')}
-                </div>
+                <ImagePlaceholder 
+                  className="hidden w-24 h-24"
+                  text="Lỗi tải ảnh"
+                  subtext="Backend không khả dụng"
+                />
                 {((validUrlsByVehicle[vehicle.id]?.length ?? vehicle.imageUrls?.length ?? 0) > 1) && (
                   <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
                     {validUrlsByVehicle[vehicle.id]?.length ?? vehicle.imageUrls?.length}
@@ -549,7 +544,14 @@ export default function PendingCarsPage() {
                                       if (nextIdx < urls.length) {
                                         setThumbIndexByVehicle(prev => ({ ...prev, [vehicle.id]: nextIdx }));
                                         const nextUrl = urls[nextIdx];
-                                        img.src = nextUrl.includes('/api/image-proxy') ? nextUrl : getImageSrc(nextUrl, true, Date.now());
+
+                                        // Logic tương tự: nếu đã là proxy URL thì dùng trực tiếp
+                                        let finalUrl = nextUrl;
+                                        if (!nextUrl.includes('/api/image-proxy')) {
+                                          finalUrl = buildImageUrl(nextUrl);
+                                        }
+
+                                        img.src = finalUrl;
                                         return;
                                       }
 
@@ -561,9 +563,11 @@ export default function PendingCarsPage() {
                                     }}
                                   />
                                   {/* Error placeholder, shown when image fails */}
-                                  <div className="hidden w-16 h-16 bg-red-50 rounded-lg border border-red-200 flex items-center justify-center text-[10px] text-red-600 px-1 text-center">
-                                    {t('admin.vehicleRegistrations.image.errorLoading', 'Lỗi tải ảnh')}
-                                  </div>
+                                  <ImagePlaceholder 
+                                    className="hidden w-16 h-16"
+                                    text="Lỗi tải ảnh"
+                                    subtext="Backend không khả dụng"
+                                  />
                                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
                                     <div className="text-white opacity-0 group-hover:opacity-100 text-xs font-medium">
                                       {t('admin.vehicleRegistrations.image.viewAll', 'Xem tất cả')}
@@ -748,28 +752,35 @@ export default function PendingCarsPage() {
                     
                     {/* Image Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {urls.map((imageUrl, index) => (
-                        <div key={index} className="relative group">
-                          {imageUrl && imageUrl.trim() ? (
-                            <img
-                              src={imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), true, `${index}-${Date.now()}`)}
-                              alt={`Hình ảnh xe ${selectedVehicle.licensePlate} - ${index + 1}`}
-                              className="w-full h-48 object-cover rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-                              onClick={() => {
-                                // Mở hình ảnh full size qua proxy để đảm bảo kèm token
-                                window.open(imageUrl.includes('/api/image-proxy') ? imageUrl : getImageSrc(imageUrl.trim(), true, Date.now()), '_blank');
-                              }}
+                      {urls.map((imageUrl, index) => {
+                        const trimmedUrl = imageUrl.trim();
+                        // Nếu URL đã là proxy URL thì dùng trực tiếp, nếu chưa thì proxy nó
+                        const proxyUrl = trimmedUrl.includes('/api/image-proxy') ? trimmedUrl : buildImageUrl(trimmedUrl);
+                        return (
+                          <div key={index} className="relative group">
+                            {imageUrl && imageUrl.trim() ? (
+                              <img
+                                src={proxyUrl}
+                                alt={`Hình ảnh xe ${selectedVehicle.licensePlate} - ${index + 1}`}
+                                className="w-full h-48 object-cover rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
+                                onClick={() => {
+                                  // Mở hình ảnh full size - sử dụng URL đã được proxy
+                                  window.open(proxyUrl, '_blank');
+                                }}
                               title="Click để xem full size"
                               onError={(e) => {
                                 const img = e.target as HTMLImageElement;
-                                const isProxy = img.src.includes('/api/image-proxy');
                                 const attempt = parseInt(img.getAttribute('data-attempt') || '0', 10);
-                                // Thử tối đa 2 lần: chuyển qua lại proxy/raw, sau đó hiện placeholder lỗi
-                                if (attempt < 2) {
+                                
+                                // Thử tối đa 1 lần: thử URL trực tiếp từ backend
+                                if (attempt < 1) {
                                   img.setAttribute('data-attempt', String(attempt + 1));
-                                  img.src = getImageSrc(imageUrl.trim(), !isProxy, Date.now());
+                                  // Thử URL trực tiếp từ backend (không qua proxy)
+                                  const directUrl = imageUrl.trim().replace('10.0.3.2', 'localhost');
+                                  img.src = directUrl;
                                   return;
                                 }
+                                
                                 // Hết cách: ẩn ảnh và hiện placeholder lỗi
                                 img.style.display = 'none';
                                 img.nextElementSibling?.classList.remove('hidden');
@@ -810,7 +821,8 @@ export default function PendingCarsPage() {
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (

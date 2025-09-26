@@ -46,22 +46,14 @@ export default function ServiceRequestStatusProgress({
   if (currentStatus === "CANCELLED") {
     currentStep = 1;
     currentStepLabel = "Đã hủy";
-  } else if (
-    currentStatus === "ASSIGNED" ||
-    currentStatus === "IN_PROGRESS" ||
-    currentStatus === "COMPLETED"
-  ) {
-    currentStep = Math.max(currentStep, 2);
+  } else if (currentStatus === "ASSIGNED") {
+    currentStep = 2;
     currentStepLabel = "Đã giao";
-  }
-
-  if (currentStatus === "IN_PROGRESS" || currentStatus === "COMPLETED") {
-    currentStep = Math.max(currentStep, 3);
+  } else if (currentStatus === "IN_PROGRESS") {
+    currentStep = 3;
     currentStepLabel = "Đang xử lý";
-  }
-
-  if (currentStatus === "COMPLETED") {
-    currentStep = Math.max(currentStep, 4);
+  } else if (currentStatus === "COMPLETED") {
+    currentStep = 4;
     currentStepLabel = "Hoàn thành";
   }
 
@@ -71,7 +63,7 @@ export default function ServiceRequestStatusProgress({
       id: 2,
       label: "Đã giao",
       icon: <User className="h-5 w-5" />,
-      description: assignedTo ? `Đã giao cho ${assignedTo}` : "Chờ gán nhân viên",
+      description: assignedTo ? `Đã giao cho ${assignedTo}${assignedAt ? ` (${new Date(assignedAt).toLocaleString("vi-VN")})` : ''}` : "Chờ gán nhân viên",
     },
     { id: 3, label: "Đang xử lý", icon: <Wrench className="h-5 w-5" />, description: "Nhân viên đang xử lý yêu cầu" },
     { id: 4, label: "Hoàn thành", icon: <CheckSquare className="h-5 w-5" />, description: "Yêu cầu đã hoàn thành" },
@@ -141,12 +133,19 @@ export default function ServiceRequestStatusProgress({
                   <div className={`text-xs leading-4 ${isCancelled ? "text-red-600" : isActive ? "text-gray-600" : "text-gray-400"}`}>
                     {step.description}
                   </div>
-                  {step.id === 2 && assignedTo && staffPhone && (
-                    <div className="mt-1">
-                      <div className="flex items-center justify-center space-x-1">
-                        <Phone className="h-3 w-3 text-blue-600" />
-                        <span className="text-xs text-blue-600 font-medium">{staffPhone}</span>
-                      </div>
+                  {step.id === 2 && assignedTo && (
+                    <div className="mt-1 space-y-1">
+                      {staffPhone && (
+                        <div className="flex items-center justify-center space-x-1">
+                          <Phone className="h-3 w-3 text-blue-600" />
+                          <span className="text-xs text-blue-600 font-medium">{staffPhone}</span>
+                        </div>
+                      )}
+                      {assignedAt && (
+                        <div className="text-xs text-blue-600 font-medium">
+                          {new Date(assignedAt).toLocaleString("vi-VN")}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

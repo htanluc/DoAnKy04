@@ -1,7 +1,8 @@
 // API configuration with authentication
 import { getToken, refreshToken, removeTokens } from './auth'
+import { config } from './config'
 
-const API_BASE_URL = 'http://localhost:8080'
+const API_BASE_URL = config.API_BASE_URL
 
 // Custom fetch wrapper with authentication
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
@@ -708,10 +709,10 @@ export const supportRequestsApi = {
     data: { status: string; resolutionNotes?: string; isCompleted?: boolean; rating?: number }
   ) => {
     const payload = {
-      ...data,
-      isCompleted: typeof data.isCompleted === 'boolean' ? data.isCompleted : data.status === 'COMPLETED'
+      status: data.status,
+      resolution: data.resolutionNotes || ''
     };
-    const response = await api.put(`/api/admin/support-requests/${id}/status`, payload);
+    const response = await api.put(`/api/admin/support-requests/${id}`, payload);
     if (!response.ok) throw new Error('Cập nhật trạng thái (admin) thất bại');
     return response.json();
   },

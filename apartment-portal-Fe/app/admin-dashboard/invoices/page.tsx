@@ -215,7 +215,7 @@ function InvoicesPageContent() {
       });
 
       if (overdueInvoices.length === 0) {
-        setGenMessage('Không có hóa đơn nào cần cập nhật trạng thái quá hạn.');
+        setGenMessage(t('admin.invoices.updateOverdueStatus.none'));
         return;
       }
 
@@ -223,15 +223,15 @@ function InvoicesPageContent() {
       const response = await api.post('/api/admin/invoices/update-overdue-status');
       if (response.ok) {
         const result = await response.json();
-        setGenMessage(`Đã cập nhật trạng thái quá hạn cho ${overdueInvoices.length} hóa đơn.`);
+        setGenMessage(t('admin.invoices.updateOverdueStatus.success', 'Đã cập nhật trạng thái quá hạn cho {count} hóa đơn.', { count: overdueInvoices.length }));
         await fetchInvoices(); // Refresh the invoices list
       } else {
         const error = await response.json();
-        setGenMessage(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái quá hạn.');
+        setGenMessage(error.message || t('admin.invoices.updateOverdueStatus.error'));
       }
     } catch (error) {
       console.error('Error updating overdue status:', error);
-      setGenMessage('Có lỗi xảy ra khi cập nhật trạng thái quá hạn.');
+      setGenMessage(t('admin.invoices.updateOverdueStatus.error'));
     }
   };
 
@@ -260,7 +260,7 @@ function InvoicesPageContent() {
   // Hàm gửi mail nhắc nhở
   const handleSendReminderEmails = async () => {
     if (selectedInvoices.length === 0) {
-      setEmailMessage('Vui lòng chọn ít nhất một hóa đơn để gửi mail nhắc nhở.');
+      setEmailMessage(t('admin.invoices.reminderEmail.noneSelected'));
       return;
     }
 
@@ -274,15 +274,15 @@ function InvoicesPageContent() {
 
       if (response.ok) {
         const result = await response.json();
-        setEmailMessage(`Đã gửi mail nhắc nhở cho ${selectedInvoices.length} hóa đơn.`);
+        setEmailMessage(t('admin.invoices.reminderEmail.sent', 'Đã gửi mail nhắc nhở cho {count} hóa đơn.', { count: selectedInvoices.length }));
         setSelectedInvoices([]); // Clear selection after sending
       } else {
         const error = await response.json();
-        setEmailMessage(error.message || 'Có lỗi xảy ra khi gửi mail nhắc nhở.');
+        setEmailMessage(error.message || t('admin.invoices.reminderEmail.error'));
       }
     } catch (error) {
       console.error('Error sending reminder emails:', error);
-      setEmailMessage('Có lỗi xảy ra khi gửi mail nhắc nhở.');
+      setEmailMessage(t('admin.invoices.reminderEmail.error'));
     } finally {
       setEmailLoading(false);
     }
@@ -348,9 +348,9 @@ function InvoicesPageContent() {
             </div>
             <div className="text-right">
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
-                <p className="text-blue-100 text-sm">Tổng hóa đơn</p>
+                <p className="text-blue-100 text-sm">{t('admin.invoices.header.totalInvoices')}</p>
                 <p className="text-2xl font-bold">{filteredInvoices.length}</p>
-                <p className="text-blue-100 text-xs">Tháng {filterMonth}/{filterYear}</p>
+                <p className="text-blue-100 text-xs">{t('admin.invoices.header.monthYear', 'Tháng {month}/{year}', { month: filterMonth, year: filterYear })}</p>
               </div>
             </div>
           </div>
@@ -417,10 +417,14 @@ function InvoicesPageContent() {
                     <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
                     <div>
                       <p className="text-blue-800 font-medium">
-                        Tháng {genMonth}/{genYear} đã có {invoicesInSelectedPeriod.length} hóa đơn
+                        {t('admin.invoices.generateMonthly.existsWarning', 'Tháng {month}/{year} đã có {count} hóa đơn', {
+                          month: genMonth,
+                          year: genYear,
+                          count: invoicesInSelectedPeriod.length
+                        })}
                       </p>
                       <p className="text-blue-700 text-sm mt-1">
-                        Hệ thống sẽ tạo hóa đơn cho căn hộ chưa có hóa đơn và bỏ qua căn hộ đã có hóa đơn
+                        {t('admin.invoices.generateMonthly.skipExisting')}
                       </p>
                     </div>
                   </div>
@@ -442,13 +446,13 @@ function InvoicesPageContent() {
                   </div>
                   {genMessage && genMessage.includes('Chưa có biểu phí') && (
                     <div className="mt-3 p-3 bg-white rounded-lg border border-red-200">
-                      <p className="text-sm font-medium text-red-800 mb-2">Hướng dẫn:</p>
+                      <p className="text-sm font-medium text-red-800 mb-2">{t('admin.invoices.generateMonthly.instructions.title')}</p>
                       <ol className="list-decimal list-inside text-sm text-red-700 space-y-1">
-                        <li>Vào tab "Tạo biểu phí"</li>
-                        <li>Chọn "Tạo cấu hình phí dịch vụ"</li>
-                        <li>Chọn năm {genYear} và tháng {genMonth}</li>
-                        <li>Nhập các mức phí và nhấn "Tạo cấu hình"</li>
-                        <li>Quay lại tab này để tạo hóa đơn</li>
+                        <li>{t('admin.invoices.generateMonthly.instructions.step1')}</li>
+                        <li>{t('admin.invoices.generateMonthly.instructions.step2')}</li>
+                        <li>{t('admin.invoices.generateMonthly.instructions.step3', 'Chọn năm {year} và tháng {month}', { year: genYear, month: genMonth })}</li>
+                        <li>{t('admin.invoices.generateMonthly.instructions.step4')}</li>
+                        <li>{t('admin.invoices.generateMonthly.instructions.step5')}</li>
                       </ol>
                     </div>
                   )}
@@ -458,13 +462,13 @@ function InvoicesPageContent() {
               {/* Email message */}
               {emailMessage && (
                 <div className={`p-4 rounded-lg border ${
-                  emailMessage.includes('Đã gửi') 
-                    ? 'bg-green-50 border-green-200' 
+                  emailMessage.includes(t('admin.invoices.reminderEmail.sent', 'Đã gửi mail nhắc nhở cho {count} hóa đơn.', { count: 1 }).split(' ')[0])
+                    ? 'bg-green-50 border-green-200'
                     : 'bg-red-50 border-red-200'
                 }`}>
                   <div className={`${
-                    emailMessage.includes('Đã gửi')
-                      ? 'text-green-800' 
+                    emailMessage.includes(t('admin.invoices.reminderEmail.sent', 'Đã gửi mail nhắc nhở cho {count} hóa đơn.', { count: 1 }).split(' ')[0])
+                      ? 'text-green-800'
                       : 'text-red-800'
                   }`}>
                     {emailMessage}
@@ -508,7 +512,7 @@ function InvoicesPageContent() {
                       className="bg-red-50 hover:bg-red-100 border-red-300 text-red-700 hover:text-red-900"
                     >
                       <AlertCircle className="h-4 w-4 mr-2" />
-                      Cập nhật trạng thái quá hạn
+                      {t('admin.invoices.updateOverdueStatus')}
                     </Button>
                   </div>
                 </div>
@@ -523,7 +527,7 @@ function InvoicesPageContent() {
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-gray-600">{t('admin.invoices.stats.totalInvoices')}</p>
                           <p className="text-3xl font-bold text-gray-900">{filteredInvoices.length}</p>
-                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
+                          <p className="text-xs text-gray-500">{t('admin.invoices.stats.monthYear', 'Tháng {month}/{year}', { month: filterMonth, year: filterYear })}</p>
                         </div>
                         <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
                           <Calculator className="h-6 w-6 text-blue-600" />
@@ -540,7 +544,7 @@ function InvoicesPageContent() {
                           <p className="text-3xl font-bold text-green-600">
                             {filteredInvoices.filter(inv => (inv.status || '').toUpperCase() === 'PAID').length}
                           </p>
-                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
+                          <p className="text-xs text-gray-500">{t('admin.invoices.stats.monthYear', 'Tháng {month}/{year}', { month: filterMonth, year: filterYear })}</p>
                         </div>
                         <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center">
                           <div className="h-6 w-6 bg-green-600 rounded-full flex items-center justify-center">
@@ -562,7 +566,7 @@ function InvoicesPageContent() {
                               return effectiveStatus === 'PENDING' || effectiveStatus === 'UNPAID';
                             }).length}
                           </p>
-                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
+                          <p className="text-xs text-gray-500">{t('admin.invoices.stats.monthYear', 'Tháng {month}/{year}', { month: filterMonth, year: filterYear })}</p>
                         </div>
                         <div className="h-12 w-12 bg-yellow-100 rounded-xl flex items-center justify-center">
                           <div className="h-6 w-6 bg-yellow-600 rounded-full flex items-center justify-center">
@@ -581,7 +585,7 @@ function InvoicesPageContent() {
                           <p className="text-3xl font-bold text-red-600">
                             {filteredInvoices.filter(inv => getEffectiveStatus(inv) === 'OVERDUE').length}
                           </p>
-                          <p className="text-xs text-gray-500">Tháng {filterMonth}/{filterYear}</p>
+                          <p className="text-xs text-gray-500">{t('admin.invoices.stats.monthYear', 'Tháng {month}/{year}', { month: filterMonth, year: filterYear })}</p>
                         </div>
                         <div className="h-12 w-12 bg-red-100 rounded-xl flex items-center justify-center">
                           <AlertCircle className="h-6 w-6 text-red-600" />
@@ -604,7 +608,7 @@ function InvoicesPageContent() {
                           {formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
                         </p>
                         <p className="text-xs text-blue-600">
-                          {filteredInvoices.length} {t('admin.invoices.stats.invoices')} - Tháng {filterMonth}/{filterYear}
+                          {t('admin.invoices.stats.totalDesc', '{count} hóa đơn - Tháng {month}/{year}', { count: filteredInvoices.length, month: filterMonth, year: filterYear })}
                         </p>
                       </div>
                     </CardContent>
@@ -626,7 +630,11 @@ function InvoicesPageContent() {
                           )}
                         </p>
                         <p className="text-xs text-green-600">
-                          {filteredInvoices.filter(inv => inv.status === 'PAID').length} {t('admin.invoices.stats.invoices')} - Tháng {filterMonth}/{filterYear}
+                          {t('admin.invoices.stats.totalDesc', '{count} hóa đơn - Tháng {month}/{year}', {
+                            count: filteredInvoices.filter(inv => inv.status === 'PAID').length,
+                            month: filterMonth,
+                            year: filterYear
+                          })}
                         </p>
                       </div>
                     </CardContent>
@@ -645,16 +653,22 @@ function InvoicesPageContent() {
                           {formatCurrency(filteredInvoices
                             .filter(inv => {
                               const effectiveStatus = getEffectiveStatus(inv);
-                              return effectiveStatus === 'PENDING' || effectiveStatus === 'UNPAID';
+                              // Tính chưa thanh toán = PENDING + UNPAID + OVERDUE
+                              return effectiveStatus === 'PENDING' || effectiveStatus === 'UNPAID' || effectiveStatus === 'OVERDUE';
                             })
                             .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
                           )}
                         </p>
                         <p className="text-xs text-yellow-600">
-                          {filteredInvoices.filter(inv => {
-                            const effectiveStatus = getEffectiveStatus(inv);
-                            return effectiveStatus === 'PENDING' || effectiveStatus === 'UNPAID';
-                          }).length} {t('admin.invoices.stats.invoices')} - Tháng {filterMonth}/{filterYear}
+                          {t('admin.invoices.stats.totalDesc', '{count} hóa đơn - Tháng {month}/{year}', {
+                            count: filteredInvoices.filter(inv => {
+                              const effectiveStatus = getEffectiveStatus(inv);
+                              // Đếm số hóa đơn chưa thanh toán (bao gồm quá hạn)
+                              return effectiveStatus === 'PENDING' || effectiveStatus === 'UNPAID' || effectiveStatus === 'OVERDUE';
+                            }).length,
+                            month: filterMonth,
+                            year: filterYear
+                          })}
                         </p>
                       </div>
                     </CardContent>
@@ -673,7 +687,7 @@ function InvoicesPageContent() {
                         {formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
                       </p>
                       <p className="text-sm text-indigo-200">
-                        {filteredInvoices.length} hóa đơn - Tháng {filterMonth}/{filterYear}
+                        {t('admin.invoices.stats.totalDesc', '{count} hóa đơn - Tháng {month}/{year}', { count: filteredInvoices.length, month: filterMonth, year: filterYear })}
                       </p>
                     </div>
                   </CardContent>
@@ -685,7 +699,7 @@ function InvoicesPageContent() {
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Filter className="h-5 w-5 text-blue-600" />
-                    Tìm kiếm và Lọc
+                    {t('admin.invoices.searchAndFilter.title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -693,7 +707,7 @@ function InvoicesPageContent() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Search Section */}
                       <div className="space-y-3">
-                        <label className="text-sm font-medium text-gray-700">Tìm kiếm hóa đơn</label>
+                        <label className="text-sm font-medium text-gray-700">{t('admin.invoices.search.label')}</label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                           <Input
@@ -707,7 +721,7 @@ function InvoicesPageContent() {
                       
                       {/* Status Filter */}
                       <div className="space-y-3">
-                        <label className="text-sm font-medium text-gray-700">Trạng thái</label>
+                        <label className="text-sm font-medium text-gray-700">{t('admin.invoices.filter.status')}</label>
                         <select
                           title={t('admin.invoices.filter.title')}
                           value={filterStatus}
@@ -727,7 +741,7 @@ function InvoicesPageContent() {
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                         <div className="space-y-3">
-                          <label className="text-sm font-medium text-gray-700">Lọc theo tháng</label>
+                          <label className="text-sm font-medium text-gray-700">{t('admin.invoices.filter.byMonth')}</label>
                           <div className="flex items-center gap-3">
                             <select
                               value={filterYear}
@@ -745,7 +759,7 @@ function InvoicesPageContent() {
                               className="flex-1 border border-gray-300 rounded-md px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-blue-500"
                             >
                               {Array.from({length: 12}, (_, i) => i + 1).map(month => (
-                                <option key={month} value={month}>Tháng {month}</option>
+                                <option key={month} value={month}>{t('admin.invoices.filter.month', 'Tháng {month}', { month })}</option>
                               ))}
                             </select>
                           </div>
@@ -756,11 +770,11 @@ function InvoicesPageContent() {
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center gap-2">
                                 <Calculator className="h-5 w-5 text-blue-600" />
-                                <span className="text-sm font-medium text-gray-700">Kết quả tìm kiếm:</span>
+                                <span className="text-sm font-medium text-gray-700">{t('admin.invoices.search.results')}</span>
                               </div>
                               <div className="text-right">
                                 <p className="text-2xl font-bold text-blue-600">{filteredInvoices.length}</p>
-                                <p className="text-xs text-gray-500">hóa đơn được tìm thấy</p>
+                                <p className="text-xs text-gray-500">{t('admin.invoices.search.resultsCount', '{count} hóa đơn được tìm thấy', { count: filteredInvoices.length })}</p>
                               </div>
                             </div>
                             
@@ -769,10 +783,10 @@ function InvoicesPageContent() {
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                   <Mail className="h-4 w-4 text-orange-600" />
-                                  <span className="text-sm font-medium text-gray-700">Gửi mail nhắc nhở:</span>
+                                  <span className="text-sm font-medium text-gray-700">{t('admin.invoices.reminderEmail.title')}</span>
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  Đã chọn: <span className="font-bold text-blue-600">{selectedInvoices.length}</span> hóa đơn
+                                  {t('admin.invoices.reminderEmail.selected', 'Đã chọn: {count} hóa đơn', { count: selectedInvoices.length })}
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2">
@@ -783,7 +797,7 @@ function InvoicesPageContent() {
                                   className="bg-orange-50 hover:bg-orange-100 border-orange-300 text-orange-700 hover:text-orange-900"
                                 >
                                   <CheckSquare className="h-4 w-4 mr-2" />
-                                  Chọn tất cả quá hạn
+                                  {t('admin.invoices.reminderEmail.selectAllOverdue')}
                                 </Button>
                                 <Button
                                   onClick={handleDeselectAll}
@@ -792,7 +806,7 @@ function InvoicesPageContent() {
                                   className="bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700 hover:text-gray-900"
                                 >
                                   <Square className="h-4 w-4 mr-2" />
-                                  Bỏ chọn tất cả
+                                  {t('admin.invoices.reminderEmail.deselectAll')}
                                 </Button>
                                 <Button
                                   onClick={handleSendReminderEmails}
@@ -802,7 +816,10 @@ function InvoicesPageContent() {
                                   className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700 hover:text-blue-900 disabled:opacity-50"
                                 >
                                   <Mail className="h-4 w-4 mr-2" />
-                                  {emailLoading ? 'Đang gửi...' : `Gửi mail nhắc nhở (${selectedInvoices.length})`}
+                                  {emailLoading
+                                    ? t('admin.invoices.reminderEmail.sending')
+                                    : t('admin.invoices.reminderEmail.send', 'Gửi mail nhắc nhở ({count})', { count: selectedInvoices.length })
+                                  }
                                 </Button>
                               </div>
                             </div>
@@ -895,7 +912,9 @@ function InvoicesPageContent() {
                                     {getStatusBadge(invoice.status, invoice)}
                                     {isInvoiceOverdue(invoice.dueDate, invoice.status) && (
                                       <div className="text-xs text-red-600 mt-1">
-                                        Quá hạn {Math.ceil((new Date().getTime() - new Date(invoice.dueDate).getTime()) / (1000 * 60 * 60 * 24))} ngày
+                                        {t('admin.invoices.overdue.days', 'Quá hạn {days} ngày', {
+                                          days: Math.ceil((new Date().getTime() - new Date(invoice.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+                                        })}
                                       </div>
                                     )}
                                   </div>
@@ -918,10 +937,11 @@ function InvoicesPageContent() {
                       {/* Pagination Controls */}
                       <div className="mt-4 flex items-center justify-between">
                         <div className="text-sm text-gray-600">
-                          {t('pagination.display', 'Hiển thị {start}-{end} trong {total}')
-                            .replace('{start}', String(Math.min(filteredInvoices.length, startIndex + 1)))
-                            .replace('{end}', String(Math.min(filteredInvoices.length, startIndex + pagedInvoices.length)))
-                            .replace('{total}', String(filteredInvoices.length))}
+                          {t('admin.invoices.pagination.display', 'Hiển thị {start}-{end} trong {total}', {
+                            start: Math.min(filteredInvoices.length, startIndex + 1),
+                            end: Math.min(filteredInvoices.length, startIndex + pagedInvoices.length),
+                            total: filteredInvoices.length
+                          })}
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -929,7 +949,7 @@ function InvoicesPageContent() {
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                           >
-                            {t('pagination.previous', 'Trước')}
+                            {t('admin.invoices.pagination.previous', 'Trước')}
                           </button>
                           <span className="text-sm">{currentPage}/{totalPages}</span>
                           <button
@@ -937,7 +957,7 @@ function InvoicesPageContent() {
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                           >
-                            {t('pagination.next', 'Sau')}
+                            {t('admin.invoices.pagination.next', 'Sau')}
                           </button>
                         </div>
                       </div>

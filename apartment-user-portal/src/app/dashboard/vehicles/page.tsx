@@ -954,7 +954,7 @@ export default function VehiclesPage() {
                           {vehicle.imageUrls.map((url, index) => (
                             <img
                               key={index}
-                              src={url}
+                              src={url.replace('10.0.3.2:8080', 'localhost:8080')}
                               alt={`Vehicle ${index + 1}`}
                               className="w-16 h-16 object-cover rounded"
                             />
@@ -1059,7 +1059,7 @@ export default function VehiclesPage() {
                             {vehicle.imageUrls.map((url, imgIndex) => (
                               <img
                                 key={imgIndex}
-                                src={url}
+                                src={url.replace('10.0.3.2:8080', 'localhost:8080')}
                                 alt={`Vehicle ${imgIndex + 1}`}
                                 className="w-20 h-20 object-cover rounded border"
                               />
