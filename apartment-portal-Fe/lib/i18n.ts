@@ -1479,6 +1479,19 @@ export const translations: Translations = {
     en: 'Rejected ({count})'
   },
 
+  // Additional vehicle registration keys
+  'admin.vehicleRegistrations.search.placeholder': { vi: 'Tìm kiếm theo tên chủ xe, biển số, căn hộ...', en: 'Search by owner name, license plate, apartment...' },
+  'admin.vehicleRegistrations.sort.newest': { vi: 'Mới nhất', en: 'Newest' },
+  'admin.vehicleRegistrations.sort.oldest': { vi: 'Cũ nhất', en: 'Oldest' },
+  'admin.vehicleRegistrations.sort.name': { vi: 'Tên A-Z', en: 'Name A-Z' },
+  'admin.vehicleRegistrations.capacity.label.motorcycles': { vi: 'Xe máy/Xe đạp', en: 'Motorcycles/Bicycles' },
+  'admin.vehicleRegistrations.capacity.label.cars': { vi: 'Ô tô', en: 'Cars' },
+  'admin.vehicleRegistrations.cancelModal.requiredReason': { vi: 'Vui lòng nhập lý do hủy.', en: 'Please enter cancellation reason.' },
+  'admin.vehicleRegistrations.restore.cannotRestore': { vi: 'Bãi xe đã đầy hoặc cấu hình không cho phép. Không thể khôi phục.', en: 'Parking lot is full or configuration does not allow. Cannot restore.' },
+  'admin.vehicleRegistrations.table.updated': { vi: 'Cập nhật:', en: 'Updated:' },
+  'admin.vehicleRegistrations.tooltip.canRestore': { vi: 'Khôi phục', en: 'Restore' },
+  'admin.vehicleRegistrations.tooltip.cannotRestore': { vi: 'Không thể khôi phục - Bãi xe đã đầy hoặc không có cấu hình hoạt động', en: 'Cannot restore - Parking lot is full or no active configuration' },
+
   // Facility Management
   'admin.facilities.title': {
     vi: 'Quản lý tiện ích',
@@ -1733,7 +1746,6 @@ export const translations: Translations = {
   'admin.invoices.generateMonthly.generating': { vi: 'Đang tạo...', en: 'Generating...' },
   'admin.invoices.generateMonthly.alreadyExists': { vi: 'Đã có hóa đơn tháng này', en: 'Invoices already exist for this month' },
   'admin.invoices.generateMonthly.cannotBatch': { vi: 'Không thể tạo đồng loạt.', en: 'Cannot batch-create.' },
-  'admin.invoices.generateMonthly.existsWarning': { vi: 'tháng {month}/{year} đã có {count} hóa đơn.', en: '{count} invoices already exist for {month}/{year}.' },
   'admin.invoices.generateMonthly.generateFor': { vi: 'Tạo hóa đơn tháng', en: 'Generate invoices for month' },
   'admin.invoices.generateMonthly.monthLabel': { vi: 'Tháng', en: 'Month' },
 
@@ -2684,10 +2696,63 @@ export const translations: Translations = {
   'admin.waterMeter.table.recordedAt': { vi: 'Thời gian ghi', en: 'Recorded at' },
   'admin.waterMeter.confirmDelete': { vi: 'Bạn có chắc chắn muốn xóa bản ghi này?', en: 'Are you sure you want to delete this record?' },
 
+  // Additional water meter page texts
+  'admin.waterMeter.showLatest': { vi: 'Chỉ số mới nhất', en: 'Latest readings' },
+  'admin.waterMeter.showAll': { vi: 'Tất cả chỉ số', en: 'All readings' },
+  'admin.waterMeter.selectMonth.placeholder': { vi: 'Chọn tháng', en: 'Select month' },
+  'admin.waterMeter.viewAllButton': { vi: 'Tất cả', en: 'All' },
+  'admin.waterMeter.loadingText': { vi: 'Đang tải...', en: 'Loading...' },
+  'admin.waterMeter.creatingInvoice': { vi: 'Đang tạo...', en: 'Creating...' },
+  'admin.waterMeter.createInvoice': { vi: 'Tạo hóa đơn', en: 'Create invoice' },
+  'admin.waterMeter.noDataForMonth': { vi: 'Không có dữ liệu chỉ số nước cho tháng {month}', en: 'No water meter data for month {month}' },
+  'admin.waterMeter.selectMonthForInvoice': { vi: 'Vui lòng chọn tháng để tạo hóa đơn', en: 'Please select a month to create invoice' },
+  'admin.waterMeter.invoiceSuccess': { vi: 'Tạo hóa đơn thành công', en: 'Invoice created successfully' },
+  'admin.waterMeter.invoiceError': { vi: 'Có lỗi xảy ra khi tạo hóa đơn', en: 'Error occurred while creating invoice' },
+  'admin.waterMeter.monthHeader': { vi: 'Tháng {month}', en: 'Month {month}' },
+
   // Invoices fee type labels
   'admin.invoices.feeType.SERVICE_FEE': { vi: 'Phí dịch vụ', en: 'Service Fee' },
   'admin.invoices.feeType.WATER_FEE': { vi: 'Phí nước', en: 'Water Fee' },
   'admin.invoices.feeType.VEHICLE_FEE': { vi: 'Phí gửi xe', en: 'Vehicle Fee' },
+
+  // Additional invoice page texts
+  'admin.invoices.header.totalInvoices': { vi: 'Tổng hóa đơn', en: 'Total Invoices' },
+  'admin.invoices.header.monthYear': { vi: 'Tháng {month}/{year}', en: 'Month {month}/{year}' },
+  'admin.invoices.generateMonthly.existsWarning': { vi: 'Tháng {month}/{year} đã có {count} hóa đơn', en: '{count} invoices already exist for {month}/{year}' },
+  'admin.invoices.generateMonthly.skipExisting': { vi: 'Hệ thống sẽ tạo hóa đơn cho căn hộ chưa có hóa đơn và bỏ qua căn hộ đã có hóa đơn', en: 'System will create invoices for apartments without invoices and skip apartments that already have invoices' },
+  'admin.invoices.generateMonthly.instructions.title': { vi: 'Hướng dẫn:', en: 'Instructions:' },
+  'admin.invoices.generateMonthly.instructions.step1': { vi: 'Vào tab "Tạo biểu phí"', en: 'Go to "Create Fee Schedule" tab' },
+  'admin.invoices.generateMonthly.instructions.step2': { vi: 'Chọn "Tạo cấu hình phí dịch vụ"', en: 'Select "Create Service Fee Configuration"' },
+  'admin.invoices.generateMonthly.instructions.step3': { vi: 'Chọn năm {year} và tháng {month}', en: 'Select year {year} and month {month}' },
+  'admin.invoices.generateMonthly.instructions.step4': { vi: 'Nhập các mức phí và nhấn "Tạo cấu hình"', en: 'Enter fee rates and click "Create Configuration"' },
+  'admin.invoices.generateMonthly.instructions.step5': { vi: 'Quay lại tab này để tạo hóa đơn', en: 'Return to this tab to create invoices' },
+  'admin.invoices.searchAndFilter.title': { vi: 'Tìm kiếm và Lọc', en: 'Search and Filter' },
+  'admin.invoices.search.label': { vi: 'Tìm kiếm hóa đơn', en: 'Search invoices' },
+  'admin.invoices.filter.status': { vi: 'Trạng thái', en: 'Status' },
+  'admin.invoices.filter.byMonth': { vi: 'Lọc theo tháng', en: 'Filter by month' },
+  'admin.invoices.filter.month': { vi: 'Tháng {month}', en: 'Month {month}' },
+  'admin.invoices.search.results': { vi: 'Kết quả tìm kiếm:', en: 'Search results:' },
+  'admin.invoices.search.resultsCount': { vi: '{count} hóa đơn được tìm thấy', en: '{count} invoices found' },
+  'admin.invoices.reminderEmail.title': { vi: 'Gửi mail nhắc nhở:', en: 'Send reminder emails:' },
+  'admin.invoices.reminderEmail.selected': { vi: 'Đã chọn: {count} hóa đơn', en: 'Selected: {count} invoices' },
+  'admin.invoices.reminderEmail.selectAllOverdue': { vi: 'Chọn tất cả quá hạn', en: 'Select all overdue' },
+  'admin.invoices.reminderEmail.deselectAll': { vi: 'Bỏ chọn tất cả', en: 'Deselect all' },
+  'admin.invoices.reminderEmail.send': { vi: 'Gửi mail nhắc nhở ({count})', en: 'Send reminder emails ({count})' },
+  'admin.invoices.reminderEmail.sending': { vi: 'Đang gửi...', en: 'Sending...' },
+  'admin.invoices.reminderEmail.sent': { vi: 'Đã gửi mail nhắc nhở cho {count} hóa đơn.', en: 'Reminder emails sent for {count} invoices.' },
+  'admin.invoices.reminderEmail.error': { vi: 'Có lỗi xảy ra khi gửi mail nhắc nhở.', en: 'Error occurred while sending reminder emails.' },
+  'admin.invoices.reminderEmail.noneSelected': { vi: 'Vui lòng chọn ít nhất một hóa đơn để gửi mail nhắc nhở.', en: 'Please select at least one invoice to send reminder emails.' },
+  'admin.invoices.updateOverdueStatus': { vi: 'Cập nhật trạng thái quá hạn', en: 'Update overdue status' },
+  'admin.invoices.updateOverdueStatus.success': { vi: 'Đã cập nhật trạng thái quá hạn cho {count} hóa đơn.', en: 'Updated overdue status for {count} invoices.' },
+  'admin.invoices.updateOverdueStatus.error': { vi: 'Có lỗi xảy ra khi cập nhật trạng thái quá hạn.', en: 'Error occurred while updating overdue status.' },
+  'admin.invoices.updateOverdueStatus.none': { vi: 'Không có hóa đơn nào cần cập nhật trạng thái quá hạn.', en: 'No invoices need overdue status update.' },
+  'admin.invoices.stats.monthYear': { vi: 'Tháng {month}/{year}', en: 'Month {month}/{year}' },
+  'admin.invoices.stats.invoicesCount': { vi: '{count} hóa đơn', en: '{count} invoices' },
+  'admin.invoices.stats.totalDesc': { vi: '{count} hóa đơn - Tháng {month}/{year}', en: '{count} invoices - Month {month}/{year}' },
+  'admin.invoices.overdue.days': { vi: 'Quá hạn {days} ngày', en: 'Overdue by {days} days' },
+  'admin.invoices.pagination.display': { vi: 'Hiển thị {start}-{end} trong {total}', en: 'Showing {start}-{end} of {total}' },
+  'admin.invoices.pagination.previous': { vi: 'Trước', en: 'Previous' },
+  'admin.invoices.pagination.next': { vi: 'Sau', en: 'Next' },
 
   // Facilities extras
   'admin.facilities.usageFee': { vi: 'Phí sử dụng', en: 'Usage fee' },

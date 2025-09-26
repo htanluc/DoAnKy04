@@ -102,14 +102,16 @@ export default function ServiceRequestsPage() {
 
   const getImageUrl = (rawUrl: string): string => {
     try {
+      // Thay thế IP 10.0.3.2 thành localhost để hiển thị đúng
+      const normalizedUrl = rawUrl.replace('10.0.3.2:8080', 'localhost:8080')
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : ''
       const cacheBust = Date.now()
-      const params = new URLSearchParams({ url: rawUrl })
+      const params = new URLSearchParams({ url: normalizedUrl })
       if (token) params.set('token', token)
       params.set('_', String(cacheBust))
       return `/api/image-proxy?${params.toString()}`
     } catch {
-      return rawUrl
+      return rawUrl.replace('10.0.3.2:8080', 'localhost:8080')
     }
   }
 
@@ -777,10 +779,10 @@ export default function ServiceRequestsPage() {
                       {request.imageUrls.map((imageUrl, index) => (
                         <div key={index} className="relative group">
                           <img
-                            src={imageUrl}
+                            src={getImageUrl(imageUrl)}
                             alt={`Hình ảnh ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
-                            onClick={() => openLightbox(request.imageUrls!, index)}
+                            onClick={() => openLightbox(request.imageUrls!.map(getImageUrl), index)}
                             title="Click để xem ảnh đầy đủ"
                           />
                         </div>
@@ -892,7 +894,7 @@ export default function ServiceRequestsPage() {
             {/* Image */}
             <div className="max-w-4xl max-h-full p-4">
               <img
-                src={getImageUrl(currentImages[currentImageIndex])}
+                src={currentImages[currentImageIndex]}
                 alt={`Hình ảnh ${currentImageIndex + 1}`}
                 className="max-w-full max-h-full object-contain rounded-lg"
               />

@@ -7,7 +7,7 @@ export interface WaterMeterReading {
   previousReading: number;
   currentReading: number;
   consumption?: number;
-  createdAt?: string;
+  recordedAt?: string; // Thời điểm ghi chỉ số nước cuối cùng
   recordedBy?: number;
   recordedByName?: string;
 }

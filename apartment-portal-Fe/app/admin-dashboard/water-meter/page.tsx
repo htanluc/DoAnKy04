@@ -9,6 +9,11 @@ import { useLanguage } from "@/lib/i18n";
 export default function WaterMeterListPage() {
   const { t } = useLanguage();
   const { readings, loading, error, updateReading, addReading, deleteReading, patchReading, bulkGenerate, fetchReadingsByMonth, fetchReadings, fetchLatestReadings } = useWaterMeter();
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleString("vi-VN");
+  };
   const { apartments, loading: apartmentsLoading, error: apartmentsError } = useApartments();
   const { generateMonthlyInvoices, clearMessages, error: billingError, success: billingSuccess } = useYearlyBilling();
   const [editId, setEditId] = useState<string | number | null>(null);
@@ -206,7 +211,7 @@ export default function WaterMeterListPage() {
 
   const handleGenerateInvoices = async () => {
     if (!startMonth) {
-      setGenError('Vui lòng chọn tháng để tạo hóa đơn');
+      setGenError(t('admin.waterMeter.selectMonthForInvoice'));
       return;
     }
 
@@ -220,12 +225,12 @@ export default function WaterMeterListPage() {
       const result = await generateMonthlyInvoices(year, month, false);
       
       if (result?.success) {
-        setGenSuccess(result.message || 'Tạo hóa đơn thành công');
+        setGenSuccess(result.message || t('admin.waterMeter.invoiceSuccess'));
       } else {
-        setGenError(result?.message || 'Có lỗi xảy ra khi tạo hóa đơn');
+        setGenError(result?.message || t('admin.waterMeter.invoiceError'));
       }
     } catch (err: any) {
-      setGenError(err.message || 'Có lỗi xảy ra khi tạo hóa đơn');
+      setGenError(err.message || t('admin.waterMeter.invoiceError'));
     } finally {
       setGenLoading(false);
     }
@@ -238,7 +243,7 @@ export default function WaterMeterListPage() {
           {t('admin.waterMeter.title')}
           {!showLatestOnly && selectedMonth && (
             <span className="text-lg font-normal text-gray-600 ml-2">
-              - Tháng {selectedMonth}
+              - {t('admin.waterMeter.monthHeader', 'Tháng {month}', { month: selectedMonth })}
             </span>
           )}
         </h1>
@@ -298,7 +303,7 @@ export default function WaterMeterListPage() {
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {showLatestOnly ? 'Chỉ số mới nhất' : 'Tất cả chỉ số'}
+              {showLatestOnly ? t('admin.waterMeter.showLatest') : t('admin.waterMeter.showAll')}
             </button>
             {!showLatestOnly && (
               <div className="flex items-center gap-2">
@@ -307,7 +312,7 @@ export default function WaterMeterListPage() {
                   value={selectedMonth}
                   onChange={e => handleMonthChange(e.target.value)}
                   className="border px-2 py-1 rounded"
-                  placeholder="Chọn tháng"
+                  placeholder={t('admin.waterMeter.selectMonth.placeholder')}
                   disabled={monthLoading}
                 />
                 <button
@@ -315,12 +320,12 @@ export default function WaterMeterListPage() {
                   className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                   disabled={monthLoading}
                 >
-                  Tất cả
+                  {t('admin.waterMeter.viewAllButton')}
                 </button>
                 {monthLoading && (
                   <div className="text-sm text-gray-500 flex items-center gap-1">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    Đang tải...
+                    {t('admin.waterMeter.loadingText')}
                   </div>
                 )}
               </div>
@@ -356,7 +361,7 @@ export default function WaterMeterListPage() {
               onClick={handleGenerateInvoices}
               disabled={genLoading || !startMonth}
             >
-              {genLoading ? 'Đang tạo...' : 'Tạo hóa đơn'}
+              {genLoading ? t('admin.waterMeter.creatingInvoice') : t('admin.waterMeter.createInvoice')}
             </button>
             {startMonth && monthHasData(startMonth) && (
               <span className="text-orange-600 text-sm font-medium">
@@ -372,7 +377,7 @@ export default function WaterMeterListPage() {
         {!showLatestOnly && selectedMonth && filteredReadings.length === 0 && !monthLoading && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
             <p className="text-yellow-800">
-              Không có dữ liệu chỉ số nước cho tháng {selectedMonth}
+              {t('admin.waterMeter.noDataForMonth', 'Không có dữ liệu chỉ số nước cho tháng {month}', { month: selectedMonth })}
             </p>
           </div>
         )}
@@ -434,7 +439,7 @@ export default function WaterMeterListPage() {
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.current')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.consumption')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.recordedBy','Người ghi')}</th>
-                  <th className="border px-2 py-1">{t('admin.waterMeter.table.recordedAt','Thời gian ghi')}</th>
+                  <th className="border px-2 py-1">{t('admin.waterMeter.table.recordedAt','Thời gian ghi cuối')}</th>
                   <th className="border px-2 py-1">{t('admin.waterMeter.table.actions')}</th>
                 </tr>
               </thead>
@@ -465,7 +470,7 @@ export default function WaterMeterListPage() {
                         </span>
                       </td>
                       <td className="border px-2 py-1">{r.recordedByName || r.recordedBy || '-'}</td>
-                      <td className="border px-2 py-1">{r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}</td>
+                      <td className="border px-2 py-1">{formatDate(r.recordedAt)}</td>
                       <td className="border px-2 py-1">
                         {editId === rowKey ? (
                           <>

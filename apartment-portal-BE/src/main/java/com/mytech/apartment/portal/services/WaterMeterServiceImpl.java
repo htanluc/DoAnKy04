@@ -425,7 +425,7 @@ public class WaterMeterServiceImpl implements WaterMeterService {
         if (!list.isEmpty()) {
             WaterMeterReadingDto latest = list.get(0);
             m.put("lastReading", latest.getCurrentReading());
-            m.put("lastReadingAt", latest.getReadingDate() != null ? latest.getReadingDate().toString() : latest.getReadingMonth());
+            m.put("lastReadingAt", latest.getRecordedAt() != null ? latest.getRecordedAt().toString() : null);
         }
         return m;
     }

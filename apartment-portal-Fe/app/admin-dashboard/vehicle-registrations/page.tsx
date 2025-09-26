@@ -83,6 +83,7 @@ export default function VehicleRegistrationsPage() {
   const [allVehiclesLoading, setAllVehiclesLoading] = useState(false);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [filteredAllVehicles, setFilteredAllVehicles] = useState<Vehicle[]>([]);
+  const [sortBy, setSortBy] = useState('newest');
 
   
   // Modal states
@@ -120,8 +121,12 @@ export default function VehicleRegistrationsPage() {
       try {
         setAllVehiclesLoading(true);
         const data = await vehiclesApi.getAll();
-        setAllVehicles(data);
-        setFilteredAllVehicles(data);
+        // Sắp xếp mặc định theo mới nhất
+        const sortedData = data.sort((a, b) => {
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        });
+        setAllVehicles(sortedData);
+        setFilteredAllVehicles(sortedData);
       } catch (error) {
         console.error('Error loading all vehicles:', error);
       } finally {
@@ -154,8 +159,19 @@ export default function VehicleRegistrationsPage() {
       (vehicle.apartmentUnitNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (vehicle.vehicleTypeDisplayName || vehicle.vehicleType || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setFilteredAllVehicles(filtered);
-  }, [searchTerm, allVehicles]);
+    // Sắp xếp theo loại đã chọn
+    const sorted = filtered.sort((a, b) => {
+      if (sortBy === 'newest') {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      } else if (sortBy === 'oldest') {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      } else if (sortBy === 'name') {
+        return (a.userFullName || '').localeCompare(b.userFullName || '');
+      }
+      return 0;
+    });
+    setFilteredAllVehicles(sorted);
+  }, [searchTerm, allVehicles, sortBy]);
 
   // Kiểm tra khả năng duyệt xe dựa trên giới hạn
   const canApproveVehicle = (vehicle: Vehicle) => {
@@ -335,7 +351,7 @@ export default function VehicleRegistrationsPage() {
         max: config.maxMotorcycles,
         current: config.currentMotorcycles || 0,
         remaining: config.remainingMotorcycles || 0,
-        label: 'Xe máy/Xe đạp'
+        label: t('admin.vehicleRegistrations.capacity.label.motorcycles')
       };
       console.log('🏍️ Motorcycle capacity info:', result);
       return result;
@@ -344,7 +360,7 @@ export default function VehicleRegistrationsPage() {
         max: config.maxCars,
         current: config.currentCars || 0,
         remaining: config.remainingCars || 0,
-        label: 'Ô tô'
+        label: t('admin.vehicleRegistrations.capacity.label.cars')
       };
       console.log('🚙 Car capacity info:', result);
       return result;
@@ -397,7 +413,7 @@ export default function VehicleRegistrationsPage() {
     try {
       setCancelling(true);
       if (!cancelReason.trim()) {
-        setCancelError('Vui lòng nhập lý do hủy.');
+        setCancelError(t('admin.vehicleRegistrations.cancelModal.requiredReason'));
         setCancelling(false);
         return;
       }
@@ -424,7 +440,7 @@ export default function VehicleRegistrationsPage() {
       const vehicle = allVehicles.find(v => v.id === id);
       if (vehicle && !canApproveVehicle(vehicle)) {
         if (typeof window !== 'undefined') {
-          window.alert('Bãi xe đã đầy hoặc cấu hình không cho phép. Không thể khôi phục.');
+          window.alert(t('admin.vehicleRegistrations.restore.cannotRestore'));
         }
         return;
       }
@@ -442,9 +458,8 @@ export default function VehicleRegistrationsPage() {
   };
 
   const pendingCount = vehicles.length;
-  const approvedCount = allVehicles.filter(v => v.status === 'APPROVED').length;
   const rejectedCount = allVehicles.filter(v => v.status === 'REJECTED').length;
-  const totalCount = approvedCount; // Chỉ tính xe đã duyệt ở tab Tất cả
+  const totalCount = allVehicles.filter(v => v.status === 'APPROVED').length; // Chỉ tính xe đã duyệt ở tab Tất cả
 
   return (
     <AdminLayout title={t('admin.vehicleRegistrations.title', 'Quản lý đăng ký xe')}>
@@ -456,17 +471,12 @@ export default function VehicleRegistrationsPage() {
               {t('admin.vehicleRegistrations.main.subtitle', 'Quản lý tất cả đăng ký xe của cư dân')}
             </p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('admin.vehicleRegistrations.actions.createNew', 'Tạo mới')}
-          </Button>
         </div>
 
         <Tabs defaultValue="pending" className="space-y-4">
           <TabsList>
             <TabsTrigger value="pending">{t('admin.vehicleRegistrations.tabs.pending', 'Chờ duyệt ({count})', { count: pendingCount })}</TabsTrigger>
             <TabsTrigger value="all">{t('admin.vehicleRegistrations.tabs.all', 'Tất cả xe ({count})', { count: totalCount })}</TabsTrigger>
-            <TabsTrigger value="approved">{t('admin.vehicleRegistrations.tabs.approved', 'Đã duyệt ({count})', { count: approvedCount })}</TabsTrigger>
             <TabsTrigger value="rejected">{t('admin.vehicleRegistrations.tabs.rejected', 'Từ chối ({count})', { count: rejectedCount })}</TabsTrigger>
             <TabsTrigger value="capacity-overview">
               <Settings className="mr-2 h-4 w-4" />
@@ -565,6 +575,29 @@ export default function VehicleRegistrationsPage() {
                 <CardTitle>{t('admin.vehicleRegistrations.tabs.all', 'Tất cả xe ({count})', { count: totalCount })}</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Tìm kiếm và sắp xếp */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder={t('admin.vehicleRegistrations.search.placeholder')}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="newest">{t('admin.vehicleRegistrations.sort.newest')}</option>
+                      <option value="oldest">{t('admin.vehicleRegistrations.sort.oldest')}</option>
+                      <option value="name">{t('admin.vehicleRegistrations.sort.name')}</option>
+                    </select>
+                  </div>
+                </div>
                 {allVehiclesLoading ? (
                   <div className="text-center py-8 text-gray-500">{t('admin.vehicleRegistrations.loading', 'Đang tải...')}</div>
                 ) : filteredAllVehicles.length === 0 ? (
@@ -610,12 +643,12 @@ export default function VehicleRegistrationsPage() {
                                  }) : '-'}
                                </div>
                                {vehicle.updatedAt && vehicle.updatedAt !== vehicle.createdAt && (
-                                 <div className="text-xs text-blue-600 mt-1">
-                                   Cập nhật: {new Date(vehicle.updatedAt).toLocaleDateString('vi-VN')} {new Date(vehicle.updatedAt).toLocaleTimeString('vi-VN', {
-                                     hour: '2-digit',
-                                     minute: '2-digit'
-                                   })}
-                                 </div>
+                            <div className="text-xs text-blue-600 mt-1">
+                              {t('admin.vehicleRegistrations.table.updated')} {new Date(vehicle.updatedAt).toLocaleDateString('vi-VN')} {new Date(vehicle.updatedAt).toLocaleTimeString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
                                )}
                              </div>
                            </TableCell>
@@ -639,7 +672,7 @@ export default function VehicleRegistrationsPage() {
                                   variant="outline"
                                   onClick={() => handleRestore(vehicle.id)}
                                   disabled={!canApproveVehicle(vehicle)}
-                                  title={canApproveVehicle(vehicle) ? 'Khôi phục' : 'Không thể khôi phục - Bãi xe đã đầy hoặc cấu hình không hoạt động'}
+                                  title={canApproveVehicle(vehicle) ? t('admin.vehicleRegistrations.tooltip.canRestore') : t('admin.vehicleRegistrations.tooltip.cannotRestore')}
                                 >
                                   {t('admin.vehicleRegistrations.actions.restore', 'Khôi phục')}
                                 </Button>
@@ -655,68 +688,6 @@ export default function VehicleRegistrationsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="approved" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.vehicleRegistrations.tabs.approved', 'Đã duyệt ({count})', { count: approvedCount })}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('admin.vehicleRegistrations.table.owner', 'Chủ xe')}</TableHead>
-                      <TableHead>{t('admin.vehicleRegistrations.table.type', 'Loại xe')}</TableHead>
-                      <TableHead>{t('admin.vehicleRegistrations.table.licensePlate', 'Biển số')}</TableHead>
-                      <TableHead>{t('admin.vehicleRegistrations.table.color', 'Màu sắc')}</TableHead>
-                      <TableHead>{t('admin.vehicleRegistrations.table.apartment', 'Căn hộ')}</TableHead>
-                      <TableHead>{t('admin.vehicleRegistrations.table.registrationDate', 'Thời gian đăng ký')}</TableHead>
-                      <TableHead>{t('admin.vehicleRegistrations.table.status', 'Trạng thái')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allVehicles
-                      .filter(v => v.status === 'APPROVED')
-                      .map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-medium">{vehicle.userFullName || '-'}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getVehicleTypeIcon(vehicle.vehicleType)}
-                            {vehicle.vehicleTypeDisplayName || vehicle.vehicleType}
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.licensePlate}</TableCell>
-                        <TableCell>{vehicle.color || '-'}</TableCell>
-                        <TableCell>{vehicle.apartmentUnitNumber || '-'}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div className="font-medium">
-                              {vehicle.createdAt ? new Date(vehicle.createdAt).toLocaleDateString('vi-VN') : '-'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {vehicle.createdAt ? new Date(vehicle.createdAt).toLocaleTimeString('vi-VN', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }) : '-'}
-                            </div>
-                            {vehicle.updatedAt && vehicle.updatedAt !== vehicle.createdAt && (
-                              <div className="text-xs text-blue-600 mt-1">
-                                Cập nhật: {new Date(vehicle.updatedAt).toLocaleDateString('vi-VN')} {new Date(vehicle.updatedAt).toLocaleTimeString('vi-VN', {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(vehicle.status, vehicle.statusDisplayName)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="rejected" className="space-y-4">
             <Card>
@@ -765,7 +736,7 @@ export default function VehicleRegistrationsPage() {
                             </div>
                             {vehicle.updatedAt && vehicle.updatedAt !== vehicle.createdAt && (
                               <div className="text-xs text-blue-600 mt-1">
-                                Cập nhật: {new Date(vehicle.updatedAt).toLocaleDateString('vi-VN')} {new Date(vehicle.updatedAt).toLocaleTimeString('vi-VN', {
+                                {t('admin.vehicleRegistrations.table.updated')} {new Date(vehicle.updatedAt).toLocaleDateString('vi-VN')} {new Date(vehicle.updatedAt).toLocaleTimeString('vi-VN', {
                                   hour: '2-digit',
                                   minute: '2-digit'
                                 })}
@@ -779,8 +750,8 @@ export default function VehicleRegistrationsPage() {
                             <Button 
                               size="sm" 
                               onClick={() => handleRestore(vehicle.id)}
-                              disabled={!canApproveVehicle(vehicle)}
-                              title={canApproveVehicle(vehicle) ? 'Khôi phục' : 'Không thể khôi phục - Bãi xe đã đầy hoặc không có cấu hình hoạt động'}
+                                  disabled={!canApproveVehicle(vehicle)}
+                                  title={canApproveVehicle(vehicle) ? t('admin.vehicleRegistrations.tooltip.canRestore') : t('admin.vehicleRegistrations.tooltip.cannotRestore')}
                             >
                               {t('admin.vehicleRegistrations.actions.restore', 'Khôi phục')}
                             </Button>

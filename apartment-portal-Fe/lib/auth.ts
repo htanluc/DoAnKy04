@@ -53,7 +53,9 @@ export interface AuthResponse {
   } | null;
 }
 
-export const API_BASE_URL = 'http://localhost:8080';
+import { config } from './config';
+
+export const API_BASE_URL = config.API_BASE_URL;
 
 // Helpers for token management
 export const setToken = (token: string) => localStorage.setItem('token', token);

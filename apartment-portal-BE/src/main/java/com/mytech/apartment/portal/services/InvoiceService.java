@@ -7,7 +7,6 @@ import com.mytech.apartment.portal.mappers.InvoiceMapper;
 import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
-import com.mytech.apartment.portal.models.Apartment;
 import com.mytech.apartment.portal.models.ApartmentResident;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
@@ -54,14 +53,32 @@ public class InvoiceService {
             .distinct()
             .collect(Collectors.toList());
 
-        System.out.println("DEBUG: Tìm thấy " + apartmentIds.size() + " căn hộ có cư dân để tạo hóa đơn cho kỳ " + period);
+        System.out.println("DEBUG: [InvoiceService.generateInvoicesForMonth] Tìm thấy " + apartmentIds.size() + " căn hộ có cư dân để tạo hóa đơn cho kỳ " + period);
+
+        int createdCount = 0;
+        int skippedCount = 0;
 
         for (Long apartmentId : apartmentIds) {
-            // Tránh tạo trùng hóa đơn cho cùng kỳ
+            // Kiểm tra xem đã có hóa đơn cho kỳ này chưa
             Optional<Invoice> existing = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, period);
             if (existing.isPresent()) {
+                Invoice existingInvoice = existing.get();
+                System.out.println("DEBUG: [InvoiceService.generateInvoicesForMonth] Căn hộ " + apartmentId +
+                    " đã có hóa đơn #" + existingInvoice.getId() + " cho kỳ " + period +
+                    " với status " + existingInvoice.getStatus() + " - bỏ qua tạo mới");
+
+                // Cảnh báo nếu hóa đơn đã có status khác UNPAID (có thể đã được thanh toán)
+                if (existingInvoice.getStatus() != InvoiceStatus.UNPAID) {
+                    System.out.println("WARNING: [InvoiceService.generateInvoicesForMonth] Căn hộ " + apartmentId +
+                        " đã có hóa đơn kỳ " + period + " với status " + existingInvoice.getStatus() +
+                        " - KHÔNG nên tạo hóa đơn trùng lặp!");
+                }
+
+                skippedCount++;
                 continue;
             }
+
+            System.out.println("DEBUG: [InvoiceService.generateInvoicesForMonth] Tạo hóa đơn mới cho căn hộ " + apartmentId + " kỳ " + period);
 
             Invoice invoice = new Invoice();
             invoice.setApartmentId(apartmentId);
@@ -72,9 +89,13 @@ public class InvoiceService {
             invoice.setTotalAmount(0.0);
 
             invoiceRepository.save(invoice);
+            createdCount++;
+
+            System.out.println("DEBUG: [InvoiceService.generateInvoicesForMonth] Đã tạo hóa đơn #" + invoice.getId() + " cho căn hộ " + apartmentId);
         }
 
-        System.out.println("DEBUG: Hoàn thành tạo hóa đơn base cho kỳ " + period + " - tạo " + apartmentIds.size() + " hóa đơn");
+        System.out.println("DEBUG: [InvoiceService.generateInvoicesForMonth] Hoàn thành tạo hóa đơn base cho kỳ " + period +
+            " - Tạo mới: " + createdCount + ", Bỏ qua: " + skippedCount + " hóa đơn");
     }
 
     /**

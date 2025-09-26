@@ -586,10 +586,10 @@ class ApiService {
     final list = await getMonthlyWaterReadings(
         apartmentCode: apartmentCode, month: month);
     if (list.isEmpty) return null;
-    // Normalize: list is already within one month; pick record with max readingDate
-    list.sort((a, b) => (b['readingDate'] ?? '')
+    // Normalize: list is already within one month; pick record with latest recordedAt (thời gian ghi cuối)
+    list.sort((a, b) => (b['recordedAt'] ?? b['createdAt'] ?? '')
         .toString()
-        .compareTo((a['readingDate'] ?? '').toString()));
+        .compareTo((a['recordedAt'] ?? a['createdAt'] ?? '').toString()));
     return list.first;
   }
 

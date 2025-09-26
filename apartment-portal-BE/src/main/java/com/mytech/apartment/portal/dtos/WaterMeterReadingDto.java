@@ -41,8 +41,8 @@ public class WaterMeterReadingDto {
     // Mới: tên căn hộ
     private String apartmentName;
 
-    // Thời gian tạo bản ghi (ai ghi khi nào)
-    private LocalDateTime createdAt;
+    // Thời gian ghi chỉ số nước (được cập nhật mỗi khi có thay đổi)
+    private LocalDateTime recordedAt;
 
     // Tên người ghi (để hiển thị tiện lợi ở FE)
     private String recordedByName;

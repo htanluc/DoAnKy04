@@ -74,9 +74,13 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
               _readingCtrl.text = (_lastReading! + 1).toString();
             }
           }
-          // Cập nhật ngày hiển thị
+          // Cập nhật ngày hiển thị - ưu tiên recordedAt (thời gian ghi cuối)
           DateTime? dt;
-          if (when != null) {
+          final recordedAt = m['recordedAt'] ?? m['createdAt'];
+          if (recordedAt != null) {
+            dt = DateTime.tryParse(recordedAt.toString());
+          } else if (when != null) {
+            // Fallback to readingDate/readingMonth if no recordedAt
             dt = DateTime.tryParse(when);
             dt ??= DateTime.tryParse(
                 when.length >= 10 ? when.substring(0, 10) : when);
@@ -224,8 +228,10 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
             }
           }
           final lastAt = res['lastReadingAt'] ??
-              res['last']?['time'] ??
-              res['latest']?['time'];
+              res['last']?['recordedAt'] ??
+              res['last']?['createdAt'] ??
+              res['latest']?['recordedAt'] ??
+              res['latest']?['createdAt'];
           if (lastAt is String) {
             _lastReadingAt = DateTime.tryParse(lastAt);
           }
@@ -236,7 +242,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Lỗi tra cứu: $e')));
+          .showSnackBar(SnackBar(content: Text('Lookup error: $e')));
     } finally {
       if (mounted) setState(() => _lookupLoading = false);
     }
@@ -245,7 +251,7 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
   String _formatDate(DateTime? dt) {
     if (dt == null) return '-';
     final d = dt;
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -364,17 +370,29 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
                         );
                       }),
                       const Divider(height: 20),
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.history, size: 18),
-                          const SizedBox(width: 8),
-                          Text('Previous reading: '),
-                          Text(
-                            _lastReading?.toString() ?? '-',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          Row(
+                            children: [
+                              const Icon(Icons.history, size: 18),
+                              const SizedBox(width: 8),
+                              Text('Previous reading: '),
+                              Text(
+                                _lastReading?.toString() ?? '-',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Text('Date: ${_formatDate(_lastReadingAt)}'),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 26),
+                            child: Text(
+                              'Last reading time: ${_formatDate(_lastReadingAt)}',
+                              softWrap: true,
+                            ),
+                          ),
                         ],
                       ),
                     ],
