@@ -12,6 +12,7 @@ class ApiService {
     String password,
   ) async {
     try {
+      await AppConfig.ensureAutoDetect();
       // Debug logs
       // ignore: avoid_print
       print('[ApiService] POST $baseUrl/api/auth/login');
@@ -96,6 +97,7 @@ class ApiService {
   /// Lấy hồ sơ người dùng hiện tại từ server để có [fullName], [avatarUrl],...
   static Future<Map<String, dynamic>?> getProfile() async {
     try {
+      await AppConfig.ensureAutoDetect();
       final token = await TokenStorage.instance.getToken();
       if (token == null || token.isEmpty) return null;
 
@@ -129,9 +131,125 @@ class ApiService {
     }
   }
 
+  /// Quên mật khẩu với số điện thoại và email
+  static Future<void> forgotPasswordWithPhoneAndEmail(
+    String phoneNumber,
+    String email,
+  ) async {
+    try {
+      await AppConfig.ensureAutoDetect();
+      // ignore: avoid_print
+      print('[ApiService] POST $baseUrl/api/auth/forgot-password-phone-email');
+      // ignore: avoid_print
+      print(
+        '[ApiService] Body: {"phoneNumber": "$phoneNumber", "email": "$email"}',
+      );
+
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/auth/forgot-password-phone-email'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'phoneNumber': phoneNumber, 'email': email}),
+          )
+          .timeout(const Duration(seconds: 25));
+
+      // ignore: avoid_print
+      print('[ApiService] Status: ${res.statusCode}');
+      // ignore: avoid_print
+      print('[ApiService] Response: ${res.body}');
+
+      final data = jsonDecode(res.body);
+      if (res.statusCode >= 200 &&
+          res.statusCode < 300 &&
+          data['success'] == true) {
+        return; // Success
+      }
+
+      final serverMsg = data is Map<String, dynamic>
+          ? (data['message']?.toString())
+          : null;
+      throw Exception(
+        serverMsg ?? 'Forgot password failed (${res.statusCode})',
+      );
+    } on TimeoutException {
+      // ignore: avoid_print
+      print(
+        '[ApiService] Timeout when calling /api/auth/forgot-password-phone-email',
+      );
+      throw Exception('Hết thời gian chờ kết nối máy chủ');
+    } on http.ClientException catch (e) {
+      // ignore: avoid_print
+      print('[ApiService] ClientException: ${e.message}');
+      throw Exception('Lỗi mạng: ${e.message}');
+    } on FormatException {
+      // ignore: avoid_print
+      print('[ApiService] FormatException: invalid JSON response');
+      throw Exception('Phản hồi không hợp lệ từ máy chủ');
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ApiService] Unknown error: $e');
+      throw Exception(e.toString());
+    }
+  }
+
+  /// Quên mật khẩu với email hoặc số điện thoại
+  static Future<void> forgotPassword(String emailOrPhone) async {
+    try {
+      await AppConfig.ensureAutoDetect();
+      // ignore: avoid_print
+      print('[ApiService] POST $baseUrl/api/auth/forgot-password');
+      // ignore: avoid_print
+      print('[ApiService] Body: {"emailOrPhone": "$emailOrPhone"}');
+
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/auth/forgot-password'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'emailOrPhone': emailOrPhone}),
+          )
+          .timeout(const Duration(seconds: 25));
+
+      // ignore: avoid_print
+      print('[ApiService] Status: ${res.statusCode}');
+      // ignore: avoid_print
+      print('[ApiService] Response: ${res.body}');
+
+      final data = jsonDecode(res.body);
+      if (res.statusCode >= 200 &&
+          res.statusCode < 300 &&
+          data['success'] == true) {
+        return; // Success
+      }
+
+      final serverMsg = data is Map<String, dynamic>
+          ? (data['message']?.toString())
+          : null;
+      throw Exception(
+        serverMsg ?? 'Forgot password failed (${res.statusCode})',
+      );
+    } on TimeoutException {
+      // ignore: avoid_print
+      print('[ApiService] Timeout when calling /api/auth/forgot-password');
+      throw Exception('Hết thời gian chờ kết nối máy chủ');
+    } on http.ClientException catch (e) {
+      // ignore: avoid_print
+      print('[ApiService] ClientException: ${e.message}');
+      throw Exception('Lỗi mạng: ${e.message}');
+    } on FormatException {
+      // ignore: avoid_print
+      print('[ApiService] FormatException: invalid JSON response');
+      throw Exception('Phản hồi không hợp lệ từ máy chủ');
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ApiService] Unknown error: $e');
+      throw Exception(e.toString());
+    }
+  }
+
   // Chuẩn hoá URL file/ảnh để dùng được trong emulator/device
   static String normalizeFileUrl(String url) {
     try {
+      // không cần await ở đây, dùng base hiện tại
       if (url.isEmpty) return url;
       final base = Uri.parse(baseUrl);
 

@@ -209,62 +209,39 @@ class BookingCard extends StatelessWidget {
 
   Widget _buildActionButtons() {
     if (booking.status.toUpperCase() == 'PENDING') {
-      // Booking đang chờ thanh toán - hiển thị nút thanh toán
-      return Column(
+      // Booking đang chờ thanh toán - ẩn nút "Thanh toán ngay" theo yêu cầu
+      return Row(
         children: [
-          // Nút thanh toán ngay
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: onPayNow,
-              icon: const Icon(Icons.payment, size: 18),
-              label: const Text('💳 Thanh toán ngay'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+          if (onCancel != null) ...[
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onCancel,
+                icon: const Icon(Icons.cancel, size: 18),
+                label: const Text('Hủy'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.visibility, size: 18),
+              label: const Text('Chi tiết'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF1976D2),
+                side: const BorderSide(color: Color(0xFF1976D2)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // Nút hủy và xem chi tiết
-          Row(
-            children: [
-              if (onCancel != null) ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onCancel,
-                    icon: const Icon(Icons.cancel, size: 18),
-                    label: const Text('Hủy'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onTap,
-                  icon: const Icon(Icons.visibility, size: 18),
-                  label: const Text('Chi tiết'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1976D2),
-                    side: const BorderSide(color: Color(0xFF1976D2)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       );

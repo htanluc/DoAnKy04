@@ -1,21 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:apartment_resident_mobile/core/app_config.dart';
+import 'package:apartment_resident_mobile/core/storage/secure_storage.dart';
 import '../models/user_profile.dart';
 
 class ProfileApi {
-  static const String _baseUrl = 'http://localhost:8080/api';
+  static String get _baseUrl => '${AppConfig.apiBaseUrl}/api';
 
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
+  Future<String?> _getToken() async => TokenStorage.instance.getToken();
 
   Future<UserProfile> getUserProfile() async {
     try {
       final token = await _getToken();
       final response = await http.get(
-        Uri.parse('$_baseUrl/user/profile'),
+        Uri.parse('$_baseUrl/auth/me'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -23,16 +21,70 @@ class ProfileApi {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return UserProfile.fromJson(data);
+        final decoded = json.decode(response.body);
+        // ApiResponse { success, message, data }
+        final data = decoded is Map<String, dynamic>
+            ? (decoded['data'] ?? decoded)
+            : decoded;
+        if (data is Map<String, dynamic>) {
+          final user = data['user'] is Map<String, dynamic>
+              ? Map<String, dynamic>.from(data['user'] as Map)
+              : <String, dynamic>{};
+          final apartment = data['apartment'] is Map<String, dynamic>
+              ? Map<String, dynamic>.from(data['apartment'] as Map)
+              : <String, dynamic>{};
+          final apartmentResident =
+              data['apartmentResident'] is Map<String, dynamic>
+              ? Map<String, dynamic>.from(data['apartmentResident'] as Map)
+              : <String, dynamic>{};
+
+          final combined = <String, dynamic>{
+            'fullName': user['fullName'] ?? user['username'] ?? '',
+            'phoneNumber': user['phoneNumber'] ?? '',
+            'email': user['email'] ?? '',
+            'dateOfBirth': user['dateOfBirth'] ?? '',
+            'idCardNumber': user['idCardNumber'] ?? '',
+            'role':
+                (user['roles'] is List && (user['roles'] as List).isNotEmpty)
+                ? (user['roles'] as List).first.toString()
+                : (user['status']?.toString() ?? 'Cư dân'),
+            'avatarUrl': user['avatarUrl'],
+            // Apartment info mapping
+            'apartmentNumber':
+                apartment['unitNumber'] ??
+                apartmentResident['apartmentUnitNumber'] ??
+                '',
+            'buildingName': apartmentResident['buildingName'] ?? '',
+            'floor': apartment['floorNumber'] ?? 0,
+            'area': (apartment['area'] ?? 0).toDouble(),
+            'bedrooms': apartment['bedrooms'] ?? 0,
+            'emergencyContacts': <Map<String, dynamic>>[],
+          };
+
+          return UserProfile.fromJson(combined);
+        }
+        throw Exception('Dữ liệu hồ sơ không hợp lệ');
       } else {
-        // Trả về dữ liệu mẫu nếu API lỗi
-        return _getSampleUserProfile();
+        throw Exception('Lỗi lấy hồ sơ: ${response.statusCode}');
       }
     } catch (e) {
       print('API Error getting user profile: $e');
-      // Trả về dữ liệu mẫu nếu API lỗi
-      return _getSampleUserProfile();
+      // Trả về dữ liệu rỗng tối thiểu để UI tự xử lý
+      return const UserProfile(
+        fullName: '',
+        phoneNumber: '',
+        email: '',
+        dateOfBirth: '',
+        idCardNumber: '',
+        role: '',
+        avatarUrl: null,
+        apartmentNumber: '',
+        buildingName: '',
+        floor: 0,
+        area: 0,
+        bedrooms: 0,
+        emergencyContacts: <EmergencyContact>[],
+      );
     }
   }
 
@@ -47,49 +99,48 @@ class ProfileApi {
         },
       );
 
-      // Xóa token khỏi local storage
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('token');
+      await TokenStorage.instance.clear();
     } catch (e) {
       print('API Error during logout: $e');
-      // Vẫn xóa token khỏi local storage ngay cả khi API lỗi
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('token');
+      await TokenStorage.instance.clear();
     }
   }
 
-  // Dữ liệu mẫu cho testing
-  UserProfile _getSampleUserProfile() {
-    return const UserProfile(
-      fullName: 'Nguyễn Văn An',
-      phoneNumber: '0123456789',
-      email: 'nguyenvanan@email.com',
-      dateOfBirth: '15/03/1990',
-      idCardNumber: '123456789012',
-      role: 'Cư dân',
-      avatarUrl: null,
-      apartmentNumber: 'A1-101',
-      buildingName: 'Tòa A1',
-      floor: 1,
-      area: 85.5,
-      bedrooms: 2,
-      emergencyContacts: [
-        EmergencyContact(
-          name: 'Nguyễn Thị Bình',
-          phone: '0987654321',
-          relationship: 'Vợ/Chồng',
-        ),
-        EmergencyContact(
-          name: 'Nguyễn Văn Cường',
-          phone: '0912345678',
-          relationship: 'Anh/Em trai',
-        ),
-        EmergencyContact(
-          name: 'Nguyễn Thị Dung',
-          phone: '0934567890',
-          relationship: 'Mẹ',
-        ),
-      ],
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmNewPassword,
+  }) async {
+    final token = await _getToken();
+    final res = await http.post(
+      Uri.parse('$_baseUrl/auth/change-password'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+        'confirmNewPassword': confirmNewPassword,
+      }),
     );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('Đổi mật khẩu thất bại: ${res.body}');
+    }
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> payload) async {
+    final token = await _getToken();
+    final res = await http.put(
+      Uri.parse('$_baseUrl/users/residents/me'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('Cập nhật hồ sơ thất bại');
+    }
   }
 }

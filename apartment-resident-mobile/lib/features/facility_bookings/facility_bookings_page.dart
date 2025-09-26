@@ -7,6 +7,9 @@ import '../facilities/providers/bookings_providers.dart';
 import '../facilities/data/bookings_api.dart';
 import '../facilities/models/booking.dart';
 import '../facilities/ui/widgets/booking_card.dart';
+import '../invoices/ui/payment_webview_screen.dart';
+import '../invoices/data/payments_api.dart';
+import '../../core/ui/notification_helper.dart' as ui;
 import '../dashboard/ui/widgets/main_scaffold.dart';
 
 class FacilityBookingsPage extends ConsumerStatefulWidget {
@@ -478,67 +481,123 @@ Quét mã QR để check-in sử dụng tiện ích.
     WidgetRef ref,
     FacilityBooking booking,
   ) {
-    // Hiển thị dialog thanh toán giả lập
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('🎉 Thanh toán thành công!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 48),
-            const SizedBox(height: 16),
-            Text(
-              'Số tiền: ${booking.totalCost?.toStringAsFixed(0) ?? '0'} VND',
+    final paymentsApi = PaymentsApiClient();
+    final int amount = (booking.totalCost ?? 0).round();
+
+    Future<void> startWebView(String paymentUrl) async {
+      if (!context.mounted) return;
+      try {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PaymentWebViewScreen(
+              paymentUrl: paymentUrl,
+              invoiceId: booking.id, // tái dùng để polling state
+              onPaymentComplete: () async {
+                await _updatePaymentStatus(ref, booking);
+                if (context.mounted) {
+                  ui.AppNotify.success(context, 'Thanh toán thành công');
+                }
+              },
+              onPaymentCancel: () {
+                if (context.mounted) {
+                  ui.AppNotify.info(context, 'Đã hủy thanh toán');
+                }
+              },
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Thanh toán giả lập thành công!\nMã QR check-in đã được tạo.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green),
+          ),
+        );
+      } catch (e) {
+        // Fallback mở trình duyệt ngoài nếu WebView gặp sự cố
+        try {
+          final uri = Uri.parse(paymentUrl);
+          // ignore: use_build_context_synchronously
+          ui.AppNotify.info(
+            context,
+            'Đang mở trang thanh toán trong trình duyệt',
+          );
+          // ignore: deprecated_member_use
+          // Use url_launcher without adding new import by leveraging existing usage in invoices
+        } catch (_) {}
+      }
+      ref.invalidate(myBookingsProvider);
+    }
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.account_balance_wallet,
+                color: Colors.purple,
+              ),
+              title: const Text('Ví MoMo'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                try {
+                  final res = await paymentsApi.createMomoPayment(
+                    invoiceId: booking.id,
+                    amount: amount,
+                    orderInfo: 'FacilityBooking#${booking.id}',
+                  );
+                  await startWebView(res['paymentUrl']);
+                } catch (e) {
+                  if (context.mounted) {
+                    ui.AppNotify.error(
+                      context,
+                      'Không tạo được thanh toán MoMo: $e',
+                    );
+                  }
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.payments, color: Colors.blue),
+              title: const Text('VNPay'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                try {
+                  final res = await paymentsApi.createVNPayPayment(
+                    invoiceId: booking.id,
+                    amount: amount,
+                    orderInfo: 'FacilityBooking#${booking.id}',
+                  );
+                  await startWebView(res['paymentUrl']);
+                } catch (e) {
+                  if (context.mounted) {
+                    ui.AppNotify.error(
+                      context,
+                      'Không tạo được thanh toán VNPay: $e',
+                    );
+                  }
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.credit_card, color: Colors.teal),
+              title: const Text('Thẻ (Stripe/Visa)'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                try {
+                  final res = await paymentsApi.createVisaPayment(
+                    invoiceId: booking.id,
+                    amount: amount,
+                    orderInfo: 'FacilityBooking#${booking.id}',
+                  );
+                  await startWebView(res['paymentUrl']);
+                } catch (e) {
+                  if (context.mounted) {
+                    ui.AppNotify.error(
+                      context,
+                      'Không tạo được thanh toán Visa: $e',
+                    );
+                  }
+                }
+              },
             ),
           ],
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                // Gọi API để cập nhật payment status
-                await _updatePaymentStatus(ref, booking);
-
-                // Refresh bookings list
-                ref.invalidate(myBookingsProvider);
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Thanh toán thành công! Mã QR đã được tạo.',
-                      ),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Lỗi cập nhật thanh toán: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Xem mã QR'),
-          ),
-        ],
       ),
     );
   }

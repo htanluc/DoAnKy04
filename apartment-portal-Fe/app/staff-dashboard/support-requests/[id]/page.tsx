@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ServiceRequest, supportRequestsApi } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import ServiceRequestStatusProgress from "@/components/admin/ServiceRequestStatusProgress";
+import { API_BASE_URL } from "@/lib/auth";
 
 function StatusBadge({ status }: { status?: string }) {
   const s = (status || "").toUpperCase();
@@ -78,7 +79,7 @@ export default function StaffSupportRequestDetailPage() {
     (async () => {
       const SockJS = (await import('sockjs-client')).default;
       const { Client } = await import('@stomp/stompjs');
-      const sock = new SockJS('http://localhost:8080/ws');
+      const sock = new SockJS(`${API_BASE_URL.replace(/\/$/, '')}/ws`);
       client = new Client({
         webSocketFactory: () => sock as any,
         reconnectDelay: 5000,
@@ -104,7 +105,7 @@ export default function StaffSupportRequestDetailPage() {
     const { Client } = await import('@stomp/stompjs');
     // Quick one-off client for send (reuse would be better in real app)
     const SockJS = (await import('sockjs-client')).default;
-    const sock = new SockJS('http://localhost:8080/ws');
+    const sock = new SockJS(`${API_BASE_URL.replace(/\/$/, '')}/ws`);
     const client = new Client({ webSocketFactory: () => sock as any });
     client.onConnect = () => {
       const payload = {
@@ -176,7 +177,7 @@ export default function StaffSupportRequestDetailPage() {
             <div className="mt-4 p-4 border rounded bg-gray-50 space-y-3">
               <div className="font-semibold">Cập nhật trạng thái</div>
               <div className="flex items-center gap-2">
-                <select className="border rounded px-2 py-1" value={status} onChange={(e) => setStatus(e.target.value)}>
+                <select className="border rounded px-2 py-1" value={status} onChange={(e) => setStatus(e.target.value)} title="Trạng thái">
                   <option value="OPEN">Mở</option>
                   <option value="IN_PROGRESS">Đang xử lý</option>
                   <option value="COMPLETED">Hoàn thành</option>

@@ -89,9 +89,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     return _announcements.where((a) => !a.read).length;
   }
 
-  Widget _buildTypeBadge(String type) {
+  Widget _buildTypeBadge(AnnouncementType type) {
     switch (type) {
-      case 'URGENT':
+      case AnnouncementType.urgent:
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -114,7 +114,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             ],
           ),
         );
-      case 'NEWS':
+      case AnnouncementType.news:
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -137,7 +137,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             ],
           ),
         );
-      case 'REGULAR':
+      case AnnouncementType.regular:
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -160,13 +160,33 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             ],
           ),
         );
-      default:
-        return const SizedBox.shrink();
+      case AnnouncementType.event:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.green.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.event, size: 12, color: Colors.green.shade800),
+              const SizedBox(width: 4),
+              Text(
+                'Sự kiện',
+                style: TextStyle(
+                  color: Colors.green.shade800,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
     }
   }
 
-  String _formatDate(String dateString) {
-    final date = DateTime.parse(dateString);
+  String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 

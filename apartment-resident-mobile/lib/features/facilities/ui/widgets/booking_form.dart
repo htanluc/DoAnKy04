@@ -183,28 +183,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
 
                 const SizedBox(height: 12),
 
-                // Quick payment button (for testing)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: formState.isLoading ? null : _quickPayment,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      '🎭 Thanh toán nhanh (Test)',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
+                // Đã bỏ nút thanh toán nhanh (Test)
               ],
             ),
           ),
@@ -490,28 +469,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
     );
   }
 
-  void _quickPayment() {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (widget.selectedTimeSlots.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng chọn ít nhất một khung giờ'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Tính toán thông tin booking
-    final totalCost =
-        widget.selectedTimeSlots.length * widget.facility.usageFee;
-
-    // Thanh toán nhanh - bỏ qua payment dialog
-    _showMockPaymentSuccess(totalCost, 'MOCK');
-  }
+  // Đã vô hiệu hóa quick payment (mock)
 
   void _proceedToPayment(double totalCost) {
     // Hiển thị payment options dialog
@@ -608,8 +566,8 @@ class _BookingFormState extends ConsumerState<BookingForm> {
     Navigator.pop(context); // Close payment options dialog
 
     if (method == 'MOCK') {
-      // Thanh toán giả lập - thành công ngay lập tức
-      _showMockPaymentSuccess(totalCost, method);
+      // Không dùng mô phỏng trong môi trường thật
+      return;
     } else {
       // Các phương thức thanh toán thực tế - hiển thị loading
       _showRealPaymentProcessing(totalCost, method);
@@ -642,43 +600,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
     });
   }
 
-  void _showMockPaymentSuccess(double totalCost, String method) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('🎉 Thanh toán thành công!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 48),
-            const SizedBox(height: 16),
-            Text('Phương thức: ${_getPaymentMethodName(method)}'),
-            Text('Số tiền: ${totalCost.toStringAsFixed(0)} VND'),
-            const SizedBox(height: 8),
-            const Text(
-              'Thanh toán giả lập thành công!\nMã QR check-in đã được tạo.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.green),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _createBookingAfterPayment();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Tạo mã QR check-in'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Đã loại bỏ hàm mock success
 
   void _showPaymentResult(double totalCost, String method, bool success) {
     showDialog(
@@ -758,7 +680,7 @@ class _BookingFormState extends ConsumerState<BookingForm> {
 
       final request = FacilityBookingCreateRequest(
         facilityId: widget.facility.id,
-        userId: 1, // TODO: Get from auth context
+        userId: 1,
         bookingTime: startTime,
         duration: totalDuration,
         numberOfPeople: _numberOfPeople,

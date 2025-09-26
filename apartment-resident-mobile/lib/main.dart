@@ -14,6 +14,7 @@ import 'features/profile/ui/profile_screen.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/vehicles/ui/vehicles_screen.dart';
 import 'features/facilities/ui/facilities_screen.dart';
+import 'features/settings/settings_page.dart';
 
 void main() {
   runApp(ProviderScope(child: const MainApp()));
@@ -59,6 +60,7 @@ class MainApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/vehicles': (context) => const VehiclesScreen(),
         '/facilities': (context) => const FacilitiesScreen(),
+        '/settings': (context) => const SettingsPage(),
       },
     );
   }

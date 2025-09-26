@@ -5,7 +5,6 @@ import '../models/dashboard_stats.dart';
 import '../providers/dashboard_riverpod_providers.dart';
 import 'widgets/stats_grid.dart';
 import 'widgets/compact_activity_list.dart';
-import 'widgets/bottom_navigation.dart';
 import 'widgets/main_scaffold.dart';
 import '../../announcements/data/announcements_api.dart';
 
@@ -204,8 +203,22 @@ class _DashboardScreenState extends State<DashboardScreen>
           _buildWelcomeSection(apartmentInfo),
           const SizedBox(height: 24),
 
-          // Stats Grid
-          StatsGrid(stats: stats, isLoading: false),
+          // Stats Grid (ghi đè số thông báo chưa đọc nếu tự tính được)
+          StatsGrid(
+            stats: DashboardStats(
+              totalInvoices: stats.totalInvoices,
+              pendingInvoices: stats.pendingInvoices,
+              overdueInvoices: stats.overdueInvoices,
+              totalAmount: stats.totalAmount,
+              unreadAnnouncements: _unreadAnnouncementsCount > 0
+                  ? _unreadAnnouncementsCount
+                  : stats.unreadAnnouncements,
+              upcomingEvents: stats.upcomingEvents,
+              activeBookings: stats.activeBookings,
+              supportRequests: stats.supportRequests,
+            ),
+            isLoading: false,
+          ),
           const SizedBox(height: 24),
 
           // Recent Activities (Compact version)

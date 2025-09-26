@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/auth';
 
 export interface WaterMeterReading {
   readingId?: number;
@@ -12,7 +13,7 @@ export interface WaterMeterReading {
   recordedByName?: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/admin/water-readings';
+const WATER_API_BASE = `${API_BASE_URL.replace(/\/$/, '')}/api/admin/water-readings`;
 
 function getToken() {
   if (typeof window !== 'undefined') {
@@ -35,7 +36,7 @@ export function useWaterMeter() {
     setError(null);
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE_URL}`, {
+      const res = await fetch(`${WATER_API_BASE}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -57,7 +58,7 @@ export function useWaterMeter() {
     setError(null);
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/by-month?month=${month}`, {
+      const res = await fetch(`${WATER_API_BASE}/by-month?month=${month}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -109,7 +110,7 @@ export function useWaterMeter() {
         previousReading: reading.previousReading ?? 0,
         currentReading: reading.currentReading,
       };
-      const res = await fetch(`${API_BASE_URL}`, {
+      const res = await fetch(`${WATER_API_BASE}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ export function useWaterMeter() {
     setError(null);
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/${id}`, {
+      const res = await fetch(`${WATER_API_BASE}/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +159,7 @@ export function useWaterMeter() {
     setError(null);
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/${id}`, {
+      const res = await fetch(`${WATER_API_BASE}/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +203,7 @@ export function useWaterMeter() {
     setError(null);
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE_URL}/generate?startMonth=${startMonth}`, {
+      const res = await fetch(`${WATER_API_BASE}/generate?startMonth=${startMonth}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
