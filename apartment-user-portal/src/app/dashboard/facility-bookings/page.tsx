@@ -32,8 +32,6 @@ import {
   createFacilityBooking,
   cancelFacilityBooking,
   createVNPayPayment,
-  createMoMoPayment,
-  createZaloPayPayment,
   createVisaPayment
 } from '@/lib/api'
 import { apiClient } from '@/lib/api-client'
@@ -300,14 +298,13 @@ const FacilityBookingsPage: FC = () => {
   const [rangeStartHour, setRangeStartHour] = useState<number | null>(null)
   const [rangeEndHour, setRangeEndHour] = useState<number | null>(null)
   const [rangeError, setRangeError] = useState<string | null>(null)
-  const paymentMethods = [
-    { id: 'vnpay', name: 'VNPay', description: 'Thanh toán qua VNPay' },
-    { id: 'visa', name: 'Visa', description: 'Thẻ Visa' },
-  ];
-  const [payBefore, setPayBefore] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [paymentError, setPaymentError] = useState<string>('');
+   const paymentMethods = [
+     { id: 'vnpay', name: 'VNPay', description: 'Thanh toán qua VNPay' },
+     { id: 'visa', name: 'Visa', description: 'Thẻ Visa' },
+   ];
+   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('vnpay');
+   const [paymentLoading, setPaymentLoading] = useState(false);
+   const [paymentError, setPaymentError] = useState<string>('');
   // State cho lỗi realtime
   const [numberError, setNumberError] = useState<string | null>(null);
   const [timeError, setTimeError] = useState<string | null>(null);
@@ -941,20 +938,28 @@ const FacilityBookingsPage: FC = () => {
       }
     }
     
-    // Tạo booking
-    try {
-      const [startHour, startMinute] = newBooking.startTime.split(":").map(Number);
-      const [endHour, endMinute] = newBooking.endTime.split(":").map(Number);
-      let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
-      if (duration <= 0) duration += 24 * 60;
-      const bookingData = {
-        facilityId: selectedFacility.id,
-        bookingTime,
-        duration,
-        numberOfPeople: newBooking.numberOfPeople,
-        purpose: newBooking.purpose
-      };
-      await createFacilityBooking(bookingData);
+     // Tạo booking
+     try {
+       const [startHour, startMinute] = newBooking.startTime.split(":").map(Number);
+       const [endHour, endMinute] = newBooking.endTime.split(":").map(Number);
+       let duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+       if (duration <= 0) duration += 24 * 60;
+       
+       // Tính toán phí sử dụng
+       const durationHours = duration / 60;
+       const totalCost = selectedFacility.usageFee * durationHours;
+       
+       const bookingData = {
+         facilityId: selectedFacility.id,
+         bookingTime,
+         duration,
+         numberOfPeople: newBooking.numberOfPeople,
+         purpose: newBooking.purpose,
+         paymentStatus: totalCost > 0 ? "PENDING" : "PAID",
+         paymentMethod: totalCost > 0 ? "VNPAY" : "FREE",
+         totalCost: totalCost
+       };
+       await createFacilityBooking(bookingData);
       const successMessage = showAddToSlotModal 
         ? `Đặt thêm ${newBooking.numberOfPeople} người cho slot ${selectedSlot?.hour}:00 thành công!`
         : 'Đặt tiện ích thành công!';
@@ -1005,65 +1010,37 @@ const FacilityBookingsPage: FC = () => {
     }
   }
   
-  // Xử lý thanh toán
-  const handlePayment = async (bookingId: string, paymentMethod: string) => {
-    setError(null)
-    setSuccess(null)
-    setPaymentLoading(true)
-    
-    try {
-      // Bước 1: Khởi tạo thanh toán để lấy thông tin payment
-      const initiateResponse = await fetch(`http://localhost:8080/api/facility-bookings/${bookingId}/initiate-payment?paymentMethod=${paymentMethod}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (!initiateResponse.ok) {
-        const errorData = await initiateResponse.json()
-        throw new Error(errorData.message || 'Khởi tạo thanh toán thất bại')
-      }
-      
-      const paymentInfo = await initiateResponse.json()
-      
-      // Bước 2: Gọi payment gateway (VNPay) với return URL tùy chỉnh cho facility booking
-      const gatewayResponse = await fetch(`http://localhost:8080/api/payments/vnpay/create`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId: paymentInfo.orderId,
-          amount: paymentInfo.amount,
-          orderInfo: paymentInfo.orderInfo,
-          invoiceId: null, // Không phải invoice
-          returnUrl: paymentInfo.returnUrl // Sử dụng return URL tùy chỉnh
-        })
-      })
-      
-      if (!gatewayResponse.ok) {
-        const errorData = await gatewayResponse.json()
-        throw new Error(errorData.message || 'Tạo thanh toán gateway thất bại')
-      }
-      
-      const gatewayData = await gatewayResponse.json()
-      
-      if (gatewayData.success && gatewayData.data && gatewayData.data.paymentUrl) {
-        // Chuyển hướng đến trang thanh toán
-        window.location.href = gatewayData.data.paymentUrl
-      } else {
-        throw new Error('Không thể tạo URL thanh toán')
-      }
-      
-    } catch (err: any) {
-      setError(err.message || 'Thanh toán thất bại')
-    } finally {
-      setPaymentLoading(false)
-    }
-  }
+   // Xử lý thanh toán
+   const handlePayment = async (bookingId: string, paymentMethod: string) => {
+     setError(null)
+     setSuccess(null)
+     setPaymentLoading(true)
+     
+     try {
+       let data, payUrl;
+       if (paymentMethod === 'vnpay') {
+         data = await createVNPayPayment(parseInt(bookingId), 0, `Thanh toán đặt tiện ích ${bookingId}`);
+         payUrl = data.payUrl || data.data?.payUrl || data.data?.payurl;
+       } else if (paymentMethod === 'visa') {
+         data = await createVisaPayment(parseInt(bookingId), 0, `Thanh toán đặt tiện ích ${bookingId}`);
+         payUrl = data.data?.payUrl || data.data?.payurl;
+       } else {
+         throw new Error('Phương thức thanh toán không hợp lệ');
+       }
+       
+       if (payUrl) {
+         // Chuyển hướng đến trang thanh toán
+         window.location.href = payUrl;
+       } else {
+         throw new Error('Không nhận được đường dẫn thanh toán');
+       }
+       
+     } catch (err: any) {
+       setError(err.message || 'Thanh toán thất bại')
+     } finally {
+       setPaymentLoading(false)
+     }
+   }
 
   const getPendingBookings = () => {
     return bookings.filter(booking => booking.status === 'PENDING').length
@@ -1813,31 +1790,10 @@ const FacilityBookingsPage: FC = () => {
                   />
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="payBefore" checked={payBefore} onChange={e => setPayBefore(e.target.checked)} />
-                  <label htmlFor="payBefore">Thanh toán trước khi đặt chỗ</label>
-                </div>
-                {payBefore && (
-                  <div className="space-y-2">
-                    <div>Chọn cổng thanh toán:</div>
-                    <div className="flex gap-2">
-                      {paymentMethods.map(method => (
-                        <Button
-                          key={method.id}
-                          variant={selectedPaymentMethod === method.id ? 'default' : 'outline'}
-                          onClick={() => setSelectedPaymentMethod(method.id)}
-                        >
-                          {method.name}
-                        </Button>
-                      ))}
-                    </div>
-                    {paymentError && <div className="text-red-500 text-sm">{paymentError}</div>}
-                  </div>
-                )}
                 <div className="flex gap-2">
                   <Button 
                     onClick={handleCreateBooking}
-                    disabled={!newBooking.date || !newBooking.startTime || !newBooking.endTime || !newBooking.purpose || (payBefore && !selectedPaymentMethod) || paymentLoading || !!numberError || !!timeError}
+                    disabled={!newBooking.date || !newBooking.startTime || !newBooking.endTime || !newBooking.purpose || paymentLoading || !!numberError || !!timeError}
                   >
                     {paymentLoading ? 'Đang xử lý...' : 'Đặt chỗ'}
                   </Button>
