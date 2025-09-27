@@ -14,6 +14,7 @@ public class FacilityDto {
     private String otherDetails;
     private Double usageFee;
     private String openingHours;
+    private String openingSchedule; // JSON string cho lịch mở cửa theo tuần
     private String status;
     private Boolean isVisible;
 } 

@@ -59,20 +59,20 @@ class BookingsApi {
   }
 
   /// Tạo đặt chỗ mới
-  static Future<FacilityBooking> create(
-    FacilityBookingCreateRequest request,
+  static Future<Map<String, dynamic>> create(
+    Map<String, dynamic> bookingData,
   ) async {
     try {
-      final response = await ApiHelper.post(_basePath, data: request.toJson());
+      final response = await ApiHelper.post(_basePath, data: bookingData);
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Failed to create booking: ${response.statusCode}');
       }
 
       final data = jsonDecode(response.body);
-      final bookingData = ApiHelper.extractMap(data);
+      final bookingResponse = ApiHelper.extractMap(data);
 
-      return FacilityBooking.fromJson(bookingData);
+      return bookingResponse;
     } catch (e) {
       throw Exception('Error creating booking: $e');
     }
@@ -211,6 +211,39 @@ class BookingsApi {
       return FacilityBooking.fromJson(bookingData);
     } catch (e) {
       throw Exception('Error fetching booking: $e');
+    }
+  }
+
+  /// Tạo thanh toán cho booking
+  static Future<Map<String, dynamic>> createPayment(
+    int bookingId,
+    String paymentMethod,
+  ) async {
+    try {
+      print(
+        'Creating payment for booking $bookingId with method $paymentMethod',
+      );
+
+      final response = await ApiHelper.post(
+        '/api/payments/create',
+        data: {
+          'bookingId': bookingId,
+          'paymentMethod': paymentMethod,
+          'type': 'FACILITY_BOOKING',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to create payment: ${response.statusCode}');
+      }
+
+      final data = jsonDecode(response.body);
+      print('Payment creation response: $data');
+
+      return data;
+    } catch (e) {
+      print('Error creating payment: $e');
+      throw Exception('Không thể tạo thanh toán: $e');
     }
   }
 

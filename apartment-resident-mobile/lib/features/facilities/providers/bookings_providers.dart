@@ -81,7 +81,7 @@ class BookingFormState {
   final bool isLoading;
   final String? error;
   final bool isValid;
-  final FacilityBookingCreateRequest? request;
+  final Map<String, dynamic>? request;
   final FacilityAvailability? availability;
 
   const BookingFormState({
@@ -96,7 +96,7 @@ class BookingFormState {
     bool? isLoading,
     String? error,
     bool? isValid,
-    FacilityBookingCreateRequest? request,
+    Map<String, dynamic>? request,
     FacilityAvailability? availability,
   }) {
     return BookingFormState(
@@ -130,9 +130,9 @@ class BookingsNotifier
   }
 
   /// Tạo đặt chỗ mới
-  Future<void> createBooking(FacilityBookingCreateRequest request) async {
+  Future<void> createBooking(Map<String, dynamic> bookingData) async {
     try {
-      await _repository.createBooking(request);
+      await _repository.createBooking(bookingData);
       // Reload danh sách sau khi tạo thành công
       await loadBookings();
     } catch (e) {
@@ -185,7 +185,7 @@ class BookingFormNotifier extends StateNotifier<BookingFormState> {
   }
 
   /// Cập nhật thông tin đặt chỗ
-  void updateRequest(FacilityBookingCreateRequest request) {
+  void updateRequest(Map<String, dynamic> request) {
     state = state.copyWith(request: request);
     _validateForm();
   }
@@ -239,18 +239,18 @@ class BookingFormNotifier extends StateNotifier<BookingFormState> {
     }
 
     final isValid =
-        request.facilityId > 0 &&
-        request.userId > 0 &&
-        request.bookingTime.isNotEmpty &&
-        request.duration > 0 &&
-        request.numberOfPeople > 0 &&
-        request.purpose.trim().isNotEmpty;
+        (request['facilityId'] as int) > 0 &&
+        (request['userId'] as int) > 0 &&
+        (request['bookingTime'] as String).isNotEmpty &&
+        (request['duration'] as int) > 0 &&
+        (request['numberOfPeople'] as int) > 0 &&
+        (request['purpose'] as String).trim().isNotEmpty;
 
     state = state.copyWith(isValid: isValid);
   }
 
   /// Tạo đặt chỗ
-  Future<FacilityBooking?> createBooking() async {
+  Future<Map<String, dynamic>?> createBooking() async {
     if (!state.isValid || state.request == null) {
       state = state.copyWith(error: 'Dữ liệu đặt chỗ không hợp lệ');
       return null;

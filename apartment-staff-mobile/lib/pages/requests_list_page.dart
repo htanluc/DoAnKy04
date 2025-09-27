@@ -180,35 +180,6 @@ class _RequestsListPageState extends State<RequestsListPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _buildMenuByStatus(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home'),
-          NavigationDestination(
-              icon: Icon(Icons.water_drop_outlined),
-              selectedIcon: Icon(Icons.water_drop),
-              label: 'Water readings'),
-          NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile'),
-        ],
-        onDestinationSelected: (i) {
-          if (i == 2) {
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const ProfilePage()));
-          } else if (i == 1) {
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const WaterReadingPage()));
-          } else if (i != 0) {
-            ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Feature under development')));
-          }
-        },
-      ),
     );
   }
 

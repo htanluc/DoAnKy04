@@ -228,7 +228,8 @@ class ApiService {
             ? base.replace(path: url)
             : base.replace(
                 path:
-                    '${base.path.endsWith('/') ? base.path : base.path + '/'}$url');
+                    '${base.path.endsWith('/') ? base.path : base.path + '/'}$url',
+              );
         return joined.toString();
       }
 
@@ -270,12 +271,14 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>?> getAssignedRequestById(
-      int staffId, int requestId) async {
+    int staffId,
+    int requestId,
+  ) async {
     final list = await getAssignedRequests(staffId);
     try {
-      return list
-          .cast<Map<String, dynamic>>()
-          .firstWhere((e) => (e['id'] as num).toInt() == requestId);
+      return list.cast<Map<String, dynamic>>().firstWhere(
+            (e) => (e['id'] as num).toInt() == requestId,
+          );
     } catch (_) {
       return null;
     }
@@ -338,9 +341,194 @@ class ApiService {
     }
   }
 
+  // === FACILITY BOOKING APIs ===
+
+  /**
+   * Get all facility bookings for staff check-in
+   */
+  static Future<List<Map<String, dynamic>>>
+      getFacilityBookingsForCheckIn() async {
+    try {
+      await ensureBaseUrl();
+      final token = await AuthService.getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/staff/facility-bookings/checkin'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 25));
+
+      if (res.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(jsonDecode(res.body));
+      }
+      throw Exception('Failed to load facility bookings (${res.statusCode})');
+    } on TimeoutException {
+      throw Exception('Timed out while loading facility bookings');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  /**
+   * Check-in to facility booking by QR code or booking ID
+   */
+  static Future<String> checkInFacility(int bookingId) async {
+    try {
+      await ensureBaseUrl();
+      final token = await AuthService.getToken();
+
+      print(
+        '[ApiService] POST $baseUrl/api/staff/facility-bookings/$bookingId/checkin',
+      );
+
+      final res = await http.post(
+        Uri.parse(
+          '$baseUrl/api/staff/facility-bookings/$bookingId/checkin',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 25));
+
+      print('[ApiService] Status: ${res.statusCode}');
+      print('[ApiService] Response: ${res.body}');
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body);
+        return data.toString();
+      }
+      throw Exception('Failed to check-in facility (${res.statusCode})');
+    } on TimeoutException {
+      throw Exception('Timed out while checking in facility');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // === EVENT REGISTRATION APIs ===
+
+  /**
+   * Get all event registrations for staff check-in
+   */
+  static Future<List<Map<String, dynamic>>>
+      getEventRegistrationsForCheckIn() async {
+    try {
+      await ensureBaseUrl();
+      final token = await AuthService.getToken();
+
+      print('[ApiService] GET $baseUrl/api/staff/event-registrations/checkin');
+
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/staff/event-registrations/checkin'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 25));
+
+      print('[ApiService] Event registrations response: ${res.statusCode}');
+      print('[ApiService] Event registrations body: ${res.body}');
+
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(res.body);
+        return data.cast<Map<String, dynamic>>();
+      } else if (res.statusCode == 500) {
+        // Handle server error response
+        final responseBody = jsonDecode(res.body);
+        if (responseBody is List && responseBody.isNotEmpty) {
+          final errorData = responseBody[0] as Map<String, dynamic>;
+          if (errorData['error'] == true) {
+            throw Exception('Server Error: ${errorData['message']}');
+          }
+        }
+        throw Exception('Server Error (500): ${res.body}');
+      }
+      throw Exception(
+          'Failed to load event registrations (${res.statusCode}): ${res.body}');
+    } on TimeoutException {
+      throw Exception('Timed out while loading event registrations');
+    } catch (e) {
+      print('[ApiService] Error loading event registrations: $e');
+      throw Exception(e.toString());
+    }
+  }
+
+  /**
+   * Check-in to event registration by QR code or registration ID
+   */
+  static Future<String> checkInEvent(int registrationId) async {
+    try {
+      await ensureBaseUrl();
+      final token = await AuthService.getToken();
+
+      print(
+        '[ApiService] POST $baseUrl/api/staff/event-registrations/$registrationId/checkin',
+      );
+
+      final res = await http.post(
+        Uri.parse(
+          '$baseUrl/api/staff/event-registrations/$registrationId/checkin',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 25));
+
+      print('[ApiService] Status: ${res.statusCode}');
+      print('[ApiService] Response: ${res.body}');
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body);
+        return data.toString();
+      }
+      throw Exception('Failed to check-in event (${res.statusCode})');
+    } on TimeoutException {
+      throw Exception('Timed out while checking in event');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // === QR CODE SCAN APIs ===
+
+  /**
+   * Process QR code scan result for facility or event
+   */
+  static Future<Map<String, dynamic>> processQRCode(String qrCode) async {
+    try {
+      await ensureBaseUrl();
+      final token = await AuthService.getToken();
+
+      print('[ApiService] POST $baseUrl/api/staff/qr/scan');
+      print('[ApiService] QR Code: $qrCode');
+
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/staff/qr/scan'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'qrCode': qrCode}),
+          )
+          .timeout(const Duration(seconds: 25));
+
+      print('[ApiService] Status: ${res.statusCode}');
+      print('[ApiService] Response: ${res.body}');
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return jsonDecode(res.body);
+      }
+      throw Exception('Failed to process QR code (${res.statusCode})');
+    } on TimeoutException {
+      throw Exception('Timed out while processing QR code');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
   // Change password
   static Future<void> changePassword(
-      String oldPassword, String newPassword) async {
+    String oldPassword,
+    String newPassword,
+  ) async {
     try {
       await ensureBaseUrl();
       final token = await AuthService.getToken();
@@ -365,7 +553,8 @@ class ApiService {
               ? (body['message']?.toString() ?? body['error']?.toString())
               : null;
           throw Exception(
-              msg ?? 'Failed to change password (${res.statusCode})');
+            msg ?? 'Failed to change password (${res.statusCode})',
+          );
         } catch (_) {
           throw Exception('Failed to change password (${res.statusCode})');
         }
@@ -382,10 +571,10 @@ class ApiService {
     try {
       await ensureBaseUrl();
       final token = await AuthService.getToken();
-      final res = await http.get(Uri.parse('$baseUrl/api/apartments'),
-          headers: {
-            'Authorization': 'Bearer $token'
-          }).timeout(const Duration(seconds: 20));
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/apartments'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 20));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final body = jsonDecode(res.body);
@@ -430,8 +619,10 @@ class ApiService {
 
       // Debug log
       // ignore: avoid_print
-      print('[ApiService] POST '
-          '$baseUrl/api/staff/water-readings');
+      print(
+        '[ApiService] POST '
+        '$baseUrl/api/staff/water-readings',
+      );
       // ignore: avoid_print
       print('[ApiService] Body: ' + jsonEncode(body));
 
@@ -500,7 +691,8 @@ class ApiService {
               ? (m['message']?.toString() ?? m['error']?.toString())
               : null;
           throw Exception(
-              msg ?? 'Failed to submit water reading (${res.statusCode})');
+            msg ?? 'Failed to submit water reading (${res.statusCode})',
+          );
         } catch (_) {
           throw Exception('Failed to submit water reading (${res.statusCode})');
         }
@@ -514,12 +706,14 @@ class ApiService {
 
   // Lookup apartment info and latest reading by code
   static Future<Map<String, dynamic>?> lookupWaterReading(
-      String apartmentCode) async {
+    String apartmentCode,
+  ) async {
     try {
       await ensureBaseUrl();
       final token = await AuthService.getToken();
       final uri = Uri.parse(
-          '$baseUrl/api/staff/water-readings/lookup?apartmentCode=${Uri.encodeQueryComponent(apartmentCode)}');
+        '$baseUrl/api/staff/water-readings/lookup?apartmentCode=${Uri.encodeQueryComponent(apartmentCode)}',
+      );
 
       // ignore: avoid_print
       print('[ApiService] GET $uri');
@@ -549,8 +743,9 @@ class ApiService {
       final aptId = await _findApartmentIdByCode(apartmentCode);
       if (aptId == null) return null;
 
-      final adminUri =
-          Uri.parse('$baseUrl/api/admin/apartments/$aptId/water-readings');
+      final adminUri = Uri.parse(
+        '$baseUrl/api/admin/apartments/$aptId/water-readings',
+      );
       // ignore: avoid_print
       print('[ApiService] Fallback GET $adminUri');
 
@@ -576,10 +771,7 @@ class ApiService {
               return {
                 'apartmentCode': apartmentCode,
                 'apartmentName': latest['apartmentName'] ?? apartmentCode,
-                'latest': {
-                  'reading': reading,
-                  'time': date?.toString(),
-                },
+                'latest': {'reading': reading, 'time': date?.toString()},
                 'lastReading': (reading is num) ? reading : null,
                 'lastReadingAt': date?.toString(),
               };
@@ -603,8 +795,9 @@ class ApiService {
     await ensureBaseUrl();
     final token = await AuthService.getToken();
     // Thử staff route nếu có
-    final staffUri =
-        Uri.parse('$baseUrl/api/admin/water-readings/by-month?month=$month');
+    final staffUri = Uri.parse(
+      '$baseUrl/api/admin/water-readings/by-month?month=$month',
+    );
     try {
       // ignore: avoid_print
       print('[ApiService] GET $staffUri');
@@ -644,10 +837,9 @@ class ApiService {
 
           // 3) Final fallback: call API to get readings by apartment then filter by month
           final alt = await http.get(
-              Uri.parse('$baseUrl/api/admin/apartments/$id/water-readings'),
-              headers: {
-                'Authorization': 'Bearer $token'
-              }).timeout(const Duration(seconds: 20));
+            Uri.parse('$baseUrl/api/admin/apartments/$id/water-readings'),
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(const Duration(seconds: 20));
           if (alt.statusCode >= 200 && alt.statusCode < 300) {
             final list = jsonDecode(alt.body);
             if (list is List) {
@@ -669,12 +861,16 @@ class ApiService {
     required String month,
   }) async {
     final list = await getMonthlyWaterReadings(
-        apartmentCode: apartmentCode, month: month);
+      apartmentCode: apartmentCode,
+      month: month,
+    );
     if (list.isEmpty) return null;
     // Normalize: list is already within one month; pick record with latest recordedAt (thời gian ghi cuối)
-    list.sort((a, b) => (b['recordedAt'] ?? b['createdAt'] ?? '')
-        .toString()
-        .compareTo((a['recordedAt'] ?? a['createdAt'] ?? '').toString()));
+    list.sort(
+      (a, b) => (b['recordedAt'] ?? b['createdAt'] ?? '').toString().compareTo(
+            (a['recordedAt'] ?? a['createdAt'] ?? '').toString(),
+          ),
+    );
     return list.first;
   }
 
@@ -691,7 +887,9 @@ class ApiService {
       final month = '${d.year}-${d.month.toString().padLeft(2, '0')}';
       try {
         final rec = await getMonthlyLatestReading(
-            apartmentCode: apartmentCode, month: month);
+          apartmentCode: apartmentCode,
+          month: month,
+        );
         result.add({'month': month, 'record': rec});
       } catch (_) {
         result.add({'month': month, 'record': null});
@@ -710,12 +908,14 @@ class ApiService {
       final token = await AuthService.getToken();
       final uri = Uri.parse('$baseUrl/api/admin/water-readings/$id');
       final res = await http
-          .patch(uri,
-              headers: {
-                'Authorization': 'Bearer $token',
-                'Content-Type': 'application/json',
-              },
-              body: jsonEncode({'currentReading': currentReading}))
+          .patch(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'currentReading': currentReading}),
+          )
           .timeout(const Duration(seconds: 20));
       if (res.statusCode < 200 || res.statusCode >= 300) {
         try {
@@ -724,7 +924,8 @@ class ApiService {
               ? (body['message']?.toString() ?? body['error']?.toString())
               : null;
           throw Exception(
-              msg ?? 'Failed to update reading (${res.statusCode})');
+            msg ?? 'Failed to update reading (${res.statusCode})',
+          );
         } catch (_) {
           throw Exception('Failed to update reading (${res.statusCode})');
         }
@@ -737,8 +938,11 @@ class ApiService {
   }
 
   /// Upload ảnh service request, trả về URL ảnh từ server
-  static Future<String> uploadServiceRequestFile(String filePath,
-      {String? fileName, String? contentType}) async {
+  static Future<String> uploadServiceRequestFile(
+    String filePath, {
+    String? fileName,
+    String? contentType,
+  }) async {
     await ensureBaseUrl();
     final token = await AuthService.getToken();
     final uri = Uri.parse('$baseUrl/api/upload/service-request');
@@ -764,13 +968,16 @@ class ApiService {
       print('[ApiService] UPLOAD POST $uri');
       // ignore: avoid_print
       print(
-          '[ApiService] File: ${multipart.filename} (${file.lengthSync()} bytes)');
+        '[ApiService] File: ${multipart.filename} (${file.lengthSync()} bytes)',
+      );
       // ignore: avoid_print
       print(
-          '[ApiService] WithContentType: $withContentType, Declared: ${contentType ?? 'auto'}');
+        '[ApiService] WithContentType: $withContentType, Declared: ${contentType ?? 'auto'}',
+      );
 
-      final streamed =
-          await request.send().timeout(const Duration(seconds: 40));
+      final streamed = await request.send().timeout(
+            const Duration(seconds: 40),
+          );
       return http.Response.fromStream(streamed);
     }
 

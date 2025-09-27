@@ -9,6 +9,8 @@ public class FacilityUpdateRequest {
     private Integer groupSize; // Số lượng người trong nhóm (chỉ dùng khi capacityType = GROUP)
     private String otherDetails;
     private Double usageFee;
+    private String openingHours;
+    private String openingSchedule; // JSON string cho lịch mở cửa theo tuần
     private Boolean isVisible;
 
     // Constructors
@@ -45,6 +47,12 @@ public class FacilityUpdateRequest {
 
     public Integer getGroupSize() { return groupSize; }
     public void setGroupSize(Integer groupSize) { this.groupSize = groupSize; }
+
+    public String getOpeningHours() { return openingHours; }
+    public void setOpeningHours(String openingHours) { this.openingHours = openingHours; }
+
+    public String getOpeningSchedule() { return openingSchedule; }
+    public void setOpeningSchedule(String openingSchedule) { this.openingSchedule = openingSchedule; }
 
     public Boolean getIsVisible() { return isVisible; }
     public void setIsVisible(Boolean isVisible) { this.isVisible = isVisible; }

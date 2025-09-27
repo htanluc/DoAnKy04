@@ -36,6 +36,7 @@ import {
 } from '@/lib/api'
 import { apiClient } from '@/lib/api-client'
 import type { FC, JSX } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 // Custom CSS for animations
 const customStyles = `
@@ -218,6 +219,7 @@ interface Facility {
   image?: string
   amenities: string[]
   openingHours?: string
+  openingSchedule?: string
   status: 'AVAILABLE' | 'MAINTENANCE' | 'CLOSED'
 }
 
@@ -305,6 +307,10 @@ const FacilityBookingsPage: FC = () => {
    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('vnpay');
    const [paymentLoading, setPaymentLoading] = useState(false);
    const [paymentError, setPaymentError] = useState<string>('');
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [pendingPaymentBookingId, setPendingPaymentBookingId] = useState<string | null>(null);
+  const [isPollingPayment, setIsPollingPayment] = useState(false);
+  const [pollStartAt, setPollStartAt] = useState<number | null>(null);
   // State cho lỗi realtime
   const [numberError, setNumberError] = useState<string | null>(null);
   const [timeError, setTimeError] = useState<string | null>(null);
@@ -312,6 +318,7 @@ const FacilityBookingsPage: FC = () => {
   const [selectedSlot, setSelectedSlot] = useState<{hour: number, availableCapacity: number} | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [userSelectedDate, setUserSelectedDate] = useState<boolean>(false);
+  const [showWeeklySchedule, setShowWeeklySchedule] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -481,8 +488,30 @@ const FacilityBookingsPage: FC = () => {
     // Second selection defines end (INCLUSIVE last slot).
     const start = Math.min(rangeStartHour, hour)
     const endExclusive = Math.max(rangeStartHour, hour) + 1
-    // Opening hours hard-guard for same-day windows
-    if (selectedFacility?.openingHours) {
+    // Opening hours hard-guard - ưu tiên openingSchedule
+    const schedule = parseOpeningSchedule(selectedFacility?.openingSchedule);
+    if (schedule) {
+      const today = new Date(selectedDate);
+      const dayOfWeek = today.getDay();
+      const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const dayKey = dayMap[dayOfWeek];
+      
+      const dayData = schedule[dayKey];
+      if (!dayData || !dayData.open) {
+        setRangeError('Tiện ích đóng cửa vào ngày này.');
+        return;
+      }
+      
+      const [oh] = dayData.from.split(':').map(Number);
+      const [ch] = dayData.to.split(':').map(Number);
+      if (oh <= ch) {
+        if (start < oh || endExclusive > ch) {
+          setRangeError(`Khoảng giờ vượt quá khung phục vụ (${dayData.from} - ${dayData.to}).`);
+          return;
+        }
+      }
+    } else if (selectedFacility?.openingHours) {
+      // Fallback về openingHours cũ
       const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
       if (startStr && endStr) {
         const [oh] = startStr.split(':').map(Number)
@@ -676,6 +705,30 @@ const FacilityBookingsPage: FC = () => {
   };
 
   const isWithinOperatingHours = (hour: number, facility: Facility) => {
+    // Ưu tiên sử dụng openingSchedule nếu có
+    const schedule = parseOpeningSchedule(facility.openingSchedule);
+    if (schedule) {
+      // Lấy ngày hiện tại để xác định thứ trong tuần
+      const today = new Date(selectedDate);
+      const dayOfWeek = today.getDay(); // 0 = CN, 1 = T2, ..., 6 = T7
+      const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const dayKey = dayMap[dayOfWeek];
+      
+      const dayData = schedule[dayKey];
+      if (!dayData || !dayData.open) return false;
+      
+      const [startHour] = dayData.from.split(':').map(Number);
+      const [endHour] = dayData.to.split(':').map(Number);
+      
+      // Xử lý trường hợp qua đêm (ví dụ: 22:00 - 06:00)
+      if (startHour > endHour) {
+        return hour >= startHour || hour < endHour;
+      } else {
+        return hour >= startHour && hour < endHour;
+      }
+    }
+    
+    // Fallback về openingHours cũ
     if (!facility.openingHours) return true; // Nếu không có giờ hoạt động, cho phép tất cả
     
     const hours = facility.openingHours.split(' - ');
@@ -698,7 +751,7 @@ const FacilityBookingsPage: FC = () => {
       return 'bg-gray-300 text-gray-500 cursor-not-allowed';
     }
     
-    // Nếu ngoài giờ hoạt động, ẩn slot
+    // Nếu ngoài giờ hoạt động, ẩn slot hoàn toàn
     if (!isWithinOperatingHours(hour.hour, selectedFacility!)) {
       return 'hidden';
     }
@@ -911,8 +964,43 @@ const FacilityBookingsPage: FC = () => {
       return;
     }
 
-    // Validate within operating hours ở bước submit (phòng trường hợp bypass)
-    if (selectedFacility.openingHours) {
+    // Validate within operating hours ở bước submit - ưu tiên openingSchedule
+    const schedule = parseOpeningSchedule(selectedFacility.openingSchedule);
+    if (schedule) {
+      const today = new Date(newBooking.date);
+      const dayOfWeek = today.getDay();
+      const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const dayKey = dayMap[dayOfWeek];
+      
+      const dayData = schedule[dayKey];
+      if (!dayData || !dayData.open) {
+        setTimeError('Tiện ích đóng cửa vào ngày này.');
+        return;
+      }
+      
+      const [oh, om] = dayData.from.split(':').map(Number);
+      const [ch, cm] = dayData.to.split(':').map(Number);
+      const openMin = oh * 60 + (om || 0);
+      const closeMin = ch * 60 + (cm || 0);
+      const [sh, sm] = newBooking.startTime.split(':').map(Number);
+      const [eh, em] = newBooking.endTime.split(':').map(Number);
+      const selStartMin = sh * 60 + (sm || 0);
+      const selEndMin = eh * 60 + (em || 0);
+      
+      if (oh <= ch) {
+        if (selStartMin < openMin || selEndMin > closeMin) {
+          setTimeError(`Thời gian chọn vượt quá khung phục vụ (${dayData.from} - ${dayData.to}).`);
+          return;
+        }
+      } else {
+        const inWindow = (selStartMin >= openMin || selEndMin <= closeMin);
+        if (!inWindow) {
+          setTimeError(`Thời gian chọn vượt quá khung phục vụ (${dayData.from} - ${dayData.to}).`);
+          return;
+        }
+      }
+    } else if (selectedFacility.openingHours) {
+      // Fallback về openingHours cũ
       const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
       if (startStr && endStr) {
         const [oh, om] = startStr.split(':').map(Number)
@@ -959,13 +1047,28 @@ const FacilityBookingsPage: FC = () => {
          paymentMethod: totalCost > 0 ? "VNPAY" : "FREE",
          totalCost: totalCost
        };
-       await createFacilityBooking(bookingData);
+       const created = await createFacilityBooking(bookingData);
       const successMessage = showAddToSlotModal 
         ? `Đặt thêm ${newBooking.numberOfPeople} người cho slot ${selectedSlot?.hour}:00 thành công!`
         : 'Đặt tiện ích thành công!';
       setSuccess(successMessage);
       const data = await fetchMyFacilityBookings();
       setBookings(data);
+       // Nếu cần thanh toán, mở dialog chọn phương thức
+       if (totalCost > 0) {
+         let newBookingId: any = created?.data?.id ?? created?.id;
+         if (!newBookingId && Array.isArray(data)) {
+           // Tìm booking mới nhất làm fallback
+           try {
+             const newest = [...data].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+             newBookingId = newest?.id;
+           } catch {}
+         }
+         if (newBookingId) {
+           setPendingPaymentBookingId(String(newBookingId));
+           setShowPaymentDialog(true);
+         }
+       }
       // Refresh availability
       if (selectedFacility && newBooking.date) {
         fetchAvailability(selectedFacility.id, newBooking.date);
@@ -1010,27 +1113,103 @@ const FacilityBookingsPage: FC = () => {
     }
   }
   
-   // Xử lý thanh toán
-   const handlePayment = async (bookingId: string, paymentMethod: string) => {
+  // Xử lý thanh toán
+  const handlePayment = async (bookingId: string, paymentMethod: string) => {
      setError(null)
      setSuccess(null)
      setPaymentLoading(true)
      
      try {
-       let data, payUrl;
-       if (paymentMethod === 'vnpay') {
-         data = await createVNPayPayment(parseInt(bookingId), 0, `Thanh toán đặt tiện ích ${bookingId}`);
-         payUrl = data.payUrl || data.data?.payUrl || data.data?.payurl;
-       } else if (paymentMethod === 'visa') {
-         data = await createVisaPayment(parseInt(bookingId), 0, `Thanh toán đặt tiện ích ${bookingId}`);
-         payUrl = data.data?.payUrl || data.data?.payurl;
-       } else {
+      let data, payUrl;
+      // Tìm booking để lấy số tiền cần thanh toán
+      const found = bookings.find((b: any) => String(b.id) === String(bookingId));
+      const amount = Math.round(Number(found?.totalCost || 0));
+      if (!found || !amount || amount <= 0) {
+        throw new Error('Không tìm thấy số tiền cần thanh toán cho booking này');
+      }
+      // 1) Khởi tạo thanh toán qua booking API để lấy orderId/amount/orderInfo chuẩn
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const baseUrl = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_BASE_URL)
+        ? String(process.env.NEXT_PUBLIC_API_BASE_URL)
+        : 'http://localhost:8080';
+
+      const initRes = await fetch(`${baseUrl}/api/facility-bookings/${bookingId}/initiate-payment?paymentMethod=${paymentMethod.toUpperCase()}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      if (!initRes.ok) {
+        const t = await initRes.text().catch(() => 'Khởi tạo thanh toán thất bại');
+        throw new Error(t || 'Khởi tạo thanh toán thất bại');
+      }
+      const init = await initRes.json();
+      const orderId = init.orderId || init.data?.orderId || `FACILITY_${bookingId}`;
+      const orderInfo = init.orderInfo || init.data?.orderInfo || `Thanh toán đặt tiện ích ${bookingId}`;
+      const initAmount = Math.round(Number(init.amount || init.data?.amount || amount));
+
+      if (paymentMethod === 'vnpay') {
+        // Gọi VNPay theo body JSON như BE yêu cầu
+        const vnpRes = await fetch(`${baseUrl}/api/payments/vnpay`, {
+          method: 'POST',
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ orderId, amount: initAmount, orderInfo })
+        });
+        const vnpData = await vnpRes.json();
+        if (!vnpRes.ok) throw new Error(vnpData?.message || 'Tạo thanh toán VNPay thất bại');
+        data = vnpData;
+        payUrl = vnpData.payUrl || vnpData.data?.payUrl || vnpData.data?.payurl;
+      } else if (paymentMethod === 'visa') {
+        // Stripe (thanh toán quốc tế) - dùng endpoint Stripe hiện tại
+        const stripeRes = await fetch(`${baseUrl}/api/payments/stripe?invoiceId=${encodeURIComponent(bookingId)}&amount=${encodeURIComponent(initAmount)}&orderInfo=${encodeURIComponent(orderInfo)}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        });
+        const stripeData = await stripeRes.json();
+        if (!stripeRes.ok) throw new Error(stripeData?.message || 'Tạo thanh toán Stripe thất bại');
+        data = stripeData;
+        payUrl = stripeData?.data?.payUrl || stripeData?.payUrl;
+      } else {
          throw new Error('Phương thức thanh toán không hợp lệ');
        }
        
        if (payUrl) {
-         // Chuyển hướng đến trang thanh toán
-         window.location.href = payUrl;
+        // Mở trang thanh toán trong tab mới và bắt đầu polling trạng thái booking
+        window.open(payUrl, '_blank');
+        setPollStartAt(Date.now());
+        setIsPollingPayment(true);
+        const pollInterval = 3000; // 3s
+        const pollTimeout = 2 * 60 * 1000; // 2 phút
+        const intervalId = setInterval(async () => {
+          try {
+            const list = await fetchMyFacilityBookings();
+            const updated = (list || []).find((b: any) => String(b.id) === String(bookingId));
+            if (updated && (updated.paymentStatus === 'PAID' || updated.status === 'CONFIRMED')) {
+              clearInterval(intervalId);
+              setIsPollingPayment(false);
+              setShowPaymentDialog(false);
+              setSuccess('Thanh toán thành công! Trạng thái booking đã được cập nhật.');
+              setPendingPaymentBookingId(null);
+              // Refresh danh sách và availability
+              const data = await fetchMyFacilityBookings();
+              setBookings(data);
+              if (selectedFacility && newBooking.date) {
+                fetchAvailability(selectedFacility.id, newBooking.date);
+              }
+            } else if (pollStartAt && Date.now() - pollStartAt > pollTimeout) {
+              clearInterval(intervalId);
+              setIsPollingPayment(false);
+              setPaymentError('Không nhận được xác nhận thanh toán. Vui lòng kiểm tra lại hoặc tải trang.');
+            }
+          } catch {
+            // ignore
+          }
+        }, pollInterval);
        } else {
          throw new Error('Không nhận được đường dẫn thanh toán');
        }
@@ -1087,6 +1266,76 @@ const FacilityBookingsPage: FC = () => {
     );
   };
 
+  // Parse opening schedule JSON và hiển thị lịch tuần
+  const parseOpeningSchedule = (openingSchedule?: string) => {
+    if (!openingSchedule) return null;
+    try {
+      return JSON.parse(openingSchedule);
+    } catch {
+      return null;
+    }
+  };
+
+  const getWeeklyScheduleDisplay = (facility: Facility) => {
+    const schedule = parseOpeningSchedule(facility.openingSchedule);
+    if (!schedule) return facility.openingHours || '---';
+
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    
+    return days.map((day, index) => {
+      const dayData = schedule[day];
+      if (dayData && dayData.open) {
+        return `${dayNames[index]}: ${dayData.from}-${dayData.to}`;
+      } else {
+        return `${dayNames[index]}: Đóng cửa`;
+      }
+    }).join(', ');
+  };
+
+  const getWeeklyScheduleComponent = (facility: Facility) => {
+    const schedule = parseOpeningSchedule(facility.openingSchedule);
+    if (!schedule) return null;
+
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    
+    return (
+      <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-medium text-blue-900">Lịch mở cửa theo tuần</h4>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowWeeklySchedule(!showWeeklySchedule)}
+            className="text-xs px-2 py-1 h-6"
+          >
+            {showWeeklySchedule ? 'Ẩn' : 'Xem chi tiết'}
+          </Button>
+        </div>
+        {showWeeklySchedule && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            {days.map((day, index) => {
+              const dayData = schedule[day];
+              return (
+                <div key={day} className="flex items-center justify-between p-2 bg-white rounded border">
+                  <span className="font-medium text-gray-700">{dayNames[index]}:</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    dayData && dayData.open 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {dayData && dayData.open ? `${dayData.from} - ${dayData.to}` : 'Đóng cửa'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Hàm kiểm tra realtime số lượng
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
@@ -1138,8 +1387,41 @@ const FacilityBookingsPage: FC = () => {
         return;
       }
 
-      // Validate within operating hours
-      if (selectedFacility.openingHours) {
+      // Validate within operating hours - ưu tiên openingSchedule
+      const schedule = parseOpeningSchedule(selectedFacility.openingSchedule);
+      if (schedule) {
+        const today = new Date(date);
+        const dayOfWeek = today.getDay();
+        const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const dayKey = dayMap[dayOfWeek];
+        
+        const dayData = schedule[dayKey];
+        if (!dayData || !dayData.open) {
+          setTimeError('Tiện ích đóng cửa vào ngày này.');
+          return;
+        }
+        
+        const [oh, om] = dayData.from.split(':').map(Number);
+        const [ch, cm] = dayData.to.split(':').map(Number);
+        const openMin = oh * 60 + (om || 0);
+        const closeMin = ch * 60 + (cm || 0);
+        const selStartMin = sh * 60 + (sm || 0);
+        const selEndMin = eh * 60 + (em || 0);
+        
+        if (oh <= ch) {
+          if (selStartMin < openMin || selEndMin > closeMin) {
+            setTimeError(`Thời gian chọn vượt quá khung phục vụ (${dayData.from} - ${dayData.to}).`);
+            return;
+          }
+        } else {
+          const inWindow = (selStartMin >= openMin || selEndMin <= closeMin);
+          if (!inWindow) {
+            setTimeError(`Thời gian chọn vượt quá khung phục vụ (${dayData.from} - ${dayData.to}).`);
+            return;
+          }
+        }
+      } else if (selectedFacility.openingHours) {
+        // Fallback về openingHours cũ
         const [startStr, endStr] = selectedFacility.openingHours.split(' - ')
         if (startStr && endStr) {
           const [oh, om] = startStr.split(':').map(Number)
@@ -1420,22 +1702,24 @@ const FacilityBookingsPage: FC = () => {
           </Card>
         </div>
 
-        {/* Date Selector */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium">Chọn ngày:</label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={handleDateChange}
-                min={todayStr}
-                className="w-48"
-              />
-              {dateError && <div className="text-red-500 text-xs mt-1">{dateError}</div>}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Date Selector - Chỉ hiển thị khi không xem lịch */}
+        {!showAvailability && (
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Chọn ngày:</label>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={handleDateChange}
+                  min={todayStr}
+                  className="w-48"
+                />
+                {dateError && <div className="text-red-500 text-xs mt-1">{dateError}</div>}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Facilities Section */}
         <Card className="mb-8">
@@ -1451,7 +1735,7 @@ const FacilityBookingsPage: FC = () => {
                 <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Không có tiện ích nào</h3>
                 <p className="text-gray-600 mb-4">Hiện tại chưa có tiện ích nào được cấu hình trong hệ thống.</p>
-                <Button onClick={() => window.location.reload()} variant="outline">
+                <Button onClick={() => window.location.reload()} className="border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Tải lại
                 </Button>
@@ -1485,8 +1769,11 @@ const FacilityBookingsPage: FC = () => {
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Clock className="h-4 w-4 mr-2" />
-                        {facility.openingHours ?? '---'}
+                        {getWeeklyScheduleDisplay(facility)}
                       </div>
+                      
+                      {/* Weekly Schedule Component */}
+                      {getWeeklyScheduleComponent(facility)}
                       
                       <div className="pt-3">
                         <Button 
@@ -1515,43 +1802,98 @@ const FacilityBookingsPage: FC = () => {
               <CardDescription>
                 Sức chứa theo từng giờ trong ngày - Có thể đặt thêm người vào slot đã có booking
               </CardDescription>
+              
+              {/* Hiển thị giờ mở cửa cho ngày được chọn */}
+              {(() => {
+                const schedule = parseOpeningSchedule(selectedFacility.openingSchedule);
+                if (schedule) {
+                  const today = new Date(selectedDate);
+                  const dayOfWeek = today.getDay();
+                  const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                  const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+                  const dayKey = dayMap[dayOfWeek];
+                  const dayData = schedule[dayKey];
+                  
+                  if (dayData && dayData.open) {
+                    return (
+                      <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-900">
+                            {dayNames[dayOfWeek]} - Giờ mở cửa: {dayData.from} - {dayData.to}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-red-600" />
+                          <span className="text-sm font-medium text-red-900">
+                            {dayNames[dayOfWeek]} - Đóng cửa
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                }
+                return null;
+              })()}
+              
+              {/* Date Selector - Di chuyển lên phía trên lịch */}
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium text-gray-700">Chọn ngày:</label>
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    min={todayStr}
+                    className="w-48"
+                  />
+                  {dateError && <div className="text-red-500 text-xs mt-1">{dateError}</div>}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
-                {availability.hourlyData.map((hour) => (
-                  <div
-                    key={hour.hour}
-                    className={`p-3 rounded-lg text-center transition-colors ${getSlotColor(hour, selectedDate)} ${
-                      rangeStartHour !== null && rangeEndHour !== null && hour.hour >= Math.min(rangeStartHour, rangeEndHour) && hour.hour <= Math.max(rangeStartHour, rangeEndHour) ? 'ring-2 ring-[color:#0066CC]' : ''
-                    } ${rangeStartHour !== null && rangeEndHour === null && hour.hour === rangeStartHour ? 'ring-2 ring-[color:#0066CC]' : ''}`}
-                    onClick={() => handleSelectHour(hour.hour)}
-                    title={
-                      isTimeSlotPassed(hour.hour, selectedDate)
-                        ? 'Thời gian này đã qua, không thể đặt lịch'
-                        : hour.isAvailable
-                          ? `Chọn ${hour.hour}:00 làm mốc thời gian`
-                          : 'Slot này đã hết chỗ'
-                    }
-                  >
-                    <div className="font-semibold">{hour.hour}:00</div>
-                     <div className="text-sm">
-                       {getAdjustedUsedCapacity(hour.hour)}/{hour.usedCapacity + hour.availableCapacity}
-                     </div>
-                    <div className="text-xs">
-                      {getHourlyBookingCount(hour.hour)} booking
+                {availability.hourlyData
+                  .filter(hour => isWithinOperatingHours(hour.hour, selectedFacility!))
+                  .map((hour) => (
+                    <div
+                      key={hour.hour}
+                      className={`p-3 rounded-lg text-center transition-colors ${getSlotColor(hour, selectedDate)} ${
+                        rangeStartHour !== null && rangeEndHour !== null && hour.hour >= Math.min(rangeStartHour, rangeEndHour) && hour.hour <= Math.max(rangeStartHour, rangeEndHour) ? 'ring-2 ring-[color:#0066CC]' : ''
+                      } ${rangeStartHour !== null && rangeEndHour === null && hour.hour === rangeStartHour ? 'ring-2 ring-[color:#0066CC]' : ''}`}
+                      onClick={() => handleSelectHour(hour.hour)}
+                      title={
+                        isTimeSlotPassed(hour.hour, selectedDate)
+                          ? 'Thời gian này đã qua, không thể đặt lịch'
+                          : hour.isAvailable
+                            ? `Chọn ${hour.hour}:00 làm mốc thời gian`
+                            : 'Slot này đã hết chỗ'
+                      }
+                    >
+                      <div className="font-semibold">{hour.hour}:00</div>
+                       <div className="text-sm">
+                         {getAdjustedUsedCapacity(hour.hour)}/{hour.usedCapacity + hour.availableCapacity}
+                       </div>
+                      <div className="text-xs">
+                        {getHourlyBookingCount(hour.hour)} booking
+                      </div>
+                      {getAdjustedAvailableCapacity(hour) > 0 && !isTimeSlotPassed(hour.hour, selectedDate) && (
+                        <div className="text-xs font-medium text-green-700">
+                          +{getAdjustedAvailableCapacity(hour)}
+                        </div>
+                      )}
+                      {isTimeSlotPassed(hour.hour, selectedDate) && (
+                        <div className="text-xs font-medium text-gray-500">
+                          Đã qua
+                        </div>
+                      )}
                     </div>
-                    {getAdjustedAvailableCapacity(hour) > 0 && !isTimeSlotPassed(hour.hour, selectedDate) && (
-                      <div className="text-xs font-medium text-green-700">
-                        +{getAdjustedAvailableCapacity(hour)}
-                      </div>
-                    )}
-                    {isTimeSlotPassed(hour.hour, selectedDate) && (
-                      <div className="text-xs font-medium text-gray-500">
-                        Đã qua
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
               </div>
               <div className="mt-4 flex flex-col gap-2">
                 {rangeError && <div className="text-red-600 text-sm">{rangeError}</div>}
@@ -1571,7 +1913,7 @@ const FacilityBookingsPage: FC = () => {
                   >
                     {rangeStartHour !== null && rangeEndHour === null ? 'Đặt 1 giờ đã chọn' : 'Đặt dải giờ đã chọn'}
                   </Button>
-                  <Button variant="outline" onClick={clearRange}>Xóa lựa chọn</Button>
+                  <Button onClick={clearRange} className="border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Xóa lựa chọn</Button>
                   <div className="text-xs text-gray-500 mt-1">Tip: Chọn 1 ô để đặt 60 phút; chọn 2 ô để đặt theo dải giờ.</div>
                 </div>
               </div>
@@ -1595,14 +1937,14 @@ const FacilityBookingsPage: FC = () => {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">
-                  * Click vào slot có màu để đặt thêm người. Slot xám là thời gian đã qua.
+                  * Chỉ hiển thị các slot trong giờ mở cửa. Click vào slot có màu để đặt thêm người. Slot xám là thời gian đã qua.
                 </p>
               </div>
               <div className="mt-4">
-                <Button variant="outline" onClick={() => {
+                <Button onClick={() => {
                   setShowAvailability(false);
                   setUserSelectedDate(false); // Reset khi đóng modal
-                }}>
+                }} className="border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                   Đóng
                 </Button>
               </div>
@@ -1695,10 +2037,10 @@ const FacilityBookingsPage: FC = () => {
                   >
                     Đặt thêm
                   </Button>
-                  <Button variant="outline" onClick={() => {
+                  <Button onClick={() => {
                     setShowAddToSlotModal(false);
                     setSelectedSlot(null);
-                  }}>
+                  }} className="border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                     Hủy
                   </Button>
                 </div>
@@ -1797,7 +2139,7 @@ const FacilityBookingsPage: FC = () => {
                   >
                     {paymentLoading ? 'Đang xử lý...' : 'Đặt chỗ'}
                   </Button>
-                  <Button variant="outline" onClick={() => setShowBookingForm(false)}>
+                  <Button onClick={() => setShowBookingForm(false)} className="border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                     Hủy
                   </Button>
                 </div>
@@ -1823,31 +2165,31 @@ const FacilityBookingsPage: FC = () => {
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant={filterStatus === 'all' ? 'default' : 'outline'}
+                  className={filterStatus === 'all' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}
                   onClick={() => setFilterStatus('all')}
                 >
                   Tất cả
                 </Button>
                 <Button
-                  variant={filterStatus === 'PENDING' ? 'default' : 'outline'}
+                  className={filterStatus === 'PENDING' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}
                   onClick={() => setFilterStatus('PENDING')}
                 >
                   Chờ xác nhận
                 </Button>
                 <Button
-                  variant={filterStatus === 'CONFIRMED' ? 'default' : 'outline'}
+                  className={filterStatus === 'CONFIRMED' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}
                   onClick={() => setFilterStatus('CONFIRMED')}
                 >
                   Đã xác nhận
                 </Button>
                 <Button
-                  variant={filterStatus === 'COMPLETED' ? 'default' : 'outline'}
+                  className={filterStatus === 'COMPLETED' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}
                   onClick={() => setFilterStatus('COMPLETED')}
                 >
                   Hoàn thành
                 </Button>
                 <Button
-                  variant={filterStatus === 'REJECTED' ? 'default' : 'outline'}
+                  className={filterStatus === 'REJECTED' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}
                   onClick={() => setFilterStatus('REJECTED')}
                 >
                   Bị từ chối
@@ -1924,7 +2266,6 @@ const FacilityBookingsPage: FC = () => {
                                  <div className="text-xs text-gray-600">
                                    <div>Phương thức: {booking.paymentMethod || '---'}</div>
                                    <div>Ngày thanh toán: {booking.paymentDate ? formatDateTime(booking.paymentDate) : '---'}</div>
-                                   {booking.transactionId && <div>Mã giao dịch: {booking.transactionId}</div>}
                                  </div>
                                ) : (
                                  <div className="space-y-2">
@@ -1952,8 +2293,7 @@ const FacilityBookingsPage: FC = () => {
                         <div className="flex gap-2 ml-4">
                           {booking.status === 'PENDING' && (
                             <Button
-                              variant="outline"
-                              size="sm"
+                              className="border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm px-3 py-1"
                               onClick={() => handleCancelBooking(booking.id)}
                             >
                               Hủy
@@ -1966,15 +2306,13 @@ const FacilityBookingsPage: FC = () => {
                               </span>
                               {booking.qrCode && (
                                 <Button
-                                  variant="outline"
-                                  size="sm"
+                                  className="border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-xs px-3 py-1"
                                   onClick={() => {
                                     // Tạo QR code popup
                                     const qrData = `FACILITY_${booking.id}_${Date.now()}`;
                                     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
                                     window.open(qrUrl, '_blank', 'width=300,height=300');
                                   }}
-                                  className="text-xs"
                                 >
                                   <QrCode className="h-3 w-3 mr-1" />
                                   Xem QR Code
@@ -2002,6 +2340,32 @@ const FacilityBookingsPage: FC = () => {
           </CardContent>
         </Card>
       </div>
+      {/* Payment Method Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={(open: boolean) => { if (!open) setShowPaymentDialog(false); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Chọn phương thức thanh toán</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">Vui lòng chọn cổng thanh toán để hoàn tất đặt tiện ích.</p>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                disabled={paymentLoading || !pendingPaymentBookingId}
+                onClick={() => pendingPaymentBookingId && handlePayment(pendingPaymentBookingId, 'vnpay')}
+              >
+                {paymentLoading ? 'Đang xử lý...' : 'Thanh toán VNPay'}
+              </Button>
+              <Button
+                disabled={paymentLoading || !pendingPaymentBookingId}
+                onClick={() => pendingPaymentBookingId && handlePayment(pendingPaymentBookingId, 'visa')}
+                className="border"
+              >
+                {paymentLoading ? 'Đang xử lý...' : 'Thanh toán Visa/Mastercard'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

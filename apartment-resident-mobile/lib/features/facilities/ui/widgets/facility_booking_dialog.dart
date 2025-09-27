@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/facility.dart';
-import '../../data/facilities_api.dart';
+import '../../data/bookings_api.dart';
 
 class FacilityBookingDialog extends StatefulWidget {
   final Facility facility;
@@ -118,23 +119,41 @@ class _FacilityBookingDialogState extends State<FacilityBookingDialog> {
           'totalCost': _totalCost,
         };
 
-        final booking = await FacilityBookingsApi.create(bookingData);
+        final booking = await BookingsApi.create(bookingData);
 
         // Tạo thanh toán
-        final paymentResponse = await FacilityBookingsApi.createPayment(
+        final paymentResponse = await BookingsApi.createPayment(
           booking['id'],
           _selectedPaymentMethod!,
         );
 
         if (paymentResponse['paymentUrl'] != null) {
           // Mở URL thanh toán
-          // TODO: Implement URL launcher
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Đang chuyển hướng đến trang thanh toán...'),
-              backgroundColor: Colors.blue,
-            ),
-          );
+          final paymentUrl = paymentResponse['paymentUrl'] as String;
+          final uri = Uri.parse(paymentUrl);
+
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Đã mở trang thanh toán. Vui lòng hoàn tất thanh toán.',
+                ),
+                backgroundColor: Colors.blue,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Không thể mở trang thanh toán. Vui lòng thử lại.',
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
 
           // Đóng dialog
           Navigator.of(context).pop();
@@ -155,7 +174,7 @@ class _FacilityBookingDialogState extends State<FacilityBookingDialog> {
           'totalCost': 0,
         };
 
-        await FacilityBookingsApi.create(bookingData);
+        await BookingsApi.create(bookingData);
       }
 
       // Thành công
@@ -188,180 +207,187 @@ class _FacilityBookingDialogState extends State<FacilityBookingDialog> {
     return Dialog(
       child: Container(
         width: double.maxFinite,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Đặt tiện ích: ${widget.facility.name}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Thời gian bắt đầu
-              TextFormField(
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: 'Thời gian bắt đầu *',
-                  suffixIcon: const Icon(Icons.calendar_today),
-                  border: const OutlineInputBorder(),
-                ),
-                onTap: () => _selectDateTime(true),
-                controller: TextEditingController(
-                  text: _startTime != null
-                      ? '${_startTime!.day}/${_startTime!.month}/${_startTime!.year} ${_startTime!.hour}:${_startTime!.minute.toString().padLeft(2, '0')}'
-                      : '',
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Thời gian kết thúc
-              TextFormField(
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: 'Thời gian kết thúc *',
-                  suffixIcon: const Icon(Icons.calendar_today),
-                  border: const OutlineInputBorder(),
-                ),
-                onTap: () => _selectDateTime(false),
-                controller: TextEditingController(
-                  text: _endTime != null
-                      ? '${_endTime!.day}/${_endTime!.month}/${_endTime!.year} ${_endTime!.hour}:${_endTime!.minute.toString().padLeft(2, '0')}'
-                      : '',
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Mục đích sử dụng
-              TextFormField(
-                controller: _purposeController,
-                decoration: const InputDecoration(
-                  labelText: 'Mục đích sử dụng *',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Vui lòng nhập mục đích sử dụng';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Thông tin phí
-              if (_startTime != null && _endTime != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đặt tiện ích: ${widget.facility.name}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Thông tin thanh toán',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Phí sử dụng: ${_totalCost.toStringAsFixed(0)} VNĐ'),
-                      Text(
-                        'Thời gian: ${_endTime!.difference(_startTime!).inMinutes} phút',
-                      ),
-                    ],
+                ),
+                const SizedBox(height: 20),
+
+                // Thời gian bắt đầu
+                TextFormField(
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Thời gian bắt đầu *',
+                    suffixIcon: const Icon(Icons.calendar_today),
+                    border: const OutlineInputBorder(),
+                  ),
+                  onTap: () => _selectDateTime(true),
+                  controller: TextEditingController(
+                    text: _startTime != null
+                        ? '${_startTime!.day}/${_startTime!.month}/${_startTime!.year} ${_startTime!.hour}:${_startTime!.minute.toString().padLeft(2, '0')}'
+                        : '',
                   ),
                 ),
                 const SizedBox(height: 16),
-              ],
 
-              // Phương thức thanh toán (nếu có phí)
-              if (_totalCost > 0) ...[
-                const Text(
-                  'Phương thức thanh toán',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                // Thời gian kết thúc
+                TextFormField(
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Thời gian kết thúc *',
+                    suffixIcon: const Icon(Icons.calendar_today),
+                    border: const OutlineInputBorder(),
+                  ),
+                  onTap: () => _selectDateTime(false),
+                  controller: TextEditingController(
+                    text: _endTime != null
+                        ? '${_endTime!.day}/${_endTime!.month}/${_endTime!.year} ${_endTime!.hour}:${_endTime!.minute.toString().padLeft(2, '0')}'
+                        : '',
+                  ),
                 ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedPaymentMethod,
+                const SizedBox(height: 16),
+
+                // Mục đích sử dụng
+                TextFormField(
+                  controller: _purposeController,
                   decoration: const InputDecoration(
+                    labelText: 'Mục đích sử dụng *',
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'VNPAY', child: Text('VNPay')),
-                    DropdownMenuItem(value: 'VISA', child: Text('Thẻ Visa')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedPaymentMethod = value;
-                    });
+                  maxLines: 3,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Vui lòng nhập mục đích sử dụng';
+                    }
+                    return null;
                   },
                 ),
                 const SizedBox(height: 16),
-              ],
 
-              // Error message
-              if (_errorMessage != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.red[200]!),
-                  ),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red[700]),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Hủy'),
+                // Thông tin phí
+                if (_startTime != null && _endTime != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Thông tin thanh toán',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Phí sử dụng: ${_totalCost.toStringAsFixed(0)} VNĐ',
+                        ),
+                        Text(
+                          'Thời gian: ${_endTime!.difference(_startTime!).inMinutes} phút',
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submitBooking,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2),
-                        foregroundColor: Colors.white,
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : Text(_totalCost > 0 ? 'Thanh toán' : 'Đặt chỗ'),
-                    ),
-                  ),
+                  const SizedBox(height: 16),
                 ],
-              ),
-            ],
+
+                // Phương thức thanh toán (nếu có phí)
+                if (_totalCost > 0) ...[
+                  const Text(
+                    'Phương thức thanh toán',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _selectedPaymentMethod,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'VNPAY', child: Text('VNPay')),
+                      DropdownMenuItem(value: 'VISA', child: Text('Thẻ Visa')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedPaymentMethod = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Error message
+                if (_errorMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.red[200]!),
+                    ),
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.red[700]),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Hủy'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitBooking,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1976D2),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Text(_totalCost > 0 ? 'Thanh toán' : 'Đặt chỗ'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

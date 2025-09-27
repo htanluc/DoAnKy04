@@ -1,0 +1,13 @@
+{
+  "name": "Test Facility",
+  "description": "Test Description",
+  "location": "Ground Floor - Test",
+  "capacity": 4,
+  "capacityType": "GROUP",
+  "groupSize": 4,
+  "otherDetails": "Test Details",
+  "usageFee": 100000.0,
+  "openingHours": "06:00 - 22:00",
+  "openingSchedule": "{\"mon\":{\"open\":true,\"from\":\"06:00\",\"to\":\"22:00\"},\"tue\":{\"open\":true,\"from\":\"06:00\",\"to\":\"22:00\"},\"wed\":{\"open\":true,\"from\":\"06:00\",\"to\":\"22:00\"},\"thu\":{\"open\":true,\"from\":\"06:00\",\"to\":\"22:00\"},\"fri\":{\"open\":true,\"from\":\"06:00\",\"to\":\"22:00\"},\"sat\":{\"open\":true,\"from\":\"06:00\",\"to\":\"22:00\"},\"sun\":{\"open\":false,\"from\":\"06:00\",\"to\":\"22:00\"}}",
+  "isVisible": true
+}
