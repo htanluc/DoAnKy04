@@ -11,7 +11,6 @@ class ApiService {
     'API_BASE_URL',
     // For real device, use your computer's IP address instead of 10.0.3.2 (emulator only)
     defaultValue: 'http://10.0.3.2:8080',
-
   );
   static bool _autoDetected = false;
 
@@ -203,6 +202,10 @@ class ApiService {
     try {
       // no need to await here; use current cached base
       if (url.isEmpty) return url;
+
+      // Debug log
+      print('[ApiService] Normalizing URL: "$url"');
+
       final base = Uri.parse(baseUrl);
 
       // Chuẩn hoá backslash -> slash (một số API có thể trả "\\uploads\\a.jpg")
@@ -233,10 +236,14 @@ class ApiService {
       if (u.host == 'localhost' ||
           u.host == '127.0.0.1' ||
           u.host == '10.0.2.2') {
-        return u.replace(host: base.host, port: base.port).toString();
+        final result = u.replace(host: base.host, port: base.port).toString();
+        print('[ApiService] Normalized URL result: "$result"');
+        return result;
       }
+      print('[ApiService] Normalized URL result: "$url"');
       return url;
-    } catch (_) {
+    } catch (e) {
+      print('[ApiService] Error normalizing URL: $e');
       return url;
     }
   }

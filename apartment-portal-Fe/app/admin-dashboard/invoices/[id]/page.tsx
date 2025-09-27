@@ -23,7 +23,8 @@ import {
   Wrench,
   ParkingCircle,
   Lightbulb,
-  Mail
+  Mail,
+  Calculator
 } from 'lucide-react';
 import { useYearlyBilling } from '@/hooks/use-yearly-billing';
 import { useApartments } from '@/hooks/use-apartments';
@@ -71,6 +72,8 @@ export default function InvoiceDetailPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [emailRecipients, setEmailRecipients] = useState<string[]>([]);
+  const [fixTotalLoading, setFixTotalLoading] = useState(false);
+  const [fixTotalMessage, setFixTotalMessage] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -143,6 +146,32 @@ export default function InvoiceDetailPage() {
       setEmailMessage('Có lỗi xảy ra khi gửi email');
     } finally {
       setEmailLoading(false);
+    }
+  };
+
+  const handleFixTotal = async () => {
+    setFixTotalLoading(true);
+    setFixTotalMessage(null);
+    
+    try {
+      const res = await api.post(`/api/admin/invoices/${invoiceId}/fix-total`);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success) {
+          setFixTotalMessage(result.message);
+          // Reload invoice data to show updated total
+          await loadInvoiceDetail();
+        } else {
+          setFixTotalMessage(result.message || 'Sửa tổng tiền thất bại');
+        }
+      } else {
+        const err = await res.json();
+        setFixTotalMessage(err.message || 'Sửa tổng tiền thất bại');
+      }
+    } catch (e) {
+      setFixTotalMessage('Có lỗi xảy ra khi sửa tổng tiền');
+    } finally {
+      setFixTotalLoading(false);
     }
   };
 
@@ -575,6 +604,16 @@ export default function InvoiceDetailPage() {
                   <FileText className="h-4 w-4 mr-2" />
                   {t('admin.actions.printInvoice','In hóa đơn')}
                 </Button>
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  onClick={handleFixTotal}
+                  disabled={fixTotalLoading}
+                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  {fixTotalLoading ? 'Đang sửa...' : 'Sửa tổng tiền'}
+                </Button>
               </CardContent>
             </Card>
 
@@ -609,6 +648,28 @@ export default function InvoiceDetailPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Fix Total Message */}
+            {fixTotalMessage && (
+              <Card className="mt-4">
+                <CardContent className="pt-4">
+                  <div className={`p-3 rounded-md ${
+                    fixTotalMessage.includes('thành công') || fixTotalMessage.includes('Đã sửa')
+                      ? 'bg-green-50 border border-green-200 text-green-800'
+                      : 'bg-red-50 border border-red-200 text-red-800'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {fixTotalMessage.includes('thành công') || fixTotalMessage.includes('Đã sửa') ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      <span className="font-medium">{fixTotalMessage}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -93,14 +93,14 @@ const adminMenuSections = [
       { href: '/admin-dashboard/vehicle-registrations', label: 'admin.vehicleRegistrations.title', icon: <Car className="h-5 w-5" /> },
     ],
   },
-  {
-    key: 'reports',
-    label: 'admin.groups.reports',
-    items: [
-      { href: '/admin-dashboard/reports', label: 'admin.reports.title', icon: <BarChart3 className="h-5 w-5" /> },
-      { href: '/admin-dashboard/history', label: 'admin.history.title', icon: <History className="h-5 w-5" /> },
-    ],
-  },
+  // {
+  //   key: 'reports',
+  //   label: 'admin.groups.reports',
+  //   items: [
+  //     { href: '/admin-dashboard/reports', label: 'admin.reports.title', icon: <BarChart3 className="h-5 w-5" /> },
+  //     { href: '/admin-dashboard/history', label: 'admin.history.title', icon: <History className="h-5 w-5" /> },
+  //   ],
+  // }, // Tạm ẩn toàn bộ section vì chưa hoàn thành
 ];
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {

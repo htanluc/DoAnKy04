@@ -27,7 +27,7 @@ const navItems = [
   { name: "Sự kiện & Cộng đồng", href: "/events", icon: Calendar },
   { name: "Tiện ích & Dịch vụ", href: "/facilities", icon: Coffee },
   { name: "Phản hồi & Hỗ trợ", href: "/feedback", icon: MessageSquare },
-  { name: "Báo cáo & Phân tích", href: "/reports", icon: BarChart3 },
+  // { name: "Báo cáo & Phân tích", href: "/reports", icon: BarChart3 }, // Tạm ẩn vì chưa hoàn thành
   { name: "Cài đặt", href: "/settings", icon: Settings },
 ]
 

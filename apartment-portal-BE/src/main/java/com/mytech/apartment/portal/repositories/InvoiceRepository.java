@@ -46,4 +46,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     
     /** Lấy hóa đơn quá hạn (due date trước ngày hiện tại và status UNPAID) */
     List<Invoice> findByDueDateBeforeAndStatus(LocalDate date, InvoiceStatus status);
+    
+    /** Lấy tất cả hóa đơn theo billing period */
+    List<Invoice> findByBillingPeriod(String billingPeriod);
 }

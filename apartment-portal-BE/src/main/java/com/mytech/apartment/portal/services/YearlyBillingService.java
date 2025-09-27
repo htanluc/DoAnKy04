@@ -34,18 +34,12 @@ public class YearlyBillingService {
     @Autowired
     private ServiceFeeConfigRepository serviceFeeConfigRepository;
 
-    @Autowired
-    private VehicleRepository vehicleRepository;
-
     // Chạy các dịch vụ tính phí theo item (dịch vụ, nước, gửi xe...)
     @Autowired
     private List<MonthlyFeeService> feeServices;
 
     @Autowired
     private WaterMeterReadingRepository waterMeterReadingRepository;
-
-    @Autowired
-    private ApartmentResidentRepository apartmentResidentRepository;
 
     @Autowired
     private InvoiceService invoiceService;
@@ -185,10 +179,18 @@ public class YearlyBillingService {
                 }
             }
 
-            // Chỉ tạo mới nếu chưa tồn tại hóa đơn của kỳ này
+            // Chỉ tạo mới nếu chưa tồn tại hóa đơn của kỳ này (bất kể status nào)
             Optional<Invoice> existing = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), billingPeriod);
             if (existing.isPresent()) {
-                System.out.println("DEBUG: Căn hộ " + apartment.getId() + " đã có hóa đơn cho kỳ " + billingPeriod + " - bỏ qua");
+                Invoice existingInvoice = existing.get();
+                System.out.println("DEBUG: Căn hộ " + apartment.getId() + " đã có hóa đơn #" + existingInvoice.getId() + 
+                    " cho kỳ " + billingPeriod + " với status " + existingInvoice.getStatus() + " - bỏ qua");
+                
+                // Cảnh báo nếu hóa đơn đã có status khác UNPAID
+                if (existingInvoice.getStatus() != InvoiceStatus.UNPAID) {
+                    System.out.println("WARNING: Căn hộ " + apartment.getId() + " đã có hóa đơn kỳ " + billingPeriod + 
+                        " với status " + existingInvoice.getStatus() + " - KHÔNG tạo hóa đơn trùng lặp!");
+                }
                 continue;
             } else {
                 System.out.println("DEBUG: Căn hộ " + apartment.getId() + " chưa có hóa đơn cho kỳ " + billingPeriod + " - tiếp tục tạo");
@@ -197,27 +199,20 @@ public class YearlyBillingService {
             System.out.println("DEBUG: Bắt đầu tạo hóa đơn cho căn hộ " + apartment.getId());
 
             // Tính toán tổng tiền ngay từ đầu để tránh vi phạm constraint
-            double totalAmount = calculateTotalAmountForApartment(apartment.getId(), month, year);
-            
-            // Đảm bảo totalAmount > 0 để tránh vi phạm constraint chk_invoice_amount
-            if (totalAmount <= 0) {
-                System.out.println("DEBUG: Cảnh báo - Tổng tiền hóa đơn cho căn hộ " + apartment.getId() + " bằng 0. Sử dụng giá trị tối thiểu.");
-                totalAmount = 1000.0; // Giá trị tối thiểu để tránh constraint violation
-            }
-
+            // Tạo hóa đơn với tổng tiền = 0 (sẽ được tính lại sau khi thêm items)
             Invoice invoice = Invoice.builder()
                 .apartmentId(apartment.getId())
                 .billingPeriod(billingPeriod)
                 .issueDate(LocalDate.of(year, month, 1))
                 .dueDate(LocalDate.of(year, month, 15))
                 .status(InvoiceStatus.UNPAID)
-                .totalAmount(totalAmount)
+                .totalAmount(0.0) // Bắt đầu với 0, sẽ được tính lại sau khi thêm items
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
             invoiceRepository.save(invoice);
-            System.out.println("DEBUG: Đã tạo hóa đơn thành công cho căn hộ " + apartment.getId() + " - Tổng tiền: " + totalAmount);
+            System.out.println("DEBUG: Đã tạo hóa đơn thành công cho căn hộ " + apartment.getId() + " - Tổng tiền ban đầu: 0");
             // Ghi nhận căn hộ đã tạo mới hoá đơn để gửi email sau khi đã tính xong các item
             createdApartmentIds.add(apartment.getId());
         }
@@ -228,6 +223,29 @@ public class YearlyBillingService {
             System.out.println("DEBUG: Bắt đầu thêm items cho " + createdApartmentIds.size() + " hóa đơn");
             feeServices.forEach(svc -> svc.generateFeeForMonth(billingPeriod));
             System.out.println("DEBUG: Hoàn thành thêm items cho hóa đơn");
+            
+            // 3) Tính lại tổng tiền cho tất cả hóa đơn sau khi đã thêm items
+            System.out.println("DEBUG: Bắt đầu tính lại tổng tiền cho " + createdApartmentIds.size() + " hóa đơn");
+            for (Long apartmentId : createdApartmentIds) {
+                try {
+                    Optional<Invoice> invoiceOpt = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, billingPeriod);
+                    if (invoiceOpt.isPresent()) {
+                        Invoice invoice = invoiceOpt.get();
+                        double newTotal = 0.0;
+                        if (invoice.getItems() != null && !invoice.getItems().isEmpty()) {
+                            newTotal = invoice.getItems().stream()
+                                .mapToDouble(InvoiceItem::getAmount)
+                                .sum();
+                        }
+                        invoice.setTotalAmount(newTotal);
+                        invoiceRepository.save(invoice);
+                        System.out.println("DEBUG: Đã cập nhật tổng tiền hóa đơn căn hộ " + apartmentId + " thành " + newTotal);
+                    }
+                } catch (Exception e) {
+                    System.out.println("ERROR: Lỗi khi tính lại tổng tiền hóa đơn căn hộ " + apartmentId + ": " + e.getMessage());
+                }
+            }
+            System.out.println("DEBUG: Hoàn thành tính lại tổng tiền cho tất cả hóa đơn");
         } else {
             System.out.println("DEBUG: Bỏ qua thêm items - không có hóa đơn nào được tạo");
         }
@@ -298,105 +316,22 @@ public class YearlyBillingService {
             return;
         }
         
-        // Lấy cấu hình phí cho tháng
-        Optional<ServiceFeeConfig> feeConfig = getFeeConfig(month, year);
-        
-        // Tính toán phí dịch vụ
-        double serviceFee = 0.0;
-        if (feeConfig.isPresent()) {
-            serviceFee = apartment.get().getArea() * feeConfig.get().getServiceFeePerM2();
-        } else {
-            // Sử dụng giá mặc định
-            serviceFee = apartment.get().getArea() * 5000.0; // 5000 VND/m2
-        }
-        
-        // Tính phí gửi xe
-        double parkingFee = calculateParkingFee(apartmentId, month, year, feeConfig);
-        
-        // Tính phí nước (nếu có)
-        double waterFee = calculateWaterFee(apartmentId, month, year, feeConfig);
-        
-        // Tổng tiền
-        double totalAmount = serviceFee + parkingFee + waterFee;
-        
-        // Tạo hóa đơn
+        // Tạo hóa đơn với tổng tiền = 0 (sẽ được tính lại sau khi thêm items)
         Invoice invoice = Invoice.builder()
             .apartmentId(apartmentId)
             .billingPeriod(billingPeriod)
             .issueDate(LocalDate.of(year, month, 1))
             .dueDate(LocalDate.of(year, month, 15))
             .status(InvoiceStatus.UNPAID)
-            .totalAmount(totalAmount)
+            .totalAmount(0.0) // Bắt đầu với 0, sẽ được tính lại sau khi thêm items
             .createdAt(LocalDateTime.now())
             .updatedAt(LocalDateTime.now())
             .build();
         
         invoiceRepository.save(invoice);
-        System.out.println("DEBUG: Đã tạo hóa đơn cho căn hộ " + apartmentId + " kỳ " + billingPeriod + " với tổng tiền " + totalAmount);
+        System.out.println("DEBUG: Đã tạo hóa đơn cho căn hộ " + apartmentId + " kỳ " + billingPeriod + " với tổng tiền ban đầu = 0");
     }
     
-    /**
-     * Tính phí gửi xe
-     */
-    private double calculateParkingFee(Long apartmentId, int month, int year, Optional<ServiceFeeConfig> feeConfig) {
-        // Lấy danh sách xe của tất cả cư dân trong căn hộ
-        List<ApartmentResident> residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
-        double totalParkingFee = 0.0;
-        
-        for (ApartmentResident resident : residents) {
-            List<Vehicle> vehicles = vehicleRepository.findByResidentUserId(resident.getId().getUserId());
-            
-            for (Vehicle vehicle : vehicles) {
-                double vehicleFee = 0.0;
-                
-                if (feeConfig.isPresent()) {
-                    switch (vehicle.getVehicleType()) {
-                        case MOTORCYCLE:
-                            vehicleFee = feeConfig.get().getMotorcycleFee();
-                            break;
-                        case CAR_4_SEATS:
-                            vehicleFee = feeConfig.get().getCar4SeatsFee();
-                            break;
-                        case CAR_7_SEATS:
-                            vehicleFee = feeConfig.get().getCar7SeatsFee();
-                            break;
-                        default:
-                            // Sử dụng giá mặc định cho các loại xe khác
-                            vehicleFee = vehicle.getVehicleType().getMonthlyFee().doubleValue();
-                            break;
-                    }
-                } else {
-                    // Sử dụng giá mặc định từ enum
-                    vehicleFee = vehicle.getVehicleType().getMonthlyFee().doubleValue();
-                }
-                
-                totalParkingFee += vehicleFee;
-            }
-        }
-        
-        return totalParkingFee;
-    }
-    
-    /**
-     * Tính phí nước
-     */
-    private double calculateWaterFee(Long apartmentId, int month, int year, Optional<ServiceFeeConfig> feeConfig) {
-        // Tạm thời comment out water meter reading functionality
-        /*
-        // Tìm chỉ số nước của tháng trước
-        String previousMonth = String.format("%04d-%02d", year, month);
-        Optional<WaterMeterReading> reading = waterMeterReadingRepository.findByApartmentIdAndReadingMonth(
-            apartmentId.intValue(), previousMonth);
-        
-        if (reading.isPresent()) {
-            double consumption = reading.get().getConsumption().doubleValue();
-            double waterRate = feeConfig.isPresent() ? feeConfig.get().getWaterFeePerM3() : 15000.0;
-            return consumption * waterRate;
-        }
-        */
-        
-        return 0.0;
-    }
 
     /**
      * Tạo cấu hình phí dịch vụ cho cả năm
@@ -563,36 +498,6 @@ public class YearlyBillingService {
     }
 
 
-
-    /**
-     * Tính tổng tiền hóa đơn cho một căn hộ trong tháng/năm cụ thể
-     */
-    private double calculateTotalAmountForApartment(Long apartmentId, int month, int year) {
-        // Lấy thông tin căn hộ
-        Optional<Apartment> apartment = apartmentRepository.findById(apartmentId);
-        if (apartment.isEmpty()) {
-            return 0.0;
-        }
-
-        // Lấy cấu hình phí
-        Optional<ServiceFeeConfig> feeConfig = getFeeConfig(month, year);
-        
-        // Tính phí dịch vụ
-        double serviceFee = 0.0;
-        if (feeConfig.isPresent()) {
-            serviceFee = apartment.get().getArea() * feeConfig.get().getServiceFeePerM2();
-        } else {
-            serviceFee = apartment.get().getArea() * 5000.0; // Giá mặc định
-        }
-        
-        // Tính phí gửi xe
-        double parkingFee = calculateParkingFee(apartmentId, month, year, feeConfig);
-        
-        // Tính phí nước
-        double waterFee = calculateWaterFee(apartmentId, month, year, feeConfig);
-        
-        return serviceFee + parkingFee + waterFee;
-    }
 
     /**
      * Kiểm tra chỉ số nước cho tháng được chỉ định và cảnh báo

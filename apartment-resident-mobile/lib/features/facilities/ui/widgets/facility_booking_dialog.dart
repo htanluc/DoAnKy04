@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/facility.dart';
-import '../data/facilities_api.dart';
+import '../../models/facility.dart';
+import '../../data/facilities_api.dart';
 
 class FacilityBookingDialog extends StatefulWidget {
   final Facility facility;

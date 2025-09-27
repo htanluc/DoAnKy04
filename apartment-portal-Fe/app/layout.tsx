@@ -20,14 +20,18 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   let initialLanguage: "vi" | "en" = "vi";
-  if (typeof window === "undefined") {
-    const { cookies } = require('next/headers');
-    const langCookie = (await cookies()).get('language')?.value;
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const langCookie = cookieStore.get('language')?.value;
     if (langCookie === 'en' || langCookie === 'vi') initialLanguage = langCookie;
+  } catch (error) {
+    // Fallback to default language if cookies can't be read
+    console.log('Could not read language cookie:', error);
   }
   return (
     <html lang={initialLanguage} suppressHydrationWarning>
-      <body className={beVietnam.className}>
+      <body className={beVietnam.className} suppressHydrationWarning>
         <ClientLayout initialLanguage={initialLanguage}>
           <ThemeProvider
             attribute="class"
