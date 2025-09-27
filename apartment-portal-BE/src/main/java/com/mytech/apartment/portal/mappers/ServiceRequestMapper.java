@@ -11,6 +11,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
 
 @Component
 public class ServiceRequestMapper {
@@ -25,6 +27,18 @@ public class ServiceRequestMapper {
         List<String> imageUrls = parseJsonToList(serviceRequest.getImageAttachment());
         List<String> beforeImages = parseJsonToList(serviceRequest.getBeforeImages());
         List<String> afterImages = parseJsonToList(serviceRequest.getAfterImages());
+        
+        // Combine attachmentUrls and imageUrls for mobile app compatibility
+        // Mobile app expects images in imageUrls field
+        // Use Set to avoid duplicates
+        Set<String> uniqueImageUrls = new HashSet<>();
+        if (attachmentUrls != null && !attachmentUrls.isEmpty()) {
+            uniqueImageUrls.addAll(attachmentUrls);
+        }
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            uniqueImageUrls.addAll(imageUrls);
+        }
+        List<String> combinedImageUrls = new ArrayList<>(uniqueImageUrls);
 
         return new ServiceRequestDto(
             serviceRequest.getId(),
@@ -42,7 +56,7 @@ public class ServiceRequestMapper {
             serviceRequest.getAssignedTo() != null ? serviceRequest.getAssignedTo().getPhoneNumber() : null,
             serviceRequest.getResolutionNotes(),
             attachmentUrls,
-            imageUrls,
+            combinedImageUrls, // Use combined image URLs for mobile compatibility
             beforeImages,
             afterImages,
             serviceRequest.getSubmittedAt(),

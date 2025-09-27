@@ -556,17 +556,16 @@ function SupportRequestsPageContent() {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <Table>
+                <div className="overflow-hidden">
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="font-semibold min-w-[200px]">{t('admin.support-requests.resident')}</TableHead>
-                        <TableHead className="font-semibold min-w-[200px]">{t('admin.support-requests.supportRequestTitle')}</TableHead>
-                        <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.category')}</TableHead>
-                        <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.priority')}</TableHead>
-                        <TableHead className="font-semibold min-w-[150px]">{t('admin.support-requests.assignedTo')}</TableHead>
-                        <TableHead className="font-semibold min-w-[120px]">{t('admin.support-requests.status')}</TableHead>
-                        <TableHead className="font-semibold min-w-[140px]">
+                        <TableHead className="font-semibold w-[18%]">{t('admin.support-requests.resident')}</TableHead>
+                        <TableHead className="font-semibold w-[28%]">{t('admin.support-requests.supportRequestTitle')}</TableHead>
+                        <TableHead className="font-semibold w-[14%]">{t('admin.support-requests.priority')}</TableHead>
+                        <TableHead className="font-semibold w-[15%]">{t('admin.support-requests.assignedTo')}</TableHead>
+                        <TableHead className="font-semibold w-[15%]">{t('admin.support-requests.status')}</TableHead>
+                        <TableHead className="font-semibold w-[10%]">
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             {t('admin.support-requests.createdAt', 'Thời gian tạo')}
@@ -586,81 +585,78 @@ function SupportRequestsPageContent() {
                              className="cursor-pointer hover:bg-gray-50"
                              onClick={() => toggleExpandedRow(request.id)}
                            >
-                             <TableCell className="font-medium">
-                               <div className="flex items-center gap-2">
-                                 <button
-                                   className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     toggleExpandedRow(request.id);
-                                   }}
-                                 >
-                                   {expandedRows.has(request.id) ? '▼' : '▶'}
-                                 </button>
-                                 <div className="flex items-center space-x-2">
-                                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                     <span className="text-sm font-medium text-blue-600">
-                                       {(request.residentName || 'Ẩn danh').charAt(0).toUpperCase()}
-                                     </span>
-                                   </div>
-                                   <div>
-                                     <p className="font-medium text-gray-900">
-                                       {request.residentName || t('admin.support-requests.unknown', 'Không xác định')}
-                                     </p>
-                                     {request.userPhone && (
-                                       <p className="text-xs text-gray-500">{request.userPhone}</p>
-                                     )}
-                                   </div>
-                                 </div>
-                               </div>
-                             </TableCell>
-                             <TableCell className="max-w-xs">
-                               <div className="max-w-xs">
-                                 <p className="text-sm text-gray-900 overflow-hidden" style={{
-                                   display: '-webkit-box',
-                                   WebkitLineClamp: 2,
-                                   WebkitBoxOrient: 'vertical'
-                                 }}>
-                                   {request.title || t('admin.support-requests.noTitle', 'Không có tiêu đề')}
-                                 </p>
-                                 {request.description && (
-                                   <p className="text-xs text-gray-500 mt-1">
-                                     {request.description.length > 10 ? `${request.description.slice(0, 10)}…` : request.description}
-                                   </p>
-                                 )}
-                               </div>
-                             </TableCell>
-                             <TableCell>{getCategoryBadge(request.category || t('admin.support-requests.category.OTHER', 'Khác'))}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <button
+                                  className="text-gray-500 hover:text-gray-700 transition-colors duration-200 flex-shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleExpandedRow(request.id);
+                                  }}
+                                >
+                                  {expandedRows.has(request.id) ? '▼' : '▶'}
+                                </button>
+                                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-sm font-medium text-blue-600">
+                                      {(request.residentName || 'Ẩn danh').charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-gray-900 truncate">
+                                      {request.residentName || t('admin.support-requests.unknown', 'Không xác định')}
+                                    </p>
+                                    {request.userPhone && (
+                                      <p className="text-xs text-gray-500 truncate">{request.userPhone}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="min-w-0">
+                              <div className="min-w-0">
+                                <p className="text-sm text-gray-900 truncate" title={request.title || t('admin.support-requests.noTitle', 'Không có tiêu đề')}>
+                                  {request.title ? (request.title.length > 10 ? `${request.title.slice(0, 10)}…` : request.title) : t('admin.support-requests.noTitle', 'Không có tiêu đề')}
+                                </p>
+                                {request.description && (
+                                  <p className="text-xs text-gray-500 mt-1 truncate" title={request.description}>
+                                    {request.description.length > 10 ? `${request.description.slice(0, 10)}…` : request.description}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
                              <TableCell>{getPriorityBadge(request.priority || t('admin.support-requests.priority.MEDIUM', 'Trung bình'))}</TableCell>
-                             <TableCell>
-                               {request.assignedTo && request.assignedTo.trim() !== '' ? (
-                                 <div className="flex items-center space-x-1">
-                                   <User className="h-4 w-4 text-gray-500" />
-                                   <span>{request.assignedTo}</span>
-                                 </div>
-                               ) : (
-                                 <span className="text-gray-500">{t('admin.support-requests.notAssigned','Chưa giao')}</span>
-                               )}
-                             </TableCell>
-                             <TableCell>
-                               <div className="flex items-center gap-2">
-                                 {getStatusBadge(request.status || 'PENDING')}
-                                 <ServiceRequestMiniProgress status={request.status} />
-                               </div>
-                             </TableCell>
-                             <TableCell>
-                               <div className="text-sm text-gray-600">
-                                 {request.createdAt
-                                   ? `${new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')} ${new Date(request.createdAt).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`
-                                   : t('admin.support-requests.unknown', 'Không xác định')}
-                               </div>
-                             </TableCell>
+                            <TableCell className="min-w-0">
+                              {request.assignedTo && request.assignedTo.trim() !== '' ? (
+                                <div className="flex items-center space-x-1 min-w-0">
+                                  <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="truncate" title={request.assignedTo}>{request.assignedTo}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500">{t('admin.support-requests.notAssigned','Chưa giao')}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="min-w-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {getStatusBadge(request.status || 'PENDING')}
+                                <ServiceRequestMiniProgress status={request.status} />
+                              </div>
+                            </TableCell>
+                            <TableCell className="min-w-0">
+                              <div className="text-sm text-gray-600 truncate" title={request.createdAt
+                                ? `${new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')} ${new Date(request.createdAt).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`
+                                : t('admin.support-requests.unknown', 'Không xác định')}>
+                                {request.createdAt
+                                  ? `${new Date(request.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')} ${new Date(request.createdAt).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`
+                                  : t('admin.support-requests.unknown', 'Không xác định')}
+                              </div>
+                            </TableCell>
                            </TableRow>
                            
                            {/* Expanded row với thông tin chi tiết lịch sử gán nhân viên */}
                            {expandedRows.has(request.id) && (
                              <TableRow>
-                               <TableCell colSpan={7} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+                               <TableCell colSpan={6} className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
                                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                                    <div className="flex items-center gap-2 font-semibold text-gray-700 border-b border-blue-200 pb-3">
                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>

@@ -113,14 +113,20 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
   };
 
   const handleEdit = async () => {
-    // Chặn sửa nếu là tháng quá khứ
-    if (isPastMonth) return;
+    // Cho phép chỉnh sửa tháng hiện tại ngay cả khi đã có hóa đơn
+    const now = new Date();
+    const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+    
+    // Chặn sửa nếu là tháng quá khứ (trừ tháng hiện tại)
+    if (isPastMonth && !isCurrentMonth) return;
 
-    // Kiểm tra lại trước khi cho sửa
-    const check = await hasInvoicesForMonth(selectedYear, selectedMonth);
-    if (check?.hasInvoices) {
-      setHasInvoicesForSelectedMonth(true);
-      return; // Không cho bật edit
+    // Chỉ kiểm tra hóa đơn nếu không phải tháng hiện tại
+    if (!isCurrentMonth) {
+      const check = await hasInvoicesForMonth(selectedYear, selectedMonth);
+      if (check?.hasInvoices) {
+        setHasInvoicesForSelectedMonth(true);
+        return; // Không cho bật edit
+      }
     }
 
     setOriginalConfig(config);
@@ -235,8 +241,8 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
             </AlertDescription>
           </Alert>
 
-          {/* Thông báo khi tháng đã có hóa đơn */}
-          {hasInvoicesForSelectedMonth && (
+          {/* Thông báo khi tháng đã có hóa đơn (chỉ áp dụng cho tháng không phải hiện tại) */}
+          {hasInvoicesForSelectedMonth && !(selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1) && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -246,8 +252,19 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
             </Alert>
           )}
 
-          {/* Thông báo khi là tháng quá khứ */}
-          {isPastMonth && !hasInvoicesForSelectedMonth && (
+          {/* Thông báo cho tháng hiện tại đã có hóa đơn */}
+          {hasInvoicesForSelectedMonth && (selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1) && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Thông báo:</strong> Tháng hiện tại đã có hóa đơn được tạo. 
+                Bạn vẫn có thể chỉnh sửa cấu hình phí, nhưng cần cân nhắc kỹ vì điều này có thể ảnh hưởng đến tính nhất quán của dữ liệu.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Thông báo khi là tháng quá khứ (trừ tháng hiện tại) */}
+          {isPastMonth && !hasInvoicesForSelectedMonth && !(selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1) && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -266,11 +283,11 @@ export default function CurrentBillingConfig({ year, month }: CurrentBillingConf
                     onClick={handleEdit} 
                     variant="outline" 
                     size="sm" 
-                    disabled={isPastMonth || hasInvoicesForSelectedMonth}
+                    disabled={isPastMonth && !(selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1) || (hasInvoicesForSelectedMonth && !(selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1))}
                     title={
-                      isPastMonth 
+                      isPastMonth && !(selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1)
                         ? `Không thể chỉnh sửa tháng quá khứ ${formatMonthLabel(selectedMonth, language)}/${selectedYear}`
-                        : hasInvoicesForSelectedMonth
+                        : hasInvoicesForSelectedMonth && !(selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1)
                         ? `Không thể chỉnh sửa vì tháng ${formatMonthLabel(selectedMonth, language)}/${selectedYear} đã có hóa đơn`
                         : undefined
                     }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import 'qr_scan_page.dart';
+import 'requests_list_page.dart';
+import 'profile_page.dart';
 
 class WaterReadingPage extends StatefulWidget {
   const WaterReadingPage({super.key});
@@ -475,6 +477,45 @@ class _WaterReadingPageState extends State<WaterReadingPage> {
           ),
         ),
       ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: 1,
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Home'),
+          NavigationDestination(
+              icon: Icon(Icons.water_drop_outlined),
+              selectedIcon: Icon(Icons.water_drop),
+              label: 'Water readings'),
+          NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile'),
+        ],
+        onDestinationSelected: (i) async {
+          if (i == 0) {
+            // Navigate to Home (Requests List)
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              await Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const RequestsListPage()),
+              );
+            }
+            return;
+          }
+          if (i == 2) {
+            // Navigate to Profile
+            if (!mounted) return;
+            await Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            );
+            return;
+          }
+          // i == 1 is current page (Water readings), no action needed
+        },
+      ),
     );
   }
 }
@@ -502,7 +543,7 @@ class _QrScanButton extends StatelessWidget {
 
         // Gán vào field và gọi tra cứu tháng hiện tại
         final state = context.findAncestorStateOfType<_WaterReadingPageState>();
-        if (state != null) {
+        if (state != null && state.mounted) {
           state._apartmentCtrl.text = value;
           await state._lookupCurrentMonth();
         }

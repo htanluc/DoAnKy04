@@ -258,6 +258,62 @@ public class InvoiceController {
     }
 
     /**
+     * [EN] Fix all invoice total amounts by recalculating from items
+     * [VI] Sửa tổng tiền tất cả hóa đơn bằng cách tính lại từ các khoản phí chi tiết
+     */
+    @PostMapping("/api/admin/invoices/fix-all-totals")
+    public ResponseEntity<Map<String, Object>> fixAllInvoiceTotals() {
+        try {
+            // Log admin activity (smart logging)
+            smartActivityLogService.logSmartActivity(ActivityActionType.UPDATE_INVOICE, 
+                "Admin sửa tổng tiền tất cả hóa đơn");
+            
+            Map<String, Object> result = invoiceService.fixAllInvoicesTotalAmount();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", "Lỗi khi sửa tổng tiền hóa đơn: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResult);
+        }
+    }
+
+    /**
+     * [EN] Check existing invoices for a specific period
+     * [VI] Kiểm tra hóa đơn hiện có cho một kỳ cụ thể
+     */
+    @GetMapping("/api/admin/invoices/check-period/{period}")
+    public ResponseEntity<Map<String, Object>> checkInvoicesForPeriod(@PathVariable("period") String period) {
+        try {
+            Map<String, Object> result = invoiceService.checkInvoicesForPeriod(period);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", "Lỗi khi kiểm tra hóa đơn: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResult);
+        }
+    }
+
+    /**
+     * [EN] Debug apartment residents data
+     * [VI] Debug dữ liệu cư dân căn hộ
+     */
+    @GetMapping("/api/admin/debug/apartment-residents/{apartmentId}")
+    public ResponseEntity<Map<String, Object>> debugApartmentResidents(@PathVariable("apartmentId") Long apartmentId) {
+        try {
+            Map<String, Object> result = invoiceService.debugApartmentResidents(apartmentId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", "Lỗi khi debug cư dân: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResult);
+        }
+    }
+
+
+    /**
      * [EN] Get current user's invoices
      * [VI] Lấy hóa đơn của người dùng hiện tại
      */
@@ -656,6 +712,63 @@ public class InvoiceController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "Lỗi khi gửi mail nhắc nhở: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * [EN] Fix invoice total amount by recalculating from items
+     * [VI] Sửa tổng tiền hóa đơn bằng cách tính lại từ các khoản phí chi tiết
+     */
+    @PostMapping("/api/admin/invoices/{id}/fix-total")
+    public ResponseEntity<Map<String, Object>> fixInvoiceTotal(@PathVariable("id") Long id) {
+        try {
+            Map<String, Object> result = invoiceService.fixInvoiceTotalAmount(id);
+            
+            // Log admin activity
+            smartActivityLogService.logSmartActivity(ActivityActionType.UPDATE_INVOICE, 
+                "Admin sửa tổng tiền hóa đơn #%d", id);
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi sửa tổng tiền hóa đơn: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+
+    /**
+     * [EN] Public endpoint to fix invoice total amount (for testing)
+     * [VI] Endpoint công khai để sửa tổng tiền hóa đơn (để test)
+     */
+    @PostMapping("/api/public/invoices/{id}/fix-total")
+    public ResponseEntity<Map<String, Object>> fixInvoiceTotalPublic(@PathVariable("id") Long id) {
+        try {
+            Map<String, Object> result = invoiceService.fixInvoiceTotalAmount(id);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi sửa tổng tiền hóa đơn: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * [EN] Public endpoint to fix all invoices total amount (for testing)
+     * [VI] Endpoint công khai để sửa tổng tiền tất cả hóa đơn (để test)
+     */
+    @PostMapping("/api/public/invoices/fix-all-totals")
+    public ResponseEntity<Map<String, Object>> fixAllInvoicesTotalPublic() {
+        try {
+            Map<String, Object> result = invoiceService.fixAllInvoicesTotalAmount();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi sửa tổng tiền tất cả hóa đơn: " + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }

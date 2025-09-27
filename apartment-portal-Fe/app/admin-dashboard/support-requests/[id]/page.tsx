@@ -295,7 +295,16 @@ export default function SupportRequestDetailPage() {
       },
     })
       .then((res) => res.json())
-      .then((users: any[]) => {
+      .then((response: any) => {
+        // Kiểm tra xem response có phải là mảng không
+        const users = Array.isArray(response) ? response : (response.data || response.users || []);
+        
+        if (!Array.isArray(users)) {
+          console.error('API response is not an array:', response);
+          setStaffList([]);
+          return;
+        }
+
         const staffs = users.filter(
           (u) =>
             Array.isArray(u.roles) &&
@@ -314,6 +323,10 @@ export default function SupportRequestDetailPage() {
             phoneNumber: u.phoneNumber || (u.profile?.phoneNumber) || u.phone,
           }))
         );
+      })
+      .catch((error) => {
+        console.error('Error loading staff list:', error);
+        setStaffList([]);
       });
   }, []);
 
@@ -442,7 +455,6 @@ export default function SupportRequestDetailPage() {
                 <div className="mb-2 font-semibold text-purple-800">{t('admin.support-requests.detail.requestInfo', 'Thông tin yêu cầu')}</div>
                 <div className="space-y-2 text-sm">
                   <div><b>{t('admin.support-requests.detail.requestTitle', 'Tiêu đề')} / {t('admin.support-requests.detail.description', 'Mô tả')}:</b> {data.title || data.description}</div>
-                  <div><b>{t('admin.support-requests.detail.category', 'Danh mục')}:</b> {data.categoryName}</div>
                   <div className="flex items-center gap-2"><b>{t('admin.support-requests.detail.priority', 'Mức độ ưu tiên')} {t('admin.support-requests.detail.current', 'hiện tại')}:</b> {data.priority ?? "-"}</div>
                 </div>
               </div>

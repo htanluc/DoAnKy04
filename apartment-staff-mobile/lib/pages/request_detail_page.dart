@@ -39,12 +39,32 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
       if (staffId == null) return;
       final latest = await ApiService.getAssignedRequestById(staffId, _req.id);
       if (!mounted || latest == null) return;
+
+      // Debug log để kiểm tra dữ liệu từ API
+      print('[RequestDetailPage] Raw API data: $latest');
+      print('[RequestDetailPage] Image-related fields:');
+      print('  - imageUrls: ${latest['imageUrls']}');
+      print('  - attachmentUrls: ${latest['attachmentUrls']}');
+      print('  - imageAttachments: ${latest['imageAttachments']}');
+      print('  - imageAttachment: ${latest['imageAttachment']}');
+      print('  - attachments: ${latest['attachments']}');
+      print('  - images: ${latest['images']}');
+      print('  - beforeImages: ${latest['beforeImages']}');
+      print('  - afterImages: ${latest['afterImages']}');
+
       final updated = ServiceRequestModel.fromJson(latest);
+
+      // Debug log parsed data
+      print('[RequestDetailPage] Parsed imageUrls: ${updated.imageUrls}');
+      print('[RequestDetailPage] Parsed beforeImages: ${updated.beforeImages}');
+      print('[RequestDetailPage] Parsed afterImages: ${updated.afterImages}');
+
       // Luôn cập nhật để đảm bảo before/after images hiển thị
       setState(() {
         _req = updated;
       });
-    } catch (_) {
+    } catch (e) {
+      print('[RequestDetailPage] Error syncing latest: $e');
       // ignore network errors silently here
     }
   }
@@ -85,10 +105,19 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
   }
 
   Future<void> _pickAndUpload({required bool isBefore}) async {
+    // Hiển thị dialog chọn nguồn ảnh
+    final source = await _showImageSourceDialog();
+    if (source == null) return;
+
     final picker = ImagePicker();
-    final picked =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1920,
+      maxHeight: 1920,
+    );
     if (picked == null) return;
+
     setState(() => _uploading = true);
     try {
       final url = await ApiService.uploadServiceRequestFile(picked.path,
@@ -109,6 +138,38 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
     }
   }
 
+  Future<ImageSource?> _showImageSourceDialog() async {
+    return showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Chọn nguồn ảnh'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Chụp ảnh mới'),
+                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.green),
+                title: const Text('Chọn từ thư viện'),
+                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Hủy'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _thumb(String url) {
     final u = ApiService.normalizeFileUrl(url);
     return ClipRRect(
@@ -125,6 +186,51 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
           color: Colors.grey.shade200,
           child: const Icon(Icons.broken_image_outlined),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showImageDebugInfo() async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Debug: Image Information'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Request ID: ${_req.id}'),
+              const SizedBox(height: 8),
+              Text('Total images found: ${_req.imageUrls.length}'),
+              const SizedBox(height: 8),
+              Text('Original imageUrls: ${_req.imageUrls}'),
+              const SizedBox(height: 8),
+              Text(
+                  'Before images: ${_req.beforeImages} (${_req.beforeImages.length})'),
+              const SizedBox(height: 8),
+              Text(
+                  'After images: ${_req.afterImages} (${_req.afterImages.length})'),
+              const SizedBox(height: 8),
+              Text(
+                  'Attachment URLs: ${_req.attachmentUrls} (${_req.attachmentUrls.length})'),
+              const SizedBox(height: 8),
+              Text('Normalized URLs:'),
+              ..._req.imageUrls.asMap().entries.map((entry) {
+                final index = entry.key;
+                final url = entry.value;
+                final normalized = ApiService.normalizeFileUrl(url);
+                return Text('  $index. $url → $normalized');
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -203,20 +309,45 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
       if (await canLaunchUrl(dialUri)) {
         await launchUrl(dialUri);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Unable to open the dialer application')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Unable to open the dialer application')),
+          );
+        }
       }
     }
   }
 
   Widget _buildImagesGrid() {
     final urls = _req.imageUrls.map(ApiService.normalizeFileUrl).toList();
+
+    // Debug log để kiểm tra
+    print('[RequestDetailPage] Building images grid:');
+    print('  - Original imageUrls: ${_req.imageUrls}');
+    print('  - Normalized URLs: $urls');
+
     if (urls.isEmpty) {
-      return Text(
-        'No attachments',
-        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No attachments',
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Debug: Raw imageUrls = ${_req.imageUrls}',
+            style: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withOpacity(0.6),
+              fontSize: 12,
+            ),
+          ),
+        ],
       );
     }
     return GridView.builder(
@@ -427,45 +558,50 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
             const SizedBox(height: 20),
 
             // Attachments (if any)
-            if ((_req.imageUrls).isNotEmpty) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20.0),
-                decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: cs.shadow.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.image_outlined, size: 18, color: cs.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Images',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildImagesGrid(),
-                  ],
-                ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.shadow.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-            ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.image_outlined, size: 18, color: cs.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Images',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Debug button
+                      IconButton(
+                        onPressed: () => _showImageDebugInfo(),
+                        icon: Icon(Icons.bug_report_outlined, size: 16),
+                        tooltip: 'Debug Image Info',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildImagesGrid(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Before/After images section
             Container(

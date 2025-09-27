@@ -8,6 +8,7 @@ import com.mytech.apartment.portal.models.Invoice;
 import com.mytech.apartment.portal.models.InvoiceItem;
 import com.mytech.apartment.portal.models.enums.InvoiceStatus;
 import com.mytech.apartment.portal.models.ApartmentResident;
+import com.mytech.apartment.portal.models.User;
 import com.mytech.apartment.portal.repositories.InvoiceRepository;
 import com.mytech.apartment.portal.repositories.ApartmentRepository;
 import com.mytech.apartment.portal.repositories.ApartmentResidentRepository;
@@ -20,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.HashMap;
@@ -59,7 +61,7 @@ public class InvoiceService {
         int skippedCount = 0;
 
         for (Long apartmentId : apartmentIds) {
-            // Kiểm tra xem đã có hóa đơn cho kỳ này chưa
+            // Kiểm tra xem đã có hóa đơn cho kỳ này chưa (bất kể status nào)
             Optional<Invoice> existing = invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, period);
             if (existing.isPresent()) {
                 Invoice existingInvoice = existing.get();
@@ -71,7 +73,7 @@ public class InvoiceService {
                 if (existingInvoice.getStatus() != InvoiceStatus.UNPAID) {
                     System.out.println("WARNING: [InvoiceService.generateInvoicesForMonth] Căn hộ " + apartmentId +
                         " đã có hóa đơn kỳ " + period + " với status " + existingInvoice.getStatus() +
-                        " - KHÔNG nên tạo hóa đơn trùng lặp!");
+                        " - KHÔNG tạo hóa đơn trùng lặp!");
                 }
 
                 skippedCount++;
@@ -131,7 +133,7 @@ public class InvoiceService {
         item.setInvoice(invoice);
 
         invoice.getItems().add(item);
-        invoice.setTotalAmount(invoice.getTotalAmount() + amount.doubleValue());
+        // Không cập nhật totalAmount ở đây - sẽ được tính lại sau khi thêm tất cả items
         invoiceRepository.save(invoice);
     }
 
@@ -154,8 +156,25 @@ public class InvoiceService {
         var residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
         System.out.println("DEBUG: [InvoiceService] Tìm thấy " + residents.size() + " cư dân cho căn hộ " + apartmentId);
         
+        // Debug chi tiết từng cư dân
+        for (ApartmentResident resident : residents) {
+            System.out.println("DEBUG: [InvoiceService] Cư dân - ApartmentId: " + resident.getApartmentId() + 
+                ", UserId: " + resident.getUserId() + 
+                ", RelationType: " + resident.getRelationType());
+        }
+        
         var emails = residents.stream()
-                .map(link -> userRepository.findById(link.getUserId()))
+                .map(link -> {
+                    System.out.println("DEBUG: [InvoiceService] Đang tìm user với ID: " + link.getUserId());
+                    var userOpt = userRepository.findById(link.getUserId());
+                    if (userOpt.isPresent()) {
+                        System.out.println("DEBUG: [InvoiceService] Tìm thấy user: " + userOpt.get().getEmail());
+                        return userOpt;
+                    } else {
+                        System.out.println("DEBUG: [InvoiceService] Không tìm thấy user với ID: " + link.getUserId());
+                        return Optional.<User>empty();
+                    }
+                })
                 .filter(java.util.Optional::isPresent)
                 .map(opt -> opt.get().getEmail())
                 .filter(e -> e != null && !e.isBlank())
@@ -432,5 +451,240 @@ public class InvoiceService {
      */
     public boolean hasInvoiceForPeriod(Long apartmentId, String billingPeriod) {
         return invoiceRepository.findByApartmentIdAndBillingPeriod(apartmentId, billingPeriod).isPresent();
+    }
+
+    /**
+     * [EN] Debug apartment residents data
+     * [VI] Debug dữ liệu cư dân căn hộ
+     */
+    public Map<String, Object> debugApartmentResidents(Long apartmentId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Lấy tất cả cư dân của căn hộ
+            var residents = apartmentResidentRepository.findByApartment_Id(apartmentId);
+            
+            List<Map<String, Object>> residentDetails = new ArrayList<>();
+            
+            for (ApartmentResident resident : residents) {
+                Map<String, Object> detail = new HashMap<>();
+                detail.put("apartmentId", resident.getApartmentId());
+                detail.put("userId", resident.getUserId());
+                detail.put("relationType", resident.getRelationType());
+                detail.put("isPrimaryResident", resident.getIsPrimaryResident());
+                
+                // Lấy thông tin user
+                var userOpt = userRepository.findById(resident.getUserId());
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    detail.put("userEmail", user.getEmail());
+                    detail.put("userFullName", user.getFullName());
+                    detail.put("userPhoneNumber", user.getPhoneNumber());
+                } else {
+                    detail.put("userEmail", "USER NOT FOUND");
+                    detail.put("userFullName", "USER NOT FOUND");
+                    detail.put("userPhoneNumber", "USER NOT FOUND");
+                }
+                
+                residentDetails.add(detail);
+            }
+            
+            result.put("success", true);
+            result.put("apartmentId", apartmentId);
+            result.put("totalResidents", residents.size());
+            result.put("residents", residentDetails);
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Lỗi khi debug cư dân: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    /**
+     * [EN] Check existing invoices for a specific period
+     * [VI] Kiểm tra hóa đơn hiện có cho một kỳ cụ thể
+     */
+    public Map<String, Object> checkInvoicesForPeriod(String period) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Lấy tất cả hóa đơn cho kỳ này
+            List<Invoice> invoices = invoiceRepository.findByBillingPeriod(period);
+            
+            if (invoices.isEmpty()) {
+                result.put("success", true);
+                result.put("message", "Không có hóa đơn nào cho kỳ " + period);
+                result.put("totalInvoices", 0);
+                result.put("invoices", new ArrayList<>());
+                return result;
+            }
+            
+            // Phân loại theo status
+            Map<String, Long> statusCount = new HashMap<>();
+            List<Map<String, Object>> invoiceDetails = new ArrayList<>();
+            
+            for (Invoice invoice : invoices) {
+                String status = invoice.getStatus().toString();
+                statusCount.put(status, statusCount.getOrDefault(status, 0L) + 1);
+                
+                Map<String, Object> detail = new HashMap<>();
+                detail.put("id", invoice.getId());
+                detail.put("apartmentId", invoice.getApartmentId());
+                detail.put("status", status);
+                detail.put("totalAmount", invoice.getTotalAmount());
+                detail.put("createdAt", invoice.getCreatedAt());
+                invoiceDetails.add(detail);
+            }
+            
+            result.put("success", true);
+            result.put("message", "Tìm thấy " + invoices.size() + " hóa đơn cho kỳ " + period);
+            result.put("totalInvoices", invoices.size());
+            result.put("statusCount", statusCount);
+            result.put("invoices", invoiceDetails);
+            
+            // Cảnh báo nếu có hóa đơn đã thanh toán
+            if (statusCount.containsKey("PAID") || statusCount.containsKey("PARTIAL")) {
+                result.put("warning", "Có hóa đơn đã thanh toán - không nên tạo hóa đơn mới!");
+            }
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Lỗi khi kiểm tra hóa đơn: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    /**
+     * [EN] Fix invoice total amount by recalculating from items
+     * [VI] Sửa tổng tiền hóa đơn bằng cách tính lại từ các khoản phí chi tiết
+     */
+    public Map<String, Object> fixInvoiceTotalAmount(Long invoiceId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Optional<Invoice> invoiceOpt = invoiceRepository.findById(invoiceId);
+            if (invoiceOpt.isEmpty()) {
+                result.put("success", false);
+                result.put("message", "Không tìm thấy hóa đơn #" + invoiceId);
+                return result;
+            }
+
+            Invoice invoice = invoiceOpt.get();
+            double oldTotal = invoice.getTotalAmount();
+            
+            // Tính tổng từ các khoản phí chi tiết
+            double newTotal = 0.0;
+            if (invoice.getItems() != null && !invoice.getItems().isEmpty()) {
+                newTotal = invoice.getItems().stream()
+                    .mapToDouble(InvoiceItem::getAmount)
+                    .sum();
+            }
+            
+            // Cập nhật tổng tiền
+            invoice.setTotalAmount(newTotal);
+            invoiceRepository.save(invoice);
+            
+            result.put("success", true);
+            result.put("invoiceId", invoiceId);
+            result.put("oldTotal", oldTotal);
+            result.put("newTotal", newTotal);
+            result.put("difference", newTotal - oldTotal);
+            result.put("message", String.format("Đã sửa hóa đơn #%d: %,.0f VND → %,.0f VND (chênh lệch: %,.0f VND)", 
+                invoiceId, oldTotal, newTotal, newTotal - oldTotal));
+            
+            System.out.println("DEBUG: [InvoiceService.fixInvoiceTotalAmount] Đã sửa hóa đơn #" + invoiceId + 
+                " từ " + oldTotal + " thành " + newTotal);
+                
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Lỗi khi sửa hóa đơn #" + invoiceId + ": " + e.getMessage());
+            System.err.println("ERROR: [InvoiceService.fixInvoiceTotalAmount] " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return result;
+    }
+
+    /**
+     * [EN] Fix all invoices total amount by recalculating from items
+     * [VI] Sửa tổng tiền tất cả hóa đơn bằng cách tính lại từ các khoản phí chi tiết
+     */
+    public Map<String, Object> fixAllInvoicesTotalAmount() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            List<Invoice> allInvoices = invoiceRepository.findAll();
+            int totalInvoices = allInvoices.size();
+            int fixedCount = 0;
+            int skippedCount = 0;
+            double totalDifference = 0.0;
+            List<Map<String, Object>> fixedInvoices = new java.util.ArrayList<>();
+            
+            System.out.println("DEBUG: [InvoiceService.fixAllInvoicesTotalAmount] Bắt đầu sửa " + totalInvoices + " hóa đơn");
+            
+            for (Invoice invoice : allInvoices) {
+                try {
+                    double oldTotal = invoice.getTotalAmount();
+                    
+                    // Tính tổng từ các khoản phí chi tiết
+                    double newTotal = 0.0;
+                    if (invoice.getItems() != null && !invoice.getItems().isEmpty()) {
+                        newTotal = invoice.getItems().stream()
+                            .mapToDouble(InvoiceItem::getAmount)
+                            .sum();
+                    }
+                    
+                    // Chỉ cập nhật nếu có sự khác biệt
+                    if (Math.abs(newTotal - oldTotal) > 0.01) {
+                        invoice.setTotalAmount(newTotal);
+                        invoiceRepository.save(invoice);
+                        
+                        double difference = newTotal - oldTotal;
+                        totalDifference += difference;
+                        fixedCount++;
+                        
+                        Map<String, Object> fixedInvoice = new HashMap<>();
+                        fixedInvoice.put("invoiceId", invoice.getId());
+                        fixedInvoice.put("apartmentId", invoice.getApartmentId());
+                        fixedInvoice.put("billingPeriod", invoice.getBillingPeriod());
+                        fixedInvoice.put("oldTotal", oldTotal);
+                        fixedInvoice.put("newTotal", newTotal);
+                        fixedInvoice.put("difference", difference);
+                        fixedInvoices.add(fixedInvoice);
+                        
+                        System.out.println("DEBUG: [InvoiceService.fixAllInvoicesTotalAmount] Đã sửa hóa đơn #" + invoice.getId() + 
+                            " từ " + oldTotal + " thành " + newTotal + " (chênh lệch: " + difference + ")");
+                    } else {
+                        skippedCount++;
+                    }
+                    
+                } catch (Exception e) {
+                    System.err.println("ERROR: [InvoiceService.fixAllInvoicesTotalAmount] Lỗi sửa hóa đơn #" + invoice.getId() + ": " + e.getMessage());
+                }
+            }
+            
+            result.put("success", true);
+            result.put("totalInvoices", totalInvoices);
+            result.put("fixedCount", fixedCount);
+            result.put("skippedCount", skippedCount);
+            result.put("totalDifference", totalDifference);
+            result.put("fixedInvoices", fixedInvoices);
+            result.put("message", String.format("Đã sửa %d/%d hóa đơn. Tổng chênh lệch: %,.0f VND", 
+                fixedCount, totalInvoices, totalDifference));
+            
+            System.out.println("DEBUG: [InvoiceService.fixAllInvoicesTotalAmount] Hoàn thành: " + fixedCount + " hóa đơn được sửa, " + 
+                skippedCount + " hóa đơn không cần sửa");
+                
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Lỗi khi sửa tất cả hóa đơn: " + e.getMessage());
+            System.err.println("ERROR: [InvoiceService.fixAllInvoicesTotalAmount] " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return result;
     }
 }

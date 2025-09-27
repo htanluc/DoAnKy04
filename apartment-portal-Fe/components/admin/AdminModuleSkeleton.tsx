@@ -17,8 +17,8 @@ export default function AdminModuleSkeleton({ title = "Module Title", children }
           <li><a href="/admin-dashboard/invoices" className="hover:underline">Hóa đơn</a></li>
           <li><a href="/admin-dashboard/feedbacks" className="hover:underline">Phản hồi</a></li>
           <li><a href="/admin-dashboard/support-requests" className="hover:underline">Yêu cầu hỗ trợ</a></li>
-          <li><a href="/admin-dashboard/history" className="hover:underline">Lịch sử AI Q&A</a></li>
-          <li><a href="/admin-dashboard/reports" className="hover:underline">Báo cáo</a></li>
+          {/* <li><a href="/admin-dashboard/history" className="hover:underline">Lịch sử AI Q&A</a></li> */}
+          {/* <li><a href="/admin-dashboard/reports" className="hover:underline">Báo cáo</a></li> */} {/* Tạm ẩn toàn bộ section vì chưa hoàn thành */}
         </ul>
       </aside>
       {/* Main content */}
