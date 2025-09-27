@@ -37,6 +37,7 @@ public enum ActivityActionType {
     UPDATE_EVENT,
     DELETE_EVENT,
     CANCEL_EVENT_REGISTRATION,
+    EVENT_CHECKIN,
     
     // Support & Feedback
     CREATE_SUPPORT_REQUEST,
@@ -92,6 +93,7 @@ public enum ActivityActionType {
             case UPDATE_EVENT: return "Cập nhật sự kiện";
             case DELETE_EVENT: return "Xóa sự kiện";
             case CANCEL_EVENT_REGISTRATION: return "Hủy đăng ký sự kiện";
+            case EVENT_CHECKIN: return "Check-in sự kiện";
             case CREATE_SUPPORT_REQUEST: return "Tạo yêu cầu hỗ trợ";
             case UPDATE_SUPPORT_REQUEST: return "Cập nhật yêu cầu hỗ trợ";
             case SUBMIT_FEEDBACK: return "Gửi phản hồi";

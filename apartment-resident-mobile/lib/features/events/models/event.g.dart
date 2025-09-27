@@ -7,7 +7,7 @@ part of 'event.dart';
 // **************************************************************************
 
 _$EventImpl _$$EventImplFromJson(Map<String, dynamic> json) => _$EventImpl(
-  id: json['id'] as String,
+  id: _idFromJson(json['id']),
   title: json['title'] as String,
   description: json['description'] as String,
   startTime: DateTime.parse(json['startTime'] as String),
@@ -15,11 +15,11 @@ _$EventImpl _$$EventImplFromJson(Map<String, dynamic> json) => _$EventImpl(
   location: json['location'] as String,
   createdAt: DateTime.parse(json['createdAt'] as String),
   participantCount: (json['participantCount'] as num).toInt(),
-  registered: json['registered'] as bool,
+  registered: _registeredFromJson(json['isRegistered'] ?? json['registered']),
   qrCode: json['qrCode'] as String?,
-  qrCodeExpiresAt: json['qrCodeExpiresAt'] == null
+  qrCodeExpiresAt: json['qrExpiresAt'] == null
       ? null
-      : DateTime.parse(json['qrCodeExpiresAt'] as String),
+      : DateTime.parse(json['qrExpiresAt'] as String),
   checkedIn: json['checkedIn'] as bool?,
   checkedInAt: json['checkedInAt'] == null
       ? null

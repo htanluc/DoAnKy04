@@ -200,4 +200,79 @@ public class EventRegistrationService {
         System.out.println("Service: Registration deleted successfully");
         return true;
     }
+
+    /**
+     * Get all event registrations for staff check-in purposes
+     * @return List of all event registrations with event details
+     */
+    public List<EventRegistration> getAllEventRegistrations() {
+        return registrationRepository.findAllWithEventDetails();
+    }
+
+    /**
+     * Get all event registrations as DTOs for staff check-in purposes
+     * @return List of all event registrations as DTOs
+     */
+    public List<EventRegistrationDto> getAllEventRegistrationsAsDto() {
+        try {
+            System.out.println("[EventRegistrationService] Getting all event registrations...");
+            List<EventRegistration> registrations = registrationRepository.findAllSimple();
+            System.out.println("[EventRegistrationService] Found " + registrations.size() + " registrations");
+            
+            List<EventRegistrationDto> dtos = registrations.stream()
+                    .map(registrationMapper::toDto)
+                    .collect(java.util.stream.Collectors.toList());
+            
+            System.out.println("[EventRegistrationService] Converted to " + dtos.size() + " DTOs");
+            return dtos;
+        } catch (Exception e) {
+            System.err.println("[EventRegistrationService] Error getting event registrations: " + e.getMessage());
+            e.printStackTrace();
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Get event registration by ID
+     * @param id registration ID
+     * @return EventRegistrationDto or null if not found
+     */
+    public EventRegistrationDto getEventRegistrationById(Long id) {
+        Optional<EventRegistration> registration = registrationRepository.findById(id);
+        return registration.map(registrationMapper::toDto).orElse(null);
+    }
+
+    /**
+     * Check-in to an event registration
+     * @param registrationId registration ID
+     * @return true if successful
+     */
+    @Transactional
+    public boolean checkInEvent(Long registrationId) {
+        try {
+            Optional<EventRegistration> registrationOpt = registrationRepository.findById(registrationId);
+            if (registrationOpt.isEmpty()) {
+                return false;
+            }
+            
+            EventRegistration registration = registrationOpt.get();
+            if (registration.getStatus() != EventRegistrationStatus.REGISTERED) {
+                return false; // Can only check-in registered events
+            }
+            
+            if (registration.getCheckedIn()) {
+                return false; // Already checked in
+            }
+            
+            // Update check-in status
+            registration.setCheckedIn(true);
+            registration.setCheckedInAt(LocalDateTime.now());
+            registrationRepository.save(registration);
+            
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error checking in event: " + e.getMessage());
+            return false;
+        }
+    }
 } 
