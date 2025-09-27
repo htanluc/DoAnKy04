@@ -39,17 +39,19 @@ class BookingsRepository {
   }
 
   /// Tạo đặt chỗ mới
-  Future<FacilityBooking> createBooking(
-    FacilityBookingCreateRequest request,
+  Future<Map<String, dynamic>> createBooking(
+    Map<String, dynamic> bookingData,
   ) async {
     try {
       // Kiểm tra xung đột thời gian trước khi tạo
-      final date = request.bookingTime.split('T')[0];
-      final startTime = request.bookingTime.split('T')[1];
-      final endTime = _calculateEndTime(request.bookingTime, request.duration);
+      final bookingTime = bookingData['bookingTime'] as String;
+      final date = bookingTime.split('T')[0];
+      final startTime = bookingTime.split('T')[1];
+      final duration = bookingData['duration'] as int;
+      final endTime = _calculateEndTime(bookingTime, duration);
 
       final hasConflict = await AvailabilityApi.checkTimeConflict(
-        request.facilityId,
+        bookingData['facilityId'] as int,
         startTime,
         endTime,
         date,
@@ -59,7 +61,7 @@ class BookingsRepository {
         throw Exception('Thời gian đặt chỗ bị xung đột với đặt chỗ khác');
       }
 
-      return await BookingsApi.create(request);
+      return await BookingsApi.create(bookingData);
     } catch (e) {
       throw Exception('Không thể tạo đặt chỗ: $e');
     }
@@ -172,26 +174,26 @@ class BookingsRepository {
   }
 
   /// Validate đặt chỗ
-  Future<bool> validateBooking(FacilityBookingCreateRequest request) async {
+  Future<bool> validateBooking(Map<String, dynamic> bookingData) async {
     try {
       // Kiểm tra thời gian trong tương lai
-      final bookingTime = DateTime.parse(request.bookingTime);
+      final bookingTime = DateTime.parse(bookingData['bookingTime'] as String);
       if (bookingTime.isBefore(DateTime.now())) {
         throw Exception('Thời gian đặt chỗ phải trong tương lai');
       }
 
       // Kiểm tra số người hợp lệ
-      if (request.numberOfPeople <= 0) {
+      if ((bookingData['numberOfPeople'] as int) <= 0) {
         throw Exception('Số người phải lớn hơn 0');
       }
 
       // Kiểm tra thời lượng hợp lệ
-      if (request.duration <= 0) {
+      if ((bookingData['duration'] as int) <= 0) {
         throw Exception('Thời lượng phải lớn hơn 0');
       }
 
       // Kiểm tra mục đích không rỗng
-      if (request.purpose.trim().isEmpty) {
+      if ((bookingData['purpose'] as String).trim().isEmpty) {
         throw Exception('Mục đích sử dụng không được để trống');
       }
 

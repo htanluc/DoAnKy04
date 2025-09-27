@@ -103,6 +103,9 @@ CREATE TABLE IF NOT EXISTS facilities (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Đảm bảo cột opening_schedule đúng kiểu LONGTEXT (chạy lệnh này nếu bảng đã tồn tại)
+-- ALTER TABLE facilities MODIFY COLUMN opening_schedule LONGTEXT NULL COMMENT 'Lịch mở cửa theo tuần';
+
 -- 8. SERVICE_CATEGORIES (Danh mục dịch vụ)
 CREATE TABLE IF NOT EXISTS service_categories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

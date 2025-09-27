@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/facility.dart';
-import '../data/facilities_api.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../models/facility.dart';
+import '../../data/facilities_api.dart';
+import '../../data/bookings_api.dart';
 
 class FacilityBookingDialog extends StatefulWidget {
   final Facility facility;
@@ -118,23 +120,41 @@ class _FacilityBookingDialogState extends State<FacilityBookingDialog> {
           'totalCost': _totalCost,
         };
 
-        final booking = await FacilityBookingsApi.create(bookingData);
+        final booking = await BookingsApi.create(bookingData);
 
         // Tạo thanh toán
-        final paymentResponse = await FacilityBookingsApi.createPayment(
+        final paymentResponse = await BookingsApi.createPayment(
           booking['id'],
           _selectedPaymentMethod!,
         );
 
         if (paymentResponse['paymentUrl'] != null) {
           // Mở URL thanh toán
-          // TODO: Implement URL launcher
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Đang chuyển hướng đến trang thanh toán...'),
-              backgroundColor: Colors.blue,
-            ),
-          );
+          final paymentUrl = paymentResponse['paymentUrl'] as String;
+          final uri = Uri.parse(paymentUrl);
+
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Đã mở trang thanh toán. Vui lòng hoàn tất thanh toán.',
+                ),
+                backgroundColor: Colors.blue,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Không thể mở trang thanh toán. Vui lòng thử lại.',
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
 
           // Đóng dialog
           Navigator.of(context).pop();
@@ -155,7 +175,7 @@ class _FacilityBookingDialogState extends State<FacilityBookingDialog> {
           'totalCost': 0,
         };
 
-        await FacilityBookingsApi.create(bookingData);
+        await BookingsApi.create(bookingData);
       }
 
       // Thành công
