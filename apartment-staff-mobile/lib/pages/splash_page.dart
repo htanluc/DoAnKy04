@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart';
-import 'requests_list_page.dart';
+import 'main_dashboard_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -25,22 +25,22 @@ class _SplashPageState extends State<SplashPage> {
       if (!mounted) return;
       if (isStaff) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RequestsListPage()),
+          MaterialPageRoute(builder: (_) => const MainDashboardPage()),
         );
       } else {
         await AuthService.logout();
         if (!mounted) return;
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tài khoản không có quyền Staff')),
         );
       }
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
     }
   }
 
@@ -60,8 +60,11 @@ class _SplashPageState extends State<SplashPage> {
                 color: cs.primaryContainer,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child:
-                  Icon(Icons.apartment, color: cs.onPrimaryContainer, size: 36),
+              child: Icon(
+                Icons.apartment,
+                color: cs.onPrimaryContainer,
+                size: 36,
+              ),
             ),
             const SizedBox(height: 16),
             Text(

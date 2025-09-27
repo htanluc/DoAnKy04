@@ -157,6 +157,14 @@ public class PaymentController {
                             null, null, "FAILED", "Hóa đơn đã được thanh toán", null
                         ));
                     }
+                    // Cho phép thanh toán hóa đơn OVERDUE, UNPAID, PARTIAL
+                    if (inv.getStatus() != com.mytech.apartment.portal.models.enums.InvoiceStatus.UNPAID &&
+                        inv.getStatus() != com.mytech.apartment.portal.models.enums.InvoiceStatus.PARTIAL &&
+                        inv.getStatus() != com.mytech.apartment.portal.models.enums.InvoiceStatus.OVERDUE) {
+                        return ResponseEntity.badRequest().body(new PaymentGatewayResponse(
+                            null, null, "FAILED", "Hóa đơn không thể thanh toán với trạng thái: " + inv.getStatus(), null
+                        ));
+                    }
                 }
                 // 2) Nếu có Payment SUCCESS/PENDING gần đây với cùng invoice → chặn tạo mới
                 var recent = paymentService.getPaymentsByInvoice(request.getInvoiceId());
@@ -431,6 +439,12 @@ public class PaymentController {
                     var inv = invOpt.get();
                     if (inv.getStatus() == com.mytech.apartment.portal.models.enums.InvoiceStatus.PAID) {
                         return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn đã được thanh toán"));
+                    }
+                    // Cho phép thanh toán hóa đơn OVERDUE, UNPAID, PARTIAL
+                    if (inv.getStatus() != com.mytech.apartment.portal.models.enums.InvoiceStatus.UNPAID &&
+                        inv.getStatus() != com.mytech.apartment.portal.models.enums.InvoiceStatus.PARTIAL &&
+                        inv.getStatus() != com.mytech.apartment.portal.models.enums.InvoiceStatus.OVERDUE) {
+                        return ResponseEntity.badRequest().body(ApiResponse.error("Hóa đơn không thể thanh toán với trạng thái: " + inv.getStatus()));
                     }
                 }
                 // Block if there is any SUCCESS or PENDING payment for this invoice

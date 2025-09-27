@@ -59,18 +59,22 @@ class FacilityCard extends StatelessWidget {
               // Thông tin chi tiết
               Row(
                 children: [
-                  _buildInfoItem(
-                    icon: Icons.location_on,
-                    text: facility.location,
-                    color: Colors.red,
+                  Expanded(
+                    child: _buildInfoItem(
+                      icon: Icons.location_on,
+                      text: facility.location,
+                      color: Colors.red,
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  _buildInfoItem(
-                    icon: Icons.people,
-                    text: facility.capacityType == 'GROUP'
-                        ? '${facility.capacity} nhóm (${facility.groupSize} người/nhóm)'
-                        : '${facility.capacity} người',
-                    color: Colors.blue,
+                  Expanded(
+                    child: _buildInfoItem(
+                      icon: Icons.people,
+                      text: facility.capacityType == 'GROUP'
+                          ? '${facility.capacity} nhóm (${facility.groupSize} người/nhóm)'
+                          : '${facility.capacity} người',
+                      color: Colors.blue,
+                    ),
                   ),
                 ],
               ),
@@ -115,7 +119,6 @@ class FacilityCard extends StatelessWidget {
   Widget _buildCapacityBadge(Facility facility) {
     final capacity = facility.capacity;
     final capacityType = facility.capacityType ?? 'INDIVIDUAL';
-    final groupSize = facility.groupSize;
 
     Color badgeColor;
     String label;
@@ -178,11 +181,12 @@ class FacilityCard extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 4),
-        Flexible(
+        Expanded(
           child: Text(
             text,
             style: TextStyle(fontSize: 14, color: Colors.grey[700]),
             overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ],

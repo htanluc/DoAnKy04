@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
-import 'requests_list_page.dart';
+import 'main_dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,19 +25,17 @@ class _LoginPageState extends State<LoginPage> {
     try {
       // ignore: avoid_print
       print('[LoginPage] Start login');
-      await ApiService.login(
-        _phoneCtrl.text.trim(),
-        _passCtrl.text,
-      );
+      await ApiService.login(_phoneCtrl.text.trim(), _passCtrl.text);
       if (!mounted) return;
       final isStaff = await AuthService.isStaff();
       if (!mounted) return;
       if (isStaff) {
         // ignore: avoid_print
         print(
-            '[LoginPage] Login success (STAFF), navigating to RequestsListPage');
+          '[LoginPage] Login success (STAFF), navigating to MainDashboardPage',
+        );
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RequestsListPage()),
+          MaterialPageRoute(builder: (_) => const MainDashboardPage()),
         );
       } else {
         await AuthService.logout();
@@ -81,8 +79,10 @@ class _LoginPageState extends State<LoginPage> {
                         color: cs.primaryContainer,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child:
-                          Icon(Icons.apartment, color: cs.onPrimaryContainer),
+                      child: Icon(
+                        Icons.apartment,
+                        color: cs.onPrimaryContainer,
+                      ),
                     ),
                   ],
                 ),
@@ -117,7 +117,8 @@ class _LoginPageState extends State<LoginPage> {
                     suffixIcon: IconButton(
                       onPressed: () => setState(() => _obscure = !_obscure),
                       icon: Icon(
-                          _obscure ? Icons.visibility : Icons.visibility_off),
+                        _obscure ? Icons.visibility : Icons.visibility_off,
+                      ),
                     ),
                   ),
                 ),
@@ -162,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                 TextButton(
                   onPressed: _loading ? null : () {},
                   child: const Text('Forgot password?'),
-                )
+                ),
               ],
             ),
           ),

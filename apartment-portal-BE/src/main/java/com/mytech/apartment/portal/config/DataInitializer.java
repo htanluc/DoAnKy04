@@ -372,7 +372,7 @@ public class DataInitializer implements CommandLineRunner {
             .floors(30)
             .description("High-end building with full amenities, 24/7 security")
             .build()));
-        
+
         buildings.add(buildingRepository.save(Building.builder()
             .buildingName("Tower D - Emerald Garden")
             .address("321 GHI Street, Ward 4, District 7, Ho Chi Minh City")
@@ -633,7 +633,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Open 06:00-22:00, lockers and showers available")
             .usageFee(80000.0)
             .openingHours("06:00 - 22:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "22:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -647,7 +647,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Open 06:00-21:00, sun loungers and pool bar")
             .usageFee(120000.0)
             .openingHours("06:00 - 21:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "21:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -662,7 +662,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Lighting and canopy, suitable for all ages")
             .usageFee(60000.0)
             .openingHours("06:00 - 22:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "22:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -677,7 +677,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Stage, audio and lighting, tables and chairs, pantry")
             .usageFee(30000.0)
             .openingHours("08:00 - 22:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "08:00", "22:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -691,7 +691,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Projector, audio, tables and chairs, free Wi-Fi")
             .usageFee(50000.0)
             .openingHours("08:00 - 20:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "08:00", "20:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -705,7 +705,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Benches, grills, gas stove, bar")
             .usageFee(80000.0)
             .openingHours("16:00 - 22:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "16:00", "22:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -719,7 +719,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Toys, seating for parents, canopy")
             .usageFee(0.0)
             .openingHours("06:00 - 20:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "06:00", "20:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -733,7 +733,7 @@ public class DataInitializer implements CommandLineRunner {
             .otherDetails("Massage rooms, spa, sauna, professional staff")
             .usageFee(200000.0)
             .openingHours("09:00 - 21:00")
-            .openingSchedule(createOpeningSchedule(true, true, true, true, true, true, false, "09:00", "21:00"))
+            .openingSchedule(null)
             .isVisible(true)
             .build()));
         
@@ -1322,37 +1322,37 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     /**
-     * PART 7: Initialize Invoices and Payments
+     * PART 7: Khởi tạo hóa đơn và thanh toán (chỉ đến tháng 8)
      */
     private void initializeInvoicesAndPayments() {
         System.out.println("💰 Initializing Invoices and Payments...");
-        
-        // Get all apartments with residents
+
+        // Lấy tất cả căn hộ có cư dân
         List<Apartment> apartmentsWithResidents = apartmentRepository.findAll().stream()
             .filter(apt -> !apartmentResidentRepository.findByApartment_Id(apt.getId()).isEmpty())
             .collect(Collectors.toList());
-        
+
         if (apartmentsWithResidents.isEmpty()) {
             System.out.println("⚠️ No apartments with residents found, skipping invoices");
             return;
         }
-        
-        // 7.1 Create Diverse Invoices for each apartment
+
+        // 7.1 Tạo hóa đơn đa dạng cho mỗi căn hộ
         List<Invoice> invoices = new ArrayList<>();
 
-        // Generate billing periods from 2025-01 up to current month
+        // Chỉ tạo dữ liệu từ 2025-01 đến 2025-08
         YearMonth start = YearMonth.of(2025, 1);
-        YearMonth end = YearMonth.now();
+        YearMonth end = YearMonth.of(2025, 8);
 
         for (Apartment apartment : apartmentsWithResidents) {
             YearMonth ym = start;
             int idx = 0;
             while (!ym.isAfter(end)) {
-                String period = ym.toString(); // format YYYY-MM
+                String period = ym.toString(); // định dạng YYYY-MM
                 boolean hasInvoice = invoiceRepository.findByApartmentIdAndBillingPeriod(apartment.getId(), period).isPresent();
 
                 if (!hasInvoice) {
-                    // Rotate statuses: UNPAID, PAID, OVERDUE, PAID, PAID
+                    // Xoay vòng trạng thái: UNPAID, PAID, OVERDUE, PAID, PAID
                     InvoiceStatus status;
                     int mod = idx % 5;
                     if (mod == 0) status = InvoiceStatus.UNPAID;
@@ -1379,10 +1379,10 @@ public class DataInitializer implements CommandLineRunner {
                 idx++;
             }
         }
-        
-        // 7.3 Create Payment Records for paid invoices
+
+        // 7.3 Tạo bản ghi thanh toán cho các hóa đơn đã thanh toán
         List<Payment> payments = new ArrayList<>();
-        
+
         for (Invoice invoice : invoices) {
             if (invoice.getStatus() == InvoiceStatus.PAID) {
                 Payment payment = paymentRepository.save(Payment.builder()
@@ -1397,8 +1397,8 @@ public class DataInitializer implements CommandLineRunner {
                 payments.add(payment);
             }
         }
-        
-        // Create synthetic payment transactions for paid invoices to enrich dataset
+
+        // Tạo giao dịch thanh toán giả lập cho các hóa đơn đã thanh toán để làm phong phú dữ liệu
         int txCount = 0;
         for (Payment p : payments) {
             PaymentTransaction tx = new PaymentTransaction();
@@ -1418,15 +1418,15 @@ public class DataInitializer implements CommandLineRunner {
 
         System.out.println("✅ Created " + invoices.size() + " invoices, " + payments.size() + " payments and " + txCount + " payment transactions");
     }
-    
+
     /**
-     * Helper method to create invoice items
+     * Helper method để tạo các khoản mục hóa đơn
      */
     private void createInvoiceItems(Invoice invoice, double apartmentArea) {
-        // Determine month for fetching water reading
+        // Xác định tháng để lấy chỉ số nước
         YearMonth ym = YearMonth.parse(invoice.getBillingPeriod());
 
-        // Electricity (estimate by area)
+        // Điện (ước lượng theo diện tích)
         double electricity = 200000.0 + (apartmentArea * 60);
         invoiceItemRepository.save(InvoiceItem.builder()
             .invoice(invoice)
@@ -1435,7 +1435,7 @@ public class DataInitializer implements CommandLineRunner {
             .amount(electricity)
             .build());
 
-        // Water (from water_meter_readings)
+        // Nước (từ bảng water_meter_readings)
         double waterAmount = 0.0;
         LocalDate monthStart = LocalDate.of(ym.getYear(), ym.getMonthValue(), 1);
         LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
@@ -1446,7 +1446,7 @@ public class DataInitializer implements CommandLineRunner {
         if (wm.isPresent()) {
             waterAmount = wm.get().getTotalAmount().doubleValue();
         } else {
-            // fallback: small estimate
+            // fallback: ước lượng nhỏ
             waterAmount = 150000.0 + (apartmentArea * 20);
         }
         invoiceItemRepository.save(InvoiceItem.builder()
@@ -1456,7 +1456,7 @@ public class DataInitializer implements CommandLineRunner {
             .amount(waterAmount)
             .build());
 
-        // Parking (flat or based on area proxy)
+        // Gửi xe (cố định hoặc theo diện tích)
         double parking = 100000.0 + ((apartmentArea > 80) ? 50000.0 : 0.0);
         invoiceItemRepository.save(InvoiceItem.builder()
             .invoice(invoice)
@@ -1474,7 +1474,7 @@ public class DataInitializer implements CommandLineRunner {
             .amount(internet)
             .build());
 
-        // Common fees
+        // Phí chung
         double maintenance = 250000.0 + (apartmentArea * 10);
         double cleaning = 150000.0;
         double security = 100000.0;
@@ -1508,7 +1508,7 @@ public class DataInitializer implements CommandLineRunner {
             .amount(gardening)
             .build());
 
-        // Update invoice total to sum of items
+        // Cập nhật tổng tiền hóa đơn bằng tổng các khoản mục
         double total = electricity + waterAmount + parking + internet + maintenance + cleaning + security + gardening;
         invoice.setTotalAmount(total);
         invoiceRepository.save(invoice);

@@ -678,17 +678,17 @@ class _BookingFormState extends ConsumerState<BookingForm> {
       final startTime = widget.selectedTimeSlots.first.startTime;
       final totalDuration = widget.selectedTimeSlots.length * 60;
 
-      final request = FacilityBookingCreateRequest(
-        facilityId: widget.facility.id,
-        userId: 1,
-        bookingTime: startTime,
-        duration: totalDuration,
-        numberOfPeople: _numberOfPeople,
-        purpose: _purpose,
-        paymentStatus: 'PAID', // Đánh dấu đã thanh toán
-        paymentMethod: 'MOMO', // Thanh toán giả lập
-        totalCost: widget.selectedTimeSlots.length * widget.facility.usageFee,
-      );
+      final request = {
+        'facilityId': widget.facility.id,
+        'userId': 1,
+        'bookingTime': startTime,
+        'duration': totalDuration,
+        'numberOfPeople': _numberOfPeople,
+        'purpose': _purpose,
+        'paymentStatus': 'PAID', // Đánh dấu đã thanh toán
+        'paymentMethod': 'MOMO', // Thanh toán giả lập
+        'totalCost': widget.selectedTimeSlots.length * widget.facility.usageFee,
+      };
 
       // Reset form state
       ref.read(bookingFormNotifierProvider.notifier).reset();
